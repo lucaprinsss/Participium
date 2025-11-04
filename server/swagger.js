@@ -22,93 +22,49 @@ const options = {
           type: "object",
           required: ["username", "password"],
           properties: {
-            username: {
-              type: "string",
-              example: "mariorossi",
-              description: "User unique username"
-            },
-            password: {
-              type: "string",
-              example: "password123",
-              description: "User password"
-            }
+            username: { type: "string", example: "mariorossi" },
+            password: { type: "string", example: "password123" }
           }
         },
         UserResponse: {
           type: "object",
           properties: {
-            id: {
-              type: "integer",
-              example: 1,
-              description: "User ID"
-            },
-            username: {
-              type: "string",
-              example: "mariorossi",
-              description: "User unique username"
-            },
-            email: {
-              type: "string",
-              format: "email",
-              example: "mario.rossi@polito.it",
-              description: "User email address (not unique)"
-            },
-            first_name: {
-              type: "string",
-              example: "Mario",
-              description: "User first name"
-            },
-            last_name: {
-              type: "string",
-              example: "Rossi",
-              description: "User last name"
-            },
-            role: {
-              type: "string",
-              example: "municipality_user",
-              description: "User role"
-            }
+            id: { type: "integer", example: 1 },
+            username: { type: "string", example: "mariorossi" },
+            email: { type: "string", format: "email", example: "mario.rossi@polito.it" },
+            first_name: { type: "string", example: "Mario" },
+            last_name: { type: "string", example: "Rossi" },
+            role: { type: "string", example: "municipality_user" }
           }
         },
         RegisterRequest: {
           type: "object",
           required: ["username", "email", "first_name", "last_name", "password"],
           properties: {
-            username: {
-              type: "string",
-              example: "giuliabianchi",
-              description: "User unique username"
-            },
-            email: {
-              type: "string",
-              format: "email",
-              example: "giulia.bianchi@comune.it",
-              description: "User email address (not unique)"
-            },
-            first_name: {
-              type: "string",
-              example: "Giulia",
-              description: "User first name"
-            },
-            last_name: {
-              type: "string",
-              example: "Bianchi",
-              description: "User last name"
-            },
-            password: {
-              type: "string",
-              example: "securePassword123",
-              description: "User password"
-            }
+            username: { type: "string", example: "giuliabianchi" },
+            email: { type: "string", format: "email", example: "giulia.bianchi@comune.it" },
+            first_name: { type: "string", example: "Giulia" },
+            last_name: { type: "string", example: "Bianchi" },
+            password: { type: "string", example: "securePassword123" }
+          }
+        },
+        MunicipalityUserRequest: {
+          type: "object",
+          required: ["username", "email", "first_name", "last_name", "role"],
+          properties: {
+            username: { type: "string", example: "lbianchi" },
+            email: { type: "string", format: "email", example: "luca.bianchi@comune.torino.it" },
+            first_name: { type: "string", example: "Luca" },
+            last_name: { type: "string", example: "Bianchi" },
+            role: { type: "string", example: "technical_office_public_lighting" },
+            department: { type: "string", example: "Direzione Infrastrutture e Mobilità" },
+            temporary_password: { type: "string", example: "Init#2025" }
           }
         },
         ErrorResponse: {
           type: "object",
           properties: {
-            error: {
-              type: "string",
-              description: "Error message"
-            }
+            error: { type: "string", description: "Error message" }
           }
         }
       },
@@ -121,10 +77,9 @@ const options = {
       }
     },
     tags: [
-      {
-        name: "Authentication",
-        description: "User authentication operations"
-      }
+      { name: "Authentication", description: "User authentication operations" },
+      { name: "Citizens", description: "Citizen registration and access" },
+      { name: "Municipality Users", description: "Municipal internal user management" }
     ],
     paths: {
       "/api/sessions": {
@@ -136,8 +91,10 @@ const options = {
             required: true,
             content: {
               "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/LoginRequest"
+                schema: { $ref: "#/components/schemas/LoginRequest" },
+                example: {
+                  username: "mariorossi",
+                  password: "password123"
                 }
               }
             }
@@ -147,9 +104,7 @@ const options = {
               description: "Login successful - returns user data",
               content: {
                 "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/UserResponse"
-                  },
+                  schema: { $ref: "#/components/schemas/UserResponse" },
                   example: {
                     id: 1,
                     username: "mariorossi",
@@ -165,9 +120,7 @@ const options = {
               description: "Unauthorized - invalid credentials",
               content: {
                 "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/ErrorResponse"
-                  },
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
                   example: {
                     error: "Invalid credentials"
                   }
@@ -178,9 +131,7 @@ const options = {
               description: "Internal Server Error",
               content: {
                 "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/ErrorResponse"
-                  },
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
                   example: {
                     error: "Internal server error"
                   }
@@ -194,16 +145,14 @@ const options = {
         get: {
           tags: ["Authentication"],
           summary: "Get current user",
-          description: "Get authenticated user",
+          description: "Get authenticated user information",
           security: [{ cookieAuth: [] }],
           responses: {
             200: {
               description: "Success - returns authenticated user data",
               content: {
                 "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/UserResponse"
-                  },
+                  schema: { $ref: "#/components/schemas/UserResponse" },
                   example: {
                     id: 1,
                     username: "mariorossi",
@@ -219,9 +168,7 @@ const options = {
               description: "Unauthorized - not authenticated",
               content: {
                 "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/ErrorResponse"
-                  },
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
                   example: {
                     error: "Not authenticated"
                   }
@@ -232,9 +179,7 @@ const options = {
               description: "Internal Server Error",
               content: {
                 "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/ErrorResponse"
-                  },
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
                   example: {
                     error: "Internal server error"
                   }
@@ -253,10 +198,7 @@ const options = {
               description: "Logout successful",
               content: {
                 "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {}
-                  }
+                  example: {}
                 }
               }
             },
@@ -264,9 +206,7 @@ const options = {
               description: "Internal Server Error",
               content: {
                 "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/ErrorResponse"
-                  },
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
                   example: {
                     error: "Internal server error"
                   }
@@ -276,66 +216,113 @@ const options = {
           }
         }
       },
+
+      // 🧍 Citizen Registration
       "/api/users": {
         post: {
-          tags: ["Authentication"],
-          summary: "Register new user",
-          description: "Create a new user account",
+          tags: ["Citizens"],
+          summary: "Register new citizen",
+          description: "Register as a citizen to access Participium and submit reports",
           requestBody: {
             required: true,
             content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/RegisterRequest"
-                }
-              }
+              "application/json": { schema: { $ref: "#/components/schemas/RegisterRequest" } }
             }
           },
           responses: {
             201: {
-              description: "Registration successful - returns created user data",
+              description: "Citizen registered successfully",
               content: {
-                "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/UserResponse"
-                  },
-                  example: {
-                    id: 5,
-                    username: "giuliabianchi",
-                    email: "giulia.bianchi@comune.it",
-                    first_name: "Giulia",
-                    last_name: "Bianchi",
-                    role: "municipality officer"
-                  }
-                }
+                "application/json": { schema: { $ref: "#/components/schemas/UserResponse" } }
               }
             },
-            400: {
-              description: "Bad Request - validation error or username already exists",
-              content: {
-                "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/ErrorResponse"
-                  },
-                  example: {
-                    error: "Username already exists"
-                  }
-                }
-              }
-            },
-            500: {
-              description: "Internal Server Error",
-              content: {
-                "application/json": {
-                  schema: {
-                    $ref: "#/components/schemas/ErrorResponse"
-                  },
-                  example: {
-                    error: "Internal server error"
-                  }
-                }
-              }
+            400: { description: "Validation error" },
+            409: { description: "Username or email already exists" }
+          }
+        }
+      },
+
+      "/api/municipality-users": {
+        post: {
+          tags: ["Municipality Users"],
+          summary: "Create a new municipality user",
+          description: "Allows admin to set up internal municipality accounts",
+          security: [{ cookieAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": { schema: { $ref: "#/components/schemas/MunicipalityUserRequest" } }
             }
+          },
+          responses: {
+            201: {
+              description: "Municipality user created",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/UserResponse" } }
+              }
+            },
+            400: { description: "Bad Request" },
+            401: { description: "Unauthorized" }
+          }
+        },
+        get: {
+          tags: ["Municipality Users"],
+          summary: "List municipality users",
+          description: "Returns all municipality users (admin only)",
+          security: [{ cookieAuth: [] }],
+          responses: {
+            200: {
+              description: "List of municipality users",
+              content: {
+                "application/json": {
+                  schema: { type: "array", items: { $ref: "#/components/schemas/UserResponse" } }
+                }
+              }
+            },
+            401: { description: "Unauthorized" }
+          }
+        }
+      },
+      "/api/municipality-users/{id}": {
+        get: {
+          tags: ["Municipality Users"],
+          summary: "Get municipality user by ID",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+          security: [{ cookieAuth: [] }],
+          responses: {
+            200: {
+              description: "User found",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/UserResponse" } }
+              }
+            },
+            404: { description: "User not found" }
+          }
+        },
+        put: {
+          tags: ["Municipality Users"],
+          summary: "Update municipality user",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+          security: [{ cookieAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": { schema: { $ref: "#/components/schemas/MunicipalityUserRequest" } }
+            }
+          },
+          responses: {
+            200: { description: "User updated" },
+            404: { description: "User not found" }
+          }
+        },
+        delete: {
+          tags: ["Municipality Users"],
+          summary: "Delete municipality user",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+          security: [{ cookieAuth: [] }],
+          responses: {
+            204: { description: "User deleted" },
+            404: { description: "User not found" }
           }
         }
       }
@@ -345,5 +332,4 @@ const options = {
 };
 
 const swaggerSpec = swaggerJSDoc(options);
-
 export { swaggerUi, swaggerSpec };
