@@ -1,14 +1,14 @@
-import express from "express";
+import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import passport from "passport";
 import session from "express-session";
-import { swaggerUi, swaggerSpec } from "../swagger.js";
-import { configurePassport } from "./config/passport.js";
-import authRoutes from "./routes/authRoutes.js";
-import citizenRoutes from "./routes/citizenRoutes.js";
-import errorHandler from "./middleware/errorHandler.js";
+import { swaggerUi, swaggerSpec } from "@config/swagger";
+import { configurePassport } from "@config/passport";
+import authRoutes from "@routes/authRoutes";
+import citizenRoutes from "@routes/citizenRoutes";
+import {errorHandler} from "@middleware/errorMiddelware";
 
-const app = express();
+const app: Application = express();
 
 // Middleware
 app.use(cors({
@@ -42,7 +42,7 @@ app.use("/api/sessions", authRoutes);
 app.use("/api/users", citizenRoutes);
 
 // Check endpoint to verify server is running
-app.get("/health", (req, res) => {
+app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 

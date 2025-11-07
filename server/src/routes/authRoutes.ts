@@ -1,5 +1,5 @@
 import express from 'express';
-import authController from '../controllers/authController.js';
+import authController from '@controllers/authController';
 
 const router = express.Router();
 
@@ -40,7 +40,7 @@ const router = express.Router();
  *             example:
  *               error: "Internal server error during authentication"
  */
-router.post('/', (req, res, next) => 
+router.post('/', (req: Request, res: Response, next: NextFunction) => 
   authController.login(req, res, next)
 );
 

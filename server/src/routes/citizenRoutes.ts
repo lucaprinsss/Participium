@@ -1,5 +1,5 @@
 import express from 'express';
-import citizenController from '../controllers/citizenController.js';
+import citizenController from '@controllers/citizenController';
 
 const router = express.Router();
 
