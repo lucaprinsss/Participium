@@ -31,11 +31,6 @@ const swaggerOptions: Options = {
         },
       },
     },
-    security: [
-        {
-            cookieAuth: [],
-        },
-    ],
   },
   // Paths to files containing OpenAPI (JSDoc) annotations
   apis: ["./src/routes/**/*.ts", "./src/models/dto/**/*.ts", "./src/models/entity/**/*.ts"],
