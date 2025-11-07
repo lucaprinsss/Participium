@@ -1,10 +1,10 @@
 import passport from 'passport';
 import {Strategy as LocalStrategy} from 'passport-local';
-import {userRepository} from '@repositories/citizenRepository';
-import { User } from '@models/dto/User';
+import {userRepository} from '@repositories/userRepository';
+import { userEntity } from '@models/entity/userEntity';
 
 /**
- * Interfaccia per i dati serializzati nella sessione
+ * Interface for the data serialized in the session
  */
 interface SessionUser{
  id: number,
@@ -12,11 +12,11 @@ interface SessionUser{
 }
 
 /**
- * Tipo per la callback di verifica di Passport
+ * Type for the Passport verify callback
  */
 type VerifyCallback = (
   error: Error | null,
-  user?: User | false,
+  user?: userEntity | false,
   options?: { message: string }
 ) => void;
 
@@ -33,38 +33,33 @@ export function configurePassport() {
         if (!user) {
           return cb(null, false, { message: 'Invalid username or password' });
         }
-        return cb(null, user as User);
+        
+        return cb(null, user);
       } catch (err) {
         return cb(err as Error);
       }
     }
   ));
 
-//   Serialize user to session
-  passport.serializeUser((user: User, cb: (err: Error | null, id?: SessionUser) => void) => {
-    
+  // Serialize user to session
+  passport.serializeUser((user: userEntity, cb: (err: Error | null, id?: SessionUser) => void) => {
     const sessionUser: SessionUser = {
-      id: (user as any).id,
-      role: (user as any).role
+      id: user.id,
+      role: user.role
     }
 
     cb(null, sessionUser);
   });
 
-//   Deserialize user from session
-  passport.deserializeUser(async (sessionUser: SessionUser, cb: (err: Error | null, user?: User | false) => void) => {
+  // Deserialize user from session
+  passport.deserializeUser(async (sessionUser: SessionUser, cb: (err: Error | null, user?: Express.User | false) => void) => {
     try {
-      const user = await userRepository.findCitizenById(sessionUser.id);
+      const user = await userRepository.findUserById(sessionUser.id);
       if (!user) {
         return cb(null, false);
       }
-      
-      const fullUser = {
-        ...user, 
-        role: sessionUser.role
-      } as User;
 
-      cb(null, fullUser);
+      cb(null, user);
 
     } catch (err) {
       cb(err as Error, false);

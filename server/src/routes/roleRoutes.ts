@@ -1,4 +1,5 @@
 import express from 'express';
+import { isAdmin } from '@middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -36,7 +37,7 @@ const router = express.Router();
  *             example:
  *               error: "Not authenticated"
  */
-router.get('/', (req, res) => {
+router.get('/', isAdmin, (req, res) => {
   res.status(501).json({ error: 'Not implemented yet' });
 });
 
@@ -100,7 +101,7 @@ router.get('/', (req, res) => {
  *             example:
  *               error: "Insufficient rights"
  */
-router.put('/:userId', (req, res) => {
+router.put('/:userId', isAdmin, (req, res) => {
   res.status(501).json({ error: 'Not implemented yet' });
 });
 

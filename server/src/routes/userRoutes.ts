@@ -1,5 +1,5 @@
 import express from 'express';
-import citizenController from '@controllers/citizenController';
+import userController from '@controllers/userController';
 
 const router = express.Router();
 
@@ -40,8 +40,6 @@ const router = express.Router();
  *             example:
  *               error: "Username already exists"
  */
-router.post('/', (req, res, next) => 
-  citizenController.register(req, res, next)
-);
+router.post('/', userController.register);
 
 export default router;

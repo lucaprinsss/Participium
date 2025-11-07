@@ -1,5 +1,5 @@
 /**
- * Categorie delle segnalazioni
+ * Report category interface
  */
 export enum ReportCategory {
   WATER_SUPPLY = 'Water Supply - Drinking Water',

@@ -1,4 +1,5 @@
 import express from 'express';
+import { isAdmin } from '@middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -67,7 +68,7 @@ const router = express.Router();
  *             example:
  *               error: "Insufficient rights"
  */
-router.post('/', (req, res) => {
+router.post('/', isAdmin, (req, res) => {
   res.status(501).json({ error: 'Not implemented yet' });
 });
 
@@ -106,7 +107,7 @@ router.post('/', (req, res) => {
  *             example:
  *               error: "Insufficient rights"
  */
-router.get('/', (req, res) => {
+router.get('/', isAdmin, (req, res) => {
   res.status(501).json({ error: 'Not implemented yet' });
 });
 
@@ -150,7 +151,7 @@ router.get('/', (req, res) => {
  *             example:
  *               error: "Not authenticated"
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', isAdmin, (req, res) => {
   res.status(501).json({ error: 'Not implemented yet' });
 });
 
@@ -207,7 +208,7 @@ router.get('/:id', (req, res) => {
  *             example:
  *               error: "Not authenticated"
  */
-router.put('/:id', (req, res) => {
+router.put('/:id', isAdmin, (req, res) => {
   res.status(501).json({ error: 'Not implemented yet' });
 });
 
@@ -247,7 +248,7 @@ router.put('/:id', (req, res) => {
  *             example:
  *               error: "Not authenticated"
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', isAdmin, (req, res) => {
   res.status(501).json({ error: 'Not implemented yet' });
 });
 

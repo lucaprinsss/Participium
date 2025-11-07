@@ -1,24 +1,24 @@
 /*
  * ====================================
- * SCRIPT DI INIZIALIZZAZIONE - v1
+ * INITIALIZATION SCRIPT FOR THE DATABASE - V1
  * ====================================
  */
 
--- Abilita estensione PostGIS per dati geografici
+-- Enable PostGIS extension for geographical data support
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 /*
  * ====================================
- * TIPI ENUM
+ * ENUMERATED TYPES
  * ====================================
  */
 
--- MODIFICATO: Aggiunto il ruolo 'administrator'
+-- MODIFIED ENUMS TO ADD 'administrator' ROLE AND 'Rejected' STATUS
 CREATE TYPE user_role AS ENUM (
     'citizen',
     'organization_staff',
     'technical_staff',
-    'administrator' -- Per le statistiche private
+    'administrator' -- For the private statistics
 );
 
 CREATE TYPE report_category AS ENUM (
@@ -44,12 +44,12 @@ CREATE TYPE report_status AS ENUM (
 
 /*
  * ====================================
- * TABELLE PRINCIPALI
+ * MAIN TABLES
  * ====================================
  */
 
 /*
- * Tabella Utenti (users)
+ * User tables (users)
  */
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -69,7 +69,7 @@ CREATE TABLE users (
 
 
 /*
- * Tabella Segnalazioni (reports)
+ * Reports table (reports)
  */
 CREATE TABLE reports (
     id SERIAL PRIMARY KEY,
@@ -91,7 +91,7 @@ CREATE TABLE reports (
 
 
 /*
- * Tabella Foto (photos)
+ * Images table (photos)
  */
 CREATE TABLE photos (
     id SERIAL PRIMARY KEY,
@@ -102,7 +102,7 @@ CREATE TABLE photos (
 
 
 /*
- * Tabella Commenti (comments)
+ * Comments table (comments)
  */
 CREATE TABLE comments (
     id SERIAL PRIMARY KEY,
@@ -114,7 +114,7 @@ CREATE TABLE comments (
 
 
 /*
- * Tabella Notifiche (notifications)
+ * Notifications tables (notifications)
  */
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
@@ -127,7 +127,7 @@ CREATE TABLE notifications (
 
 
 /*
- * Tabella Messaggi (messages)
+ * Messages table (messages)
  */
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,

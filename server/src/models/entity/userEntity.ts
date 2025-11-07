@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
 
 @Entity("users")
-export class userEntity {
+export class userEntity implements Express.User {
   @PrimaryGeneratedColumn()
   id!: number;
 

@@ -1,5 +1,5 @@
 /**
- * Stati possibili di una segnalazione
+ * Possible statuses for a report
  */
 export enum ReportStatus {
   PENDING_APPROVAL = 'Pending Approval',

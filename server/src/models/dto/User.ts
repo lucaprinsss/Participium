@@ -1,8 +1,7 @@
 import {UserRole} from "./UserRole";
 
 /**
- * Interfaccia User (tabella users)
- * Rappresenta un utente registrato nel sistema
+ * User interface (users table)
  */
 export interface User {
   id: number;
@@ -12,8 +11,8 @@ export interface User {
   password_hash: string;
   role: UserRole;
   email: string;
-  personal_photo_url?: string;  // Opzionale (può essere null)
-  telegram_username?: string;   // Opzionale
+  personal_photo_url?: string;  // Optional field (can be null)
+  telegram_username?: string;   // Optional field
   email_notifications_enabled: boolean;
   created_at: Date;
 }

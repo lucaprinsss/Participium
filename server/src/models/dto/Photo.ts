@@ -1,5 +1,5 @@
 /**
- * Interfaccia Photo (tabella photos)
+ * Photo Interface (photos table)
  */
 export interface Photo {
   id: number;

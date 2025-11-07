@@ -1,5 +1,5 @@
 /**
- * Interfaccia Comment (tabella comments)
+ * Comment interface (comments table)
  */
 export interface Comment {
   id: number;

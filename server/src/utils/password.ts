@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 /**
- * Interfaccia per i dati della password hashata
+ * Interface representing the password data structure.
  */
 interface PasswordData {
   salt: string;
@@ -41,4 +41,5 @@ export function verifyPassword(
       else resolve(hash === hashedPassword.toString('hex'));
     });
   });
+  
 }

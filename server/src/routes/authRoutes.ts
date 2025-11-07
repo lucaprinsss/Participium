@@ -1,5 +1,6 @@
 import express from 'express';
 import authController from '@controllers/authController';
+import { isLoggedIn } from '@middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -40,9 +41,7 @@ const router = express.Router();
  *             example:
  *               error: "Internal server error during authentication"
  */
-router.post('/', (req: Request, res: Response, next: NextFunction) => 
-  authController.login(req, res, next)
-);
+router.post('/', authController.login);
 
 /**
  * @swagger
@@ -77,9 +76,7 @@ router.post('/', (req: Request, res: Response, next: NextFunction) =>
  *             example:
  *               error: "Internal server error"
  */
-router.get('/current', (req, res) =>
-  authController.getCurrentUser(req, res)
-);
+router.get('/current', isLoggedIn, authController.getCurrentUser);
 
 /**
  * @swagger
@@ -111,8 +108,6 @@ router.get('/current', (req, res) =>
  *             example:
  *               error: "Internal server error during logout"
  */
-router.delete('/current', (req, res) => 
-  authController.logout(req, res)
-);
+router.delete('/current', isLoggedIn, authController.logout);
 
 export default router;

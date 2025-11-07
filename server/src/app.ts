@@ -5,7 +5,7 @@ import session from "express-session";
 import { swaggerUi, swaggerSpec } from "@config/swagger";
 import { configurePassport } from "@config/passport";
 import authRoutes from "@routes/authRoutes";
-import citizenRoutes from "@routes/citizenRoutes";
+import userRoutes from "@routes/userRoutes";
 import {errorHandler} from "@middleware/errorMiddelware";
 
 const app: Application = express();
@@ -39,7 +39,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // API routes
 app.use("/api/sessions", authRoutes);
-app.use("/api/users", citizenRoutes);
+app.use("/api/users", userRoutes);
 
 // Check endpoint to verify server is running
 app.get("/health", (req: Request, res: Response) => {

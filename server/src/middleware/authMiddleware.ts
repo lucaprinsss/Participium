@@ -1,62 +1,54 @@
-import { User } from "@dto/User";
 import { UserRole } from "@models/dto/UserRole";
 import { InsufficientRightsError } from "@models/errors/InsufficientRightsError";
 import { UnauthorizedError } from "@models/errors/UnauthorizedError";
-import { NextFunction, Response, Request } from "express";
-
-/**
- * Estende Express Request con user tipizzato
- */
-interface AuthenticatedRequest extends Request {
-  user?: User;
-}
+import { NextFunction, Response, Request, RequestHandler } from "express";
 
 /**
  * Middleware to check if the user is logged in
  */
-export const isLoggedIn = (
-  req:AuthenticatedRequest , 
+export const isLoggedIn: RequestHandler = (
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): void => {
   if (req.isAuthenticated()) {
     return next();
   }
-  throw new UnauthorizedError("Not authenticated");
+  next(new UnauthorizedError("Not authenticated"));
 };
 
 /**
  * Middleware to check if the user is a citizen
  */
-export const isCitizen = (
-  req: AuthenticatedRequest, 
+export const isCitizen: RequestHandler = (
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): void => {
   if (!req.isAuthenticated()) {
-      throw new UnauthorizedError("Not authenticated");
+      return next(new UnauthorizedError("Not authenticated"));
   }
-  if (req.user.role !== 'citizen') {
-    throw new InsufficientRightsError('Access denied. Citizen role required');
+  if ((req.user as any)?.role !== 'citizen') {
+    return next(new InsufficientRightsError('Access denied. Citizen role required'));
   }
-  return next();
+  next();
 };
 
 /**
  * Middleware to check if the user is an admin
  */
-export const isAdmin = (
-  req: AuthenticatedRequest, 
+export const isAdmin: RequestHandler = (
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): void => {
   if (!req.isAuthenticated()) {
-    throw new UnauthorizedError('Not authenticated');
+    return next(new UnauthorizedError('Not authenticated'));
   }
-  if (req.user.role !== UserRole.ADMINISTRATOR) {
-    throw new InsufficientRightsError('Access denied. Admin role required.');
+  if ((req.user as any)?.role !== UserRole.ADMINISTRATOR) {
+    return next(new InsufficientRightsError('Access denied. Admin role required.'));
   }
-  return next();
+  next();
 };
 
 /**
@@ -64,18 +56,19 @@ export const isAdmin = (
  * @param {string} requiredRole The role required to access the route
  * @returns {function} Middleware function
  */
-export const requireRole = (requiredRole: UserRole) => {
+export const requireRole = (requiredRole: UserRole): RequestHandler => {
   return (
-    req: AuthenticatedRequest, 
+    req: Request, 
     res: Response, 
     next: NextFunction
   ): void => {
     if (!req.isAuthenticated()) {
-      throw new UnauthorizedError('Not authenticated');
+      return next(new UnauthorizedError('Not authenticated'));
     }
 
-    if (!req.user || req.user.role !== requiredRole) {
-      throw new InsufficientRightsError(`Access denied. ${requireRole} role required.`)
+    const user = req.user as any;
+    if (!user || user.role !== requiredRole) {
+      return next(new InsufficientRightsError(`Access denied. ${requiredRole} role required.`));
     }
     
     next();

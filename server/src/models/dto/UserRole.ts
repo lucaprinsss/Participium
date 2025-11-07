@@ -1,5 +1,19 @@
 /**
- * Ruoli utente disponibili nel sistema
+ * @swagger
+ * components:
+ *   schemas:
+ *     UserRole:
+ *       type: string
+ *       enum:
+ *         - citizen
+ *         - organization_staff
+ *         - technical_staff
+ *         - administrator
+ *       description: Possible roles for a user
+ */
+
+/**
+ * Possible roles for a user
  */
 export enum UserRole {
   CITIZEN = 'citizen',
