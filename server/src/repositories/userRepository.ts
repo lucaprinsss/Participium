@@ -1,7 +1,7 @@
 import { AppDataSource } from "@database/connection";
 import { userEntity } from "@models/entity/userEntity";
 import { Repository } from "typeorm";
-import { verifyPassword, generatePasswordData } from "@utils/password";
+import { verifyPassword, generatePasswordData } from "@utils/passwordUtils";
 
 /**
  * Repository for User data access.

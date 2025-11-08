@@ -28,7 +28,7 @@ export const isCitizen: RequestHandler = (
   if (!req.isAuthenticated()) {
       return next(new UnauthorizedError("Not authenticated"));
   }
-  if ((req.user as any)?.role !== 'citizen') {
+  if ((req.user as any)?.role !== UserRole.CITIZEN) {
     return next(new InsufficientRightsError('Access denied. Citizen role required'));
   }
   next();

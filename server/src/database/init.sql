@@ -13,12 +13,18 @@ CREATE EXTENSION IF NOT EXISTS postgis;
  * ====================================
  */
 
--- MODIFIED ENUMS TO ADD 'administrator' ROLE AND 'Rejected' STATUS
+-- MODIFIED ENUMS TO ADD 'Administrator' ROLE AND 'Rejected' STATUS
 CREATE TYPE user_role AS ENUM (
-    'citizen',
-    'organization_staff',
-    'technical_staff',
-    'administrator' -- For the private statistics
+    'Citizen',
+    'Administrator',
+    'Municipal Public Relations Officer',
+    'Municipal Administrator',
+    'Technical Office Staff Member',
+    'Urban Planning Manager',
+    'Private Building Manager',
+    'Infrastructure Manager',
+    'Maintenance Staff Member',
+    'Public Green Spaces Manager'
 );
 
 CREATE TYPE report_category AS ENUM (
@@ -57,7 +63,7 @@ CREATE TABLE users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role user_role NOT NULL DEFAULT 'citizen',
+    role user_role NOT NULL DEFAULT 'Citizen',
     
     email VARCHAR(255) NOT NULL UNIQUE,
     personal_photo_url TEXT,
@@ -135,4 +141,28 @@ CREATE TABLE messages (
     sender_id INT NOT NULL REFERENCES users(id),
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+
+/*
+ * ====================================
+ * DEFAULT DATA
+ * ====================================
+ */
+
+/*
+ * Create default administrator user
+ * Username: admin
+ * Password: admin (hashed with bcrypt)
+ * Note: Change this password in production!
+ */
+INSERT INTO users (username, first_name, last_name, password_hash, role, email, email_notifications_enabled)
+VALUES (
+    'admin',
+    'System',
+    'Administrator',
+    '$2a$10$N9qo8uLOickgx2ZMRZoMye6iQXxVnfvD5/Y0FI5X8Ke1xFXLZgV8G', -- bcrypt hash of "admin"
+    'Administrator',
+    'admin@participium.local',
+    true
 );

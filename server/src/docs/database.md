@@ -1,6 +1,6 @@
-# Participium - Database Structure (v1)
+# Participium - Database Structure (v2)
 
-This document describes the database schema (Version 1.0) designed for the **Participium** application.
+This document describes the database schema (Version 2.0) designed for the **Participium** application.
 
 * **Database System:** PostgreSQL (v15+)
 * **Required Extensions:** `postgis` (for geolocation data)
@@ -28,10 +28,16 @@ Defines the roles a user can have within the system.
 
 | Value | Description |
 |-------|-------------|
-| `citizen` | Regular user who submits reports |
-| `organization_staff` | Organization office operator (manages approval/rejection) |
-| `technical_staff` | Technical office operator (manages intervention and resolution) |
-| `administrator` | System administrator (access to private statistics) |
+| `Citizen` | Regular user who submits reports (default) |
+| `Administrator` | System administrator with full access |
+| `Municipal Public Relations Officer` | Manages public relations and communications |
+| `Municipal Administrator` | Administrative management role |
+| `Technical Office Staff Member` | Technical office staff for field work |
+| `Urban Planning Manager` | Manages urban planning aspects |
+| `Private Building Manager` | Manages private building issues |
+| `Infrastructure Manager` | Manages infrastructure maintenance |
+| `Maintenance Staff Member` | Performs maintenance operations |
+| `Public Green Spaces Manager` | Manages parks and green areas |
 
 ### `report_category`
 Predefined categories for citizen reports.
@@ -74,7 +80,7 @@ Stores information for all system actors (citizens, operators, administrators).
 | `first_name` | `VARCHAR(100)` | NOT NULL | User's first name |
 | `last_name` | `VARCHAR(100)` | NOT NULL | User's last name |
 | `password_hash` | `VARCHAR(255)` | NOT NULL | Hashed password |
-| `role` | `user_role` | NOT NULL, DEFAULT 'citizen' | User role (see ENUM) |
+| `role` | `user_role` | NOT NULL, DEFAULT 'Citizen' | User role (see ENUM) |
 | `email` | `VARCHAR(255)` | NOT NULL, UNIQUE | Email address (used for notifications) |
 | `personal_photo_url` | `TEXT` | NULLABLE | URL to user's profile photo |
 | `telegram_username` | `VARCHAR(100)` | NULLABLE, UNIQUE | Telegram username for bot integration |
@@ -226,4 +232,5 @@ The [`docker-compose.yml`](server/docker-compose.yml ) file automatically runs [
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0 | 2024-11 | Initial schema design |
+| 1.0 | 2025-11 | Initial schema design |
+| 1.1 | 2025-11-08 | Updated user roles - expanded from 4 to 10 roles with specific municipal responsibilities |

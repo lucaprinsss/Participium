@@ -17,7 +17,22 @@ export class userEntity implements Express.User {
   @Column({ length: 255, select: false })
   passwordHash!: string;
 
-  @Column({ type: "enum", enum: ["citizen", "organization_staff", "technical_staff", "administrator"], default: "citizen" })
+  @Column({ 
+    type: "enum", 
+    enum: [
+      "Citizen", 
+      "Administrator", 
+      "Municipal Public Relations Officer",
+      "Municipal Administrator",
+      "Technical Office Staff Member",
+      "Urban Planning Manager",
+      "Private Building Manager",
+      "Infrastructure Manager",
+      "Maintenance Staff Member",
+      "Public Green Spaces Manager"
+    ], 
+    default: "Citizen" 
+  })
   role!: string;
 
   @Column({ length: 255, unique: true })

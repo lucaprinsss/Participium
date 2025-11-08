@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 /**
  * Controller for Authentication-related HTTP requests
  */
-class authController {
+class AuthController {
   /**
    * Login handler
    * TODO: Implement authentication logic with Passport
@@ -29,4 +29,4 @@ class authController {
   }
 }
 
-export default new authController();
+export default new AuthController();

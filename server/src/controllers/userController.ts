@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 /**
  * Controller for User-related HTTP requests
  */
-class userController {
+class UserController {
   /**
    * Register a new citizen
    * TODO: Implement citizen registration logic
@@ -13,4 +13,4 @@ class userController {
   }
 }
 
-export default new userController();
+export default new UserController();
