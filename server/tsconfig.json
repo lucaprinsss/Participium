@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    // ES Modules support
+    "target": "ES2022",
+    "module": "CommonJS", 
+    "lib": ["ES2022", "DOM"],
+    "moduleResolution": "node",
+    
+    // Output
+    "outDir": "./dist",
+    "rootDir": ".",
+    
+    // Strict checks
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    
+    // JSON and synthetic imports
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    
+    // Path aliases
+    "baseUrl": "./src",
+    "paths": {
+      "@config/*": ["config/*"],
+      "@controllers/*": ["controllers/*"],
+      "@middleware/*": ["middleware/*"],
+      "@models/*": ["models/*"],
+      "@repositories/*": ["repositories/*"],
+      "@routes/*": ["routes/*"],
+      "@services/*": ["services/*"],
+      "@utils/*": ["utils/*"],
+      "@dto/*": ["models/dto/*"],
+      "@entity/*": ["models/entity/*"],
+      "@errors/*": ["models/errors/*"],
+      "@database/*": ["database/*"]
+    }
+  },
+  "include": [
+    "src",
+    "src/server.ts",
+    "src/config/swagger.ts",
+    "test",
+    "scripts"
+  ]
+}
