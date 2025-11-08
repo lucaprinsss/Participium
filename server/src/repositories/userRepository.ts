@@ -120,6 +120,22 @@ class UserRepository {
 
     return user;
   }
+
+  /**
+   * Sets the user role
+   * @param id The ID of the user to which the role is associated
+   * @param role The user role to associate
+   * @returns The user entity with the associated role or null if not found
+   */
+  public async associateUserRole(id: number, role: string): Promise<userEntity | null> {
+    const user = await this.findUserById(id);
+    if (!user) {
+      return null;
+    }
+    user.role = role;
+    return this.repository.save(user);
+  }
+  
 }
 
 // Export a singleton instance of the repository
