@@ -1,70 +1,66 @@
 import passport from 'passport';
-import {Strategy as LocalStrategy} from 'passport-local';
-import {userRepository} from '@repositories/userRepository';
+import { Strategy as LocalStrategy } from 'passport-local';
+import { userRepository } from '@repositories/userRepository';
 import { userEntity } from '@models/entity/userEntity';
 
-/**
- * Interface for the data serialized in the session
- */
-interface SessionUser{
- id: number,
- role: string
+// Tipo per i dati dell'utente serializzati in sessione
+interface SessionUser {
+  id: number;
+  username: string;
+  role: string;
 }
 
-/**
- * Type for the Passport verify callback
- */
-type VerifyCallback = (
-  error: Error | null,
-  user?: userEntity | false,
-  options?: { message: string }
-) => void;
+export const configurePassport = (): void => {
+  // Strategia di autenticazione locale
+  passport.use(
+    new LocalStrategy(
+      {
+        usernameField: 'username',
+        passwordField: 'password',
+      },
+      async (username, password, done) => {
+        try {
+          // Verifica le credenziali usando il metodo del repository
+          const user = await userRepository.verifyCredentials(username, password);
 
-/**
- * Configures Passport authentication
- */
-export function configurePassport() {
-  // Local strategy for username/password authentication
-  passport.use(new LocalStrategy(
-    { usernameField: 'username' },
-    async function verify(username: string, password: string, cb: VerifyCallback): Promise<void> {
-      try {
-        const user = await userRepository.verifyCredentials(username, password);
-        if (!user) {
-          return cb(null, false, { message: 'Invalid username or password' });
+          if (!user) {
+            return done(null, false, { message: 'Invalid credentials' });
+          }
+
+          // Autenticazione riuscita
+          return done(null, user);
+        } catch (error) {
+          return done(error);
         }
-        
-        return cb(null, user);
-      } catch (err) {
-        return cb(err as Error);
       }
-    }
-  ));
+    )
+  );
 
-  // Serialize user to session
-  passport.serializeUser((user: userEntity, cb: (err: Error | null, id?: SessionUser) => void) => {
+  // Serializza l'utente in sessione (salva solo i dati essenziali)
+  passport.serializeUser((user: Express.User, done) => {
+    // Esegui un cast al tuo tipo specifico userEntity
+    const u = user as userEntity;
     const sessionUser: SessionUser = {
-      id: user.id,
-      role: user.role
-    }
-
-    cb(null, sessionUser);
+      id: u.id,
+      username: u.username,
+      role: u.role,
+    };
+    done(null, sessionUser);
   });
 
-  // Deserialize user from session
-  passport.deserializeUser(async (sessionUser: SessionUser, cb: (err: Error | null, user?: Express.User | false) => void) => {
+  // Deserializza l'utente dalla sessione
+  passport.deserializeUser(async (sessionUser: SessionUser, done) => {
     try {
+      // Trova l'utente completo dal repository usando l'ID
       const user = await userRepository.findUserById(sessionUser.id);
       if (!user) {
-        return cb(null, false);
+        return done(new Error('User not found'));
       }
-
-      cb(null, user);
-
-    } catch (err) {
-      cb(err as Error, false);
+      done(null, user);
+    } catch (error) {
+      done(error);
     }
   });
-}
+};
 
 export default passport;
