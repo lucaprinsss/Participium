@@ -1,5 +1,7 @@
 import express from 'express';
 import { isAdmin } from '@middleware/authMiddleware';
+import municipalityUserController from '@controllers/municipalityUserController';
+
 
 const router = express.Router();
 
@@ -68,9 +70,8 @@ const router = express.Router();
  *             example:
  *               error: "Insufficient rights"
  */
-router.post('/', isAdmin, (req, res) => {
-  res.status(501).json({ error: 'Not implemented yet' });
-});
+router.post('/', isAdmin, municipalityUserController.createMunicipalityUser);
+
 
 /**
  * @swagger
@@ -107,9 +108,8 @@ router.post('/', isAdmin, (req, res) => {
  *             example:
  *               error: "Insufficient rights"
  */
-router.get('/', isAdmin, (req, res) => {
-  res.status(501).json({ error: 'Not implemented yet' });
-});
+router.get('/', isAdmin, municipalityUserController.getAllMunicipalityUsers);
+
 
 /**
  * @swagger
@@ -151,9 +151,7 @@ router.get('/', isAdmin, (req, res) => {
  *             example:
  *               error: "Not authenticated"
  */
-router.get('/:id', isAdmin, (req, res) => {
-  res.status(501).json({ error: 'Not implemented yet' });
-});
+router.get('/:id', isAdmin, municipalityUserController.getMunicipalityUserById);
 
 /**
  * @swagger
@@ -208,9 +206,8 @@ router.get('/:id', isAdmin, (req, res) => {
  *             example:
  *               error: "Not authenticated"
  */
-router.put('/:id', isAdmin, (req, res) => {
-  res.status(501).json({ error: 'Not implemented yet' });
-});
+router.put('/:id', isAdmin, municipalityUserController.updateMunicipalityUser);
+
 
 /**
  * @swagger
@@ -248,9 +245,8 @@ router.put('/:id', isAdmin, (req, res) => {
  *             example:
  *               error: "Not authenticated"
  */
-router.delete('/:id', isAdmin, (req, res) => {
-  res.status(501).json({ error: 'Not implemented yet' });
-});
+router.delete('/:id', isAdmin, municipalityUserController.deleteMunicipalityUser);
+
 
 /**
  * @swagger
