@@ -5,7 +5,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/municipality-users:
+ * /api/municipality/users:
  *   post:
  *     tags: [Municipality Users]
  *     summary: Create new municipality user
@@ -74,7 +74,7 @@ router.post('/', isAdmin, (req, res) => {
 
 /**
  * @swagger
- * /api/municipality-users:
+ * /api/municipality/users:
  *   get:
  *     tags: [Municipality Users]
  *     summary: List all municipality users
@@ -113,7 +113,7 @@ router.get('/', isAdmin, (req, res) => {
 
 /**
  * @swagger
- * /api/municipality-users/{id}:
+ * /api/municipality/users/{id}:
  *   get:
  *     tags: [Municipality Users]
  *     summary: Get municipality user by ID
@@ -157,7 +157,7 @@ router.get('/:id', isAdmin, (req, res) => {
 
 /**
  * @swagger
- * /api/municipality-users/{id}:
+ * /api/municipality/users/{id}:
  *   put:
  *     tags: [Municipality Users]
  *     summary: Update municipality user
@@ -214,7 +214,7 @@ router.put('/:id', isAdmin, (req, res) => {
 
 /**
  * @swagger
- * /api/municipality-users/{id}:
+ * /api/municipality/users/{id}:
  *   delete:
  *     tags: [Municipality Users]
  *     summary: Delete municipality user
@@ -249,6 +249,70 @@ router.put('/:id', isAdmin, (req, res) => {
  *               error: "Not authenticated"
  */
 router.delete('/:id', isAdmin, (req, res) => {
+  res.status(501).json({ error: 'Not implemented yet' });
+});
+
+/**
+ * @swagger
+ * /api/municipality/users/{id}/role:
+ *   put:
+ *     tags: [Municipality Users]
+ *     summary: Assign role to municipality user
+ *     description: Assigns or updates the role for a municipality user (PT03)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Municipality user ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - role_id
+ *             properties:
+ *               role_id:
+ *                 type: integer
+ *                 description: ID of the role to assign
+ *     responses:
+ *       200:
+ *         description: Role assigned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserResponse'
+ *       404:
+ *         description: User or role not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: "Municipality user not found"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: "Not authenticated"
+ *       403:
+ *         description: Forbidden (requires admin role)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: "Insufficient rights"
+ */
+router.put('/:id/role', isAdmin, (req, res) => {
   res.status(501).json({ error: 'Not implemented yet' });
 });
 
