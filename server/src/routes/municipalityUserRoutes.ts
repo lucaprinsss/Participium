@@ -2,7 +2,6 @@ import express from 'express';
 import { isAdmin } from '@middleware/authMiddleware';
 import municipalityUserController from '@controllers/municipalityUserController';
 
-
 const router = express.Router();
 
 /**
@@ -308,8 +307,6 @@ router.delete('/:id', isAdmin, municipalityUserController.deleteMunicipalityUser
  *             example:
  *               error: "Insufficient rights"
  */
-router.put('/:id/role', isAdmin, (req, res) => {
-  res.status(501).json({ error: 'Not implemented yet' });
-});
+router.put('/:id/role', isAdmin, municipalityUserController.assignRole);
 
 export default router;

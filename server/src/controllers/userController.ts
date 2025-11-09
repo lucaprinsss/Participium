@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { userService } from '@services/userService';
-import { BadRequest } from '@models/errors/BadRequestError';
+import { BadRequestError } from '@models/errors/BadRequestError';
 import { RegisterRequest } from '@models/dto/RegisterRequest';
 import { UserRole } from '@models/dto/UserRole';
 
@@ -17,7 +17,7 @@ class UserController {
       const { username, email, password, first_name, last_name } = req.body;
 
       if (!username || !email || !password || !first_name || !last_name) {
-        throw new BadRequest('All fields are required: username, email, password, first_name, last_name');
+        throw new BadRequestError('All fields are required: username, email, password, first_name, last_name');
       }
 
       const registerData: RegisterRequest = {

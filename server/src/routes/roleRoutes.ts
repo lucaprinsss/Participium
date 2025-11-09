@@ -1,5 +1,6 @@
 import express from 'express';
 import { isAdmin } from '@middleware/authMiddleware';
+import municipalityUserController from '@controllers/municipalityUserController';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const router = express.Router();
  *   get:
  *     tags: [Roles]
  *     summary: List municipality roles
- *     description: Returns all available municipality roles
+ *     description: Returns all available municipality roles (excluding Citizen and Administrator)
  *     security:
  *       - cookieAuth: []
  *     responses:
@@ -20,25 +21,16 @@ const router = express.Router();
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   name:
- *                     type: string
- *                   description:
- *                     type: string
+ *                 $ref: '#/components/schemas/UserRole'
  *       401:
  *         description: Unauthorized
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               error: "Not authenticated"
+             example:
+               error: "Not authenticated"
  */
-router.get('/', isAdmin, (req, res) => {
-  res.status(501).json({ error: 'Not implemented yet' });
-});
+router.get('/', isAdmin, municipalityUserController.getAllRoles);
 
 export default router;

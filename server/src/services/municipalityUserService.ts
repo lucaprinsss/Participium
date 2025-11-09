@@ -3,7 +3,7 @@ import { UserRole } from '@models/dto/UserRole';
 import { RegisterRequest } from '@models/dto/RegisterRequest';
 import { userRepository } from '@repositories/userRepository';
 import { NotFoundError } from '@models/errors/NotFoundError';
-import { BadRequest } from '@models/errors/BadRequestError';
+import { BadRequestError } from '@models/errors/BadRequestError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { Not, In } from 'typeorm';
@@ -17,17 +17,17 @@ class MunicipalityUserService {
    * Create a new municipality user
    * @param registerData User registration data
    * @returns The created user response
-   * @throws BadRequest if trying to create Citizen or Administrator
+   * @throws BadRequestError if trying to create Citizen or Administrator
    */
   async createMunicipalityUser(registerData: RegisterRequest): Promise<UserResponse> {
     const { role, password, first_name, last_name, username, email } = registerData;
 
     // Validate role - Business logic in service layer
     if (role === UserRole.CITIZEN) {
-      throw new BadRequest('Cannot create a municipality user with Citizen role');
+      throw new BadRequestError('Cannot create a municipality user with Citizen role');
     }
     if (role === UserRole.ADMINISTRATOR) {
-      throw new BadRequest('Cannot create an Administrator through this endpoint');
+      throw new BadRequestError('Cannot create an Administrator through this endpoint');
     }
 
     // Create user with repository (it will hash the password)
@@ -80,7 +80,7 @@ class MunicipalityUserService {
 
     // Validate it's a municipality user - Business logic in service layer
     if (user.role === UserRole.CITIZEN || user.role === UserRole.ADMINISTRATOR) {
-      throw new BadRequest('User is not a municipality user');
+      throw new BadRequestError('User is not a municipality user');
     }
 
     return mapUserEntityToUserResponse(user);
@@ -92,7 +92,7 @@ class MunicipalityUserService {
    * @param updateData Data to update
    * @returns Updated user response
    * @throws NotFoundError if user not found
-   * @throws BadRequest if trying to update non-municipality user
+   * @throws BadRequestError if trying to update non-municipality user
    */
   async updateMunicipalityUser(
     id: number,
@@ -107,13 +107,13 @@ class MunicipalityUserService {
 
     // Validate it's a municipality user - Business logic in service layer
     if (existingUser.role === UserRole.CITIZEN || existingUser.role === UserRole.ADMINISTRATOR) {
-      throw new BadRequest('Cannot modify Citizen or Administrator through this endpoint');
+      throw new BadRequestError('Cannot modify Citizen or Administrator through this endpoint');
     }
 
     // If updating role, validate it's still a municipality role
     if (updateData.role) {
       if (updateData.role === UserRole.CITIZEN || updateData.role === UserRole.ADMINISTRATOR) {
-        throw new BadRequest('Cannot change role to Citizen or Administrator');
+        throw new BadRequestError('Cannot change role to Citizen or Administrator');
       }
     }
 
@@ -129,7 +129,7 @@ class MunicipalityUserService {
    * @param id User ID
    * @returns void
    * @throws NotFoundError if user not found
-   * @throws BadRequest if trying to delete non-municipality user
+   * @throws BadRequestError if trying to delete non-municipality user
    */
   async deleteMunicipalityUser(id: number): Promise<void> {
     // Verify user exists and is a municipality user
@@ -141,12 +141,48 @@ class MunicipalityUserService {
 
     // Validate it's a municipality user - Business logic in service layer
     if (existingUser.role === UserRole.CITIZEN || existingUser.role === UserRole.ADMINISTRATOR) {
-      throw new BadRequest('Cannot delete Citizen or Administrator through this endpoint');
+      throw new BadRequestError('Cannot delete Citizen or Administrator through this endpoint');
     }
 
     await userRepository.deleteUser(id);
 
     logInfo(`Municipality user deleted: ${existingUser.username} (ID: ${id})`);
+  }
+
+  /**
+   * Assign role to municipality user
+   * @param userId User ID
+   * @param role Role to assign
+   * @returns Updated user response
+   * @throws NotFoundError if user not found
+   * @throws BadRequestError if trying to assign invalid roles
+   */
+  async assignRole(userId: number, role: UserRole): Promise<UserResponse> {
+    // Validate role - cannot assign Citizen or Administrator
+    if (role === UserRole.CITIZEN) {
+      throw new BadRequestError('Cannot assign Citizen role to municipality user');
+    }
+    if (role === UserRole.ADMINISTRATOR) {
+      throw new BadRequestError('Cannot assign Administrator role through this endpoint');
+    }
+
+    // Verify user exists
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Validate current user is a municipality user
+    if (user.role === UserRole.CITIZEN || user.role === UserRole.ADMINISTRATOR) {
+      throw new BadRequestError('Cannot assign role to Citizen or Administrator through this endpoint');
+    }
+
+    // Update role
+    const updatedUser = await userRepository.updateUser(userId, { role });
+
+    logInfo(`Role assigned to user ${user.username}: ${role} (ID: ${userId})`);
+
+    return mapUserEntityToUserResponse(updatedUser);
   }
 
 }
