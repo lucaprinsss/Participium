@@ -1,0 +1,165 @@
+
+
+@baseUrl = http://localhost:3001/api
+@contentType = application/json
+
+###############################################
+# AUTHENTICATION TESTS
+###############################################
+
+### 1. Login with Admin
+# @name loginAdmin
+POST {{baseUrl}}/sessions
+Content-Type: {{contentType}}
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+### 2. Get Current User (requires login)
+GET {{baseUrl}}/sessions/current
+Content-Type: {{contentType}}
+
+### 3. Logout
+DELETE {{baseUrl}}/sessions/current
+Content-Type: {{contentType}}
+
+###############################################
+# USER REGISTRATION TESTS
+###############################################
+
+### 4. Register New Citizen
+# @name registerCitizen
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "username": "mario_rossi",
+  "email": "mario.rossi@example.com",
+  "password": "SecurePassword123",
+  "first_name": "Mario",
+  "last_name": "Rossi"
+}
+
+### 5. Register Another Citizen
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "username": "giulia_",
+  "email": "giulia.bianchi@example.com",
+  "password": "giuliaPassword456",
+  "first_name": "Giulia",
+  "last_name": "Bianchi"
+}
+
+### 6. Login with New Citizen
+# @name loginCitizen
+POST {{baseUrl}}/sessions
+Content-Type: {{contentType}}
+
+{
+  "username": "mario_rossi",
+  "password": "SecurePassword123"
+}
+
+###############################################
+# ERROR CASES - REGISTRATION
+###############################################
+
+### 7. Register with Duplicate Username (should fail with 409)
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "username": "mario_rossi",
+  "email": "another.email@example.com",
+  "password": "Password123",
+  "first_name": "Another",
+  "last_name": "User"
+}
+
+### 8. Register with Duplicate Email (should fail with 409)
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "username": "different_user",
+  "email": "mario.rossi@example.com",
+  "password": "Password123",
+  "first_name": "Different",
+  "last_name": "User"
+}
+
+### 9. Register with Missing Fields (should fail with 400)
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "username": "incomplete_user",
+  "email": "test@example.com"
+}
+
+###############################################
+# ERROR CASES - AUTHENTICATION
+###############################################
+
+### 10. Login with Wrong Password (should fail with 401)
+POST {{baseUrl}}/sessions
+Content-Type: {{contentType}}
+
+{
+  "username": "mario_rossi",
+  "password": "WrongPassword"
+}
+
+### 11. Login with Non-Existent User (should fail with 401)
+POST {{baseUrl}}/sessions
+Content-Type: {{contentType}}
+
+{
+  "username": "nonexistent_user",
+  "password": "SomePassword123"
+}
+
+
+###############################################
+# COMPLETE WORKFLOW TEST
+###############################################
+
+### 12. Complete User Flow
+# Step 1: Register
+# @name workflowRegister
+POST {{baseUrl}}/users
+Content-Type: {{contentType}}
+
+{
+  "username": "test_workflow",
+  "email": "workflow@example.com",
+  "password": "TestFlow123",
+  "first_name": "Test",
+  "last_name": "Workflow"
+}
+
+### Step 2: Login
+# @name workflowLogin
+POST {{baseUrl}}/sessions
+Content-Type: {{contentType}}
+
+{
+  "username": "test_workflow",
+  "password": "TestFlow123"
+}
+
+### Step 3: Get Current User
+GET {{baseUrl}}/sessions/current
+Content-Type: {{contentType}}
+
+### Step 4: Logout
+DELETE {{baseUrl}}/sessions/current
+Content-Type: {{contentType}}
+
+### Step 5: Verify Logout (should fail with 401)
+GET {{baseUrl}}/sessions/current
+Content-Type: {{contentType}}

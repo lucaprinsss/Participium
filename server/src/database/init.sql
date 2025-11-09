@@ -161,8 +161,9 @@ VALUES (
     'admin',
     'System',
     'Administrator',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMye6iQXxVnfvD5/Y0FI5X8Ke1xFXLZgV8G', -- bcrypt hash of "admin"
+    '455eb328698d8cb5c8956fa51027dd4b:a93a35cebfb7f7b59c8ebe7720eac36c4ef76ec6d7d19d5e4e179555e57d2695fbbfc34ad8931d6c985fdcf2492f6fe3fc87dc4e7ddc20b9f4c66caa50c36e4d',
     'Administrator',
     'admin@participium.local',
     true
-);
+)
+ON CONFLICT (username) DO NOTHING;

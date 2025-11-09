@@ -1,0 +1,37 @@
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/test', '<rootDir>/src'],
+  testMatch: [
+    '**/test/**/*.test.ts',
+    '**/test/**/*.spec.ts'
+  ],
+  transform: {
+    '^.+\\.ts$': 'ts-jest',
+  },
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/models/dto/**',
+    '!src/models/entity/**',
+    '!src/models/errors/**',
+    '!src/server.ts',
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  moduleNameMapper: {
+    '^@app$': '<rootDir>/src/app',
+    '^@config/(.*)$': '<rootDir>/src/config/$1',
+    '^@controllers/(.*)$': '<rootDir>/src/controllers/$1',
+    '^@database/(.*)$': '<rootDir>/src/database/$1',
+    '^@middleware/(.*)$': '<rootDir>/src/middleware/$1',
+    '^@models/(.*)$': '<rootDir>/src/models/$1',
+    '^@repositories/(.*)$': '<rootDir>/src/repositories/$1',
+    '^@routes/(.*)$': '<rootDir>/src/routes/$1',
+    '^@services/(.*)$': '<rootDir>/src/services/$1',
+    '^@utils/(.*)$': '<rootDir>/src/utils/$1',
+  },
+  testTimeout: 10000,
+  clearMocks: true,
+  restoreMocks: true,
+};
