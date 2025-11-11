@@ -128,6 +128,47 @@ npm run dev
 The frontend will start on **`http://localhost:5173`**
 
 
+## Testing
+
+The backend includes unit and E2E tests with a separate test database.
+
+### Run All Tests
+
+From the `server/` directory:
+
+```bash
+npm test
+```
+
+### Run All Tests
+
+```bash
+npm run test:all
+```
+
+### Run E2E Tests
+
+E2E tests use a Docker test database (port 5433) with pre-loaded test data:
+
+```bash
+npm run test:e2e
+```
+
+This command automatically:
+- Starts the test database container
+- Waits for initialization
+- Runs E2E tests
+- Stops the database
+
+### Run Tests with Coverage
+
+```bash
+npm run test:coverage
+```
+
+View coverage report: `server/coverage/index.html`
+
+
 ## Database Management
 
 ### Reset Database (deletes all data)

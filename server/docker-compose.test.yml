@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgis/postgis:15-3.4-alpine
+    container_name: participium_test_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: participium_test
+      POSTGRES_PASSWORD: test_password_123
+      POSTGRES_DB: participium_db_test
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"  # Porta diversa per non confliggere con DB sviluppo
+    volumes:
+      # Carica lo schema SQL all'avvio
+      - ./src/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      # Carica dati di test
+      - ./src/database/test-data.sql:/docker-entrypoint-initdb.d/02-test-data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U participium_test -d participium_db_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
