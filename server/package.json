@@ -5,7 +5,6 @@
     "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
     "build": "tsc",
     "start": "node dist/src/server.ts",
-    "test": "jest --runInBand",
     "test:all": "npm run test:db:up && timeout /t 15 /nobreak > nul && npm test & npm run test:db:down",
     "test:coverage": "npm run test:db:up && timeout /t 15 /nobreak > nul && jest --coverage --runInBand & npm run test:db:down",
     "test:e2e": "npm run test:db:up && timeout /t 15 /nobreak > nul && set NODE_ENV=test&& jest --testPathPatterns=e2e --runInBand --forceExit & npm run test:db:down",

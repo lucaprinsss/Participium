@@ -1,5 +1,4 @@
 import express from 'express';
-import { isAdmin } from '@middleware/authMiddleware';
 import municipalityUserController from '@controllers/municipalityUserController';
 
 const router = express.Router();
@@ -11,8 +10,6 @@ const router = express.Router();
  *     tags: [Roles]
  *     summary: List municipality roles
  *     description: Returns all available municipality roles (excluding Citizen and Administrator)
- *     security:
- *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: List of municipality roles
@@ -47,6 +44,6 @@ const router = express.Router();
  *             example:
  *               error: "Internal server error"   
  */
-router.get('/', isAdmin, municipalityUserController.getAllRoles);
+router.get('/', municipalityUserController.getAllRoles);
 
 export default router;
