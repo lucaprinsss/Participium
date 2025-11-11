@@ -1,0 +1,81 @@
+.login-container {
+  width: 100%;
+  min-height: calc(100vh - 30px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 60px; /* because the navbar overlaps the top */
+ 
+}
+.login-box {
+  width: 380px;
+  background:#4c6ef5;
+  border: 1px solid #dbdbdb;
+  padding: 40px;
+  margin: 0% auto;
+  text-align: center;
+  border-radius: 9px;
+}
+
+.login-logo {
+  font-family: "Montserrat", sans-serif;
+  font-size: 32px;
+  margin-bottom: 70px;
+}
+
+.login-form input {
+  width: 90%;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #dbdbdb;
+  border-radius: 15px;
+  margin-bottom: 25px;
+}
+
+.login-form button {
+  width: 100%;
+  padding: 12px;
+  background: #3bc511;
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 15px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.signup-link {
+  margin-top: 25px;
+  padding-top: 15px;
+  font-size: 14px;
+  font-weight: 600;
+  border-top: 1px solid rgba(0,0,0,0.15); /* subtle */
+}
+
+.signup-link span {
+  font-weight: bold;
+  cursor: pointer;
+  font-weight: 600;
+  color: #48dd1a;
+}
+.login-label {
+  display: block;
+  text-align: left;
+  margin-bottom: 9px;
+  margin-left: 20px;
+  font-weight: 600;
+
+}
+
+.name-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-half {
+  width: 50%;
+}
+
+.field-half input {
+  width: 100%;
+}

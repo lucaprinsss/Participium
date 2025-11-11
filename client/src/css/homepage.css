@@ -1,0 +1,60 @@
+/* Styles for CitizenHome component */
+.citizen-home-wrapper {
+	max-width: 980px;
+	margin: 24px auto;
+	padding: 20px;
+}
+
+.ch-card {
+	background: #f7fbff;
+	border: 1px solid #d6e4ff;
+	border-radius: 10px;
+	padding: 18px;
+}
+
+.ch-title {
+	margin-top: 0;
+	font-size: 1.6rem;
+}
+
+.ch-intro {
+	color: #333;
+	line-height: 1.5;
+}
+
+.ch-subtitle {
+	margin-bottom: 8px;
+}
+
+.ch-list {
+	margin-top: 8px;
+	margin-bottom: 0;
+}
+
+.ch-notice {
+	margin-top: 16px;
+	padding: 12px;
+	background: #fff4e6;
+	border: 1px solid #ffd89b;
+	border-radius: 8px;
+}
+
+.ch-actions {
+	display: flex;
+	gap: 12px;
+	margin-top: 18px;
+}
+
+.ch-btn-disabled {
+	padding: 8px 14px;
+	border-radius: 6px;
+	cursor: not-allowed;
+	background: #f0f0f0;
+	border: 1px solid #ddd;
+}
+
+.ch-help {
+	margin-top: 18px;
+	color: #666;
+}
+
