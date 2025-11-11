@@ -1,6 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001';
-
-const BASE = `${API_BASE_URL}/api/sessions`;
+const BASE = `/api/sessions`;
 
 async function handleResponse(response) {
   const contentType = response.headers.get('content-type') || '';
@@ -24,19 +22,24 @@ async function handleResponse(response) {
 
 
 // POST /api/sessions
-export async function login(credentials) {
+export async function login(arg1, arg2) {
+  // support login({ username, password }) or login(username, password)
+  const payload = (typeof arg1 === 'object' && arg1 !== null)
+    ? arg1
+    : { username: arg1, password: arg2 };
+
   try {
     const response = await fetch(`${BASE}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(credentials),
+      credentials: 'include',
+      body: JSON.stringify(payload),
     });
 
     return await handleResponse(response);
   } catch (error) {
-    // rethrow so callers can handle
     throw error;
   }
 }
@@ -49,6 +52,7 @@ export async function getCurrentUser() {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
     });
 
     return await handleResponse(response);
@@ -65,6 +69,7 @@ export async function logout() {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
     });
 
     return await handleResponse(response);

@@ -13,7 +13,8 @@ const app: Application = express();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  // allow dev server on 5173 and 5174 (Vite may switch ports)
+  origin: [ 'http://localhost:5173', 'http://localhost:5174' ],
   credentials: true
 }));
 app.use(express.json());
@@ -25,7 +26,11 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false,
+    // In production we require secure cookies (HTTPS) and allow cross-site cookies
+    secure: process.env.NODE_ENV === 'production',
+    // For development (non-production) use 'lax' so browsers accept the cookie from the dev server/proxy.
+    // In production, set to 'none' so cookies are sent in cross-site contexts (requires secure=true).
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));

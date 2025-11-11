@@ -1,9 +1,7 @@
-const API_BASE_URL = 'http://localhost:3001';
-
 // POST /api/users
 export async function registerCitizen(payload) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/users`, {
+    const response = await fetch(`/api/users`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

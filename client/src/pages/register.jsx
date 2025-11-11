@@ -19,11 +19,19 @@ const handleRegister = async (e) => {
     e.preventDefault()
 
     try {
-      const payload = { firstName, lastName, email, username, password };
+      // map client camelCase fields to server expected snake_case and include role
+      const payload = {
+        username,
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        role: 'Citizen'
+      };
 
-      await registerCitizen(payload);                  // << API CALL
+      await registerCitizen(payload); // << API CALL
 
-      navigate("/login");                              // go login after success
+      navigate("/login"); // go login after success
 
     } catch(err){
       setError(err.message);

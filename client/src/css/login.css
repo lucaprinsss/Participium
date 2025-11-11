@@ -15,6 +15,8 @@
   margin: 0% auto;
   text-align: center;
   border-radius: 9px;
+  position: relative;
+  z-index: 200; /* ensure form is above fixed navbar or other overlays */
 }
 
 .login-logo {
@@ -27,6 +29,9 @@
   width: 90%;
   padding: 12px;
   background: #ffffff;
+  /* ensure input text is visible against the white background */
+  color: #213547;
+  caret-color: #213547;
   border: 1px solid #dbdbdb;
   border-radius: 15px;
   margin-bottom: 25px;

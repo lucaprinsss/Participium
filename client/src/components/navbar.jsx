@@ -10,10 +10,18 @@ export default function Navbar() {
   const location = useLocation();
 
   useEffect(() => {
-    getCurrentUser().then(setUser).catch(() => {});
+    getCurrentUser()
+      .then((u) => {
+        setUser(u);
+        //console.log('getCurrentUser ->', u);
+      })
+      .catch((err) => {
+        console.error('getCurrentUser failed', err);
+      });
   }, []);
 
-  const showLogout = user && location.pathname === "/home";
+  // Show logout when user is present and we are on /home or any sub-route
+  const showLogout = user && location.pathname.startsWith("/home");
 
   const handleLogout = async () => {
     await logout();
