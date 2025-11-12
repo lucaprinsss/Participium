@@ -1,41 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
+import MunicipalityUserForm from './municipalityUserForm';
+import MunicipalityUserList from './municipalityUserList';
 import '../css/homepage.css';
 
 export default function AdminHome() {
+  const [showForm, setShowForm] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleUserCreated = (newUser) => {
+    console.log("New user created:", newUser);
+    // Trigger refresh of the user list
+    setRefreshTrigger(prev => prev + 1);
+    // Optionally hide the form after creation
+    setShowForm(false);
+  };
+
   return (
     <div className="citizen-home-wrapper">
       <div className="ch-card">
-        <h2 className="ch-title">Administrator Dashboard</h2>
+        <h2 className="ch-title">System Administrator Dashboard</h2>
 
         <p className="ch-intro">
-          This area is reserved for municipality staff and administrators. Here you will be able to:
+          As a system administrator, you can manage municipality users and their access to the platform.
         </p>
 
-        <h3 className="ch-subtitle">Admin capabilities (planned)</h3>
+        <h3 className="ch-subtitle">User Management</h3>
         <ul className="ch-list">
-          <li>Review and validate incoming reports (approve/reject)</li>
-          <li>Assign reports to technical offices and track progress</li>
-          <li>Update report statuses and add internal notes</li>
-          <li>View administrative statistics and export data</li>
-          <li>Send messages/notifications to reporters</li>
+          <li>Create new municipality user accounts</li>
+          <li>Edit existing user information and credentials</li>
+          <li>Delete user accounts</li>
+          <li>View list of all municipality users</li>
         </ul>
 
-        <div className="ch-notice">
-          <strong>Notice:</strong> administrative features are not implemented yet.
-          Functionality such as report approval, assignment and status updates will be
-          available in a future release.
-        </div>
-
         <div className="ch-actions">
-          <button className="ch-btn-disabled" disabled>Manage reports (unavailable)</button>
-          <button className="ch-btn-disabled" disabled>View statistics (unavailable)</button>
+          <button 
+            className="ch-btn"
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm ? "Hide Form" : "Add New User"}
+          </button>
         </div>
-
-        <p className="ch-help">
-          When administrative capabilities are activated you will see additional tools and menus
-          here to manage reported issues and monitor service performance.
-        </p>
       </div>
+
+      {showForm && (
+        <div style={{ marginTop: '24px' }}>
+          <MunicipalityUserForm onUserCreated={handleUserCreated} />
+        </div>
+      )}
+
+      <MunicipalityUserList refreshTrigger={refreshTrigger} />
     </div>
   );
 }

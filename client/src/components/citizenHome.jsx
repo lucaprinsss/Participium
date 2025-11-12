@@ -5,11 +5,10 @@ export default function CitizenHome({ user }) {
   return (
     <div className="citizen-home-wrapper">
       <div className="ch-card">
-        <h2 className="ch-title">Welcome to Participium</h2>
+        <h2 className="ch-title">Citizen Dashboard</h2>
         <p className="ch-intro">
-          Participium is a civic participation platform to report urban issues (potholes, lighting,
-          waste, etc.) directly to the Municipality. Your reports help city services track and
-          resolve problems faster.
+          Report urban issues (potholes, lighting, waste, etc.) directly to the Municipality. 
+          Your reports help city services track and resolve problems faster.
         </p>
 
         <h3 className="ch-subtitle">What you can do</h3>

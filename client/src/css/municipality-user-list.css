@@ -1,0 +1,204 @@
+/* Municipality User List Styles */
+.municipality-user-list-card {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  margin-top: 24px;
+}
+
+.municipality-user-list-card .card-body {
+  padding: 32px;
+}
+
+.mul-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0 0 20px 0;
+}
+
+.mul-loading,
+.mul-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-light);
+  font-size: 15px;
+}
+
+.mul-table-wrapper {
+  overflow-x: auto;
+}
+
+.mul-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.mul-table thead {
+  background: var(--bg);
+  border-bottom: 2px solid var(--border);
+}
+
+.mul-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--navy);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mul-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.2s;
+}
+
+.mul-table tbody tr:hover {
+  background: var(--bg);
+}
+
+.mul-table td {
+  padding: 14px 16px;
+  color: var(--text);
+}
+
+.mul-role-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.mul-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mul-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mul-btn-edit {
+  background: var(--blue);
+  color: white;
+}
+
+.mul-btn-edit:hover {
+  background: #1557b0;
+}
+
+.mul-btn-delete {
+  background: var(--card);
+  color: #dc3545;
+  border: 1px solid #dc3545;
+}
+
+.mul-btn-delete:hover {
+  background: #dc3545;
+  color: white;
+}
+
+/* Edit Modal Form */
+.mul-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mul-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.mul-label {
+  display: block;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.mul-edit-form input,
+.mul-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--card);
+  color: var(--text);
+  caret-color: var(--blue);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.mul-edit-form input:focus,
+.mul-select:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(30, 103, 200, 0.1);
+}
+
+.mul-edit-form input:disabled,
+.mul-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f6f8fa;
+}
+
+.mul-readonly {
+  background: #f6f8fa !important;
+  color: var(--muted) !important;
+  cursor: not-allowed;
+}
+
+.mul-help-text {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.mul-select {
+  cursor: pointer;
+}
+
+.name-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .municipality-user-list-card .card-body {
+    padding: 20px;
+  }
+
+  .mul-table-wrapper {
+    overflow-x: scroll;
+  }
+
+  .mul-table {
+    min-width: 700px;
+  }
+
+  .name-row {
+    grid-template-columns: 1fr;
+  }
+}

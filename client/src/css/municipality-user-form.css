@@ -1,0 +1,123 @@
+/* Municipality User Form Styles */
+.municipality-user-form-card {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+}
+
+.municipality-user-form-card .card-body {
+  padding: 32px;
+}
+
+.muf-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.alert-container {
+  min-height: 70px;
+  margin-bottom: 16px;
+}
+
+.muf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.muf-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.muf-label {
+  display: block;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.muf-form input,
+.muf-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--card);
+  color: var(--text);
+  caret-color: var(--blue);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.muf-form input:focus,
+.muf-select:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(30, 103, 200, 0.1);
+}
+
+.muf-form input:disabled,
+.muf-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f6f8fa;
+}
+
+.muf-select {
+  cursor: pointer;
+}
+
+.muf-select:disabled {
+  cursor: not-allowed;
+}
+
+.name-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.muf-submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--blue);
+  border: none;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  margin-top: 8px;
+}
+
+.muf-submit-btn:hover:not(:disabled) {
+  background: #1557b0;
+}
+
+.muf-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .municipality-user-form-card .card-body {
+    padding: 24px;
+  }
+
+  .name-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
