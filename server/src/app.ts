@@ -8,6 +8,7 @@ import authRoutes from "@routes/authRoutes";
 import userRoutes from "@routes/userRoutes";
 import roleRoutes from "@routes/roleRoutes";
 import {errorHandler} from "@middleware/errorMiddelware";
+import municipalityUserRoutes from "@routes/municipalityUserRoutes";
 
 const app: Application = express();
 
@@ -42,6 +43,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/sessions", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/roles", roleRoutes);
+app.use("/api/municipality/users", municipalityUserRoutes);
 
 // Check endpoint to verify server is running
 app.get("/health", (req: Request, res: Response) => {

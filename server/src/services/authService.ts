@@ -12,7 +12,13 @@ class AuthService {
    * @param user The user entity
    * @returns UserResponse DTO
    */
-  createUserResponse(user: Express.User): UserResponse {
+  
+  createUserResponse(user: Express.User | null | undefined): UserResponse | null {
+    
+    if (!user) {
+      return null;
+    }
+
     const userEntityData = user as userEntity;
     return mapUserEntityToUserResponse(userEntityData);
   }

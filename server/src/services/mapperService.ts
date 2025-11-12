@@ -20,7 +20,12 @@ export function createErrorDTO(
  * Maps a userEntity to UserResponse DTO
  * Excludes sensitive information like password hash
  */
-export function mapUserEntityToUserResponse(entity: userEntity): UserResponse {
+export function mapUserEntityToUserResponse(entity: userEntity | null | undefined): UserResponse | null {
+  
+  if (!entity) {
+    return null;
+  }
+
   return removeNullAttributes({
     id: entity.id,
     username: entity.username,

@@ -12,12 +12,17 @@ export function createAppError(err: any): ErrorDTO {
 
   logError(err);
   logError(
-    `Error: ${err?.message}\nStacktrace:\n${err?.stack || "No stacktrace available"}`
+    `Error: ${err?.message}\nStacktrace:\n${
+      err?.stack || "No stacktrace available"
+    }`
   );
 
   if (
-    err instanceof AppError ||
-    (err.status && typeof err.status === "number")
+    err && 
+    (
+      err instanceof AppError ||
+      (err.status && typeof err.status === "number")
+    )
   ) {
     modelError = createErrorDTO(err.status, err.message, err.name);
   }

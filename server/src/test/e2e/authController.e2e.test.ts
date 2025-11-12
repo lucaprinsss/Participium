@@ -10,10 +10,9 @@ import {
   ensureTestDatabase 
 } from '../utils/dbTestUtils';
 
-/**
- * E2E Tests for Authentication Controller
- * Uses real PostgreSQL test database with Docker
- */
+
+ // E2E Tests for Authentication Controller
+ // Uses real PostgreSQL test database with Docker
 describe('AuthController E2E Tests', () => {
   // Setup database before all tests
   beforeAll(async () => {

@@ -5,6 +5,7 @@ import { userRepository } from '@repositories/userRepository';
 import { ConflictError } from '@models/errors/ConflictError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
+import { AppError } from '@models/errors/AppError';
 
 /**
  * Service for user-related business logic
@@ -33,20 +34,25 @@ class UserService {
     }
 
     // Create new user with hashed password
-    // Use role from registerData (should be CITIZEN, set by controller)
     const newUser = await userRepository.createUserWithPassword({
       username,
       email,
       password,
       firstName: first_name,
       lastName: last_name,
-      role: role || UserRole.CITIZEN, // Fallback to CITIZEN if not set
+      role: role || UserRole.CITIZEN, 
       emailNotificationsEnabled: true
     });
 
     logInfo(`New citizen registered: ${username} (ID: ${newUser.id})`);
+    
+    const userResponse = mapUserEntityToUserResponse(newUser);
 
-    return mapUserEntityToUserResponse(newUser);
+    if (!userResponse) {
+      throw new AppError('Failed to map user data', 500);
+    }
+
+    return userResponse;
   }
 
   /**

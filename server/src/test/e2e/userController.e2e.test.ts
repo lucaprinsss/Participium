@@ -9,12 +9,11 @@ import {
   ensureTestDatabase 
 } from '../utils/dbTestUtils';
 
-/**
- * E2E Tests for User Controller
- * Uses real PostgreSQL test database with Docker
- * Tests the complete user registration flow
- */
-describe('UserController E2E Tests', () => {
+ // E2E Tests for User Controller
+ // Uses real PostgreSQL test database with Docker
+ // Tests the complete user registration flow
+
+ describe('UserController E2E Tests', () => {
   // Setup database before all tests
   beforeAll(async () => {
     await setupTestDatabase();

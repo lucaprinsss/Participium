@@ -1,11 +1,11 @@
 /**
  * Jest Global Setup
- * Carica le variabili d'ambiente di test PRIMA di qualsiasi import
+ * Loads environment variables from .env.test before running tests
  */
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// Carica .env.test PRIMA di qualsiasi altra cosa
+// Load .env.test BEFORE anything else
 if (process.env.NODE_ENV === 'test' || process.argv.some(arg => arg.includes('test'))) {
   const envPath = path.resolve(__dirname, '../../.env.test');
   const result = dotenv.config({ path: envPath, override: true });
