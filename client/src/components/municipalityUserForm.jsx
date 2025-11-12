@@ -168,18 +168,20 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
           Add New Municipality User
         </h3>
 
-        <div className="alert-container">
-          {error && (
-            <Alert variant="danger" onClose={() => setError("")} dismissible>
-              {error}
-            </Alert>
-          )}
-          {success && (
-            <Alert variant="success" onClose={() => setSuccess("")} dismissible>
-              {success}
-            </Alert>
-          )}
-        </div>
+        {(error || success) && (
+          <div className="alert-container">
+            {error && (
+              <Alert variant="danger" onClose={() => setError("")} dismissible>
+                {error}
+              </Alert>
+            )}
+            {success && (
+              <Alert variant="success" onClose={() => setSuccess("")} dismissible>
+                {success}
+              </Alert>
+            )}
+          </div>
+        )}
 
         <form className="muf-form" onSubmit={handleSubmit} noValidate>
           <div className="name-row">
@@ -324,7 +326,7 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
             </button>
 
             <button
-              Â type="submit"
+              type="submit"
               className="muf-submit-btn"
               disabled={loading || loadingRoles}
             >

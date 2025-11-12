@@ -10,7 +10,7 @@ async function handleResponse(response) {
   }
 
   if (!response.ok) {
-    const errMsg = data && data.error ? data.error : `HTTP error! status: ${response.status}`;
+    const errMsg = data && data.error ? data.error : `Internal server error: ${response.status}`;
     const err = new Error(errMsg);
     err.status = response.status;
     err.data = data;
