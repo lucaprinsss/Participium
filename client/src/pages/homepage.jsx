@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import CitizenHome from "../components/CitizenHome";
 import AdminHome from "../components/adminHome";
 import MunicipalityUserHome from "../components/MunicipalityUserHome";
-import "../css/homepage-page.css";
+import "../css/Homepage.css";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export default function Home() {
   }, [navigate]);
 
   return (
-    <div className="homepage-page">
+    <div className="homepage">
       <div className="hp-container">
 
         <div className="hp-main">

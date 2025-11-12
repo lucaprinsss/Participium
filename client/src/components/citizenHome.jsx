@@ -1,4 +1,4 @@
-import '../css/Homepage.css';
+import '../css/CitizenHomepage.css';
 import { FaMapMarkedAlt, FaClipboardList, FaBell } from "react-icons/fa";
 
 

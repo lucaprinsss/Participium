@@ -6,7 +6,7 @@ import {
   updateMunicipalityUser,
   getAllRoles
 } from "../api/municipalityUserApi";
-import "../css/municipality-user-list.css";
+import "../css/MunicipalityUserList.css";
 
 export default function MunicipalityUserList({ refreshTrigger }) {
   const [users, setUsers] = useState([]);

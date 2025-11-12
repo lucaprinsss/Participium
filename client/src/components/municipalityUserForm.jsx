@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Alert, Card, Form, Button, Row, Col } from "react-bootstrap";
+import { Alert } from "react-bootstrap";
 import { createMunicipalityUser, getAllRoles } from "../api/municipalityUserApi";
+import "../css/MunicipalityUserForm.css";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
   const [formData, setFormData] = useState({
@@ -18,20 +20,21 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [loadingRoles, setLoadingRoles] = useState(true);
 
-  // Fetch available roles on component mount
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   useEffect(() => {
     const fetchRoles = async () => {
       try {
         console.log("Fetching roles...");
         const rolesList = await getAllRoles();
         console.log("Roles fetched successfully:", rolesList);
-        // Backend returns array of role strings
         setRoles(rolesList);
       } catch (err) {
         console.error("Failed to fetch roles:", err);
         console.error("Error status:", err.status);
         console.error("Error message:", err.message);
-        
+
         if (err.status === 403) {
           setError("You don't have permission to view roles. Please make sure you're logged in as an administrator.");
         } else if (err.status === 401) {
@@ -60,7 +63,6 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
     setError("");
     setSuccess("");
 
-    // Client-side validation
     if (!formData.firstName.trim()) {
       setError("Please enter the first name");
       return;
@@ -120,10 +122,8 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
       };
 
       const newUser = await createMunicipalityUser(payload);
-
       setSuccess(`User "${newUser.username}" created successfully!`);
 
-      // Reset form
       setFormData({
         username: "",
         email: "",
@@ -134,19 +134,15 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
         role: "",
       });
 
-      // Notify parent component
       if (onUserCreated) {
-        onUserCreated(newUser); 
+        onUserCreated(newUser);
       }
 
-      // Auto-hide success message after 5 seconds
       setTimeout(() => {
         setSuccess("");
       }, 5000);
     } catch (err) {
       console.error("Failed to create user:", err);
-
-      // Clear passwords on error
       setFormData((prev) => ({ ...prev, password: "", confirmPassword: "" }));
 
       if (err.status === 409) {
@@ -166,155 +162,130 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
   };
 
   return (
-    <Card 
-      className="shadow-lg" 
-      style={{ 
-        borderRadius: 'var(--radius-xl)',
-        border: 'none'
-      }}
-    >
-      <Card.Body className="p-5">
-        <h3 
-          style={{ 
-            color: 'var(--primary)',
-            fontWeight: 'var(--font-bold)',
-            fontSize: 'var(--font-xxl)',
-            marginBottom: 'var(--spacing-lg)'
-          }}
-        >
+    <div className="municipality-user-form-card">
+      <div className="card-body">
+        <h3 className="muf-title">
           Add New Municipality User
         </h3>
 
-        {error && (
-          <Alert variant="danger" onClose={() => setError("")} dismissible className="mb-4">
-            {error}
-          </Alert>
-        )}
+        <div className="alert-container">
+          {error && (
+            <Alert variant="danger" onClose={() => setError("")} dismissible>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert variant="success" onClose={() => setSuccess("")} dismissible>
+              {success}
+            </Alert>
+          )}
+        </div>
 
-        {success && (
-          <Alert variant="success" onClose={() => setSuccess("")} dismissible className="mb-4">
-            {success}
-          </Alert>
-        )}
+        <form className="muf-form" onSubmit={handleSubmit} noValidate>
+          <div className="name-row">
+            <div className="muf-field">
+              <label className="muf-label">First Name *</label>
+              <input
+                type="text"
+                name="firstName"
+                placeholder="First name"
+                value={formData.firstName}
+                onChange={handleChange}
+                disabled={loading}
+              />
+            </div>
+            <div className="muf-field">
+              <label className="muf-label">Last Name *</label>
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Last name"
+                value={formData.lastName}
+                onChange={handleChange}
+                disabled={loading}
+              />
+            </div>
+          </div>
 
-        <Form onSubmit={handleSubmit}>
-          <Row className="mb-4">
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                  First Name *
-                </Form.Label>
-                <Form.Control
-                  type="text"
-                  name="firstName"
-                  placeholder="First name"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  disabled={loading}
-                  required
-                  size="lg"
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                  Last Name *
-                </Form.Label>
-                <Form.Control
-                  type="text"
-                  name="lastName"
-                  placeholder="Last name"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  disabled={loading}
-                  required
-                  size="lg"
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Form.Group className="mb-4">
-            <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-              Username *
-            </Form.Label>
-            <Form.Control
+          <div className="muf-field">
+            <label className="muf-label">Username *</label>
+            <input
               type="text"
               name="username"
               placeholder="Username (min. 3 characters)"
               value={formData.username}
               onChange={handleChange}
               disabled={loading}
-              required
-              size="lg"
             />
-          </Form.Group>
+          </div>
 
-          <Form.Group className="mb-4">
-            <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-              Email *
-            </Form.Label>
-            <Form.Control
+          <div className="muf-field">
+            <label className="muf-label">Email *</label>
+            <input
               type="email"
               name="email"
               placeholder="user@example.com"
               value={formData.email}
               onChange={handleChange}
               disabled={loading}
-              required
-              size="lg"
             />
-          </Form.Group>
+          </div>
 
-          <Row className="mb-4">
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                  Password *
-                </Form.Label>
-                <Form.Control
-                  type="password"
+          <div className="name-row">
+            <div className="muf-field">
+              <label className="muf-label">Password *</label>
+              <div className="password-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Password (min. 6 characters)"
                   value={formData.password}
                   onChange={handleChange}
                   disabled={loading}
-                  required
-                  size="lg"
                 />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group>
-                <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                  Confirm Password *
-                </Form.Label>
-                <Form.Control
-                  type="password"
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </div>
+            <div className="muf-field">
+              <label className="muf-label">Confirm Password *</label>
+              <div className="password-wrapper">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
                   placeholder="Confirm password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   disabled={loading}
-                  required
-                  size="lg"
                 />
-              </Form.Group>
-            </Col>
-          </Row>
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={loading}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </div>
+          </div>
 
-          <Form.Group className="mb-4">
-            <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-              Role *
-            </Form.Label>
-            <Form.Select
+          <div className="muf-field">
+            <label className="muf-label">Role *</label>
+            <select
               name="role"
               value={formData.role}
               onChange={handleChange}
               disabled={loading || loadingRoles}
-              required
-              size="lg"
+              className="muf-select"
             >
               <option value="">
                 {loadingRoles ? "Loading roles..." : "Select a role"}
@@ -324,14 +295,13 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
                   {role}
                 </option>
               ))}
-            </Form.Select>
-          </Form.Group>
+            </select>
+          </div>
 
-          <div className="d-flex gap-3 justify-content-center mt-4">
-            <Button
-              type="button" 
-              variant="danger"
-              size="sm"
+          <div className="muf-actions">
+            <button
+              type="button"
+              className="muf-cancel-btn"
               onClick={() => {
                 setFormData({
                   username: "",
@@ -351,19 +321,18 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
               disabled={loading}
             >
               Cancel
-            </Button>
-            
-            <Button 
-              type="submit" 
-              variant="primary"
-              size="sm"
+            </button>
+
+            <button
+              Â type="submit"
+              className="muf-submit-btn"
               disabled={loading || loadingRoles}
             >
               {loading ? "Creating user..." : "Create User"}
-            </Button>
+            </button>
           </div>
-        </Form>
-      </Card.Body>
-    </Card>
+        </form>
+      </div>
+    </div>
   );
 }

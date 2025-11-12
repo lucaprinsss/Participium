@@ -1,7 +1,6 @@
-/* Municipality User Form Styles */
 .municipality-user-form-card {
   width: 100%;
-  max-width: 600px;
+  max-width: 625px;
   margin: 0 auto;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -9,26 +8,26 @@
 }
 
 .municipality-user-form-card .card-body {
-  padding: 32px;
+  padding: 30px;
 }
 
 .muf-title {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   color: var(--navy);
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
   text-align: center;
 }
 
 .alert-container {
-  min-height: 70px;
-  margin-bottom: 16px;
+  min-height: 75px;
+  margin-bottom: 15px;
 }
 
 .muf-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 15px;
 }
 
 .muf-field {
@@ -39,9 +38,9 @@
 .muf-label {
   display: block;
   font-weight: 500;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .muf-form input,
@@ -53,7 +52,7 @@
   caret-color: var(--blue);
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 16px;
   transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
   box-sizing: border-box;
   font-family: inherit;
@@ -63,7 +62,7 @@
 .muf-select:focus {
   outline: none;
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(30, 103, 200, 0.1);
+  box-shadow: 0 0 0 4px rgba(30, 103, 200, 0.1);
 }
 
 .muf-form input:disabled,
@@ -87,67 +86,44 @@
   gap: 12px;
 }
 
-.muf-submit-btn {
-  width: 100%;
-  padding: 12px;
-  background: var(--blue);
-  border: none;
-  color: white;
-  font-weight: 600;
-  font-size: 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s, opacity 0.2s;
-  margin-top: 8px;
-}
-
-.muf-submit-btn:hover:not(:disabled) {
-  background: #1557b0;
-}
-
-.muf-submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .municipality-user-form-card .card-body {
-    padding: 24px;
-  }
-
-  .name-row {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-
-
 /* Form buttons container */
 .muf-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
-/* Cancel button styles */
-.muf-cancel-btn {
-  background-color: var(--text-secondary);
-  color: #ffffff;
+/* Button styles */
+.muf-cancel-btn,
+.muf-submit-btn {
   border: none;
   border-radius: 8px;
   padding: 12px 20px;
-  font-size: 0.95rem;
+  font-size: 1.125rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
   box-shadow: var(--shadow-sm);
+}
+
+.muf-cancel-btn {
+  background-color: var(--text-secondary);
+  color: #ffffff;
 }
 
 .muf-cancel-btn:hover {
   background-color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.muf-submit-btn {
+  background-color: var(--blue);
+  color: #ffffff;
+}
+
+.muf-submit-btn:hover {
+  background-color: #2a52cc; 
   box-shadow: var(--shadow-md);
 }
 
@@ -159,21 +135,56 @@
   box-shadow: none;
 }
 
-/* Submit button styles */
-.muf-submit-btn {
-  background-color: var(--blue);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: var(--shadow-sm);
+
+/* Responsive */
+@media (max-width: 600px) {
+  .municipality-user-form-card .card-body {
+    padding: 25px;
+  }
+
+  .name-row {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
 }
 
-.muf-submit-btn:hover {
-  background-color: #2a52cc; 
-  box-shadow: var(--shadow-md);
+/* Password field wrapper */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.muf-form .password-wrapper input {
+  padding-right: 44px; 
+}
+
+/* Show/hide password buttn */
+.password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light, #6c757d);
+  transition: color 0.2s;
+}
+
+.password-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.password-toggle-btn:hover:not(:disabled) {
+  color: var(--text, #212529);
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
