@@ -134,14 +134,6 @@ The backend includes unit and E2E tests with a separate test database.
 
 ### Run All Tests
 
-From the `server/` directory:
-
-```bash
-npm test
-```
-
-### Run All Tests
-
 ```bash
 npm run test:all
 ```

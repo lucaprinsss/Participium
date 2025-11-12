@@ -25,8 +25,8 @@ describe('AuthController E2E Tests', () => {
     await teardownTestDatabase();
   });
 
-  // Clean dynamic data before each test
-  beforeEach(async () => {
+  // Clean dynamic data after each test (not before) to avoid race conditions
+  afterEach(async () => {
     await cleanDatabase();
   });
 

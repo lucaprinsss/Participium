@@ -4,6 +4,7 @@ import { RegisterRequest } from '@models/dto/RegisterRequest';
 import { userRepository } from '@repositories/userRepository';
 import { NotFoundError } from '@models/errors/NotFoundError';
 import { BadRequestError } from '@models/errors/BadRequestError';
+import { ConflictError } from '@models/errors/ConflictError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { Not, In } from 'typeorm';
@@ -31,14 +32,20 @@ class MunicipalityUserService {
     if (role === UserRole.ADMINISTRATOR) {
       throw new BadRequestError('Cannot create an Administrator through this endpoint');
     }
-    const usernameExists = await userRepository.existsUserByUsername(username);
-    if (usernameExists) {
+
+    // Check for duplicate username
+    const existingUserByUsername = await userRepository.existsUserByUsername(username);
+    if (existingUserByUsername) {
       throw new ConflictError('Username already exists');
     }
-    const emailExists = await userRepository.existsUserByEmail(email);
-    if (emailExists) {
+
+    // Check for duplicate email
+    const existingUserByEmail = await userRepository.existsUserByEmail(email);
+    if (existingUserByEmail) {
       throw new ConflictError('Email already exists');
     }
+
+    // Create user with repository (it will hash the password)
     const newUser = await userRepository.createUserWithPassword({
       username,
       email,

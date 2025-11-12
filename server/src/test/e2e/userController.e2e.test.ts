@@ -25,8 +25,8 @@ import {
     await teardownTestDatabase();
   });
 
-  // Clean dynamic data before each test
-  beforeEach(async () => {
+  // Clean dynamic data after each test (not before) to avoid race conditions
+  afterEach(async () => {
     await cleanDatabase();
   });
 
@@ -364,13 +364,14 @@ import {
     });
 
     it('should handle multiple concurrent registrations', async () => {
-      // Act - Create multiple users simultaneously
+      // Arrange - Create multiple users simultaneously
       const users = [
         { ...validRegistrationData, username: 'concurrent_user_1', email: 'concurrent1@example.com' },
         { ...validRegistrationData, username: 'concurrent_user_2', email: 'concurrent2@example.com' },
         { ...validRegistrationData, username: 'concurrent_user_3', email: 'concurrent3@example.com' },
       ];
 
+      // Act - Create users concurrently
       const promises = users.map(user =>
         request(app)
           .post('/api/users')
@@ -384,6 +385,9 @@ import {
         expect(response.status).toBe(201);
         expect(response.body.username).toBe(users[index].username);
       });
+
+      // Wait for database transactions to fully commit (increased for reliability in concurrent writes)
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Verify all users exist in database
       for (const user of users) {
