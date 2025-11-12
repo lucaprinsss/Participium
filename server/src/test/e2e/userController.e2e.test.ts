@@ -1,4 +1,4 @@
-/* import request from 'supertest';
+import request from 'supertest';
 import app from '../../app';
 import { AppDataSource } from '@database/connection';
 import { userRepository } from '@repositories/userRepository';
@@ -805,13 +805,5 @@ import {
       // Assert
       expect(response.body.message).toContain('Email already exists');
     });
-  });
-});
- */
-
-//dummy test 
-describe('Dummy test', () => {
-  it('should pass', () => {
-    expect(true).toBe(true);
   });
 });

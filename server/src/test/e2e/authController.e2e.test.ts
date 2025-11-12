@@ -1,4 +1,4 @@
-/* import request from 'supertest';
+import request from 'supertest';
 import app from '../../app';
 import { AppDataSource } from '@database/connection';
 import { userRepository } from '@repositories/userRepository';
@@ -401,13 +401,5 @@ describe('AuthController E2E Tests', () => {
         .set('Cookie', cookies2)
         .expect(200);
     });
-  });
-});
- */
-
-//dummy test 
-describe('Dummy test', () => {
-  it('should pass', () => {
-    expect(true).toBe(true);
   });
 });

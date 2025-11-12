@@ -1,19 +1,19 @@
-/* import request from 'supertest';
+import request from 'supertest';
 import app from '../../app';
 import { AppDataSource } from '@database/connection';
 import { userRepository } from '@repositories/userRepository';
 import { UserRole } from '@models/dto/UserRole';
-import { 
-  setupTestDatabase, 
-  teardownTestDatabase, 
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
   cleanDatabase,
-  ensureTestDatabase 
+  ensureTestDatabase
 } from '../utils/dbTestUtils';
 
 // E2E Tests for Municipality User Controller
 //  Uses real PostgreSQL test database with Docker
 //  Tests only the functions covered in unit tests
- 
+
 describe('MunicipalityUserController E2E Tests', () => {
   // Helper function to login and get cookies
   const loginAs = async (username: string, password: string) => {
@@ -198,7 +198,7 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should return 409 when username already exists', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
-      
+
       // Create user first
       await request(app)
         .post('/api/municipality/users')
@@ -227,7 +227,7 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should return 409 when email already exists', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
-      
+
       // Create user first
       await request(app)
         .post('/api/municipality/users')
@@ -257,7 +257,7 @@ describe('MunicipalityUserController E2E Tests', () => {
   describe('GET /api/municipality/users - Get All Municipality Users', () => {
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
-      
+
       // Create some municipality users for testing
       await request(app)
         .post('/api/municipality/users')
@@ -300,7 +300,7 @@ describe('MunicipalityUserController E2E Tests', () => {
       // Assert
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThanOrEqual(2);
-      
+
       // Verify structure of first user
       expect(response.body[0]).toHaveProperty('id');
       expect(response.body[0]).toHaveProperty('username');
@@ -352,7 +352,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
-      
+
       // Create a municipality user for testing
       const createResponse = await request(app)
         .post('/api/municipality/users')
@@ -456,7 +456,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
-      
+
       // Create a municipality user for testing
       const createResponse = await request(app)
         .post('/api/municipality/users')
@@ -606,7 +606,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
-      
+
       // Create a municipality user for testing
       const createResponse = await request(app)
         .post('/api/municipality/users')
@@ -702,7 +702,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
-      
+
       // Create a municipality user for testing
       const createResponse = await request(app)
         .post('/api/municipality/users')
@@ -835,7 +835,7 @@ describe('MunicipalityUserController E2E Tests', () => {
     });
   });
 
-  describe('GET /api/roles - Get All Roles', () => {
+  /* describe('GET /api/roles - Get All Roles', () => {
     it('should return all municipality roles', async () => {
       // Act
       const response = await request(app)
@@ -872,13 +872,95 @@ describe('MunicipalityUserController E2E Tests', () => {
       // Assert
       expect(Array.isArray(response.body)).toBe(true);
     });
-  });
-});
- */
+  }); */
 
-//dummy test 
-describe('Dummy test', () => {
-  it('should pass', () => {
-    expect(true).toBe(true);
+  describe('GET /api/roles - Get All Roles', () => {
+
+    // Questo test sostituisce 'should be accessible without authentication'
+    // Verifica che la rotta sia correttamente protetta.
+    it('should return 401 if not authenticated', async () => {
+      // Act
+      const response = await request(app)
+        .get('/api/roles')
+        .expect('Content-Type', /json/)
+        .expect(401); // <-- CORREZIONE: Ci aspettiamo 401, non 200
+
+      // Assert
+      // L'errore proviene dal middleware 'isAdmin' che usa 'UnauthorizedError'
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Not authenticated');
+    });
+
+    // Questo test è la versione corretta di 'should return all municipality roles'
+    it('should return all municipality roles when authenticated as admin', async () => {
+      // --- Arrange: Esegui il login come admin ---
+      // (Preso direttamente dal tuo file di esempio AuthController)
+      const loginResponse = await request(app)
+        .post('/api/sessions')
+        .send({
+          username: 'testadmin',
+          password: 'AdminPass123!',
+        })
+        .expect(200);
+
+      // Estrai i cookie di sessione
+      const cookies = loginResponse.headers['set-cookie'];
+
+      // --- Act: Chiama la rotta protetta CON i cookie ---
+      const response = await request(app)
+        .get('/api/roles')
+        .set('Cookie', cookies) // <-- CORREZIONE: Aggiungi i cookie di autenticazione
+        .expect('Content-Type', /json/)
+        .expect(200); // <-- Ora ci aspettiamo 200
+
+      // --- Assert: (Il tuo codice originale) ---
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+
+      // Verify contains municipality roles
+      // Nota: Ho usato i tuoi nomi originali, ma assicurati che i valori
+      // di UserRole siano corretti (es. MUNICIPAL_ADMINISTRATOR)
+      expect(response.body).toContain(UserRole.MUNICIPAL_PUBLIC_RELATIONS_OFFICER);
+      expect(response.body).toContain(UserRole.MUNICIPAL_ADMINISTRATOR);
+      expect(response.body).toContain(UserRole.TECHNICAL_OFFICE_STAFF_MEMBER);
+      expect(response.body).toContain(UserRole.URBAN_PLANNING_MANAGER);
+      expect(response.body).toContain(UserRole.PRIVATE_BUILDING_MANAGER);
+      expect(response.body).toContain(UserRole.INFRASTRUCTURE_MANAGER);
+      expect(response.body).toContain(UserRole.MAINTENANCE_STAFF_MEMBER);
+      expect(response.body).toContain(UserRole.PUBLIC_GREEN_SPACES_MANAGER);
+
+      // Verify does NOT contain Citizen or Administrator
+      expect(response.body).not.toContain(UserRole.CITIZEN);
+      expect(response.body).not.toContain(UserRole.ADMINISTRATOR);
+    });
+
+    // Aggiungiamo un test per un utente NON-Admin (es. testcitizen)
+    it('should return 403 if authenticated as non-admin (e.g., Citizen)', async () => {
+      // --- Arrange: Esegui il login come citizen ---
+      const loginResponse = await request(app)
+        .post('/api/sessions')
+        .send({
+          username: 'testcitizen',
+          password: 'TestPass123!',
+        })
+        .expect(200);
+
+      const cookies = loginResponse.headers['set-cookie'];
+
+      // --- Act: Chiama la rotta protetta ---
+      const response = await request(app)
+        .get('/api/roles')
+        .set('Cookie', cookies) // <-- Aggiungi i cookie di autenticazione
+        .expect('Content-Type', /json/)
+        .expect(403); // <-- CORREZIONE: Ci aspettiamo 403 Forbidden
+
+      // Assert
+      // L'errore proviene dal middleware 'isAdmin'
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Access denied. Admin role required.');
+    });
   });
+
+
+
 });
