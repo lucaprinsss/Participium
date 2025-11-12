@@ -27,7 +27,7 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *             error: "Not authenticated"
+ *              error: "Not authenticated"
  *       403:
  *         description: Forbidden (requires admin role)
  *         content:

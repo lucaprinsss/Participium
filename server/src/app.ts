@@ -2,7 +2,7 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import passport from "passport";
 import session from "express-session";
-import { swaggerUi, swaggerSpec } from "@config/swagger";
+import {setupSwagger } from "@config/swagger";
 import { configurePassport } from "@config/passport";
 import authRoutes from "@routes/authRoutes";
 import userRoutes from "@routes/userRoutes";
@@ -41,8 +41,8 @@ configurePassport();
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Swagger UI route
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger setup
+setupSwagger(app);
 
 // API routes
 app.use("/api/sessions", authRoutes);

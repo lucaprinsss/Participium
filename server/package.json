@@ -2,7 +2,7 @@
   "name": "participium-server",
   "version": "1.0.0",
   "scripts": {
-  "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/server.ts",
+  "dev": "nodemon --ignore openapi.json --exec ts-node -r tsconfig-paths/register src/server.ts",
   "build": "tsc",
   "start": "node dist/src/server.ts",
   "test": "jest --runInBand",

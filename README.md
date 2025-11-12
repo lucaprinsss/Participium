@@ -95,6 +95,9 @@ The backend will start on **`http://localhost:3001`**
 
 **API Documentation (Swagger):** [`http://localhost:3001/api-docs`](http://localhost:3001/api-docs)
 
+**OpenAPI Specification:** [`server/openapi.yaml`](server/openapi.yaml)
+
+
 ### 4. Default Administrator Account
 
 The database is initialized with a default administrator account:
