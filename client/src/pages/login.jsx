@@ -1,57 +1,108 @@
-import React , {useState} from "react";
+import React, { useState } from "react";
+import { Alert, Card } from "react-bootstrap";
 import "../css/login.css";
 import { login } from "../api/authApi";
 import { useNavigate } from "react-router-dom";
 
-
 export default function Login() {
+  const navigate = useNavigate();
 
-const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
 
-const [username , setUsername] = useState('');
-const [password , setPassword] = useState('');
+    // Client-side validation
+    if (!username.trim()) {
+      setError("Please enter your username");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Please enter your password");
+      return;
+    }
 
-const handleLogin = async (e) => {
-    e.preventDefault()
+    setLoading(true);
 
     try {
-        await login(username, password);
-        navigate("/home");
-    } catch (error) {
-        console.error("Login failed:", error);
+      await login(username, password);
+      navigate("/home");
+    } catch (err) {
+      console.error("Login failed:", err);
+      
+      // Clear password field on error
+      setPassword("");
+      
+      // Set user-friendly error message
+      if (err.status === 401) {
+        setError("Invalid username or password. Please try again.");
+      } else if (err.status === 400) {
+        setError("Invalid request. Please check your input.");
+      } else if (!navigator.onLine) {
+        setError("No internet connection. Please check your network.");
+      } else {
+        setError(err.message || "Login failed. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
     }
-};
+  };
 
-return (
+  return (
     <div className="login-container">
-      <div className="login-box">
-        <h1 className="login-logo">Login</h1>
+      <Card className="login-card">
+        <Card.Body>
+          <h1 className="login-logo">Participium</h1>
+          <p className="login-subtitle">Sign in to your account</p>
 
-        <form onSubmit={handleLogin} className="login-form">
-          <label className="login-label">Username</label>
-          <input
-            type="text"
-            placeholder="Enter username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
+          <div className="alert-container">
+            {error && (
+              <Alert variant="danger" onClose={() => setError("")} dismissible>
+                {error}
+              </Alert>
+            )}
+          </div>
 
-          <label className="login-label">Password</label>
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <form onSubmit={handleLogin} className="login-form">
+            <div className="login-field">
+              <label className="login-label">Username</label>
+              <input
+                type="text"
+                placeholder="Enter username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+              />
+            </div>
 
-          <button type="submit">Log in</button>
-        </form>
+            <div className="login-field">
+              <label className="login-label">Password</label>
+              <input
+                type="password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+            </div>
 
-        <div className="signup-link">
-          Don't have an account? <span onClick={() => navigate("/register")}>Register</span>
-        </div>
-      </div>
+            <button type="submit" disabled={loading}>
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+
+          <div className="signup-link">
+            Don't have an account?{" "}
+            <span onClick={() => !loading && navigate("/register")}>
+              Create one
+            </span>
+          </div>
+        </Card.Body>
+      </Card>
     </div>
   );
 }

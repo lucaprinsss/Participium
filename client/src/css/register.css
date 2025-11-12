@@ -1,59 +1,144 @@
+/* Professional minimal register page */
 .register-container {
   width: 100%;
-  height: calc(80vh - 1px); /* same height offset as login */
+  min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding-top: 110px;
+  align-items: flex-start;
+  background: var(--bg);
+  padding: 100px 24px 40px 24px; /* Top padding for navbar */
 }
 
+.register-card {
+  width: 100%;
+  max-width: 520px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+}
 
-.register-box {
-  width: 380px;
-  background: #4c6ef5;
-  border: 1px solid #dbdbdb;
-  padding: 32px;
-  margin: 0 auto;
-  text-align: center;
-  border-radius: 9px;
-  position: relative;
-  z-index: 200; /* keep form above fixed navbar/overlays */
+.register-card .card-body {
+  padding: 40px 36px;
+}
+
+.alert-container {
+  min-height: 70px;
+  margin-bottom: 8px;
 }
 
 .register-logo {
   font-family: "Montserrat", sans-serif;
-  font-size: 32px;
-  margin-bottom: 35px; /* a little smaller since we have more fields */
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0 0 6px 0;
+  text-align: center;
 }
 
-.register-form input {
-  width: 90%;
-  padding: 12px;
-  background: #ffffff;
-  /* ensure input text is visible against the white background */
-  color: #213547;
-  caret-color: #213547;
-  border: 1px solid #dbdbdb;
-  border-radius: 15px;
-  margin-bottom: 22px;
+.register-subtitle {
+  text-align: center;
+  color: var(--text-light);
+  font-size: 14px;
+  margin: 0 0 24px 0;
 }
 
-.register-form button {
-  width: 100%;
-  padding: 12px;
-  background: #3bc511;
-  border: none;
-  color: white;
-  font-weight: 500;
-  border-radius: 15px;
-  cursor: pointer;
-  margin-top: 15px;
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.register-field {
+  display: flex;
+  flex-direction: column;
 }
 
 .register-label {
   display: block;
-  text-align: left;
-  margin-bottom: 9px;
-  margin-left: 20px;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 4px;
 }
+
+.register-form input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--card);
+  color: var(--text);
+  caret-color: var(--blue);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+  box-sizing: border-box;
+}
+
+.register-form input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(30, 103, 200, 0.1);
+}
+
+.register-form input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f6f8fa;
+}
+
+.name-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.register-form button[type="submit"] {
+  width: 100%;
+  padding: 12px;
+  background: var(--blue);
+  border: none;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  margin-top: 8px;
+}
+
+.register-form button[type="submit"]:hover:not(:disabled) {
+  background: var(--blue-hover);
+}
+
+.register-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.signin-link {
+  margin-top: 24px;
+  padding-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-light);
+  border-top: 1px solid var(--border);
+}
+
+.signin-link span {
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--blue);
+  transition: color 0.2s;
+}
+
+.signin-link span:hover {
+  color: var(--blue-hover);
+}
+
+/* Bootstrap alert spacing */
+.register-card .alert {
+  margin-bottom: 24px;
+  text-align: left;
+  border-radius: 8px;
+}
+

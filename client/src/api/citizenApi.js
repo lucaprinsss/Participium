@@ -11,7 +11,11 @@ export async function registerCitizen(payload) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const errMsg = errorData.error || `HTTP error! status: ${response.status}`;
+      const err = new Error(errMsg);
+      err.status = response.status;
+      err.data = errorData;
+      throw err;
     }
 
     const data = await response.json().catch(() => null);

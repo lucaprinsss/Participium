@@ -2,7 +2,7 @@ import { Routes, Route , useLocation , Navigate } from "react-router-dom";
 import Login from "./pages/login.jsx";
 import Register from "./pages/register.jsx";
 import Home from "./pages/homepage.jsx";
-import Navbar from "./components/Navbar";
+import Navbar from "./components/navbar.jsx";
 
 function App() {
     const location = useLocation();
