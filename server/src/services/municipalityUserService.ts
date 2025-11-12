@@ -4,7 +4,6 @@ import { RegisterRequest } from '@models/dto/RegisterRequest';
 import { userRepository } from '@repositories/userRepository';
 import { NotFoundError } from '@models/errors/NotFoundError';
 import { BadRequestError } from '@models/errors/BadRequestError';
-import { ConflictError } from '@models/errors/ConflictError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { Not, In } from 'typeorm';
