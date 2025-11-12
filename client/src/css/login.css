@@ -28,6 +28,15 @@
   margin-bottom: 8px;
 }
 
+.login-logo-img {
+  display: block;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 20px auto;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
 .login-logo {
   font-family: "Montserrat", sans-serif;
   font-size: 28px;
@@ -41,7 +50,6 @@
   text-align: center;
   color: var(--text-light);
   font-size: 14px;
-  margin: 0 0 32px 0;
 }
 
 .login-form {
@@ -86,6 +94,46 @@
   opacity: 0.6;
   cursor: not-allowed;
   background: #f6f8fa;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  padding-right: 44px; 
+}
+
+.password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.password-toggle-btn:hover:not(:disabled) {
+  color: var(--text);
+  background-color: var(--bg); 
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.password-toggle-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .login-form button[type="submit"] {
@@ -142,4 +190,3 @@
   text-align: left;
   border-radius: 8px;
 }
-

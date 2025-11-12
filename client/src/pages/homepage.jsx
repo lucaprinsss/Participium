@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import { getCurrentUser, logout } from "../api/authApi";
+import { getCurrentUser } from "../api/authApi";
 import { useNavigate } from "react-router-dom";
-import CitizenHome from "../components/citizenHome";
-import AdminHome from "../components/adminHome";
-import MunicipalityUserHome from "../components/municipalityUserHome";
+import CitizenHome from "../components/CitizenHome";
+import AdminHome from "../components/AdminHome";
+import MunicipalityUserHome from "../components/MunicipalityUserHome";
 import "../css/homepage-page.css";
 
 export default function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [showWelcome, setShowWelcome] = useState(true);
 
   useEffect(() => {
     getCurrentUser()
@@ -20,38 +19,9 @@ export default function Home() {
       });
   }, [navigate]);
 
-  // Auto-hide welcome message after 5 seconds
-  useEffect(() => {
-    if (user && showWelcome) {
-      const timer = setTimeout(() => {
-        setShowWelcome(false);
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [user, showWelcome]);
-
-  // Check if user is citizen
-  const isCitizen = user && (user.role || "").toString().toLowerCase().includes("citizen");
-
   return (
     <div className="homepage-page">
       <div className="hp-container">
-        <div className="hp-header">
-
-          {user && showWelcome && (
-            <div className="hp-welcome">
-              Welcome, <strong>{user.username}</strong>
-              <button
-                className="hp-welcome-close"
-                onClick={() => setShowWelcome(false)}
-                aria-label="Close welcome message"
-              >
-                ×
-              </button>
-            </div>
-          )}
-        </div>
 
         <div className="hp-main">
           <div className="hp-left">

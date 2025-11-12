@@ -3,12 +3,14 @@ import { Alert, Card } from "react-bootstrap";
 import "../css/login.css";
 import { login } from "../api/authApi";
 import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function Login() {
   const navigate = useNavigate();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -33,10 +35,10 @@ export default function Login() {
       navigate("/home");
     } catch (err) {
       console.error("Login failed:", err);
-      
+
       // Clear password field on error
       setPassword("");
-      
+
       // Set user-friendly error message
       if (err.status === 401) {
         setError("Invalid username or password. Please try again.");
@@ -56,18 +58,23 @@ export default function Login() {
     <div className="login-container">
       <Card className="login-card">
         <Card.Body>
-          <h1 className="login-logo">Participium</h1>
+          <img
+            src="/participium-logo.png"
+            alt="Participium Logo"
+            className="login-logo-img"
+          />
+
           <p className="login-subtitle">Sign in to your account</p>
 
-          <div className="alert-container">
-            {error && (
+          {error && (
+            <div className="alert-container">
               <Alert variant="danger" onClose={() => setError("")} dismissible>
                 {error}
               </Alert>
-            )}
-          </div>
+            </div>
+          )}
 
-          <form onSubmit={handleLogin} className="login-form">
+          <form onSubmit={handleLogin} className="login-form" noValidate>
             <div className="login-field">
               <label className="login-label">Username</label>
               <input
@@ -81,13 +88,24 @@ export default function Login() {
 
             <div className="login-field">
               <label className="login-label">Password</label>
-              <input
-                type="password"
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
+              <div className="password-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
 
             <button type="submit" disabled={loading}>

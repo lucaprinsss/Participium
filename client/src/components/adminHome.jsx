@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import MunicipalityUserForm from './municipalityUserForm';
-import MunicipalityUserList from './municipalityUserList';
-import '../css/homepage.css';
+import MunicipalityUserForm from './MunicipalityUserForm';
+import MunicipalityUserList from './MunicipalityUserList';
+import '../css/Homepage.css';
 
 export default function AdminHome() {
   const [showForm, setShowForm] = useState(false);

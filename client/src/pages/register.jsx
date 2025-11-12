@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Alert, Card } from "react-bootstrap";
 import "../css/register.css";
 import { registerCitizen } from "../api/citizenApi";
 import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -16,6 +17,9 @@ export default function Register() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -127,7 +131,7 @@ export default function Register() {
             </Alert>
           )}
 
-          <form onSubmit={handleRegister} className="register-form">
+          <form onSubmit={handleRegister} className="register-form" noValidate>
             <div className="name-row">
               <div className="register-field">
                 <label className="register-label">First Name</label>
@@ -176,24 +180,48 @@ export default function Register() {
 
             <div className="register-field">
               <label className="register-label">Password</label>
-              <input
-                type="password"
-                placeholder="Choose a password (min. 6 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
+              <div className="password-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Choose a password (min. 6 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
 
             <div className="register-field">
               <label className="register-label">Confirm Password</label>
-              <input
-                type="password"
-                placeholder="Re-enter your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={loading}
-              />
+              <div className="password-wrapper">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={loading}
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
+                >
+                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
 
             <button type="submit" disabled={loading}>
@@ -203,9 +231,7 @@ export default function Register() {
 
           <div className="signin-link">
             Already have an account?{" "}
-            <span onClick={() => !loading && navigate("/login")}>
-              Sign in
-            </span>
+            <span onClick={() => !loading && navigate("/login")}>Sign in</span>
           </div>
         </Card.Body>
       </Card>
