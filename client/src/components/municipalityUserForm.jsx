@@ -7,6 +7,7 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
     firstName: "",
     lastName: "",
     role: "",
@@ -93,6 +94,14 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
       setError("Password must be at least 6 characters long");
       return;
     }
+    if (!formData.confirmPassword.trim()) {
+      setError("Please confirm your password");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
     if (!formData.role) {
       setError("Please select a role");
       return;
@@ -119,6 +128,7 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
         username: "",
         email: "",
         password: "",
+        confirmPassword: "",
         firstName: "",
         lastName: "",
         role: "",
@@ -136,8 +146,8 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
     } catch (err) {
       console.error("Failed to create user:", err);
 
-      // Clear password on error
-      setFormData((prev) => ({ ...prev, password: "" }));
+      // Clear passwords on error
+      setFormData((prev) => ({ ...prev, password: "", confirmPassword: "" }));
 
       if (err.status === 409) {
         setError("Username or email already exists. Please try another.");
@@ -257,21 +267,42 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
             />
           </Form.Group>
 
-          <Form.Group className="mb-4">
-            <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-              Password *
-            </Form.Label>
-            <Form.Control
-              type="password"
-              name="password"
-              placeholder="Password (min. 6 characters)"
-              value={formData.password}
-              onChange={handleChange}
-              disabled={loading}
-              required
-              size="lg"
-            />
-          </Form.Group>
+          <Row className="mb-4">
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
+                  Password *
+                </Form.Label>
+                <Form.Control
+                  type="password"
+                  name="password"
+                  placeholder="Password (min. 6 characters)"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={loading}
+                  required
+                  size="lg"
+                />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
+                  Confirm Password *
+                </Form.Label>
+                <Form.Control
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  disabled={loading}
+                  required
+                  size="lg"
+                />
+              </Form.Group>
+            </Col>
+          </Row>
 
           <Form.Group className="mb-4">
             <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
@@ -299,9 +330,24 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
           <div className="d-flex gap-3 justify-content-end mt-4">
             <Button
               type="button" 
-              variant="secondary"
+              variant="danger"
               size="lg"
-              onClick={onCancel}
+              onClick={() => {
+                setFormData({
+                  username: "",
+                  email: "",
+                  password: "",
+                  confirmPassword: "",
+                  firstName: "",
+                  lastName: "",
+                  role: "",
+                });
+                setError("");
+                setSuccess("");
+                if (onCancel) {
+                  onCancel();
+                }
+              }}
               disabled={loading}
               style={{
                 fontWeight: 'var(--font-medium)',
