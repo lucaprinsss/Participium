@@ -121,3 +121,59 @@
     gap: 16px;
   }
 }
+
+
+
+/* Form buttons container */
+.muf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Cancel button styles */
+.muf-cancel-btn {
+  background-color: var(--text-secondary);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.muf-cancel-btn:hover {
+  background-color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+}
+
+/* Button styles when disabled */
+.muf-submit-btn:disabled,
+.muf-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Submit button styles */
+.muf-submit-btn {
+  background-color: var(--blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.muf-submit-btn:hover {
+  background-color: #2a52cc; 
+  box-shadow: var(--shadow-md);
+}

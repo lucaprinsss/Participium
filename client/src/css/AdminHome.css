@@ -1,0 +1,87 @@
+:root {
+  --blue: #3466f6;
+  --text-primary: #2d3748;
+  --text-secondary: #718096;
+  --border-color: #e2e8f0;
+  --bg-card: #ffffff;
+  --bg-page: #f8f9fa;
+  --bg-disabled: #f7fafc;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Main container */
+.admin-home-container {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 24px;
+}
+
+/* Page header */
+.admin-header {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-title {
+  font-size: 2rem; 
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.admin-intro {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  max-width: 720px;
+}
+
+/* Control bar */
+.admin-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.admin-section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Primary action button */
+.admin-btn {
+  background-color: var(--blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-btn:hover {
+  background-color: #2a52cc; 
+  box-shadow: var(--shadow-md);
+}
+
+/* Generic card style */
+.admin-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+}
+
+/* Form container */
+.admin-form-container {
+  margin-bottom: 24px;
+}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Alert, Card } from "react-bootstrap";
 import { createMunicipalityUser, getAllRoles } from "../api/municipalityUserApi";
-import "../css/municipality-user-form.css";
+import "../css/MunicipalityUserForm.css";
 
-export default function MunicipalityUserForm({ onUserCreated }) {
+export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -127,7 +127,7 @@ export default function MunicipalityUserForm({ onUserCreated }) {
 
       // Notify parent component
       if (onUserCreated) {
-        onUserCreated(newUser);
+        onUserCreated(newUser); 
       }
 
       // Auto-hide success message after 5 seconds
@@ -158,6 +158,7 @@ export default function MunicipalityUserForm({ onUserCreated }) {
 
   return (
     <Card className="municipality-user-form-card">
+      
       <Card.Body>
         <h3 className="muf-title">Add New Municipality User</h3>
 
@@ -176,6 +177,7 @@ export default function MunicipalityUserForm({ onUserCreated }) {
         </div>
 
         <form onSubmit={handleSubmit} className="muf-form">
+
           <div className="name-row">
             <div className="muf-field">
               <label className="muf-label">First Name *</label>
@@ -189,7 +191,6 @@ export default function MunicipalityUserForm({ onUserCreated }) {
                 required
               />
             </div>
-
             <div className="muf-field">
               <label className="muf-label">Last Name *</label>
               <input
@@ -264,9 +265,26 @@ export default function MunicipalityUserForm({ onUserCreated }) {
             </select>
           </div>
 
-          <button type="submit" disabled={loading || loadingRoles} className="muf-submit-btn">
-            {loading ? "Creating user..." : "Create User"}
-          </button>
+          <div className="muf-actions">
+            
+            <button
+              type="button" 
+              className="muf-cancel-btn"
+              onClick={onCancel}
+              disabled={loading} 
+            >
+              Cancel
+            </button>
+            
+            <button 
+              type="submit" 
+              disabled={loading || loadingRoles} 
+              className="muf-submit-btn"
+            >
+              {loading ? "Creating user..." : "Create User"}
+            </button>
+            
+          </div>
         </form>
       </Card.Body>
     </Card>
