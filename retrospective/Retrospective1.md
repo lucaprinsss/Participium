@@ -38,8 +38,14 @@ The retrospective includes the following sections:
 
   |            | Mean  | StDev |
   |------------|-------|-------|
-  | Estimation | 1.87  | 0.56  | 
-  | Actual     | 1.96  | 0.70  |
+  | Estimation | 1.80  | 2.22  | 
+  | Actual     | 1.87  | 2.52  |
+
+The formulas used are:
+
+$$\text{Mean }(\mu)=\frac{1}{n}\sum_{i=1}^n x_i$$
+
+$$\text{Sample standard deviation }(s)=\sqrt{\frac{1}{n-1}\sum_{i=1}^n (x_i-\mu)^2}$$
 
 - Total estimation error ratio:
 
@@ -91,7 +97,6 @@ The retrospective includes the following sections:
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
   - Improve sprint planning and enhance task parallelization: carefully review and define tasks to avoid overlaps and excessive specificity and ensuring tasks can be worked on simultaneously by different team members.
   - Finish tasks before the deadline: aim to complete all tasks 1–2 days before the sprint ends. This buffer allows time for integration, testing, and addressing unexpected issues.
-  - Adopt a clearer Git workflow: establish and follow a consistent branching strategy (e.g., Git Flow) to minimize merge conflicts and improve collaboration.
 
 - One thing you are proud of as a Team!!
   - Stay humble, stay foolish!
