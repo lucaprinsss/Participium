@@ -11,7 +11,7 @@ export async function registerCitizen(payload) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errMsg = errorData.error || `HTTP error! status: ${response.status}`;
+      const errMsg = errorData.error || `! status: ${response.status}`;
       const err = new Error(errMsg);
       err.status = response.status;
       err.data = errorData;
