@@ -8,7 +8,12 @@
   "test": "jest --runInBand",
   "test:all": "npm run test:db:up && timeout /t 15 /nobreak > nul && npm test && npm run test:db:down",
   "test:coverage": "npm run test:db:up && timeout /t 15 /nobreak > nul && jest --coverage --runInBand && npm run test:db:down",
+  "test:coverage:e2e": "npm run test:db:up && timeout /t 15 /nobreak > nul && set NODE_ENV=test&& jest --coverage --testPathPatterns=e2e --runInBand --forceExit && npm run test:db:down",
+  "test:coverage:integration": "npm run test:db:up && timeout /t 15 /nobreak > nul && set NODE_ENV=test&& jest --coverage --testPathPatterns=integration --runInBand --forceExit && npm run test:db:down",
+  "test:coverage:unit": "jest --coverage --testPathPatterns=unit --runInBand --forceExit",
   "test:e2e": "npm run test:db:up && timeout /t 15 /nobreak > nul && set NODE_ENV=test&& jest --testPathPatterns=e2e --runInBand --forceExit && npm run test:db:down",
+  "test:integration": "npm run test:db:up && timeout /t 15 /nobreak > nul && set NODE_ENV=test&& jest --testPathPatterns=integration --runInBand --forceExit && npm run test:db:down",
+  "test:unit": "jest --testPathPatterns=unit --runInBand --forceExit",
     "test:db:up": "docker-compose -f docker-compose.test.yml up -d",
     "test:db:down": "docker-compose -f docker-compose.test.yml down -v"
   },

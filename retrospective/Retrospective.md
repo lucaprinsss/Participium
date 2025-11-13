@@ -37,10 +37,10 @@ sections:
 
 - Hours per task average, standard deviation (estimate and actual)
 
-|            | Mean | StDev |
-|------------|------|-------|
-| Estimation |      |       | 
-| Actual     |      |       |
+|            | Mean  | StDev |
+|------------|-------|-------|
+| Estimation | 1.87  | 0.56  | 
+| Actual     | 1.96  | 0.70  |
 
 - Total estimation error ratio: sum of total hours spent / sum of total hours effort - 1
 
@@ -55,15 +55,15 @@ sections:
 - Unit Testing:
   - Total hours estimated               5
   - Total hours spent                   4
-  - Nr of automated unit test cases     
-  - Coverage                            
+  - Nr of automated unit test cases     125
+  - Coverage                            70%
 - E2E testing:
-  - Total hours estimated                 
-  - Total hours spent                     
-  - Nr of test cases                      
+  - Total hours estimated                2h 30m 
+  - Total hours spent                    2h
+  - Nr of test cases                     86 
 - Code review 
-  - Total hours estimated                 
-  - Total hours spent                     
+  - Total hours estimated                22h 30m
+  - Total hours spent                    22h 20m
   
 
 
@@ -76,17 +76,15 @@ sections:
 - What caused your errors in estimation (if any)?
   We didn't consider that some functions whould be shared between stories, so we added and estimated unuseful testing tasks.
   
-
 - What lessons did you learn (both positive and negative) in this sprint?
-  
+  We learned that we need to plan the sprint better (we had overly specific tasks) and finish the assigned tasks 1 or 2 days before delivery. We also learned that it's important to ALWAYS have a branch ready for delivery with all the tasks implemented up to that point. It is also important to correctly assign tasks to the various resources. In recent weeks we have had a poorly parallelized work flow which has led to some people being unable to work because they had to wait for other tasks to be completed.
 
 - Which improvement goals set in the previous retrospective were you able to achieve? 
-  
+
 - Which ones you were not able to achieve? Why?
 
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
-
-  > Propose one or two
-
+  The sole objective for the next sprint planning is to resolve all the issues we encountered this time. We can achieve this with better sprint planning and better use of commits.
+  
 - One thing you are proud of as a Team!!
 Stay humble, stay foolish!
