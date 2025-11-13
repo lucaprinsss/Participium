@@ -56,7 +56,7 @@ sections:
   - Total hours estimated               5
   - Total hours spent                   4
   - Nr of automated unit test cases     125
-  - Coverage                            70%
+  - Coverage                            88%
 - E2E testing:
   - Total hours estimated                2h 30m 
   - Total hours spent                    2h
@@ -85,6 +85,6 @@ sections:
 
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
   The sole objective for the next sprint planning is to resolve all the issues we encountered this time. We can achieve this with better sprint planning and better use of commits.
-  
+
 - One thing you are proud of as a Team!!
 Stay humble, stay foolish!
