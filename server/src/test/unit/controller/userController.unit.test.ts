@@ -3,7 +3,6 @@ import userController from '@controllers/userController';
 import { userService } from '@services/userService';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { ConflictError } from '@models/errors/ConflictError';
-import { UserRole } from '@models/dto/UserRole';
 
 // Mock delle dipendenze
 jest.mock('@services/userService');
@@ -21,7 +20,8 @@ describe('UserController Unit Tests', () => {
     email: 'citizen@example.com',
     first_name: 'John',
     last_name: 'Doe',
-    role: 'citizen',
+    role_name: 'Citizen',
+    department_name: 'Organization',
   };
 
   beforeEach(() => {
@@ -75,7 +75,7 @@ describe('UserController Unit Tests', () => {
         password: validRegistrationData.password,
         first_name: validRegistrationData.first_name,
         last_name: validRegistrationData.last_name,
-        role: UserRole.CITIZEN,
+        role_name: 'Citizen',
       });
       expect(statusMock).toHaveBeenCalledWith(201);
       expect(jsonMock).toHaveBeenCalledWith(mockUserResponse);
@@ -318,7 +318,7 @@ describe('UserController Unit Tests', () => {
       // Assert
       expect(userService.registerCitizen).toHaveBeenCalledWith(
         expect.objectContaining({
-          role: UserRole.CITIZEN,
+          role_name: 'Citizen',
         })
       );
     });
@@ -408,7 +408,7 @@ describe('UserController Unit Tests', () => {
         password: validRegistrationData.password,
         first_name: validRegistrationData.first_name,
         last_name: validRegistrationData.last_name,
-        role: UserRole.CITIZEN,
+        role_name: 'Citizen',
       });
     });
   });

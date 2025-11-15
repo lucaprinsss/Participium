@@ -11,15 +11,24 @@ const router = express.Router();
  *     tags: [Roles]
  *     summary: List municipality roles
  *     description: Returns all available municipality roles (excluding Citizen and Administrator)
+ *     security:
+ *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: List of municipality roles
+ *         description: List of municipality role names
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/UserRole'
+ *                 type: string
+ *               example:
+ *                 - "Municipal Public Relations Officer"
+ *                 - "Municipal Administrator"
+ *                 - "Technical Office Staff Member"
+ *                 - "Urban Planning Manager"
+ *                 - "Private Building Manager"
+ *                 - "Infrastructure Manager"
  *       401:
  *         description: Unauthorized
  *         content:

@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import municipalityUserController from '@controllers/municipalityUserController';
 import { municipalityUserService } from '@services/municipalityUserService';
-import { UserRole } from '@models/dto/UserRole';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { NotFoundError } from '@models/errors/NotFoundError';
+import { RoleUtils } from '@utils/roleUtils';
 
 // Mock del service
 jest.mock('@services/municipalityUserService');
+jest.mock('@utils/roleUtils');
 
 describe('MunicipalityUserController Unit Tests', () => {
   let mockRequest: Partial<Request>;
@@ -43,7 +44,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         password: 'Password123!',
         first_name: 'John',
         last_name: 'Doe',
-        role: UserRole.MUNICIPAL_ADMINISTRATOR,
+        role_name: 'Municipal Administrator',
       };
 
       const expectedResponse = {
@@ -52,7 +53,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         email: 'municipality@test.com',
         firstName: 'John',
         lastName: 'Doe',
-        role: UserRole.MUNICIPAL_ADMINISTRATOR,
+        role_name: 'Municipal Administrator',
       };
 
       mockRequest.body = requestData;
@@ -90,7 +91,7 @@ describe('MunicipalityUserController Unit Tests', () => {
       // Assert
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'All fields are required: username, email, password, first_name, last_name, role',
+          message: 'All fields are required: username, email, password, first_name, last_name, role_name',
         })
       );
       expect(municipalityUserService.createMunicipalityUser).not.toHaveBeenCalled();
@@ -104,7 +105,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         password: 'Password123!',
         first_name: 'John',
         last_name: 'Doe',
-        role: UserRole.CITIZEN, // Ruolo non valido
+        role_name: 'Citizen', // Ruolo non valido
       };
 
       mockRequest.body = requestData;
@@ -133,7 +134,7 @@ describe('MunicipalityUserController Unit Tests', () => {
           email: 'user1@test.com',
           firstName: 'John',
           lastName: 'Doe',
-          role: UserRole.MUNICIPAL_ADMINISTRATOR,
+          role_name: 'Municipal Administrator',
         },
         {
           id: 2,
@@ -141,7 +142,7 @@ describe('MunicipalityUserController Unit Tests', () => {
           email: 'user2@test.com',
           firstName: 'Jane',
           lastName: 'Smith',
-          role: UserRole.TECHNICAL_OFFICE_STAFF_MEMBER,
+          role_name: 'Technical Office Staff Member',
         },
       ];
 
@@ -187,7 +188,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         email: 'municipality@test.com',
         firstName: 'John',
         lastName: 'Doe',
-        role: UserRole.MUNICIPAL_ADMINISTRATOR,
+        role_name: 'Municipal Administrator',
       };
 
       mockRequest.params = { id: '1' };
@@ -252,7 +253,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         first_name: 'UpdatedName',
         last_name: 'UpdatedLastName',
         email: 'updated@test.com',
-        role: UserRole.INFRASTRUCTURE_MANAGER,
+        role_name: 'Infrastructure Manager',
       };
 
       const expectedResponse = {
@@ -261,7 +262,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         email: 'updated@test.com',
         firstName: 'UpdatedName',
         lastName: 'UpdatedLastName',
-        role: UserRole.INFRASTRUCTURE_MANAGER,
+        role_name: 'Infrastructure Manager',
       };
 
       mockRequest.params = { id: '1' };
@@ -280,7 +281,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         firstName: 'UpdatedName',
         lastName: 'UpdatedLastName',
         email: 'updated@test.com',
-        role: UserRole.INFRASTRUCTURE_MANAGER,
+        role_name: 'Infrastructure Manager',
       });
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith(expectedResponse);
@@ -341,7 +342,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         email: 'newemail@test.com',
         firstName: 'John',
         lastName: 'Doe',
-        role: UserRole.MUNICIPAL_ADMINISTRATOR,
+        role_name: 'Municipal Administrator',
       };
 
       mockRequest.params = { id: '1' };
@@ -425,18 +426,18 @@ describe('MunicipalityUserController Unit Tests', () => {
   describe('assignRole', () => {
     it('should assign role successfully', async () => {
       // Arrange
-      const newRole = UserRole.URBAN_PLANNING_MANAGER;
+      const newRole = 'Urban Planning Manager';
       const expectedResponse = {
         id: 1,
         username: 'municipality_user',
         email: 'municipality@test.com',
         firstName: 'John',
         lastName: 'Doe',
-        role: newRole,
+        role_name: newRole,
       };
 
       mockRequest.params = { id: '1' };
-      mockRequest.body = { role: newRole };
+      mockRequest.body = { role_name: newRole };
       (municipalityUserService.assignRole as jest.Mock).mockResolvedValue(expectedResponse);
 
       // Act
@@ -447,7 +448,7 @@ describe('MunicipalityUserController Unit Tests', () => {
       );
 
       // Assert
-      expect(municipalityUserService.assignRole).toHaveBeenCalledWith(1, newRole);
+      expect(municipalityUserService.assignRole).toHaveBeenCalledWith(1, newRole, undefined);
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith(expectedResponse);
       expect(mockNext).not.toHaveBeenCalled();
@@ -468,7 +469,7 @@ describe('MunicipalityUserController Unit Tests', () => {
       // Assert
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'Role is required',
+          message: 'Role name is required',
         })
       );
       expect(municipalityUserService.assignRole).not.toHaveBeenCalled();
@@ -477,7 +478,7 @@ describe('MunicipalityUserController Unit Tests', () => {
     it('should return 400 for invalid ID', async () => {
       // Arrange
       mockRequest.params = { id: 'invalid' };
-      mockRequest.body = { role: UserRole.MUNICIPAL_ADMINISTRATOR };
+      mockRequest.body = { role_name: 'Municipal Administrator' };
 
       // Act
       await municipalityUserController.assignRole(
@@ -498,7 +499,12 @@ describe('MunicipalityUserController Unit Tests', () => {
     it('should return 400 for invalid role value', async () => {
       // Arrange
       mockRequest.params = { id: '1' };
-      mockRequest.body = { role: 'InvalidRole' };
+      mockRequest.body = { role_name: 'InvalidRole' };
+      
+      // Mock service per simulare errore
+      (municipalityUserService.assignRole as jest.Mock).mockRejectedValueOnce(
+        new BadRequestError('Invalid role specified')
+      );
 
       // Act
       await municipalityUserController.assignRole(
@@ -513,7 +519,7 @@ describe('MunicipalityUserController Unit Tests', () => {
           message: 'Invalid role specified',
         })
       );
-      expect(municipalityUserService.assignRole).not.toHaveBeenCalled();
+      expect(municipalityUserService.assignRole).toHaveBeenCalled();
     });
   });
 
@@ -521,15 +527,13 @@ describe('MunicipalityUserController Unit Tests', () => {
     it('should return all municipality roles', async () => {
       // Arrange
       const expectedRoles = [
-        UserRole.MUNICIPAL_PUBLIC_RELATIONS_OFFICER,
-        UserRole.MUNICIPAL_ADMINISTRATOR,
-        UserRole.TECHNICAL_OFFICE_STAFF_MEMBER,
-        UserRole.URBAN_PLANNING_MANAGER,
-        UserRole.PRIVATE_BUILDING_MANAGER,
-        UserRole.INFRASTRUCTURE_MANAGER,
-        UserRole.MAINTENANCE_STAFF_MEMBER,
-        UserRole.PUBLIC_GREEN_SPACES_MANAGER,
+        'Civil Engineer',
+        'Department Director',
+        'Water Network staff member',
+        'Parks Maintenance staff member',
       ];
+      
+      (RoleUtils.getAllMunicipalityRoles as jest.Mock).mockResolvedValueOnce(expectedRoles);
 
       // Act
       await municipalityUserController.getAllRoles(
@@ -540,11 +544,20 @@ describe('MunicipalityUserController Unit Tests', () => {
 
       // Assert
       expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(expect.arrayContaining(expectedRoles));
+      expect(mockResponse.json).toHaveBeenCalledWith(expectedRoles);
       expect(mockNext).not.toHaveBeenCalled();
     });
 
     it('should not include Citizen or Administrator roles', async () => {
+      // Arrange
+      const municipalityRoles = [
+        'Civil Engineer',
+        'Department Director',
+        'Water Network staff member',
+      ];
+      
+      (RoleUtils.getAllMunicipalityRoles as jest.Mock).mockResolvedValueOnce(municipalityRoles);
+      
       // Act
       await municipalityUserController.getAllRoles(
         mockRequest as Request,
@@ -554,17 +567,14 @@ describe('MunicipalityUserController Unit Tests', () => {
 
       // Assert
       const calledRoles = (mockResponse.json as jest.Mock).mock.calls[0][0];
-      expect(calledRoles).not.toContain(UserRole.CITIZEN);
-      expect(calledRoles).not.toContain(UserRole.ADMINISTRATOR);
+      expect(calledRoles).not.toContain('Citizen');
+      expect(calledRoles).not.toContain('Administrator');
     });
 
     it('should handle errors', async () => {
       // Arrange
-      // Forziamo un errore mockando RoleUtils
       const error = new Error('Internal error');
-      jest.spyOn(mockResponse as any, 'json').mockImplementationOnce(() => {
-        throw error;
-      });
+      (RoleUtils.getAllMunicipalityRoles as jest.Mock).mockRejectedValueOnce(error);
 
       // Act
       await municipalityUserController.getAllRoles(

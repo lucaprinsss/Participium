@@ -37,7 +37,8 @@
       "@dto/*": ["models/dto/*"],
       "@entity/*": ["models/entity/*"],
       "@errors/*": ["models/errors/*"],
-      "@database/*": ["database/*"]
+      "@database/*": ["database/*"],
+      "@test/*": ["test/*"]
     }
   },
   "include": [

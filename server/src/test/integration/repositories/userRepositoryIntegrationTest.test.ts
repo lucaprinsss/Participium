@@ -13,7 +13,7 @@ const buildUserData = (overrides: Partial<CreateUserInput> = {}): CreateUserInpu
   lastName: "User",
   email: `test.user.${random()}@example.com`,
   password: "securePass123",
-  role: "Citizen",
+  departmentRoleId: 1, // Citizen role
   emailNotificationsEnabled: true,
   ...overrides,
 });
@@ -86,7 +86,7 @@ describe('UserRepository Integration Tests', () => {
       expect(savedUser.email).toBe(newUser.email);
       expect(savedUser.passwordHash).toBeDefined();
       expect(savedUser.passwordHash).not.toContain(newUser.password);
-      expect(savedUser.role).toBe('Citizen');
+      expect(savedUser.departmentRoleId).toBe(1);
       expect(savedUser.emailNotificationsEnabled).toBe(true);
       expect(savedUser.createdAt).toBeInstanceOf(Date);
     });

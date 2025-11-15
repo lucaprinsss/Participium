@@ -40,7 +40,23 @@ class UserRepository {
       passwordHash: `${salt}:${hash}`
     });
 
-    return this.repository.save(user);
+    const savedUser = await this.repository.save(user);
+    
+    // Reload the user with relations and passwordHash
+    const userWithRelations = await this.repository
+      .createQueryBuilder("user")
+      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("departmentRole.department", "department")
+      .leftJoinAndSelect("departmentRole.role", "role")
+      .where("user.id = :id", { id: savedUser.id })
+      .addSelect("user.passwordHash")
+      .getOne();
+      
+    if (!userWithRelations) {
+      throw new Error('Failed to load user with relations after creation');
+    }
+    
+    return userWithRelations;
   }
 
   /**

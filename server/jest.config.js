@@ -32,8 +32,14 @@ module.exports = {
     '^@routes/(.*)$': '<rootDir>/src/routes/$1',
     '^@services/(.*)$': '<rootDir>/src/services/$1',
     '^@utils/(.*)$': '<rootDir>/src/utils/$1',
+    '^@test/(.*)$': '<rootDir>/src/test/$1',
   },
   testTimeout: 10000,
   clearMocks: true,
   restoreMocks: true,
+  silent: false,
+  verbose: false,
+  reporters: [
+    ['default', { summaryThreshold: 0 }]
+  ],
 };

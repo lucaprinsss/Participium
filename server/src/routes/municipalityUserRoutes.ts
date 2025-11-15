@@ -23,20 +23,34 @@ const router = express.Router();
  *               - username
  *               - email
  *               - password
- *               - role_id
+ *               - first_name
+ *               - last_name
+ *               - role_name
  *             properties:
  *               username:
  *                 type: string
+ *                 example: "m.rossi"
  *               email:
  *                 type: string
+ *                 format: email
+ *                 example: "m.rossi@comune.torino.it"
  *               password:
  *                 type: string
+ *                 example: "SecurePass123!"
  *               first_name:
  *                 type: string
+ *                 example: "Mario"
  *               last_name:
  *                 type: string
- *               role_id:
- *                 type: integer
+ *                 example: "Rossi"
+ *               role_name:
+ *                 type: string
+ *                 description: Role name for the user
+ *                 example: "Municipal Administrator"
+ *               department_name:
+ *                 type: string
+ *                 description: Department name (optional, defaults to "Organization")
+ *                 example: "Administration"
  *     responses:
  *       201:
  *         description: Municipality user created successfully
@@ -225,10 +239,22 @@ router.get('/:id', isAdmin, municipalityUserController.getMunicipalityUserById);
  *             properties:
  *               first_name:
  *                 type: string
+ *                 example: "Mario"
  *               last_name:
  *                 type: string
- *               role_id:
- *                 type: integer
+ *                 example: "Rossi"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "mario.rossi@comune.it"
+ *               role_name:
+ *                 type: string
+ *                 description: New role name for the user
+ *                 example: "Technical Office Staff Member"
+ *               department_name:
+ *                 type: string
+ *                 description: New department name (optional)
+ *                 example: "Technical Office"
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -366,11 +392,16 @@ router.delete('/:id', isAdmin, municipalityUserController.deleteMunicipalityUser
  *           schema:
  *             type: object
  *             required:
- *               - role_id
+ *               - role_name
  *             properties:
- *               role_id:
- *                 type: integer
- *                 description: ID of the role to assign
+ *               role_name:
+ *                 type: string
+ *                 description: Name of the role to assign
+ *                 example: "Urban Planning Manager"
+ *               department_name:
+ *                 type: string
+ *                 description: Name of the department (optional, defaults to existing or "Organization")
+ *                 example: "Urban Planning"
  *     responses:
  *       200:
  *         description: Role assigned successfully

@@ -7,7 +7,7 @@ import fs from 'fs';
 import path from 'path';
 
 
-dotenv.config();
+dotenv.config({ debug: false });
 
 const port = process.env.PORT || 3001;
 

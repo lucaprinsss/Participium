@@ -5,7 +5,7 @@ import { logger } from "@services/loggingService";
 import { AppDataSource, closeDatabase } from "@database/connection";
 import * as dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ debug: false });
 
 const PORT = process.env.PORT || 3001;
 
