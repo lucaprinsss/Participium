@@ -1,17 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  Navbar as BSNavbar,
-  Container,
-  Nav,
-  Button,
-} from "react-bootstrap";
-
+import { useEffect, useState } from "react";
 import "../css/Navbar.css";
 
 export default function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [scrolled, setScrolled] = useState(false);
 
   const showLogout = user && location.pathname.startsWith("/home");
   const isAdmin = user && user.role === 'Administrator';
@@ -19,91 +13,90 @@ export default function Navbar({ user, onLogout }) {
   const queryParams = new URLSearchParams(location.search);
   const currentViewParam = queryParams.get('view_as');
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      setScrolled(isScrolled);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleBrandClick = () => {
     navigate(user ? "/home" : "/");
   };
 
+  const getInitials = (username) => {
+    return username ? username.charAt(0).toUpperCase() : 'U';
+  };
+
+  const getDisplayRole = () => {
+    if (isAdmin && currentViewParam) {
+      return `Viewing as: ${currentViewParam}`;
+    }
+    return user?.role || 'User';
+  };
 
   return (
-    <BSNavbar
-      fixed="top"
-      style={{
-        backgroundColor: 'var(--primary)',
-        boxShadow: 'var(--shadow-md)',
-        padding: '1rem 0',
-        zIndex: 1030
-      }}
-      variant="dark"
-      expand="lg"
-    >
-      <Container fluid className="px-4">
-        <BSNavbar.Brand
+    <nav className={`navbar-modern ${scrolled ? 'navbar-scrolled' : ''}`}>
+      <div className="navbar-container">
+        {/* Brand Section */}
+        <div 
+          className="navbar-brand"
           onClick={handleBrandClick}
-          style={{
-            fontSize: 'var(--font-xl)',
-            fontWeight: 'var(--font-bold)',
-            letterSpacing: '-0.025em',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem'
-          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleBrandClick()}
         >
           <img
             src="/participium-circle.jpg"
             alt="Participium Logo"
-            className="navbar-brand-logo"
+            className="brand-logo"
           />
-          Participium
-        </BSNavbar.Brand>
-        <BSNavbar.Toggle aria-controls="basic-navbar-nav" />
-        <BSNavbar.Collapse id="basic-navbar-nav">
-          <Nav className="ms-auto align-items-center">
+          <span className="brand-text">Participium</span>
+        </div>
 
-            {showLogout && (
-              <>
-                {/* --- User Info --- */}
-                <div className="text-light me-3">
-                  <div
-                    style={{
-                      fontWeight: 'var(--font-medium)',
-                      fontSize: 'var(--font-sm)'
-                    }}
-                  >
-                    {user.username}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '0.8rem',
-                      opacity: 0.8,
-                      textTransform: 'capitalize'
-                    }}
-                  >
-                    {isAdmin && currentViewParam
-                      ? `Viewing as: ${currentViewParam}`
-                      : user.role
-                    }
-                  </div>
+        {/* User Section */}
+        {showLogout && (
+          <div className="navbar-user-section">
+            {/* User Info Card */}
+            <div className="user-info-card">
+              <div className="user-avatar">
+                {getInitials(user.username)}
+              </div>
+              <div className="user-details">
+                <div className="user-name">
+                  {user.username}
                 </div>
+                <div className={`user-role ${isAdmin ? 'admin' : ''}`}>
+                  {getDisplayRole()}
+                </div>
+              </div>
+            </div>
 
-                {/* --- Logout Button --- */}
-                <Button
-                  variant="light"
-                  onClick={onLogout}
-                  style={{
-                    fontWeight: 'var(--font-medium)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '0.5rem 1.5rem',
-                    minHeight: 'var(--btn-height-sm)'
-                  }}
-                >
-                  Logout
-                </Button>
-              </>
-            )}
-          </Nav>
-        </BSNavbar.Collapse>
-      </Container>
-    </BSNavbar>
+            {/* Logout Button */}
+            <button
+              className="logout-btn-modern"
+              onClick={onLogout}
+            >
+              <svg 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16,17 21,12 16,7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
+    </nav>
   );
 }

@@ -1,53 +1,83 @@
 import { useState } from "react";
-import { Alert, Card, Form, Button, Row, Col, InputGroup } from "react-bootstrap";
+import { Alert, Card, Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
 import { registerCitizen } from "../api/citizenApi";
 import { useNavigate } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-
+import { FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock, FaArrowLeft, FaIdCard } from "react-icons/fa";
 import "../css/Register.css";
 
 export default function Register() {
   const navigate = useNavigate();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    username: "",
+    password: "",
+    confirmPassword: ""
+  });
+  
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isFocused, setIsFocused] = useState({
+    firstName: false,
+    lastName: false,
+    email: false,
+    username: false,
+    password: false,
+    confirmPassword: false
+  });
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    if (error) setError("");
+  };
+
+  const handleFocus = (field) => {
+    setIsFocused(prev => ({
+      ...prev,
+      [field]: true
+    }));
+  };
+
+  const handleBlur = (field) => {
+    setIsFocused(prev => ({
+      ...prev,
+      [field]: false
+    }));
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    // Client-side validation
-    if (!firstName.trim()) return setError("Please enter your first name");
-    if (!lastName.trim()) return setError("Please enter your last name");
-    if (!email.trim()) return setError("Please enter your email");
+    if (!formData.firstName.trim()) return setError("Please enter your first name");
+    if (!formData.lastName.trim()) return setError("Please enter your last name");
+    if (!formData.email.trim()) return setError("Please enter your email");
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return setError("Please enter a valid email address");
-    if (!username.trim()) return setError("Please enter a username");
-    if (username.length < 3) return setError("Username must be at least 3 characters long");
-    if (!password.trim()) return setError("Please enter a password");
-    if (password.length < 6) return setError("Password must be at least 6 characters long");
-    if (password !== confirmPassword) return setError("Passwords do not match");
+    if (!emailRegex.test(formData.email)) return setError("Please enter a valid email address");
+    if (!formData.username.trim()) return setError("Please enter a username");
+    if (formData.username.length < 3) return setError("Username must be at least 3 characters long");
+    if (!formData.password.trim()) return setError("Please enter a password");
+    if (formData.password.length < 6) return setError("Password must be at least 6 characters long");
+    if (formData.password !== formData.confirmPassword) return setError("Passwords do not match");
 
     setLoading(true);
 
     try {
       const payload = {
-        username,
-        email,
-        password,
-        first_name: firstName,
-        last_name: lastName,
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
         role: "Citizen",
       };
 
@@ -57,8 +87,11 @@ export default function Register() {
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       console.error("Registration failed:", err);
-      setPassword("");
-      setConfirmPassword("");
+      setFormData(prev => ({ 
+        ...prev, 
+        password: "",
+        confirmPassword: ""
+      }));
 
       if (err.status === 409) {
         setError("Username or email already exists. Please try another.");
@@ -75,145 +108,246 @@ export default function Register() {
   };
 
   return (
-    <div className="register-container">
-      <Card className="shadow-lg register-card">
-        <Card.Body className="register-card-body">
-          <div className="text-center register-header">
-            <img src="/participium-logo.png" alt="Participium Logo" className="register-logo" />
-            <p className="text-muted mb-4">Create your account</p>
-          </div>
-
-          {error && (
-            <Alert variant="danger" onClose={() => setError("")} dismissible className="mb-3">
-              {error}
-            </Alert>
-          )}
-          {success && (
-            <Alert variant="success" onClose={() => setSuccess("")} dismissible className="mb-3">
-              {success}
-            </Alert>
-          )}
-
-          <Form onSubmit={handleRegister} noValidate>
-            <Row className="mb-3">
-              <Col md={6} className="mb-3 mb-md-0">
-                <Form.Group>
-                  <Form.Label>First Name</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="First name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    disabled={loading}
-                  />
-                </Form.Group>
-              </Col>
-
-              <Col md={6}>
-                <Form.Group>
-                  <Form.Label>Last Name</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Last name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    disabled={loading}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                placeholder="your.email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+    <Container fluid className="register-page-container">
+      <Row className="register-row">
+        <Col xs={12} sm={10} md={8} lg={6} xl={5}>
+          <Card className="register-card">
+            <Card.Body className="register-card-body">
+              
+              {/* Back Button */}
+              <Button
+                variant="link"
+                className="back-btn"
+                onClick={() => navigate("/")}
                 disabled={loading}
-              />
-            </Form.Group>
+              >
+                <FaArrowLeft className="me-2" />
+                Back to Main
+              </Button>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Username</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Choose a username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={loading}
-              />
-            </Form.Group>
+              {/* Header */}
+              <div className="register-header">
+                <div className="logo-container">
+                  <img
+                    src="/participium-logo.png"
+                    alt="Participium Logo"
+                    className="register-logo"
+                  />
+                </div>
+                <h1 className="register-title">Join Participium</h1>
+                <p className="register-subtitle">
+                  Create your account
+                </p>
+              </div>
 
-            <Form.Group className="mb-3 password-wrapper">
-              <Form.Label>Password</Form.Label>
-              <InputGroup>
-                <Form.Control
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Choose a password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                />
-                <Button
-                  variant="outline-secondary"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+              {/* Alerts */}
+              {error && (
+                <Alert
+                  variant="danger"
+                  onClose={() => setError("")}
+                  dismissible
+                  className="register-alert animated-alert compact-alert"
                 >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </Button>
-              </InputGroup>
-            </Form.Group>
+                  <div className="d-flex align-items-center">
+                    <div className="alert-icon">⚠️</div>
+                    <div className="alert-message compact-message">{error}</div>
+                  </div>
+                </Alert>
+              )}
 
-            <Form.Group className="mb-4 password-wrapper">
-              <Form.Label>Confirm Password</Form.Label>
-              <InputGroup>
-                <Form.Control
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Re-enter your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={loading}
-                />
-                <Button
-                  variant="outline-secondary"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={loading}
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              {success && (
+                <Alert
+                  variant="success"
+                  onClose={() => setSuccess("")}
+                  dismissible
+                  className="register-alert animated-alert compact-alert"
                 >
-                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                  <div className="d-flex align-items-center">
+                    <div className="alert-icon">✅</div>
+                    <div className="alert-message compact-message">{success}</div>
+                  </div>
+                </Alert>
+              )}
+
+              {/* Registration Form */}
+              <Form onSubmit={handleRegister} noValidate className="register-form">
+                <Row>
+                  <Col xs={12} md={6}>
+                    <Form.Group className="register-form-group floating-label-group">
+                      <div className={`form-control-container ${isFocused.firstName || formData.firstName ? 'focused' : ''}`}>
+                        <FaUser className="input-icon" />
+                        <Form.Control
+                          type="text"
+                          placeholder={(isFocused.firstName ? '' : 'first name')}
+                          value={formData.firstName}
+                          onChange={(e) => handleInputChange('firstName', e.target.value)}
+                          onFocus={() => handleFocus('firstName')}
+                          onBlur={() => handleBlur('firstName')}
+                          disabled={loading}
+                          className="register-input modern-input"
+                        />
+                        <Form.Label className="floating-label enhanced-label">
+                          First Name
+                        </Form.Label>
+                      </div>
+                    </Form.Group>
+                  </Col>
+
+                  <Col xs={12} md={6}>
+                    <Form.Group className="register-form-group floating-label-group">
+                      <div className={`form-control-container ${isFocused.lastName || formData.lastName ? 'focused' : ''}`}>
+                        <FaUser className="input-icon" />
+                        <Form.Control
+                          type="text"
+                          placeholder={(isFocused.lastName ? '' : 'last name')}
+                          value={formData.lastName}
+                          onChange={(e) => handleInputChange('lastName', e.target.value)}
+                          onFocus={() => handleFocus('lastName')}
+                          onBlur={() => handleBlur('lastName')}
+                          disabled={loading}
+                          className="register-input modern-input"
+                        />
+                        <Form.Label className="floating-label enhanced-label">
+                          Last Name
+                        </Form.Label>
+                      </div>
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                <Form.Group className="register-form-group floating-label-group">
+                  <div className={`form-control-container ${isFocused.email || formData.email ? 'focused' : ''}`}>
+                    <FaEnvelope className="input-icon" />
+                    <Form.Control
+                      type="email"
+                      placeholder={(isFocused.email ? '' : 'email')}
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      onFocus={() => handleFocus('email')}
+                      onBlur={() => handleBlur('email')}
+                      disabled={loading}
+                      className="modern-input"
+                    />
+                    <Form.Label className="floating-label enhanced-label">
+                      Email
+                    </Form.Label>
+                  </div>
+                </Form.Group>
+
+                <Form.Group className="register-form-group floating-label-group">
+                  <div className={`form-control-container ${isFocused.username || formData.username ? 'focused' : ''}`}>
+                    <FaIdCard className="input-icon" />
+                    <Form.Control
+                      type="text"
+                      placeholder={(isFocused.username ? '' : 'username')}
+                      value={formData.username}
+                      onChange={(e) => handleInputChange('username', e.target.value)}
+                      onFocus={() => handleFocus('username')}
+                      onBlur={() => handleBlur('username')}
+                      disabled={loading}
+                      className="modern-input"
+                    />
+                    <Form.Label className="floating-label enhanced-label">
+                      Username
+                    </Form.Label>
+                  </div>
+                </Form.Group>
+
+                <Form.Group className="register-form-group floating-label-group">
+                  <div className={`form-control-container ${isFocused.password || formData.password ? 'focused' : ''}`}>
+                    <FaLock className="input-icon" />
+                    <Form.Control
+                      type={showPassword ? "text" : "password"}
+                      placeholder={(isFocused.password ? '' : 'password')}
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      onFocus={() => handleFocus('password')}
+                      onBlur={() => handleBlur('password')}
+                      disabled={loading}
+                      className="modern-input password-input"
+                    />
+                    <Form.Label className="floating-label enhanced-label">
+                      Password
+                    </Form.Label>
+                    <Button
+                      variant="outline-secondary"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="password-toggle-btn"
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </Button>
+                  </div>
+                </Form.Group>
+
+                <Form.Group className="register-form-group floating-label-group">
+                  <div className={`form-control-container ${isFocused.confirmPassword || formData.confirmPassword ? 'focused' : ''}`}>
+                    <FaLock className="input-icon" />
+                    <Form.Control
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder={(isFocused.confirmPassword ? '' : 'confirm password')}
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                      onFocus={() => handleFocus('confirmPassword')}
+                      onBlur={() => handleBlur('confirmPassword')}
+                      disabled={loading}
+                      className="modern-input password-input"
+                    />
+                    <Form.Label className="floating-label enhanced-label">
+                      Confirm Password
+                    </Form.Label>
+                    <Button
+                      variant="outline-secondary"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={loading}
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                      className="password-toggle-btn"
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </Button>
+                  </div>
+                </Form.Group>
+
+                {/* Register Button */}
+                <button
+                  type="submit"
+                  className="btn btn-custom-primary register-btn register-btn-primary modern-btn"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Spinner
+                        animation="border"
+                        size="sm"
+                        className="me-2"
+                      />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create account"
+                  )}
+                </button>
+              </Form>
+
+              {/* Footer */}
+              <div className="register-footer">
+                <span className="register-footer-text">
+                  Already have an account?{" "}
+                </span>
+                <Button
+                  variant="link"
+                  className="register-link-btn"
+                  onClick={() => !loading && navigate("/login")}
+                  disabled={loading}
+                >
+                  Sign in
                 </Button>
-              </InputGroup>
-            </Form.Group>
-
-            <Button type="submit" variant="primary" className="w-100 mb-3" disabled={loading}>
-              {loading ? "Creating account..." : "Create account"}
-            </Button>
-          </Form>
-
-          <Button
-            variant="light"
-            className="w-100 mb-3"
-            onClick={() => !loading && navigate("/")}
-            disabled={loading}
-          >
-            Main Page
-          </Button>
-
-          <div className="text-center mt-3">
-            <span className="text-muted">Already have an account? </span>
-            <Button
-              variant="link"
-              className="p-0"
-              onClick={() => !loading && navigate("/login")}
-              disabled={loading}
-            >
-              Sign in
-            </Button>
-          </div>
-        </Card.Body>
-      </Card>
-    </div>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+    </Container>
   );
 }

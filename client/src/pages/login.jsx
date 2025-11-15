@@ -1,30 +1,57 @@
 import React, { useState } from "react";
-import { Alert, Card, Form, Button, Container, Row, Col, InputGroup } from "react-bootstrap";
-import { login } from "../api/authApi";
+import { Alert, Card, Form, Button, Container, Row, Col, InputGroup, Spinner } from "react-bootstrap";
+import { login } from "../api/authApi"; 
 import { useNavigate } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-
+import { FaEye, FaEyeSlash, FaUser, FaLock, FaArrowLeft } from "react-icons/fa";
 import "../css/Login.css";
 
 export default function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
-
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    username: "",
+    password: ""
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState({
+    username: false,
+    password: false
+  });
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // Clear error when user starts typing
+    if (error) setError("");
+  };
+
+  const handleFocus = (field) => {
+    setIsFocused(prev => ({
+      ...prev,
+      [field]: true
+    }));
+  };
+
+  const handleBlur = (field) => {
+    setIsFocused(prev => ({
+      ...prev,
+      [field]: false
+    }));
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
-    // Client-side validation
-    if (!username.trim()) {
+    // Enhanced client-side validation
+    if (!formData.username.trim()) {
       setError("Please enter your username");
       return;
     }
-    if (!password.trim()) {
+    if (!formData.password.trim()) {
       setError("Please enter your password");
       return;
     }
@@ -32,7 +59,7 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      const userData = await login(username, password);
+      const userData = await login(formData.username, formData.password);
 
       if (onLoginSuccess) {
         onLoginSuccess(userData);
@@ -43,17 +70,21 @@ export default function Login({ onLoginSuccess }) {
       console.error("Login failed:", err);
 
       // Clear password field on error
-      setPassword("");
+      setFormData(prev => ({ ...prev, password: "" }));
 
-      // Set user-friendly error message
+      // Enhanced error handling
       if (err.status === 401) {
         setError("Invalid username or password. Please try again.");
       } else if (err.status === 400) {
         setError("Invalid request. Please check your input.");
-      } else if (!navigator.onLine) {
+      } else if (err.status === 403) {
+        setError("Account temporarily locked. Please try again later.");
+      } else if (err.status >= 500) {
+        setError("Server error. Please try again later.");
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
         setError("No internet connection. Please check your network.");
       } else {
-        setError(err.message || "Login failed. Please try again later.");
+        setError(err.message || "Login failed. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -61,124 +92,134 @@ export default function Login({ onLoginSuccess }) {
   };
 
   return (
-    <Container
-      fluid
-      className="d-flex align-items-center justify-content-center min-vh-100"
-      style={{ backgroundColor: 'var(--bg-lighter)' }}
-    >
-      <Row className="w-100 justify-content-center">
-        <Col xs={12} sm={10} md={6} lg={5} xl={4}>
-          <Card
-            className="shadow-lg"
-            style={{
-              borderRadius: 'var(--radius-xl)',
-              border: 'none'
-            }}
-          >
-            <Card.Body className="p-5">
-              <div className="text-center mb-5">
-                <img
-                  src="/participium-logo.png"
-                  alt="Participium Logo"
-                  className="login-logo"
-                />
-                <p
-                  className="text-muted mb-0"
-                  style={{ fontSize: 'var(--font-base)' }}
-                >
+    <Container fluid className="login-page-container">
+      <Row className="login-row">
+        <Col xs={12} sm={10} md={8} lg={6} xl={4}>
+          <Card className="login-card">
+            <Card.Body className="login-card-body">
+              
+              {/* Back Button */}
+              <Button
+                variant="link"
+                className="back-btn"
+                onClick={() => navigate("/")}
+                disabled={loading}
+              >
+                <FaArrowLeft className="me-2" />
+                Back to Main
+              </Button>
+
+              {/* Header */}
+              <div className="login-header">
+                <div className="logo-container">
+                  <img
+                    src="/participium-logo.png"
+                    alt="Participium Logo"
+                    className="login-logo"
+                  />
+                </div>
+                <h1 className="login-title">Welcome Back</h1>
+                <p className="login-subtitle">
                   Sign in to your account
                 </p>
               </div>
 
+              {/* Error Alert */}
               {error && (
                 <Alert
                   variant="danger"
                   onClose={() => setError("")}
                   dismissible
-                  className="mb-4"
+                  className="login-alert animated-alert"
                 >
-                  {error}
+                  <div className="d-flex align-items-center">
+                    <div className="alert-message">{error}</div>
+                  </div>
                 </Alert>
               )}
 
-              <Form onSubmit={handleLogin} noValidate>
-                <Form.Group className="mb-4">
-                  <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                    Username
-                  </Form.Label>
-                  <InputGroup size="lg">
+              {/* Login Form */}
+              <Form onSubmit={handleLogin} noValidate className="login-form">
+                {/* Username Field */}
+                <Form.Group className="login-form-group floating-label-group">
+                  <div className={`form-control-container ${isFocused.username || formData.username ? 'focused' : ''}`}>
+                    <FaUser className="input-icon" />
                     <Form.Control
                       type="text"
-                      placeholder="Enter username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder={(isFocused.username ? '' : 'username')}
+                      value={formData.username}
+                      onChange={(e) => handleInputChange('username', e.target.value)}
+                      onFocus={() => handleFocus('username')}
+                      onBlur={() => handleBlur('username')}
                       disabled={loading}
+                      className="login-input modern-input"
                     />
-                  </InputGroup>
+                    <Form.Label className="floating-label">
+                      Username
+                    </Form.Label>
+                  </div>
                 </Form.Group>
 
-                <Form.Group className="mb-4">
-                  <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                    Password
-                  </Form.Label>
-                  <InputGroup size="lg">
+                {/* Password Field */}
+                <Form.Group className="login-form-group floating-label-group">
+                  <div className={`form-control-container ${isFocused.password || formData.password ? 'focused' : ''}`}>
+                    <FaLock className="input-icon" />
                     <Form.Control
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={(isFocused.password ? '' : 'password')}
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      onFocus={() => handleFocus('password')}
+                      onBlur={() => handleBlur('password')}
                       disabled={loading}
+                      className="modern-input password-input"
                     />
+                    <Form.Label className="floating-label">
+                      Password
+                    </Form.Label>
                     <Button
                       variant="outline-secondary"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={loading}
                       aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="password-toggle-btn"
                     >
                       {showPassword ? <FaEyeSlash /> : <FaEye />}
                     </Button>
-                  </InputGroup>
+                  </div>
                 </Form.Group>
 
-                <Button
+                {/* Login Button */}
+                <button
                   type="submit"
-                  variant="primary"
-                  className="w-100 mb-3"
-                  size="lg"
+                  className="btn btn-custom-primary login-btn login-btn-primary modern-btn"
                   disabled={loading}
-                  style={{ fontWeight: 'var(--font-semibold)' }}
                 >
-                  {loading ? "Signing in..." : "Sign in"}
-                </Button>
+                  {loading ? (
+                    <>
+                      <Spinner
+                        animation="border"
+                        size="sm"
+                        className="me-2"
+                      />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign in"
+                  )}
+                </button>
               </Form>
 
-              <Button
-                variant="light"
-                className="w-100 mb-4"
-                size="lg"
-                onClick={() => !loading && navigate("/")}
-                disabled={loading}
-                style={{ fontWeight: 'var(--font-semibold)' }}
-              >
-                Main Page
-              </Button>
-
-              <div className="text-center">
-                <span
-                  className="text-muted"
-                  style={{ fontSize: 'var(--font-sm)' }}
-                >
+              {/* Footer */}
+              <div className="login-footer">
+                <span className="login-footer-text">
                   Don't have an account?{" "}
                 </span>
                 <Button
                   variant="link"
-                  className="p-0"
+                  className="login-link-btn"
                   onClick={() => !loading && navigate("/register")}
                   disabled={loading}
-                  style={{
-                    fontSize: 'var(--font-sm)',
-                    fontWeight: 'var(--font-semibold)'
-                  }}
                 >
                   Create one
                 </Button>

@@ -1,190 +1,629 @@
-.municipality-user-form-card {
+/* --- Variabili allineate alla palette --- */
+:root {
+  --brand-red: #A12B32;
+  --brand-red-hover: #b40612;
+  --primary: var(--brand-red);
+  --primary-hover: var(--brand-red-hover);
+  --bg-lighter: #f8f9fa;
+  --text-muted: #6c757d;
+  --text-dark: #212529;
+  --text-darker: #1a1a1a;
+  --card-bg: #ffffff;
+  --accent-light: #fdf6f6;
+  --border-light: rgba(161, 43, 50, 0.1);
+  --shadow-soft: 0 7.2px 28.8px rgba(161, 43, 50, 0.08);
+  --shadow-hover: 0 14.4px 43.2px rgba(161, 43, 50, 0.15);
+  --gradient-primary: linear-gradient(135deg, var(--brand-red) 0%, #c44569 100%);
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(253, 246, 246, 0.9) 100%);
+}
+
+/* --- Container Principale --- */
+.modern-user-form {
   width: 100%;
-  max-width: 625px;
+  max-width: 720px;
   margin: 0 auto;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md);
+  padding: 1.8rem;
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.municipality-user-form-card .card-body {
-  padding: 30px;
-}
-
-.muf-title {
-  font-size: 25px;
-  font-weight: 600;
-  color: var(--navy);
-  margin: 0 0 12px 0;
-  text-align: center;
-}
-
-.alert-container {
-  min-height: 75px;
-  margin-bottom: 15px;
-}
-
-.muf-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.muf-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.muf-label {
-  display: block;
-  font-weight: 500;
-  font-size: 15px;
-  color: var(--text);
-  margin-bottom: 5px;
-}
-
-.muf-form input,
-.muf-select {
-  width: 100%;
-  padding: 10px 12px;
-  background: var(--card);
-  color: var(--text);
-  caret-color: var(--blue);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
-  box-sizing: border-box;
-  font-family: inherit;
-}
-
-.muf-form input:focus,
-.muf-select:focus {
-  outline: none;
-  border-color: var(--blue);
-  box-shadow: 0 0 0 4px rgba(30, 103, 200, 0.1);
-}
-
-.muf-form input:disabled,
-.muf-select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #f6f8fa;
-}
-
-.muf-select {
-  cursor: pointer;
-}
-
-.muf-select:disabled {
-  cursor: not-allowed;
-}
-
-.name-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-/* Form buttons container */
-.muf-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-/* Button styles */
-.muf-cancel-btn,
-.muf-submit-btn {
-  border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 1.125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
-  box-shadow: var(--shadow-sm);
-}
-
-.muf-cancel-btn {
-  background-color: var(--text-secondary);
-  color: #ffffff;
-}
-
-.muf-cancel-btn:hover {
-  background-color: var(--text-primary);
-  box-shadow: var(--shadow-md);
-}
-
-.muf-submit-btn {
-  background-color: var(--blue);
-  color: #ffffff;
-}
-
-.muf-submit-btn:hover {
-  background-color: #2a52cc; 
-  box-shadow: var(--shadow-md);
-}
-
-/* Button styles when disabled */
-.muf-submit-btn:disabled,
-.muf-cancel-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-
-/* Responsive */
-@media (max-width: 600px) {
-  .municipality-user-form-card .card-body {
-    padding: 25px;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
   }
-
-  .name-row {
-    grid-template-columns: 1fr;
-    gap: 15px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Password field wrapper */
-.password-wrapper {
+/* --- Glass Container --- */
+.form-glass-container {
+  background: var(--gradient-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 1.8rem;
+  box-shadow: 
+    var(--shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 3.6px 5.4px -1px rgba(161, 43, 50, 0.05);
+  overflow: hidden;
   position: relative;
-  width: 100%;
 }
 
-.muf-form .password-wrapper input {
-  padding-right: 44px; 
-}
-
-/* Show/hide password buttn */
-.password-toggle-btn {
+.form-glass-container::before {
+  content: '';
   position: absolute;
-  top: 50%;
-  right: 12px;
-  transform: translateY(-50%);
-  background: transparent;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(161, 43, 50, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(161, 43, 50, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* --- Header --- */
+.form-header {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 2.7rem 2.7rem 1.8rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.form-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>'),
+    linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+  opacity: 0.4;
+}
+
+.header-icon {
+  font-size: 2.7rem;
+  margin-bottom: 1.35rem;
+  opacity: 0.9;
+  filter: drop-shadow(0 3.6px 7.2px rgba(0, 0, 0, 0.2));
+}
+
+.form-title {
+  font-size: 2.025rem;
+  font-weight: 800;
+  margin: 0 0 0.45rem 0;
+  letter-spacing: -0.025em;
+  text-shadow: 0 1.8px 3.6px rgba(0, 0, 0, 0.1);
+  color: white;
+}
+
+.form-subtitle {
+  font-size: 0.99rem;
+  opacity: 0.9;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* --- Alert Messages --- */
+.alert-container {
+  padding: 0 2.7rem;
+  margin-top: 1.35rem;
+}
+
+.modern-alert {
   border: none;
-  padding: 0;
+  border-radius: 0.9rem;
+  padding: 1.125rem 1.35rem;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-left: 4px solid transparent;
+  animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.modern-alert.alert-danger {
+  background: rgba(220, 53, 69, 0.08);
+  color: #dc3545;
+  border-left-color: #dc3545;
+}
+
+.modern-alert.alert-success {
+  background: rgba(40, 167, 69, 0.08);
+  color: #28a745;
+  border-left-color: #28a745;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  gap: 0.675rem;
+  font-weight: 600;
+}
+
+.alert-icon {
+  font-size: 1.125rem;
+}
+
+/* --- Form Layout --- */
+.modern-form {
+  padding: 2.7rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.35rem;
+  margin-bottom: 2.25rem;
+}
+
+.form-grid .form-group:nth-child(5),
+.form-grid .form-group:nth-child(6),
+.form-grid .form-group:nth-child(7) {
+  grid-column: 1 / -1;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* --- LABELS CON COLORI MIGLIORATI --- */
+.form-label {
+  font-weight: 700;
+  color: var(--text-darker);
+  font-size: 0.855rem;
+  display: flex;
+  align-items: center;
+  gap: 0.225rem;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0.9px 1.8px rgba(0, 0, 0, 0.05);
+}
+
+.required-asterisk {
+  color: var(--brand-red);
+  font-weight: 800;
+}
+
+/* --- Input Fields --- */
+.modern-input {
+  width: 100%;
+  padding: 0.9rem 1.125rem;
+  border: 2px solid var(--border-light);
+  border-radius: 0.9rem;
+  font-size: 0.9rem;
+  background: var(--card-bg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1.8px 7.2px rgba(161, 43, 50, 0.02);
+  font-weight: 500;
+  color: var(--text-darker);
+}
+
+.modern-input:focus {
+  outline: none;
+  border-color: var(--brand-red);
+  box-shadow: 
+    0 0 0 3.6px rgba(161, 43, 50, 0.1),
+    0 3.6px 14.4px rgba(161, 43, 50, 0.1);
+  transform: translateY(-1.8px);
+  color: var(--text-darker);
+}
+
+.modern-input:disabled {
+  background: var(--bg-lighter);
+  border-color: var(--border-light);
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  color: var(--text-muted);
+}
+
+.modern-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+/* --- Password Fields --- */
+.password-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.675rem;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input {
+  padding-right: 3.15rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.9rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
   cursor: pointer;
+  padding: 0.45rem;
+  border-radius: 0.675rem;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-light, #6c757d);
-  transition: color 0.2s;
+  width: 2.25rem;
+  height: 2.25rem;
 }
 
-.password-toggle-btn svg {
-  width: 18px;
-  height: 18px;
+.password-toggle:hover:not(:disabled) {
+  background: var(--accent-light);
+  color: var(--brand-red);
+  transform: scale(1.1);
 }
 
-.password-toggle-btn:hover:not(:disabled) {
-  color: var(--text, #212529);
-}
-
-.password-toggle-btn:disabled {
+.password-toggle:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Password Strength --- */
+.password-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.strength-bar {
+  height: 5.4px;
+  background: var(--bg-lighter);
+  border-radius: 2.7px;
+  overflow: hidden;
+  box-shadow: inset 0 0.9px 1.8px rgba(0, 0, 0, 0.1);
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 2.7px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0.9px 2.7px rgba(0, 0, 0, 0.2);
+}
+
+.strength-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.675rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.password-match {
+  font-size: 0.765rem;
+  font-weight: 600;
+  margin-top: 0.225rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.match-success {
+  color: #28a745;
+  font-weight: 700;
+}
+
+.match-error {
+  color: #dc3545;
+  font-weight: 700;
+}
+
+/* --- Select Field - COLORI MIGLIORATI --- */
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select-icon {
+  position: absolute;
+  left: 1.125rem;
+  color: var(--text-muted);
+  z-index: 2;
+  font-size: 0.9rem;
+}
+
+.modern-select {
+  width: 100%;
+  padding: 0.9rem 1.125rem 0.9rem 2.7rem;
+  border: 2px solid var(--border-light);
+  border-radius: 0.9rem;
+  font-size: 0.9rem;
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  appearance: none;
+  box-shadow: 0 1.8px 7.2px rgba(161, 43, 50, 0.02);
+  font-weight: 500;
+  color: var(--text-darker);
+}
+
+.modern-select:focus {
+  outline: none;
+  border-color: var(--brand-red);
+  box-shadow: 
+    0 0 0 3.6px rgba(161, 43, 50, 0.1),
+    0 3.6px 14.4px rgba(161, 43, 50, 0.1);
+  transform: translateY(-1.8px);
+  color: var(--text-darker);
+}
+
+.modern-select:disabled {
+  background: var(--bg-lighter);
+  border-color: var(--border-light);
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  color: var(--text-muted);
+}
+
+/* Stile per le opzioni del dropdown */
+.modern-select option {
+  background: var(--card-bg);
+  color: var(--text-darker);
+  font-weight: 500;
+  padding: 0.675rem;
+  border: none;
+}
+
+.modern-select option:checked {
+  background: var(--accent-light);
+  color: var(--brand-red);
+  font-weight: 600;
+}
+
+.modern-select option:hover {
+  background: var(--accent-light);
+  color: var(--brand-red);
+}
+
+/* --- Form Actions --- */
+.form-actions {
+  display: flex;
+  gap: 0.9rem;
+  justify-content: flex-end;
+  padding-top: 1.8rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.modern-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.675rem;
+  padding: 0.9rem 1.8rem;
+  border: none;
+  border-radius: 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  box-shadow: 0 3.6px 10.8px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.01em;
+  min-width: 126px;
+  justify-content: center;
+}
+
+.modern-btn.primary {
+  background: var(--gradient-primary);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-btn.primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.modern-btn.primary:hover:not(:disabled) {
+  transform: translateY(-2.7px);
+  box-shadow: 
+    0 10.8px 27px rgba(161, 43, 50, 0.4),
+    0 3.6px 7.2px rgba(161, 43, 50, 0.2);
+  color: white;
+}
+
+.modern-btn.primary:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.modern-btn.secondary {
+  background: var(--card-bg);
+  color: var(--text-darker);
+  border: 2px solid var(--border-light);
+}
+
+.modern-btn.secondary:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--brand-red);
+  color: var(--brand-red);
+  transform: translateY(-2.7px);
+  box-shadow: 0 7.2px 18px rgba(161, 43, 50, 0.15);
+}
+
+.modern-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 1.8px 5.4px rgba(0, 0, 0, 0.1) !important;
+  color: var(--text-muted);
+}
+
+/* --- Loading Spinner --- */
+.loading-spinner {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+  .modern-user-form {
+    padding: 0.9rem;
+    max-width: 100%;
+  }
+  
+  .form-header {
+    padding: 1.8rem 1.35rem 1.35rem;
+  }
+  
+  .modern-form {
+    padding: 1.8rem 1.35rem;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.125rem;
+  }
+  
+  .form-grid .form-group:nth-child(5),
+  .form-grid .form-group:nth-child(6),
+  .form-grid .form-group:nth-child(7) {
+    grid-column: 1;
+  }
+  
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 0.675rem;
+  }
+  
+  .modern-btn {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .header-icon {
+    font-size: 2.25rem;
+  }
+  
+  .form-title {
+    font-size: 1.6875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modern-user-form {
+    padding: 0.45rem;
+  }
+  
+  .form-header {
+    padding: 1.35rem 0.9rem 0.9rem;
+  }
+  
+  .modern-form {
+    padding: 1.35rem 0.9rem;
+  }
+  
+  .form-title {
+    font-size: 1.4625rem;
+  }
+  
+  .form-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .modern-input,
+  .modern-select {
+    padding: 0.7875rem 0.9rem;
+    font-size: 0.855rem;
+  }
+  
+  .modern-btn {
+    padding: 0.7875rem 1.35rem;
+    font-size: 0.855rem;
+  }
+  
+  .alert-container {
+    padding: 0 0.9rem;
+  }
+}
+
+/* --- Micro-interazioni avanzate --- */
+.form-group {
+  animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes slideInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-group:nth-child(1) { animation-delay: 0.1s; }
+.form-group:nth-child(2) { animation-delay: 0.15s; }
+.form-group:nth-child(3) { animation-delay: 0.2s; }
+.form-group:nth-child(4) { animation-delay: 0.25s; }
+.form-group:nth-child(5) { animation-delay: 0.3s; }
+.form-group:nth-child(6) { animation-delay: 0.35s; }
+.form-group:nth-child(7) { animation-delay: 0.4s; }
+
+/* --- Effetti di focus migliorati --- */
+.modern-input:focus,
+.modern-select:focus {
+  animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 3.6px rgba(161, 43, 50, 0.1),
+      0 3.6px 14.4px rgba(161, 43, 50, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 3.6px rgba(161, 43, 50, 0.15),
+      0 5.4px 18px rgba(161, 43, 50, 0.15);
+  }
 }

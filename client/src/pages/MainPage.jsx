@@ -1,7 +1,5 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/MainPage.css';
-import '../css/Homepage.css';
 
 import {
   FaMapMarkedAlt,
@@ -22,7 +20,7 @@ export default function MainPage() {
   return (
     <div className="main-page-wrapper">
 
-      {/* =====  Hero Section ===== */}
+      {/* ===== Hero Section ===== */}
       <header className="section-hero">
         <div className="hp-container hero-content">
           <div className="hero-text">
@@ -39,7 +37,7 @@ export default function MainPage() {
                 className="hp-btn"
                 onClick={handleNavigateToLogin}
               >
-                Start to make your reports
+                Start Making Reports
               </button>
             </div>
           </div>
@@ -51,16 +49,13 @@ export default function MainPage() {
               className="hero-logo-left"
             />
           </div>
-          
         </div>
       </header>
-
-
 
       {/* ===== How It Works Section ===== */}
       <section className="section-how-it-works">
         <div className="hp-container">
-          <h2 className="section-title">A simple, transparent process</h2>
+          <h2 className="section-title">A Simple, Transparent Process</h2>
           <p className="section-subtitle">
             See your impact in three simple steps.
           </p>
@@ -97,10 +92,10 @@ export default function MainPage() {
       <section className="section-features">
         <div className="hp-container feature-item">
           <div className="feature-text">
-            <h2 className="section-title-left">For every citizen</h2>
+            <h2 className="section-title-left">For Every Citizen</h2>
             <p className="feature-description">
               Participium empowers you to be an active part of the city's
-              maintenance.
+              maintenance and improvement.
             </p>
             <ul className="feature-list">
               <li>
@@ -170,7 +165,7 @@ export default function MainPage() {
       {/* ===== Final Call to Action ===== */}
       <section className="section-cta">
         <div className="hp-container cta-content">
-          <h2 className="cta-title">Ready to make a difference?</h2>
+          <h2 className="cta-title">Ready to Make a Difference?</h2>
           <p className="cta-subtitle">
             Join your fellow citizens in making Turin a better place,
             one report at a time.
@@ -179,8 +174,8 @@ export default function MainPage() {
             className="hp-btn"
             onClick={handleNavigateToLogin}
             style={{
-              backgroundColor: 'var(--card)',
-              color: 'var(--blue)',
+              backgroundColor: '#ffffff',
+              color: 'var(--brand-red)',
               padding: '0.8rem 2rem',
               fontSize: '1.05rem'
             }}
