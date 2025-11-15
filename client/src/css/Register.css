@@ -6,20 +6,17 @@
   --blue-hover: #1451a2;
   --text-muted: #6c757d;
 
-  /* Font scale - adattamento reale da mobile a desktop */
   --font-xs: clamp(0.7rem, 1.2vw, 0.9rem);
   --font-sm: clamp(0.8rem, 1.4vw, 1rem);
   --font-base: clamp(0.95rem, 1.6vw, 1.15rem);
   --font-lg: clamp(1.1rem, 2vw, 1.4rem);
   --font-xl: clamp(1.3rem, 3vw, 1.9rem);
 
-  /* Spaziature */
-  --pad-xs: clamp(0.4rem, 1vw, 0.7rem);
-  --pad-s: clamp(0.7rem, 1.5vw, 1rem);
-  --pad-m: clamp(1rem, 2vw, 1.5rem);
-  --pad-l: clamp(1.5rem, 3vw, 2.5rem);
+  --pad-xs: clamp(0.3rem, 0.8vw, 0.6rem);
+  --pad-s: clamp(0.5rem, 1.2vw, 0.8rem);
+  --pad-m: clamp(0.8rem, 1.8vw, 1.2rem);
+  --pad-l: clamp(1.2rem, 2.5vw, 2rem); 
 
-  /* Radius dinamico */
   --radius: clamp(0.5rem, 1vw, 1rem);
 }
 
@@ -27,10 +24,10 @@
    PAGE CONTAINER
 ========================================================= */
 .register-container {
-  min-height: 100vh;
+  min-height: 100vh; 
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: center;   
+  align-items: center;       
   padding: var(--pad-s);
   background-color: #f8f9fa;
 }
@@ -39,13 +36,13 @@
    CARD
 ========================================================= */
 .register-card {
-  width: min(95%, 480px);
+  width: min(95%, 672px);
   border-radius: var(--radius);
   border: none;
 }
 
 .register-card-body {
-  padding: var(--pad-l);
+  padding: var(--pad-l); 
 }
 
 /* =========================================================
@@ -53,13 +50,13 @@
 ========================================================= */
 .register-header {
   text-align: center;
-  margin-bottom: var(--pad-m);
+  margin-bottom: var(--pad-m); 
 }
 
 .register-logo {
-  width: clamp(80px, 25vw, 150px); /* Ottimo su mobile + desktop */
+  width: clamp(70px, 20vw, 130px); 
   height: auto;
-  margin-bottom: var(--pad-s);
+  margin-bottom: var(--pad-s); 
 }
 
 .register-header p {
@@ -72,20 +69,20 @@
 .register-card label {
   font-size: var(--font-sm);
   font-weight: 500;
+  margin-bottom: 0.3rem;
 }
 
 .form-control {
   font-size: var(--font-base);
-  padding: clamp(0.55rem, 1.2vw, 0.9rem);
+  padding: clamp(0.4rem, 1vw, 0.7rem);
   border-radius: 0.5rem;
 }
 
 .input-group button {
   font-size: var(--font-sm);
-  padding: clamp(0.45rem, 1vw, 0.75rem) clamp(0.6rem, 1.5vw, 1rem);
+  padding: clamp(0.35rem, 0.8vw, 0.6rem) clamp(0.6rem, 1.5vw, 1rem);
 }
 
-/* Icone occhio */
 .input-group svg {
   font-size: clamp(1rem, 2.2vw, 1.4rem);
 }
@@ -97,7 +94,7 @@
   background-color: var(--blue);
   border: none;
   font-size: var(--font-base);
-  padding: clamp(0.7rem, 2vw, 1rem);
+  padding: clamp(0.5rem, 1.5vw, 0.8rem);
 }
 
 .btn-primary:hover {
@@ -106,7 +103,7 @@
 
 .btn-light {
   font-size: var(--font-sm);
-  padding: clamp(0.6rem, 2vw, 0.9rem);
+  padding: clamp(0.4rem, 1.5vw, 0.7rem);
 }
 
 /* Link (Sign in) */
@@ -127,7 +124,6 @@ button.btn-link {
    RESPONSIVE FIXES
 ========================================================= */
 
-/* ---- Schermi inferiori a 360px (piccolissimi) ---- */
 @media (max-width: 360px) {
   .register-card-body {
     padding: var(--pad-m);
@@ -145,10 +141,10 @@ button.btn-link {
 /* ---- Tablet in su ---- */
 @media (min-width: 768px) {
   .register-card {
-    width: min(90%, 520px);
+    width: min(90%, 672px);
   }
 
   .register-card-body {
-    padding: var(--pad-l);
+    padding: var(--pad-l); 
   }
 }

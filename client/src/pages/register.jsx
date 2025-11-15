@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Card, Form, Button, Container, Row, Col, InputGroup } from "react-bootstrap";
+import { Alert, Card, Form, Button, Row, Col, InputGroup } from "react-bootstrap";
 import { registerCitizen } from "../api/citizenApi";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -75,153 +75,145 @@ export default function Register() {
   };
 
   return (
-    <Container
-      fluid
-      className="d-flex align-items-center justify-content-center min-vh-100 register-container"
-    >
-      <Row className="w-100 justify-content-center">
-        <Col xs={12} sm={10} md={8} lg={6} xl={5}>
-          <Card className="shadow-lg register-card">
-            <Card.Body className="register-card-body">
-              <div className="text-center register-header">
-                <img src="/participium-logo.png" alt="Participium Logo" className="register-logo" />
-                <p className="text-muted mb-4">Create your account</p>
-              </div>
+    <div className="register-container">
+      <Card className="shadow-lg register-card">
+        <Card.Body className="register-card-body">
+          <div className="text-center register-header">
+            <img src="/participium-logo.png" alt="Participium Logo" className="register-logo" />
+            <p className="text-muted mb-4">Create your account</p>
+          </div>
 
-              {/* Error / Success alerts */}
-              {error && (
-                <Alert variant="danger" onClose={() => setError("")} dismissible className="mb-3">
-                  {error}
-                </Alert>
-              )}
-              {success && (
-                <Alert variant="success" onClose={() => setSuccess("")} dismissible className="mb-3">
-                  {success}
-                </Alert>
-              )}
+          {error && (
+            <Alert variant="danger" onClose={() => setError("")} dismissible className="mb-3">
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert variant="success" onClose={() => setSuccess("")} dismissible className="mb-3">
+              {success}
+            </Alert>
+          )}
 
-              <Form onSubmit={handleRegister} noValidate>
-                <Row className="mb-3">
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label>First Name</Form.Label>
-                      <Form.Control
-                        type="text"
-                        placeholder="First name"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        disabled={loading}
-                      />
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label>Last Name</Form.Label>
-                      <Form.Control
-                        type="text"
-                        placeholder="Last name"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        disabled={loading}
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Email</Form.Label>
-                  <Form.Control
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading}
-                  />
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Username</Form.Label>
+          <Form onSubmit={handleRegister} noValidate>
+            <Row className="mb-3">
+              <Col md={6} className="mb-3 mb-md-0">
+                <Form.Group>
+                  <Form.Label>First Name</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Choose a username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
                     disabled={loading}
                   />
                 </Form.Group>
+              </Col>
 
-                <Form.Group className="mb-3 password-wrapper">
-                  <Form.Label>Password</Form.Label>
-                  <InputGroup>
-                    <Form.Control
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Choose a password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button
-                      variant="outline-secondary"
-                      onClick={() => setShowPassword(!showPassword)}
-                      disabled={loading}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? <FaEyeSlash /> : <FaEye />}
-                    </Button>
-                  </InputGroup>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Last Name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={loading}
+                  />
                 </Form.Group>
+              </Col>
+            </Row>
 
-                <Form.Group className="mb-4 password-wrapper">
-                  <Form.Label>Confirm Password</Form.Label>
-                  <InputGroup>
-                    <Form.Control
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Re-enter your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button
-                      variant="outline-secondary"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      disabled={loading}
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                    >
-                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                    </Button>
-                  </InputGroup>
-                </Form.Group>
-
-                <Button type="submit" variant="primary" className="w-100 mb-3" disabled={loading}>
-                  {loading ? "Creating account..." : "Create account"}
-                </Button>
-              </Form>
-
-              <Button
-                variant="light"
-                className="w-100 mb-3"
-                onClick={() => !loading && navigate("/")}
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="your.email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-              >
-                Main Page
-              </Button>
+              />
+            </Form.Group>
 
-              <div className="text-center mt-3">
-                <span className="text-muted">Already have an account? </span>
-                <Button
-                  variant="link"
-                  className="p-0"
-                  onClick={() => !loading && navigate("/login")}
+            <Form.Group className="mb-3">
+              <Form.Label>Username</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Choose a username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3 password-wrapper">
+              <Form.Label>Password</Form.Label>
+              <InputGroup>
+                <Form.Control
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Choose a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
+                />
+                <Button
+                  variant="outline-secondary"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  Sign in
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </Button>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+              </InputGroup>
+            </Form.Group>
+
+            <Form.Group className="mb-4 password-wrapper">
+              <Form.Label>Confirm Password</Form.Label>
+              <InputGroup>
+                <Form.Control
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={loading}
+                />
+                <Button
+                  variant="outline-secondary"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={loading}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                </Button>
+              </InputGroup>
+            </Form.Group>
+
+            <Button type="submit" variant="primary" className="w-100 mb-3" disabled={loading}>
+              {loading ? "Creating account..." : "Create account"}
+            </Button>
+          </Form>
+
+          <Button
+            variant="light"
+            className="w-100 mb-3"
+            onClick={() => !loading && navigate("/")}
+            disabled={loading}
+          >
+            Main Page
+          </Button>
+
+          <div className="text-center mt-3">
+            <span className="text-muted">Already have an account? </span>
+            <Button
+              variant="link"
+              className="p-0"
+              onClick={() => !loading && navigate("/login")}
+              disabled={loading}
+            >
+              Sign in
+            </Button>
+          </div>
+        </Card.Body>
+      </Card>
+    </div>
   );
 }
