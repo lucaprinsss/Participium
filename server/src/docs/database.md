@@ -1,6 +1,6 @@
-# Participium - Database Structure (v2)
+# Participium - Database Structure (v3)
 
-This document describes the database schema (Version 2.0) designed for the **Participium** application.
+This document describes the database schema (Version 3.0) designed for the **Participium** application.
 
 * **Database System:** PostgreSQL (v15+)
 * **Required Extensions:** `postgis` (for geolocation data)
@@ -22,22 +22,6 @@ Participium is a citizen reporting system that allows users to submit reports ab
 ## Custom Data Types (ENUMs)
 
 To ensure data integrity and consistency, the following enumerated types have been defined.
-
-### `user_role`
-Defines the roles a user can have within the system.
-
-| Value | Description |
-|-------|-------------|
-| `Citizen` | Regular user who submits reports (default) |
-| `Administrator` | System administrator with full access |
-| `Municipal Public Relations Officer` | Manages public relations and communications |
-| `Municipal Administrator` | Administrative management role |
-| `Technical Office Staff Member` | Technical office staff for field work |
-| `Urban Planning Manager` | Manages urban planning aspects |
-| `Private Building Manager` | Manages private building issues |
-| `Infrastructure Manager` | Manages infrastructure maintenance |
-| `Maintenance Staff Member` | Performs maintenance operations |
-| `Public Green Spaces Manager` | Manages parks and green areas |
 
 ### `report_category`
 Predefined categories for citizen reports.
@@ -203,6 +187,61 @@ Bidirectional messaging between a citizen and an operator, related to a specific
 
 ---
 
+### 7. `departments`
+Stores municipality departments that handle different types of reports.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique department identifier |
+| `name` | `VARCHAR(100)` | NOT NULL, UNIQUE | Department name (e.g., "Public Works", "Environment") |
+| `description` | `TEXT` | NULLABLE | Department description |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Department creation date |
+
+**Indexes:**
+- Primary key on `id`
+- Unique index on `name`
+
+---
+
+### 8. `roles`
+Stores municipality roles that can be assigned to users within departments.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique role identifier |
+| `name` | `VARCHAR(100)` | NOT NULL, UNIQUE | Role name (e.g., "Operator", "Supervisor", "Manager") |
+| `description` | `TEXT` | NULLABLE | Role description |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Role creation date |
+
+**Indexes:**
+- Primary key on `id`
+- Unique index on `name`
+
+---
+
+### 9. `department_roles`
+Junction table that assigns municipality users to specific roles within departments.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique assignment identifier |
+| `user_id` | `INT` | **FOREIGN KEY** → `users(id)` ON DELETE CASCADE, NOT NULL | Municipality user |
+| `department_id` | `INT` | **FOREIGN KEY** → `departments(id)` ON DELETE CASCADE, NOT NULL | Department |
+| `role_id` | `INT` | **FOREIGN KEY** → `roles(id)` ON DELETE CASCADE, NOT NULL | Role within the department |
+| `assigned_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Assignment date |
+
+**Constraints:**
+- **UNIQUE** constraint on `(user_id, department_id, role_id)` to prevent duplicate assignments
+
+**Indexes:**
+- Primary key on `id`
+- Foreign key index on `user_id`
+- Foreign key index on `department_id`
+- Foreign key index on `role_id`
+- Unique index on `(user_id, department_id, role_id)`
+
+---
+
 ## Entity Relationships
 
 ```
@@ -211,11 +250,19 @@ users (1) ──────────────< (N) reports [assignee_id]
 users (1) ──────────────< (N) comments [author_id]
 users (1) ──────────────< (N) notifications [user_id]
 users (1) ──────────────< (N) messages [sender_id]
+users (1) ──────────────< (N) department_roles [user_id]
 
 reports (1) ────────────< (N) photos
 reports (1) ────────────< (N) comments
 reports (1) ────────────< (N) notifications
 reports (1) ────────────< (N) messages
+
+departments (1) ────────< (N) department_roles [department_id]
+roles (1) ──────────────< (N) department_roles [role_id]
+
+department_roles (N) ───> (1) users
+department_roles (N) ───> (1) departments
+department_roles (N) ───> (1) roles
 ```
 
 ---
@@ -234,3 +281,6 @@ The [`docker-compose.yml`](server/docker-compose.yml ) file automatically runs [
 |---------|------|---------|
 | 1.0 | 2025-11 | Initial schema design |
 | 1.1 | 2025-11-08 | Updated user roles - expanded from 4 to 10 roles with specific municipal responsibilities |
+| 2.0 | 2025-01-20 | Added geolocation support with PostGIS for citizen reports |
+| 3.0 | 2025-01-20 | Added departments, roles, and department_roles tables for enhanced municipality user management |
+

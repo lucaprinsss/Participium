@@ -30,7 +30,7 @@ class UserRepository {
    * @returns The created user entity.
    */
   public async createUserWithPassword(
-    userData: Omit<userEntity, 'id' | 'createdAt' | 'passwordHash' | 'emailNotificationsEnabled'> & { password: string; emailNotificationsEnabled?: boolean }
+    userData: Omit<userEntity, 'id' | 'createdAt' | 'passwordHash' | 'emailNotificationsEnabled' | 'departmentRole'> & { password: string; emailNotificationsEnabled?: boolean }
   ): Promise<userEntity> {
     const { password, ...userFields } = userData;
     const { salt, hash } = await generatePasswordData(password);
@@ -44,12 +44,15 @@ class UserRepository {
   }
 
   /**
-   * Finds a user by their ID.
+   * Finds a user by their ID with department role relations.
    * @param id The ID of the user.
    * @returns The user entity or null if not found.
    */
   public async findUserById(id: number): Promise<userEntity | null> {
-    return this.repository.findOneBy({ id });
+    return this.repository.findOne({
+      where: { id },
+      relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+    });
   }
 
   /**
@@ -62,6 +65,9 @@ class UserRepository {
     // 'addSelect' is used to explicitly include fields that might be excluded by default
     return this.repository
       .createQueryBuilder("user")
+      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("departmentRole.department", "department")
+      .leftJoinAndSelect("departmentRole.role", "role")
       .where("user.username = :username", { username })
       .addSelect("user.passwordHash")
       .getOne();
@@ -73,7 +79,10 @@ class UserRepository {
    * @returns The user entity or null if not found.
    */
   public async findUserByEmail(email: string): Promise<userEntity | null> {
-    return this.repository.findOneBy({ email });
+    return this.repository.findOne({
+      where: { email },
+      relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+    });
   }
 
   /**
@@ -130,7 +139,7 @@ class UserRepository {
    */
   public async updateUser(
     id: number,
-    updateData: Partial<Omit<userEntity, 'id' | 'createdAt' | 'passwordHash'>>
+    updateData: Partial<Omit<userEntity, 'id' | 'createdAt' | 'passwordHash' | 'departmentRole'>>
   ): Promise<userEntity> {
     await this.repository.update(id, updateData);
 
@@ -165,7 +174,58 @@ class UserRepository {
     where?: any;
     order?: any;
   }): Promise<userEntity[]> {
-    return this.repository.find(options);
+    return this.repository.find({
+      ...options,
+      relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+    });
+  }
+
+  /**
+   * Finds all users by department role IDs (for filtering by role).
+   * @param departmentRoleIds Array of department role IDs to filter by.
+   * @returns Array of user entities.
+   */
+  public async findUsersByDepartmentRoleIds(departmentRoleIds: number[]): Promise<userEntity[]> {
+    return this.repository
+      .createQueryBuilder("user")
+      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("departmentRole.department", "department")
+      .leftJoinAndSelect("departmentRole.role", "role")
+      .where("user.departmentRoleId IN (:...ids)", { ids: departmentRoleIds })
+      .orderBy("user.createdAt", "DESC")
+      .getMany();
+  }
+
+  /**
+   * Finds users by role name (using department_role relation).
+   * @param roleName The name of the role to filter by.
+   * @returns Array of user entities.
+   */
+  public async findUsersByRoleName(roleName: string): Promise<userEntity[]> {
+    return this.repository
+      .createQueryBuilder("user")
+      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("departmentRole.department", "department")
+      .leftJoinAndSelect("departmentRole.role", "role")
+      .where("role.name = :roleName", { roleName })
+      .orderBy("user.createdAt", "DESC")
+      .getMany();
+  }
+
+  /**
+   * Finds users excluding specific role names.
+   * @param excludedRoleNames Array of role names to exclude.
+   * @returns Array of user entities.
+   */
+  public async findUsersExcludingRoles(excludedRoleNames: string[]): Promise<userEntity[]> {
+    return this.repository
+      .createQueryBuilder("user")
+      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("departmentRole.department", "department")
+      .leftJoinAndSelect("departmentRole.role", "role")
+      .where("role.name NOT IN (:...excludedRoleNames)", { excludedRoleNames })
+      .orderBy("user.createdAt", "DESC")
+      .getMany();
   }
 }
 

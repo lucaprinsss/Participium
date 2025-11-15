@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { DepartmentRoleEntity } from "./departmentRoleEntity";
 
 @Entity("users")
 export class userEntity implements Express.User {
@@ -17,23 +18,14 @@ export class userEntity implements Express.User {
   @Column({ length: 255, select: false })
   passwordHash!: string;
 
-  @Column({ 
-    type: "enum", 
-    enum: [
-      "Citizen", 
-      "Administrator", 
-      "Municipal Public Relations Officer",
-      "Municipal Administrator",
-      "Technical Office Staff Member",
-      "Urban Planning Manager",
-      "Private Building Manager",
-      "Infrastructure Manager",
-      "Maintenance Staff Member",
-      "Public Green Spaces Manager"
-    ], 
-    default: "Citizen" 
+  @Column({ name: "department_role_id" })
+  departmentRoleId!: number;
+
+  @ManyToOne(() => DepartmentRoleEntity, (departmentRole) => departmentRole.users, {
+    eager: true
   })
-  role!: string;
+  @JoinColumn({ name: "department_role_id" })
+  departmentRole!: DepartmentRoleEntity;
 
   @Column({ length: 255, unique: true })
   email!: string;

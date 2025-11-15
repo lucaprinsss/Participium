@@ -1,7 +1,7 @@
 import { UserResponse } from '@models/dto/UserResponse';
 import { RegisterRequest } from '@models/dto/RegisterRequest';
-import { UserRole } from '@models/dto/UserRole';
 import { userRepository } from '@repositories/userRepository';
+import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { ConflictError } from '@models/errors/ConflictError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
@@ -14,12 +14,11 @@ class UserService {
   /**
    * Registers a new citizen
    * Validates uniqueness of username and email
-   * Role should be UserRole.CITIZEN (set by controller)
-   * @param registerData User registration data with role
+   * @param registerData User registration data
    * @returns UserResponse DTO
    */
   async registerCitizen(registerData: RegisterRequest): Promise<UserResponse> {
-    const { username, email, password, first_name, last_name, role } = registerData;
+    const { username, email, password, first_name, last_name, role_name, department_name } = registerData;
 
     // Check if username already exists
     const existingUsername = await userRepository.existsUserByUsername(username);
@@ -33,6 +32,16 @@ class UserService {
       throw new ConflictError('Email already exists');
     }
 
+    // Get the department_role_id for Citizen role
+    const citizenDepartmentRole = await departmentRoleRepository.findByDepartmentAndRole(
+      department_name || 'Organization',
+      role_name || 'Citizen'
+    );
+
+    if (!citizenDepartmentRole) {
+      throw new AppError('Citizen role configuration not found in database', 500);
+    }
+
     // Create new user with hashed password
     const newUser = await userRepository.createUserWithPassword({
       username,
@@ -40,7 +49,7 @@ class UserService {
       password,
       firstName: first_name,
       lastName: last_name,
-      role: role || UserRole.CITIZEN, 
+      departmentRoleId: citizenDepartmentRole.id,
       emailNotificationsEnabled: true
     });
 

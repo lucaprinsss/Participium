@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { municipalityUserService } from '@services/municipalityUserService';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { RegisterRequest } from '@models/dto/RegisterRequest';
-import { UserRole } from '@models/dto/UserRole';
 import { RoleUtils } from '@utils/roleUtils';
 
 /**
@@ -15,10 +14,10 @@ class MunicipalityUserController {
    */
   async createMunicipalityUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { username, email, password, first_name, last_name, role } = req.body;
+      const { username, email, password, first_name, last_name, role_name, department_name } = req.body;
 
-      if (!username || !email || !password || !first_name || !last_name || !role) {
-        throw new BadRequestError('All fields are required: username, email, password, first_name, last_name, role');
+      if (!username || !email || !password || !first_name || !last_name || !role_name) {
+        throw new BadRequestError('All fields are required: username, email, password, first_name, last_name, role_name');
       }
 
       const registerData: RegisterRequest = {
@@ -27,7 +26,8 @@ class MunicipalityUserController {
         password,
         first_name,
         last_name,
-        role
+        role_name,
+        department_name
       };
 
       const userResponse = await municipalityUserService.createMunicipalityUser(registerData);
@@ -82,13 +82,14 @@ class MunicipalityUserController {
         throw new BadRequestError('Invalid user ID');
       }
 
-      const { first_name, last_name, email, role } = req.body;
+      const { first_name, last_name, email, role_name, department_name } = req.body;
       
       const updateData: any = {};
       if (first_name) updateData.firstName = first_name;
       if (last_name) updateData.lastName = last_name;
       if (email) updateData.email = email;
-      if (role) updateData.role = role;
+      if (role_name) updateData.role_name = role_name;
+      if (department_name) updateData.department_name = department_name;
 
       if (Object.keys(updateData).length === 0) {
         throw new BadRequestError('At least one field must be provided for update');
@@ -127,22 +128,17 @@ class MunicipalityUserController {
   async assignRole(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = parseInt(req.params.id);
-      const { role } = req.body;
+      const { role_name, department_name } = req.body;
 
       if (isNaN(id)) {
         throw new BadRequestError('Invalid user ID');
       }
 
-      if (!role) {
-        throw new BadRequestError('Role is required');
+      if (!role_name) {
+        throw new BadRequestError('Role name is required');
       }
 
-      // Validate role is a valid UserRole enum value
-      if (!Object.values(UserRole).includes(role)) {
-        throw new BadRequestError('Invalid role specified');
-      }
-
-      const updatedUser = await municipalityUserService.assignRole(id, role);
+      const updatedUser = await municipalityUserService.assignRole(id, role_name, department_name);
       res.status(200).json(updatedUser);
     } catch (error) {
       next(error);
@@ -156,7 +152,7 @@ class MunicipalityUserController {
    */
   async getAllRoles(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const municipalityRoles = RoleUtils.getAllMunicipalityRoles();
+      const municipalityRoles = await RoleUtils.getAllMunicipalityRoles();
       res.status(200).json(municipalityRoles);
     } catch (error) {
       next(error);

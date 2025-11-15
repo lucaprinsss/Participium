@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { userService } from '@services/userService';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { RegisterRequest } from '@models/dto/RegisterRequest';
-import { UserRole } from '@models/dto/UserRole';
 
 /**
  * Controller for User-related HTTP requests
@@ -26,7 +25,7 @@ class UserController {
         password,
         first_name,
         last_name,
-        role: UserRole.CITIZEN // Default role for citizens
+        role_name: 'Citizen' // Default role for citizens
       };
 
       const userResponse = await userService.registerCitizen(registerData);
