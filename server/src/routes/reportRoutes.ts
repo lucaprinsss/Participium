@@ -87,19 +87,19 @@ const router = express.Router();
  *               title: "Dangerous pothole on Via Roma"
  *               description: "Presence of a pothole approximately 20cm deep that poses a danger to pedestrians and vehicles"
  *               category: "Roads and Urban Furnishings"
-                 location:
-                   latitude: 45.4642
-                   longitude: 9.1900
-                 photos:
-                   - id: 1
-                     reportId: 42
-                     storageUrl: "https://storage.example.com/photos/abc123.jpg"
-                     createdAt: "2025-11-15T10:30:00Z"
-                   - id: 2
-                     reportId: 42
-                     storageUrl: "https://storage.example.com/photos/def456.jpg"
-                     createdAt: "2025-11-15T10:30:01Z"
-                 isAnonymous: false
+ *               location:
+ *                 latitude: 45.4642
+ *                 longitude: 9.1900
+ *               photos:
+ *                 - id: 1
+ *                   reportId: 42
+ *                   storageUrl: "https://storage.example.com/photos/abc123.jpg"
+ *                   createdAt: "2025-11-15T10:30:00Z"
+ *                 - id: 2
+ *                   reportId: 42
+ *                   storageUrl: "https://storage.example.com/photos/def456.jpg"
+ *                   createdAt: "2025-11-15T10:30:01Z"
+ *               isAnonymous: false
  *               status: "Pending Approval"
  *               rejectionReason: null
  *               assigneeId: null
@@ -125,14 +125,14 @@ const router = express.Router();
  *               invalidCategory:
  *                 summary: Invalid category
  *                 value:
-                   error: "Bad Request"
-                   message: "Invalid category. Must be one of: Water Supply - Drinking Water, Architectural Barriers, Sewer System, Public Lighting, Waste, Road Signs and Traffic Lights, Roads and Urban Furnishings, Public Green Areas and Playgrounds, Other"
-               invalidPhotos:
-                 summary: Invalid photos count
-                 value:
-                   error: "Bad Request"
-                   message: "Photos must contain between 1 and 3 images"
-               missingLocation:
+ *                   error: "Bad Request"
+ *                   message: "Invalid category. Must be one of: Water Supply - Drinking Water, Architectural Barriers, Sewer System, Public Lighting, Waste, Road Signs and Traffic Lights, Roads and Urban Furnishings, Public Green Areas and Playgrounds, Other"
+ *               invalidPhotos:
+ *                 summary: Invalid photos count
+ *                 value:
+ *                   error: "Bad Request"
+ *                   message: "Photos must contain between 1 and 3 images"
+ *               missingLocation:
  *                 summary: Missing coordinates
  *                 value:
  *                   error: "Bad Request"
