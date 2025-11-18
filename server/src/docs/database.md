@@ -252,7 +252,7 @@ Junction table that defines valid role-department combinations (positions). This
 | `role_id` | `INT` | **FOREIGN KEY** → `roles(id)` ON DELETE CASCADE, NOT NULL | Role within the department |
 
 **Constraints:**
-- **UNIQUE** constraint on `(department_id, role_id)` - `uq_department_role` to prevent duplicate position definitions
+- **UNIQUE** constraint on `(department_id, role_id)` to prevent duplicate department/role pairs
 
 **Indexes:**
 - Primary key on `id`

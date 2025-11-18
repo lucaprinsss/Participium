@@ -511,10 +511,173 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ * 
+ * /api/reports/map:
+ *   get:
+ *     summary: Get reports for interactive map visualization
+ *     description: |
+ *       Returns approved reports optimized for map display.
+ *       Only returns reports that are NOT in "Pending Approval" or "Rejected" status.
+ *       
+ *       **Zoom behavior:**
+ *       - High zoom (zoomed in, zoom > 12): Returns individual reports with title and reporter name
+ *       - Low zoom (zoomed out, zoom ≤ 12): Returns clustered reports grouped by proximity
+ *       
+ *       **Optional filters:**
+ *       - Bounding box: Filter reports within visible map area
+ *       - Zoom level: Controls clustering behavior
+ *     tags: [Reports]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: zoom
+ *         schema:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 20
+ *         description: Map zoom level (1-20). Zoom > 12 returns individual reports, ≤ 12 returns clusters
+ *         required: false
+ *         example: 13
+ *       - in: query
+ *         name: minLat
+ *         schema:
+ *           type: number
+ *           minimum: -90
+ *           maximum: 90
+ *         description: Minimum latitude of bounding box
+ *         required: false
+ *         example: 45.45
+ *       - in: query
+ *         name: maxLat
+ *         schema:
+ *           type: number
+ *           minimum: -90
+ *           maximum: 90
+ *         description: Maximum latitude of bounding box
+ *         required: false
+ *         example: 45.48
+ *       - in: query
+ *         name: minLng
+ *         schema:
+ *           type: number
+ *           minimum: -180
+ *           maximum: 180
+ *         description: Minimum longitude of bounding box
+ *         required: false
+ *         example: 9.18
+ *       - in: query
+ *         name: maxLng
+ *         schema:
+ *           type: number
+ *           minimum: -180
+ *           maximum: 180
+ *         description: Maximum longitude of bounding box
+ *         required: false
+ *         example: 9.20
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category (optional)
+ *         required: false
+ *         example: "Roads and Urban Furnishings"
+ *     responses:
+ *       200:
+ *         description: Reports for map visualization (individual or clustered based on zoom)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: array
+ *                   description: Individual reports (when zoomed in)
+ *                   items:
+ *                     $ref: '#/components/schemas/MapReportResponse'
+ *                 - type: array
+ *                   description: Clustered reports (when zoomed out)
+ *                   items:
+ *                     $ref: '#/components/schemas/ClusteredReportResponse'
+ *             examples:
+ *               individualReports:
+ *                 summary: Individual reports (zoom > 12)
+ *                 value:
+ *                   - id: 1
+ *                     title: "Pothole on Via Roma"
+ *                     category: "Roads and Urban Furnishings"
+ *                     location:
+ *                       latitude: 45.4642
+ *                       longitude: 9.1900
+ *                     status: "In Progress"
+ *                     reporterName: "Mario Rossi"
+ *                     isAnonymous: false
+ *                     createdAt: "2025-11-15T10:30:00Z"
+ *                   - id: 2
+ *                     title: "Broken streetlight"
+ *                     category: "Public Lighting"
+ *                     location:
+ *                       latitude: 45.4655
+ *                       longitude: 9.1905
+ *                     status: "Assigned"
+ *                     reporterName: "Anonymous"
+ *                     isAnonymous: true
+ *                     createdAt: "2025-11-14T15:20:00Z"
+ *               clusteredReports:
+ *                 summary: Clustered reports (zoom ≤ 12)
+ *                 value:
+ *                   - clusterId: "cluster_45.464_9.190"
+ *                     location:
+ *                       latitude: 45.464
+ *                       longitude: 9.190
+ *                     reportCount: 15
+ *                     reportIds: [1, 5, 12, 23, 34, 45, 56, 67, 78, 89, 90, 91, 92, 93, 94]
+ *                   - clusterId: "cluster_45.470_9.195"
+ *                     location:
+ *                       latitude: 45.470
+ *                       longitude: 9.195
+ *                     reportCount: 8
+ *                     reportIds: [2, 3, 4, 6, 7, 8, 9, 10]
+ *       400:
+ *         description: Invalid query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               invalidZoom:
+ *                 summary: Invalid zoom level
+ *                 value:
+ *                   error: "Bad Request"
+ *                   message: "Zoom level must be between 1 and 20"
+ *               invalidBounds:
+ *                 summary: Invalid bounding box
+ *                 value:
+ *                   error: "Bad Request"
+ *                   message: "Invalid bounding box coordinates"
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: "Unauthorized"
+ *               message: "Not authenticated"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: "Internal Server Error"
+ *               message: "An unexpected error occurred while retrieving map reports"
  */
 
 // Create a new report (Citizens only)
 // router.post('/', isCitizen, reportController.createReport);
+
+// Get reports for interactive map (authenticated users)
+// router.get('/map', isLoggedIn, reportController.getMapReports);
 
 // Get all reports (authenticated users)
 // router.get('/', isLoggedIn, reportController.getAllReports);

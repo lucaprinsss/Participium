@@ -5,3 +5,5 @@ node_modules/
 
 coverage/
 openapi.json
+
+database-workflow-guide.md
