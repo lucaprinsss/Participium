@@ -1,5 +1,5 @@
 import express from 'express';
-// import { reportController } from '../controllers/reportController';
+import { reportController } from '../controllers/reportController';
 import { isCitizen, isLoggedIn } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -43,6 +43,9 @@ const router = express.Router();
  *                 location:
  *                   latitude: 45.4642
  *                   longitude: 9.1900
+ *                 photos:
+ *                   - "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+ *                   - "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
  *                 isAnonymous: false
  *             streetlight:
  *               summary: Non-functioning streetlight
@@ -53,6 +56,8 @@ const router = express.Router();
  *                 location:
  *                   latitude: 45.4655
  *                   longitude: 9.1905
+ *                 photos:
+ *                   - "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
  *                 isAnonymous: false
  *             wastereport:
  *               summary: Anonymous waste report
@@ -63,6 +68,8 @@ const router = express.Router();
  *                 location:
  *                   latitude: 45.4638
  *                   longitude: 9.1895
+ *                 photos:
+ *                   - "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
  *                 isAnonymous: true
  *             barrier:
  *               summary: Architectural barrier
@@ -73,6 +80,10 @@ const router = express.Router();
  *                 location:
  *                   latitude: 45.4650
  *                   longitude: 9.1910
+ *                 photos:
+ *                   - "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+ *                   - "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+ *                   - "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
  *                 isAnonymous: false
  *     responses:
  *       201:
@@ -759,10 +770,55 @@ const router = express.Router();
  *             example:
  *               error: "Internal Server Error"
  *               message: "An unexpected error occurred while retrieving assigned reports"
+ * 
+ * /api/reports/categories:
+ *   get:
+ *     summary: Get all available report categories
+ *     description: |
+ *       Returns the list of all valid report categories that can be used when creating a report.
+ *       This endpoint ensures the frontend always has the current list of categories
+ *       synchronized with the backend without hardcoding values.
+ *       
+ *       **Use case:**
+ *       - Populate dropdown/select menus in report creation forms
+ *       - Validate category selection before submission
+ *       - Keep frontend synchronized with backend categories
+ *     tags: [Reports]
+ *     responses:
+ *       200:
+ *         description: List of available report categories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               example:
+ *                 - "Water Supply - Drinking Water"
+ *                 - "Architectural Barriers"
+ *                 - "Sewer System"
+ *                 - "Public Lighting"
+ *                 - "Waste"
+ *                 - "Road Signs and Traffic Lights"
+ *                 - "Roads and Urban Furnishings"
+ *                 - "Public Green Areas and Playgrounds"
+ *                 - "Other"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               error: "Internal Server Error"
+ *               message: "An unexpected error occurred while retrieving categories"
  */
 
 // Create a new report (Citizens only)
 // router.post('/', isCitizen, reportController.createReport);
+
+// Get all available report categories (public endpoint - no authentication required)
+router.get('/categories', reportController.getCategories);
 
 // Get reports for interactive map (authenticated users)
 // router.get('/map', isLoggedIn, reportController.getMapReports);
