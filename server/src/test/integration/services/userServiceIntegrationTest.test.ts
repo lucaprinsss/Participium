@@ -1,33 +1,32 @@
 import { userService } from '@services/userService';
 import { userRepository } from '@repositories/userRepository';
+import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
-import { UserRole } from '@models/dto/UserRole';
-import { RegisterRequest } from '@models/dto/RegisterRequest';
+import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { userEntity } from '@models/entity/userEntity';
-import { UserResponse } from '@models/dto/UserResponse';
+import { UserResponse } from '@models/dto/output/UserResponse';
 import { ConflictError } from '@models/errors/ConflictError';
 import { AppError } from '@models/errors/AppError';
+import { createMockCitizen, createMockDepartmentRole } from '@test/utils/mockEntities';
 
 jest.mock('@repositories/userRepository');
+jest.mock('@repositories/departmentRoleRepository');
 jest.mock('@services/loggingService');
 jest.mock('@services/mapperService');
 
 const mockedUserRepository = userRepository as jest.Mocked<typeof userRepository>;
+const mockedDepartmentRoleRepository = departmentRoleRepository as jest.Mocked<typeof departmentRoleRepository>;
 const mockedLogInfo = logInfo as jest.Mock;
 const mockedMapper = mapUserEntityToUserResponse as jest.Mock;
 
-const mockCitizenEntity: userEntity = {
+const mockCitizenEntity: userEntity = createMockCitizen({
   id: 1,
   username: 'test.citizen',
   email: 'citizen@test.com',
   firstName: 'Test',
   lastName: 'Citizen',
-  role: UserRole.CITIZEN,
-  passwordHash: 'hashedpassword',
-  createdAt: new Date(),
-  emailNotificationsEnabled: true,
-};
+});
 
 const mockCitizenResponse: UserResponse = {
   id: 1,
@@ -35,7 +34,7 @@ const mockCitizenResponse: UserResponse = {
   email: 'citizen@test.com',
   first_name: 'Test',
   last_name: 'Citizen',
-  role: UserRole.CITIZEN,
+  role_name: 'Citizen',
 };
 
 const registerRequest: RegisterRequest = {
@@ -44,7 +43,7 @@ const registerRequest: RegisterRequest = {
   first_name: 'Test',
   last_name: 'Citizen',
   password: 'Password123!',
-  role: UserRole.CITIZEN,
+  role_name: 'Citizen',
 };
 
 describe('UserService', () => {
@@ -64,8 +63,10 @@ describe('UserService', () => {
 
     it('should register a new citizen successfully', async () => {
       // Arrange
+      const mockDepartmentRole = createMockDepartmentRole('Citizen');
       mockedUserRepository.existsUserByUsername.mockResolvedValue(false);
       mockedUserRepository.existsUserByEmail.mockResolvedValue(false);
+      mockedDepartmentRoleRepository.findByDepartmentAndRole.mockResolvedValue(mockDepartmentRole);
       mockedUserRepository.createUserWithPassword.mockResolvedValue(mockCitizenEntity);
 
       // Act
@@ -75,6 +76,7 @@ describe('UserService', () => {
       expect(result).toEqual(mockCitizenResponse);
       expect(mockedUserRepository.existsUserByUsername).toHaveBeenCalledWith(registerRequest.username);
       expect(mockedUserRepository.existsUserByEmail).toHaveBeenCalledWith(registerRequest.email);
+      expect(mockedDepartmentRoleRepository.findByDepartmentAndRole).toHaveBeenCalledWith('Organization', 'Citizen');
       
       expect(mockedUserRepository.createUserWithPassword).toHaveBeenCalledWith({
         username: registerRequest.username,
@@ -82,7 +84,7 @@ describe('UserService', () => {
         password: registerRequest.password,
         firstName: registerRequest.first_name,
         lastName: registerRequest.last_name,
-        role: UserRole.CITIZEN, 
+        departmentRoleId: mockDepartmentRole.id,
         emailNotificationsEnabled: true 
       });
       
@@ -92,20 +94,23 @@ describe('UserService', () => {
 
     it('should use fallback role CITIZEN if role is not provided', async () => {
       // Arrange
-      const requestWithoutRole: Omit<RegisterRequest, 'role'> & { role?: UserRole } = { ...registerRequest };
-      delete requestWithoutRole.role;
+      const requestWithoutRole: Omit<RegisterRequest, 'role_name'> & { role_name?: string } = { ...registerRequest };
+      delete requestWithoutRole.role_name;
 
+      const mockDepartmentRole = createMockDepartmentRole('Citizen');
       mockedUserRepository.existsUserByUsername.mockResolvedValue(false);
       mockedUserRepository.existsUserByEmail.mockResolvedValue(false);
+      mockedDepartmentRoleRepository.findByDepartmentAndRole.mockResolvedValue(mockDepartmentRole);
       mockedUserRepository.createUserWithPassword.mockResolvedValue(mockCitizenEntity);
       
       // Act
       await userService.registerCitizen(requestWithoutRole as RegisterRequest);
 
       // Assert
+      expect(mockedDepartmentRoleRepository.findByDepartmentAndRole).toHaveBeenCalledWith('Organization', 'Citizen');
       expect(mockedUserRepository.createUserWithPassword).toHaveBeenCalledWith(
         expect.objectContaining({
-          role: UserRole.CITIZEN 
+          departmentRoleId: mockDepartmentRole.id
         })
       );
     });
@@ -137,8 +142,10 @@ describe('UserService', () => {
     
     it('should throw AppError if mapping fails (safeMapUserToResponse)', async () => {
       // Arrange
+      const mockDepartmentRole = createMockDepartmentRole('Citizen');
       mockedUserRepository.existsUserByUsername.mockResolvedValue(false);
       mockedUserRepository.existsUserByEmail.mockResolvedValue(false);
+      mockedDepartmentRoleRepository.findByDepartmentAndRole.mockResolvedValue(mockDepartmentRole);
       mockedUserRepository.createUserWithPassword.mockResolvedValue(mockCitizenEntity);
       
       // Act

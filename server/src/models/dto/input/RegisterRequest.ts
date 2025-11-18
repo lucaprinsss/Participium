@@ -1,5 +1,3 @@
-import { UserRole } from "./UserRole";
-
 /**
  * @swagger
  * components:
@@ -12,7 +10,7 @@ import { UserRole } from "./UserRole";
  *         - password
  *         - first_name
  *         - last_name
- *         - role
+ *         - role_name
  *       properties:
  *         username:
  *           type: string
@@ -35,12 +33,15 @@ import { UserRole } from "./UserRole";
  *           type: string
  *           description: Last name
  *           example: "Rossi"
- *         role:
+ *         role_name:
  *           type: string
- *           enum: [Citizen, Administrator, Municipal_public_relations_officer, Technical_office_staff_member, Infrastructure_manager, Urban_planning_officer, Sustainability_coordinator, Administrative_assistant, Project_coordinator, Community_engagement_specialist]
- *           description: User role
+ *           description: Role name
  *           example: "Citizen"
- *       description: User registration request with role
+ *         department_name:
+ *           type: string
+ *           description: Department name (optional)
+ *           example: "Organization"
+ *       description: User registration request with role and department
  */
 export interface RegisterRequest {
     username: string;
@@ -48,5 +49,6 @@ export interface RegisterRequest {
     password: string;
     first_name: string;
     last_name: string;
-    role: UserRole; // Required - set by controller based on context
+    role_name: string;
+    department_name?: string;
 }

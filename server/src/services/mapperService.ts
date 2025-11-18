@@ -1,7 +1,6 @@
 import { ErrorDTO } from "@models/errors/ErrorDTO";
-import { UserResponse } from "@models/dto/UserResponse";
+import { UserResponse } from "@models/dto/output/UserResponse";
 import { userEntity } from "@models/entity/userEntity";
-import { UserRole } from "@models/dto/UserRole";
 
 
 export function createErrorDTO(
@@ -26,13 +25,18 @@ export function mapUserEntityToUserResponse(entity: userEntity | null | undefine
     return null;
   }
 
+  // Extract role name from the department_role relation
+  const roleName = entity.departmentRole?.role?.name;
+  const departmentName = entity.departmentRole?.department?.name;
+
   return removeNullAttributes({
     id: entity.id,
     username: entity.username,
     email: entity.email,
     first_name: entity.firstName,
     last_name: entity.lastName,
-    role: entity.role as UserRole
+    department_name: departmentName,
+    role_name: roleName
   }) as UserResponse;
 }
 

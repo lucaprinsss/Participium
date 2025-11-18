@@ -8,8 +8,7 @@ import * as path from 'path';
 export function loadTestEnvironment(): void {
   if (process.env.NODE_ENV === 'test') {
     const envPath = path.resolve(__dirname, '../../../.env.test');
-    dotenv.config({ path: envPath, override: true });
-    console.log('Test environment loaded from .env.test');
+    dotenv.config({ path: envPath, override: true, debug: false });
   }
 }
 

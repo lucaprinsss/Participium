@@ -24,7 +24,20 @@ describe('AuthController Unit Tests', () => {
     passwordHash: 'salt:hash',
     firstName: 'Test',
     lastName: 'User',
-    role: 'citizen',
+    departmentRoleId: 1,
+    departmentRole: {
+      id: 1,
+      departmentId: 1,
+      roleId: 1,
+      department: {} as any,
+      role: {
+        id: 1,
+        name: 'Citizen',
+        description: 'Regular citizen user',
+        departmentRoles: []
+      },
+      users: []
+    },
     personalPhotoUrl: undefined,
     telegramUsername: undefined,
     emailNotificationsEnabled: true,
@@ -37,7 +50,7 @@ describe('AuthController Unit Tests', () => {
     email: 'test@example.com',
     first_name: 'Test',
     last_name: 'User',
-    role: 'citizen',
+    role_name: 'citizen',
   };
 
   beforeEach(() => {

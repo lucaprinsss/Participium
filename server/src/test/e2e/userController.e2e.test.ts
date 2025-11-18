@@ -53,7 +53,7 @@ import {
       expect(response.body).toHaveProperty('email', validRegistrationData.email);
       expect(response.body).toHaveProperty('first_name', validRegistrationData.first_name);
       expect(response.body).toHaveProperty('last_name', validRegistrationData.last_name);
-      expect(response.body).toHaveProperty('role', 'Citizen');
+      expect(response.body).toHaveProperty('role_name', 'Citizen');
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).not.toHaveProperty('passwordHash');
 
@@ -90,11 +90,11 @@ import {
         .expect(201);
 
       // Assert
-      expect(response.body.role).toBe('Citizen');
+      expect(response.body.role_name).toBe('Citizen');
 
       // Verify in database
       const user = await userRepository.findUserByUsername(validRegistrationData.username);
-      expect(user?.role).toBe('Citizen');
+      expect(user?.departmentRole?.role?.name).toBe('Citizen');
     });
 
     it('should allow user to login after registration', async () => {
@@ -486,7 +486,7 @@ import {
       expect(response.body).toHaveProperty('email');
       expect(response.body).toHaveProperty('first_name');
       expect(response.body).toHaveProperty('last_name');
-      expect(response.body).toHaveProperty('role');
+      expect(response.body).toHaveProperty('role_name');
       
       // Verify types
       expect(typeof response.body.id).toBe('number');
@@ -494,7 +494,7 @@ import {
       expect(typeof response.body.email).toBe('string');
       expect(typeof response.body.first_name).toBe('string');
       expect(typeof response.body.last_name).toBe('string');
-      expect(typeof response.body.role).toBe('string');
+      expect(typeof response.body.role_name).toBe('string');
       
       // Verify values match input
       expect(response.body.username).toBe(validRegistrationData.username);

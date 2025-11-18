@@ -3,8 +3,7 @@ import request from 'supertest';
 import { AppDataSource } from "@database/connection";
 import app from "../../../app";
 import { userEntity } from "@models/entity/userEntity";
-import { UserRole } from '@models/dto/UserRole';
-import { RegisterRequest } from '@models/dto/RegisterRequest';
+import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { In } from 'typeorm'; 
 
 const random = () => Math.floor(Math.random() * 1000000);
@@ -71,7 +70,7 @@ describe('UserController Integration Tests', () => {
       expect(response.body.first_name).toBe(newCitizenData.first_name);
       expect(response.body.last_name).toBe(newCitizenData.last_name);
 
-      expect(response.body.role).toBe(UserRole.CITIZEN);
+      expect(response.body.role_name).toBe('Citizen');
 
       expect(response.body.password).toBeUndefined();
       expect(response.body.passwordHash).toBeUndefined();

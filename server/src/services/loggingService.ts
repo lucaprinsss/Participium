@@ -1,5 +1,8 @@
 import winston from "winston";
 
+// Disabilita completamente i log durante i test
+const isTestEnvironment = process.env.NODE_ENV === 'test' || process.argv.some(arg => arg.includes('test'));
+
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || "info",
   format: winston.format.combine(
@@ -11,7 +14,8 @@ export const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.Console()
-  ]
+  ],
+  silent: isTestEnvironment
 });
 
 export const logInfo = (message: string) => logger.info(message);

@@ -7,7 +7,7 @@ import { userEntity } from '@models/entity/userEntity';
 interface SessionUser {
   id: number;
   username: string;
-  role: string;
+  departmentRoleId?: number;
 }
 
 export const configurePassport = (): void => {
@@ -43,7 +43,7 @@ export const configurePassport = (): void => {
     const sessionUser: SessionUser = {
       id: u.id,
       username: u.username,
-      role: u.role,
+      departmentRoleId: u.departmentRoleId,
     };
     done(null, sessionUser);
   });

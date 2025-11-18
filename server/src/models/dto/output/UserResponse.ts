@@ -1,5 +1,3 @@
-import { UserRole } from "./UserRole"
-
 /**
  * @swagger
  * components:
@@ -23,10 +21,12 @@ import { UserRole } from "./UserRole"
  *         last_name:
  *           type: string
  *           description: Last name
- *         role:
+ *         department_name:
  *           type: string
- *           enum: [Organization_staff, Technical_staff, Administrator]
- *           description: User role
+ *           description: Department name
+ *         role_name:
+ *           type: string
+ *           description: Role name
  *         created_at:
  *           type: string
  *           format: date-time
@@ -38,5 +38,6 @@ export interface UserResponse{
     email: string, 
     first_name: string, 
     last_name: string, 
-    role: UserRole
+    department_name?: string,
+    role_name?: string
 }

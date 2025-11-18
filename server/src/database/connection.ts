@@ -4,7 +4,7 @@ import { snakeCase } from "typeorm/util/StringUtils";
 import * as dotenv from 'dotenv';
 import { logger } from "@services/loggingService";
 
-dotenv.config();
+dotenv.config({ debug: false });
 
 /**
  * Custom naming strategy that converts camelCase property names to snake_case column names

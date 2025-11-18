@@ -7,6 +7,7 @@ import { configurePassport } from "@config/passport";
 import authRoutes from "@routes/authRoutes";
 import userRoutes from "@routes/userRoutes";
 import roleRoutes from "@routes/roleRoutes";
+import reportRoutes from '@routes/reportRoutes';
 import municipalityUserRoutes from "@routes/municipalityUserRoutes";
 import {errorHandler} from "@middleware/errorMiddelware";
 
@@ -49,6 +50,7 @@ app.use("/api/sessions", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/municipality/users", municipalityUserRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Check endpoint to verify server is running
 app.get("/health", (req: Request, res: Response) => {
