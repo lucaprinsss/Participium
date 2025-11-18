@@ -3,5 +3,14 @@ node_modules/
 
 .DS_Store
 
+# Coverage
 coverage/
+
+# Swagger
 openapi.json
+
+# Build output
+dist/
+
+# Others
+database-workflow-guide.md

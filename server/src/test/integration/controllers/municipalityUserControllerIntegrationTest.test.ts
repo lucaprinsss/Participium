@@ -529,43 +529,4 @@ describe('MunicipalityUserController Integration Tests', () => {
         });
     });
 
-
-    // --- GET /api/roles (Get All Roles) --------------------------------
-    describe('GET /api/roles (Get All Roles)', () => {
-        
-        it('should return municipality roles if authenticated as Admin (200)', async () => {
-            const response = await adminAgent.get('/api/roles');
-            const expectedRoles = await RoleUtils.getAllMunicipalityRoles();
-
-            expect(response.status).toBe(200);
-            expect(response.body).toEqual(expectedRoles);
-            
-            expect(response.body).toContain('Water Network staff member');
-            expect(response.body).toContain('Department Director');
-            expect(response.body).not.toContain('Citizen');
-            expect(response.body).not.toContain('Administrator');
-        });
-
-        it('should return 401 if not authenticated', async () => {
-            const response = await request(app).get('/api/roles');
-            expect(response.status).toBe(401);
-        });
-
-        it('should return 403 if authenticated as Citizen', async () => {
-            const response = await citizenAgent.get('/api/roles');
-            expect(response.status).toBe(403);
-        });
-
-        it('should return 500 if the RoleUtils throws an error', async () => {
-            const mockError = new Error('Forced Util Error');
-            jest.spyOn(RoleUtils, 'getAllMunicipalityRoles').mockImplementation(() => {
-                throw mockError;
-            });
-
-            const response = await adminAgent.get('/api/roles');
-            
-            expect(response.status).toBe(500);
-        });
-    });
-
 });

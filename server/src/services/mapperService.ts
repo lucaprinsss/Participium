@@ -1,6 +1,10 @@
 import { ErrorDTO } from "@models/errors/ErrorDTO";
 import { UserResponse } from "@models/dto/UserResponse";
 import { userEntity } from "@models/entity/userEntity";
+import { Department } from "@dto/Department";
+import { Role } from "@dto/Role";
+import { DepartmentEntity } from "@entity/departmentEntity";
+import { RoleEntity } from "@entity/roleEntity";
 
 
 export function createErrorDTO(
@@ -13,6 +17,27 @@ export function createErrorDTO(
     name,
     message
   }) as ErrorDTO;
+}
+
+/**
+ * Maps a DepartmentEntity to Department DTO
+ */
+export function mapDepartmentEntityToDTO(entity: DepartmentEntity): Department {
+  return {
+    id: entity.id,
+    name: entity.name
+  };
+}
+
+/**
+ * Maps a RoleEntity to Role DTO
+ */
+export function mapRoleEntityToDTO(entity: RoleEntity): Role {
+  return removeNullAttributes({
+    id: entity.id,
+    name: entity.name,
+    description: entity.description
+  }) as Role;
 }
 
 /**

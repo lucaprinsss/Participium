@@ -6,7 +6,7 @@ import {setupSwagger } from "@config/swagger";
 import { configurePassport } from "@config/passport";
 import authRoutes from "@routes/authRoutes";
 import userRoutes from "@routes/userRoutes";
-import roleRoutes from "@routes/roleRoutes";
+import departmentRoutes from "@routes/departmentRoutes";
 import municipalityUserRoutes from "@routes/municipalityUserRoutes";
 import {errorHandler} from "@middleware/errorMiddelware";
 
@@ -47,7 +47,7 @@ setupSwagger(app);
 // API routes
 app.use("/api/sessions", authRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/roles", roleRoutes);
+app.use("/api/departments", departmentRoutes);
 app.use("/api/municipality/users", municipalityUserRoutes);
 
 // Check endpoint to verify server is running
