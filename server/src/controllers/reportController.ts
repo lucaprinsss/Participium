@@ -5,6 +5,10 @@ import { ReportCategory } from '@models/dto/ReportCategory';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { User } from '@models/dto/User';
+import { userRepository } from '../repositories/userRepository'; 
+
+
+
 
 /**
  * Report Controller
@@ -47,7 +51,14 @@ class ReportController {
         throw new UnauthorizedError('Not authenticated');
       }
 
-      const user = req.user as User;
+      const userId = (req.user as User).id;
+      
+      const userEntity = await userRepository.findUserById(userId);
+      
+      if (!userEntity) {
+        throw new UnauthorizedError('User not found');
+      }      
+      
       const { status, category } = req.query;
       
       let reportStatus: ReportStatus | undefined;
@@ -70,11 +81,11 @@ class ReportController {
         reportCategory = category as ReportCategory;
       }
 
-      const reports = await reportService.getAllReports(
-        user.role,
-        reportStatus,
-        reportCategory
-      );
+    const reports = await reportService.getAllReports(
+      userEntity,
+      reportStatus,
+      reportCategory
+    );
       
       res.status(200).json(reports);
     } catch (error) {

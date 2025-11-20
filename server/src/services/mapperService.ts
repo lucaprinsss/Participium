@@ -5,6 +5,8 @@ import { Department } from "@dto/Department";
 import { Role } from "@dto/Role";
 import { DepartmentEntity } from "@entity/departmentEntity";
 import { RoleEntity } from "@entity/roleEntity";
+import { Report } from "@dto/Report";
+import { reportEntity } from "@entity/reportEntity";
 
 
 export function createErrorDTO(
@@ -18,6 +20,29 @@ export function createErrorDTO(
     message
   }) as ErrorDTO;
 }
+
+
+/**
+ * Maps a reportEntity to Report DTO
+ * Converts from camelCase entity to snake_case DTO
+ */
+export function mapReportEntityToDTO(entity: reportEntity): Report {
+  return removeNullAttributes({
+    id: entity.id,
+    reporter_id: entity.reporterId,
+    title: entity.title,
+    description: entity.description,
+    category: entity.category,
+    location: entity.location,
+    is_anonymous: entity.isAnonymous,
+    status: entity.status,
+    rejection_reason: entity.rejectionReason,
+    assignee_id: entity.assigneeId,
+    created_at: entity.createdAt,
+    updated_at: entity.updatedAt
+  }) as Report;
+}
+
 
 /**
  * Maps a DepartmentEntity to Department DTO

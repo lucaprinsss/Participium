@@ -1,4 +1,15 @@
 import { ReportCategory } from '../models/dto/ReportCategory';
+import { ReportStatus } from '@models/dto/ReportStatus';
+import { User } from '@models/dto/User';
+import { UnauthorizedError } from '../models/errors/UnauthorizedError';
+import { InsufficientRightsError } from '../models/errors/InsufficientRightsError';
+import { reportRepository } from '../repositories/reportRepository';
+import { mapReportEntityToDTO } from './mapperService';
+import { Report } from '@models/dto/Report'; 
+import { userEntity } from '@models/entity/userEntity';
+
+
+
 
 /**
  * Report Service
@@ -26,21 +37,26 @@ class ReportService {
    * Get all reports with optional filters
    * Enforces authorization: pending reports only for public relations officers
    */
-  async getAllReports(
-    userRole: string,
-    status?: ReportStatus,
-    category?: ReportCategory
-  ): Promise<ReportResponse[]> {
-    
-    // If filtering by Pending Approval, check authorization
-    if (status === ReportStatus.PENDING_APPROVAL) {
-      if (userRole !== 'Municipal Public Relations Officer') {
-        throw new InsufficientRightsError(
-          'Only Municipal Public Relations Officers can view pending reports'
-        );
-      }
+async getAllReports(
+  user: userEntity, 
+  status?: ReportStatus,
+  category?: ReportCategory
+): Promise<Report[]> {
+  
+   const userRole = user.departmentRole?.role?.name;
+  
+  if (!userRole) {
+    throw new UnauthorizedError('User role not found');
+  }
+  
+  // Se filtering by Pending Approval, check authorization
+  if (status === ReportStatus.PENDING_APPROVAL) {
+    if (userRole !== 'Municipal Public Relations Officer') {
+      throw new InsufficientRightsError(
+        'Only Municipal Public Relations Officers can view pending reports'
+      );
     }
-
+  }
     const reports = await reportRepository.findAllReports(status, category);
     
     // Filter out pending reports for non-authorized users
@@ -51,7 +67,7 @@ class ReportService {
       return true;
     });
 
-    return filteredReports.map(report => this.mapReportToResponse(report));
+    return filteredReports.map(report => mapReportEntityToDTO(report));
   }
 
   /**
