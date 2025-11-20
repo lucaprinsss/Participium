@@ -9,6 +9,7 @@ module.exports = {
   ],
   transform: {
     '^.+\\.ts$': 'ts-jest',
+    '^.+\\.geojson$': '<rootDir>/src/test/utils/geojsonTransformer.js',
   },
   collectCoverageFrom: [
     'src/**/*.ts',
