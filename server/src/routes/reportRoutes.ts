@@ -838,4 +838,7 @@ router.get('/categories', reportController.getCategories);
 // Reject a report (Municipal Public Relations Officer only)
 // router.put('/:id/reject', isPublicRelationsOfficer, reportController.rejectReport);
 
+// Get all reports (authenticated users)
+router.get('/', isLoggedIn, reportController.getAllReports);
+
 export default router;

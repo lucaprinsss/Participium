@@ -1,5 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { reportService } from '../services/reportService';
+import { ReportStatus } from '@models/dto/ReportStatus';
+import { ReportCategory } from '@models/dto/ReportCategory';
+import { UnauthorizedError } from '@models/errors/UnauthorizedError';
+import { BadRequestError } from '@models/errors/BadRequestError';
+import { User } from '@models/dto/User';
 
 /**
  * Report Controller
@@ -38,8 +43,40 @@ class ReportController {
    */
   async getAllReports(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // TODO: Implement get all reports logic
-      res.status(501).json({ error: 'Not implemented yet' });
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+
+      const user = req.user as User;
+      const { status, category } = req.query;
+      
+      let reportStatus: ReportStatus | undefined;
+      if (status && typeof status === 'string') {
+        if (!Object.values(ReportStatus).includes(status as ReportStatus)) {
+          throw new BadRequestError(
+            `Invalid status. Must be one of: ${Object.values(ReportStatus).join(', ')}`
+          );
+        }
+        reportStatus = status as ReportStatus;
+      }
+
+      let reportCategory: ReportCategory | undefined;
+      if (category && typeof category === 'string') {
+        if (!Object.values(ReportCategory).includes(category as ReportCategory)) {
+          throw new BadRequestError(
+            `Invalid category. Must be one of: ${Object.values(ReportCategory).join(', ')}`
+          );
+        }
+        reportCategory = category as ReportCategory;
+      }
+
+      const reports = await reportService.getAllReports(
+        user.role,
+        reportStatus,
+        reportCategory
+      );
+      
+      res.status(200).json(reports);
     } catch (error) {
       next(error);
     }
