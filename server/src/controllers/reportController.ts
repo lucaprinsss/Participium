@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { reportService } from '../services/reportService';
+import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
 
 /**
  * Report Controller
@@ -25,8 +26,11 @@ class ReportController {
    */
   async createReport(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // TODO: Implement report creation logic
-      res.status(501).json({ error: 'Not implemented yet' });
+      const reportData: CreateReportRequest = req.body;
+      const userId = (req.user as any).id;
+
+      const createdReport = await reportService.createReport(reportData, userId);
+      res.status(201).json(createdReport);
     } catch (error) {
       next(error);
     }

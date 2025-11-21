@@ -24,8 +24,8 @@ import { ReportCategory } from '../ReportCategory';
  *           type: string
  *           minLength: 10
  *           maxLength: 2000
- *           description: Detailed description of the problem
- *           example: "Presence of a pothole approximately 20cm deep that poses a danger to pedestrians and vehicles"
+ *           description: Detailed description of the issue
+ *           example: "There is a deep pothole approximately 20cm deep that poses a danger to pedestrians and vehicles"
  *         category:
  *           $ref: '#/components/schemas/ReportCategory'
  *         location:
@@ -34,25 +34,22 @@ import { ReportCategory } from '../ReportCategory';
  *           type: array
  *           minItems: 1
  *           maxItems: 3
- *           description: Array of base64-encoded photo strings (minimum 1, maximum 3)
+ *           description: Array of 1 to 3 photos in base64 format
+ *           example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
  *           items:
  *             type: string
- *             description: Base64-encoded image data (e.g., data:image/jpeg;base64,...)
- *           example:
- *             - "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
- *             - "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+ *             format: byte
  *         isAnonymous:
  *           type: boolean
  *           default: false
- *           description: If true, the report will be anonymous
+ *           description: Whether the report should be anonymous
  *           example: false
  */
-
 export interface CreateReportRequest {
   title: string;
   description: string;
   category: ReportCategory;
   location: Location;
-  photos: string[]; // Array of base64-encoded images (min 1, max 3)
+  photos: string[];
   isAnonymous?: boolean;
 }

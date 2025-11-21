@@ -1,7 +1,7 @@
 import express from 'express';
 import { reportController } from '../controllers/reportController';
 import { isCitizen, isLoggedIn } from '../middleware/authMiddleware';
-import { validateCreateReport } from '../middleware/reportValidation';
+import { validateCreateReport } from '../middleware/reportMiddleware';
 
 const router = express.Router();
 
