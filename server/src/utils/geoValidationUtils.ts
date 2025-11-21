@@ -1,6 +1,13 @@
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point, multiPolygon } from '@turf/helpers';
-import turinBoundaries from '../public/boundaries_turin_city.geojson';
+import * as path from 'path';
+import * as fs from 'fs';
+
+// Load Turin boundaries GeoJSON
+// In development with ts-node, __dirname is the compiled path
+// We need to go up to the server root and then into src/public
+const turinBoundariesPath = path.join(__dirname, '..', '..', 'src', 'public', 'boundaries_turin_city.geojson');
+const turinBoundaries = JSON.parse(fs.readFileSync(turinBoundariesPath, 'utf8'));
 
 /**
  * Validates if a given coordinate (latitude, longitude) is within Turin city boundaries
