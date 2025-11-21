@@ -2,6 +2,10 @@ import { ReportCategory } from '../models/dto/ReportCategory';
 import { Location } from '../models/dto/Location';
 import { BadRequestError } from '../models/errors/BadRequestError';
 import { isWithinTurinBoundaries, isValidCoordinate } from '../utils/geoValidationUtils';
+import { dataUriToBuffer, extractMimeType, getExtensionFromMimeType } from '../utils/photoValidationUtils';
+import * as fs from 'fs';
+import * as path from 'path';
+import { randomBytes } from 'crypto';
 
 /**
  * Report Service
@@ -51,11 +55,34 @@ class ReportService {
   }
 
   /**
-   * Create a new report
-   * TODO: Implement when needed
+   * Saves photo data URIs to disk
+   * @param photoDataUris - Array of base64 data URIs
+   * @param reportId - The ID of the report (for organizing files)
+   * @returns Array of file paths where photos were saved
    */
-  async createReport(): Promise<void> {
-    throw new Error('Not implemented yet');
+  private async savePhotos(photoDataUris: string[], reportId: number): Promise<string[]> {
+    // Create report-specific directory
+    const uploadDir = path.join(process.cwd(), 'uploads', 'reports', reportId.toString());
+    
+    // Ensure upload directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const filePaths: string[] = [];
+
+    for (const dataUri of photoDataUris) {
+      const buffer = dataUriToBuffer(dataUri);
+      const mimeType = extractMimeType(dataUri);
+      const extension = getExtensionFromMimeType(mimeType!);
+      const filename = `${Date.now()}-${randomBytes(8).toString('hex')}.${extension}`;
+      const filePath = path.join(uploadDir, filename);
+
+      await fs.promises.writeFile(filePath, buffer);
+      filePaths.push(filePath);
+    }
+
+    return filePaths;
   }
 
   /**
