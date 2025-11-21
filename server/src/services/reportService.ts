@@ -4,6 +4,13 @@ import { BadRequestError } from '../models/errors/BadRequestError';
 import { isWithinTurinBoundaries, isValidCoordinate } from '../utils/geoValidationUtils';
 import { dataUriToBuffer, extractMimeType } from '../utils/photoValidationUtils';
 import { storageService } from './storageService';
+import { reportRepository } from '../repositories/reportRepository';
+import { photoRepository } from '../repositories/photoRepository';
+import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
+import { ReportResponse } from '../models/dto/output/ReportResponse';
+import { reportEntity } from '../models/entity/reportEntity';
+import { validatePhotos } from '../utils/photoValidationUtils';
+import { mapReportEntityToResponse } from './mapperService';
 
 /**
  * Report Service
@@ -71,6 +78,64 @@ class ReportService {
     }
 
     return storagePaths;
+  }
+
+  /**
+   * Create a new report
+   * @param reportData - The report data from the request
+   * @param userId - The ID of the user creating the report
+   * @returns The created report response
+   * @throws BadRequestError if validation fails
+   */
+  async createReport(reportData: CreateReportRequest, userId: number): Promise<ReportResponse> {
+    // Validate location (business logic - Turin boundaries)
+    this.validateLocation(reportData.location);
+
+    // Validate photos (business logic - detailed validation)
+    const photoValidation = validatePhotos(reportData.photos);
+    if (!photoValidation.isValid) {
+      throw new BadRequestError(photoValidation.error!);
+    }
+
+    let createdReport: reportEntity | null = null;
+
+    try {
+      // Prepare report data for repository
+      const reportEntityData = {
+        reporterId: reportData.isAnonymous ? null as any : userId,
+        reporter: reportData.isAnonymous ? null as any : undefined,
+        title: reportData.title.trim(),
+        description: reportData.description.trim(),
+        category: reportData.category,
+        location: `POINT(${reportData.location.longitude} ${reportData.location.latitude})`,
+        isAnonymous: reportData.isAnonymous || false,
+      };
+
+      // Create report in database first to get the ID
+      createdReport = await reportRepository.createReport(reportEntityData, []);
+
+      // Save photos to disk in report-specific folder
+      const photoFilePaths = await this.savePhotos(reportData.photos, createdReport.id);
+
+      // Save photo paths to database
+      await photoRepository.savePhotosForReport(createdReport.id, photoFilePaths);
+
+      // Get photos for response
+      const photos = await photoRepository.getPhotosByReportId(createdReport.id);
+
+      // Map to response DTO
+      return mapReportEntityToResponse(createdReport, photos, reportData.location);
+    } catch (error) {
+      // Clean up: delete report photos if database operation fails
+      if (createdReport?.id) {
+        try {
+          await storageService.deleteReportPhotos(createdReport.id);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup report photos:', cleanupError);
+        }
+      }
+      throw error;
+    }
   }
 
   /**

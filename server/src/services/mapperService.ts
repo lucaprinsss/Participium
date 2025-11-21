@@ -1,10 +1,15 @@
 import { ErrorDTO } from "@models/errors/ErrorDTO";
 import { UserResponse } from "@models/dto/output/UserResponse";
+import { ReportResponse, PhotoResponse } from "@models/dto/output/ReportResponse";
 import { userEntity } from "@models/entity/userEntity";
+import { reportEntity } from "@models/entity/reportEntity";
+import { Photo } from "@models/dto/Photo";
 import { Department } from "@dto/Department";
 import { Role } from "@dto/Role";
 import { DepartmentEntity } from "@entity/departmentEntity";
 import { RoleEntity } from "@entity/roleEntity";
+import { Location } from "@models/dto/Location";
+import { ReportCategory } from "@models/dto/ReportCategory";
 
 
 export function createErrorDTO(
@@ -63,6 +68,45 @@ export function mapUserEntityToUserResponse(entity: userEntity | null | undefine
     department_name: departmentName,
     role_name: roleName
   }) as UserResponse;
+}
+
+/**
+ * Maps a Photo DTO (snake_case) to API response format (camelCase)
+ * @param photo - Photo DTO from database
+ * @returns PhotoResponse for API
+ */
+export function mapPhotoToResponse(photo: Photo): PhotoResponse {
+  return {
+    id: photo.id,
+    reportId: photo.report_id,
+    storageUrl: photo.storage_url,
+    createdAt: photo.created_at,
+  };
+}
+
+/**
+ * Maps a reportEntity to ReportResponse DTO
+ * @param report - The report entity from database
+ * @param photos - Array of photo entities associated with the report
+ * @param location - The parsed location object
+ * @returns ReportResponse DTO
+ */
+export function mapReportEntityToResponse(report: reportEntity, photos: any[], location: Location): ReportResponse {
+  return {
+    id: report.id,
+    reporterId: report.isAnonymous ? null : report.reporterId,
+    title: report.title,
+    description: report.description,
+    category: report.category as ReportCategory,
+    location: location,
+    photos: photos.map(mapPhotoToResponse),
+    isAnonymous: report.isAnonymous,
+    status: report.status as any,
+    rejectionReason: report.rejectionReason || null,
+    assigneeId: report.assigneeId || null,
+    createdAt: report.createdAt,
+    updatedAt: report.updatedAt,
+  };
 }
 
 function removeNullAttributes<T extends Record<string, any>>(
