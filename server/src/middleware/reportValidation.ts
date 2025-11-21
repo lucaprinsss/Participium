@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
-import { ReportCategory } from '../models/dto/ReportCategory';
 import { BadRequestError } from '../models/errors/BadRequestError';
 
 /**
@@ -22,6 +21,26 @@ export const validateCreateReport = (req: Request, res: Response, next: NextFunc
     }
     if (data.location.longitude < -180 || data.location.longitude > 180) {
       throw new BadRequestError('Longitude must be between -180 and 180');
+    }
+
+    // Validate photos
+    if (!data.photos || !Array.isArray(data.photos)) {
+      throw new BadRequestError('Photos are required and must be an array');
+    }
+    if (data.photos.length < 1 || data.photos.length > 3) {
+      throw new BadRequestError('Photos must contain between 1 and 3 images');
+    }
+    
+    const dataUriPattern = /^data:image\/(jpeg|png|webp);base64,/;
+    for (let i = 0; i < data.photos.length; i++) {
+      if (typeof data.photos[i] !== 'string') {
+        throw new BadRequestError(`Photo at index ${i} must be a string`);
+      }
+      if (!dataUriPattern.test(data.photos[i])) {
+        throw new BadRequestError(
+          `Photo at index ${i} must be a valid data URI with format: data:image/(jpeg|png|webp);base64,...`
+        );
+      }
     }
 
     next();
