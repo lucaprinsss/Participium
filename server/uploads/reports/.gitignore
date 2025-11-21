@@ -1,0 +1,3 @@
+# Ignore all report files but keep the reports directory
+*
+!.gitignore
