@@ -1,14 +1,12 @@
 import express from 'express';
 import { reportController } from '../controllers/reportController';
 import { isCitizen, isLoggedIn } from '../middleware/authMiddleware';
+import { validateCreateReport } from '../middleware/reportValidation';
 
 const router = express.Router();
 
 /**
  * @swagger
- * tags:
- *   - name: Reports
- *
  * /api/reports:
  *   post:
  *     summary: Create a new geolocated report
@@ -175,7 +173,12 @@ const router = express.Router();
  *             example:
  *               error: "Internal Server Error"
  *               message: "An unexpected error occurred while creating the report"
- *
+ */ 
+router.post('/', isCitizen, reportController.createReport);
+
+
+/** 
+ *  @swagger
  *   get:
  *     summary: Get all reports
  *     description: |
@@ -815,7 +818,7 @@ const router = express.Router();
  */
 
 // Create a new report (Citizens only)
-// router.post('/', isCitizen, reportController.createReport);
+router.post('/', isCitizen, validateCreateReport, reportController.createReport);
 
 // Get all available report categories (public endpoint - no authentication required)
 router.get('/categories', reportController.getCategories);
