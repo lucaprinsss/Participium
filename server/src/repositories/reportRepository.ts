@@ -38,8 +38,11 @@ class ReportRepository {
   }
 
 
-  async findPendingReports(): Promise<reportEntity[]> {
-    return await this.findAllReports(ReportStatus.PENDING_APPROVAL);
+    /**
+   * Save a report entity (create or update)
+   */
+  async save(report: reportEntity): Promise<reportEntity> {
+    return await this.repository.save(report);
   }
 
 }

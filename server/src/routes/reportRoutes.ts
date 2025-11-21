@@ -1,6 +1,7 @@
 import express from 'express';
 import { reportController } from '../controllers/reportController';
-import { isCitizen, isLoggedIn } from '../middleware/authMiddleware';
+import { isLoggedIn, requireRole } from '../middleware/authMiddleware';
+
 
 const router = express.Router();
 
@@ -338,6 +339,10 @@ const router = express.Router();
  *       Municipal Public Relations Officer can approve a report in "Pending Approval" status.
  *       Upon approval, the report is automatically assigned to the technical office
  *       responsible for the report category and status changes to "Assigned".
+ *       
+ *       **Optional category modification:**
+ *       The Municipal Public Relations Officer can optionally modify the report category
+ *       during approval if the citizen selected the wrong category.
  *     tags: [Reports]
  *     security:
  *       - sessionAuth: []
@@ -349,6 +354,35 @@ const router = express.Router();
  *           type: integer
  *         description: Report ID to approve
  *         example: 42
+ *     requestBody:
+ *       description: Optional body to modify report category during approval
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category:
+ *                 type: string
+ *                 enum:
+ *                   - "Water Supply - Drinking Water"
+ *                   - "Architectural Barriers"
+ *                   - "Sewer System"
+ *                   - "Public Lighting"
+ *                   - "Waste"
+ *                   - "Road Signs and Traffic Lights"
+ *                   - "Roads and Urban Furnishings"
+ *                   - "Public Green Areas and Playgrounds"
+ *                   - "Other"
+ *                 description: New category for the report (optional). If provided, the report category will be updated before assignment.
+ *           examples:
+ *             withCategoryChange:
+ *               summary: Approve with category modification
+ *               value:
+ *                 category: "Public Lighting"
+ *             withoutCategoryChange:
+ *               summary: Approve without modifications
+ *               value: {}
  *     responses:
  *       200:
  *         description: Report approved successfully and assigned to technical office
@@ -356,22 +390,43 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ReportResponse'
- *             example:
- *               id: 42
- *               reporterId: 15
- *               title: "Dangerous pothole on Via Roma"
- *               description: "Presence of a pothole approximately 20cm deep"
- *               category: "Roads and Urban Furnishings"
- *               location:
- *                 latitude: 45.4642
- *                 longitude: 9.1900
- *               photos: []
- *               isAnonymous: false
- *               status: "Assigned"
- *               rejectionReason: null
- *               assigneeId: 5
- *               createdAt: "2025-11-15T10:30:00Z"
- *               updatedAt: "2025-11-16T14:20:00Z"
+ *             examples:
+ *               approvedWithCategoryChange:
+ *                 summary: Approved with category changed
+ *                 value:
+ *                   id: 42
+ *                   reporterId: 15
+ *                   title: "Dangerous pothole on Via Roma"
+ *                   description: "Presence of a pothole approximately 20cm deep"
+ *                   category: "Public Lighting"
+ *                   location:
+ *                     latitude: 45.4642
+ *                     longitude: 9.1900
+ *                   photos: []
+ *                   isAnonymous: false
+ *                   status: "Assigned"
+ *                   rejectionReason: null
+ *                   assigneeId: 5
+ *                   createdAt: "2025-11-15T10:30:00Z"
+ *                   updatedAt: "2025-11-16T14:20:00Z"
+ *               approvedWithoutChange:
+ *                 summary: Approved without category change
+ *                 value:
+ *                   id: 42
+ *                   reporterId: 15
+ *                   title: "Dangerous pothole on Via Roma"
+ *                   description: "Presence of a pothole approximately 20cm deep"
+ *                   category: "Roads and Urban Furnishings"
+ *                   location:
+ *                     latitude: 45.4642
+ *                     longitude: 9.1900
+ *                   photos: []
+ *                   isAnonymous: false
+ *                   status: "Assigned"
+ *                   rejectionReason: null
+ *                   assigneeId: 5
+ *                   createdAt: "2025-11-15T10:30:00Z"
+ *                   updatedAt: "2025-11-16T14:20:00Z"
  *       400:
  *         description: Invalid request
  *         content:
@@ -384,6 +439,11 @@ const router = express.Router();
  *                 value:
  *                   error: "Bad Request"
  *                   message: "Report must be in 'Pending Approval' status to be approved"
+ *               invalidCategory:
+ *                 summary: Invalid category provided
+ *                 value:
+ *                   error: "Bad Request"
+ *                   message: "Invalid category. Must be one of: Water Supply - Drinking Water, Architectural Barriers, Sewer System, Public Lighting, Waste, Road Signs and Traffic Lights, Roads and Urban Furnishings, Public Green Areas and Playgrounds, Other"
  *               noTechnicalOffice:
  *                 summary: No technical office available
  *                 value:
@@ -826,19 +886,24 @@ router.get('/categories', reportController.getCategories);
 // Get reports assigned to current user (authenticated users - typically technical staff)
 // router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
 
-// Get all reports (authenticated users)
-// router.get('/', isLoggedIn, reportController.getAllReports);
-
 // Get a specific report (authenticated users)
 // router.get('/:id', isLoggedIn, reportController.getReportById);
 
-// Approve a report (Municipal Public Relations Officer only)
-// router.put('/:id/approve', isPublicRelationsOfficer, reportController.approveReport);
-
-// Reject a report (Municipal Public Relations Officer only)
-// router.put('/:id/reject', isPublicRelationsOfficer, reportController.rejectReport);
-
 // Get all reports (authenticated users)
 router.get('/', isLoggedIn, reportController.getAllReports);
+
+// Approve a report (ONLY Municipal Public Relations Officer)
+router.put(
+  '/:id/approve', 
+  requireRole('Municipal Public Relations Officer'), 
+  reportController.approveReport
+);
+
+// Reject a report (ONLY Municipal Public Relations Officer)
+router.put(
+  '/:id/reject', 
+  requireRole('Municipal Public Relations Officer'), 
+  reportController.rejectReport
+);
 
 export default router;
