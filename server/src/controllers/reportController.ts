@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { reportService } from '../services/reportService';
+import { UnauthorizedError } from '@models/errors/UnauthorizedError';
+import { ReportStatus } from '@models/dto/ReportStatus';
 
 /**
  * Report Controller
@@ -64,8 +66,15 @@ class ReportController {
    */
   async getMyAssignedReports(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // TODO: Implement assigned reports logic
-      res.status(501).json({ error: 'Not implemented yet' });
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+
+      const userId = (req.user as any).id;
+      const status = req.query.status as ReportStatus | undefined;
+
+      const reports = await reportService.getMyAssignedReports(userId, status);
+      res.status(200).json(reports);
     } catch (error) {
       next(error);
     }

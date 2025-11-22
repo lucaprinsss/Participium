@@ -5,6 +5,10 @@ import { Department } from "@dto/Department";
 import { Role } from "@dto/Role";
 import { DepartmentEntity } from "@entity/departmentEntity";
 import { RoleEntity } from "@entity/roleEntity";
+import { reportEntity } from "@models/entity/reportEntity";
+import { ReportResponse } from "@models/dto/output/ReportResponse";
+import { ReportCategory } from "@models/dto/ReportCategory";
+import { ReportStatus } from "@models/dto/ReportStatus";
 
 
 export function createErrorDTO(
@@ -63,6 +67,46 @@ export function mapUserEntityToUserResponse(entity: userEntity | null | undefine
     department_name: departmentName,
     role_name: roleName
   }) as UserResponse;
+}
+
+/**
+ * Maps a reportEntity to ReportResponse DTO
+ * Handles location parsing and photo extraction
+ */
+export function mapReportEntityToReportResponse(entity: reportEntity): ReportResponse {
+  // Parse PostGIS geography point to lat/lng
+  // Format: "POINT(longitude latitude)" or JSON format depending on query
+  let location = { latitude: 0, longitude: 0 };
+  
+  if (typeof entity.location === 'string') {
+    // Parse WKT format: "POINT(lng lat)"
+    const match = entity.location.match(/POINT\(([^ ]+) ([^ ]+)\)/);
+    if (match) {
+      location = {
+        longitude: parseFloat(match[1]),
+        latitude: parseFloat(match[2])
+      };
+    }
+  } else if (entity.location && typeof entity.location === 'object') {
+    // Already parsed as object
+    location = entity.location;
+  }
+
+  return {
+    id: entity.id,
+    reporterId: entity.isAnonymous ? null : entity.reporterId,
+    title: entity.title,
+    description: entity.description,
+    category: entity.category as ReportCategory,
+    location,
+    photos: [], // TODO: Load photos from photoEntity if needed
+    isAnonymous: entity.isAnonymous,
+    status: entity.status as ReportStatus,
+    rejectionReason: entity.rejectionReason || null,
+    assigneeId: entity.assigneeId || null,
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt
+  };
 }
 
 function removeNullAttributes<T extends Record<string, any>>(

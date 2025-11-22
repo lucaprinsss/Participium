@@ -824,7 +824,7 @@ router.get('/categories', reportController.getCategories);
 // router.get('/map', isLoggedIn, reportController.getMapReports);
 
 // Get reports assigned to current user (authenticated users - typically technical staff)
-// router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
+router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
 
 // Get all reports (authenticated users)
 // router.get('/', isLoggedIn, reportController.getAllReports);
