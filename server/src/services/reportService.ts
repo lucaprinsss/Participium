@@ -17,7 +17,7 @@ import { ReportResponse } from '../models/dto/output/ReportResponse';
 import { reportEntity } from '../models/entity/reportEntity';
 import { userEntity } from '@models/entity/userEntity';
 import { Report } from '@models/dto/Report'; 
-import { mapReportEntityToResponse, mapReportEntityToDTO } from './mapperService';
+import { mapReportEntityToResponse, mapReportEntityToDTO, mapReportEntityToReportResponse } from './mapperService';
 
 /**
  * Report Service
@@ -191,10 +191,13 @@ class ReportService {
 
   /**
    * Get reports assigned to a specific user
-   * TODO: Implement when needed
+   * @param userId - ID of the user to whom reports are assigned
+   * @param status - Optional status filter
+   * @returns Array of reports assigned to the user
    */
-  async getAssignedReports(): Promise<void> {
-    throw new Error('Not implemented yet');
+  async getMyAssignedReports(userId: number, status?: ReportStatus): Promise<ReportResponse[]> {
+    const reports = await reportRepository.findByAssigneeId(userId, status);
+    return reports.map(report => mapReportEntityToReportResponse(report));
   }
 
   /**

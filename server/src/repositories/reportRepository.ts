@@ -98,6 +98,28 @@ class ReportRepository {
   }
 
   /**
+   * Find reports assigned to a specific user
+   * @param assigneeId - ID of the user to whom reports are assigned
+   * @param status - Optional status filter
+   * @returns Array of report entities
+   */
+  public async findByAssigneeId(assigneeId: number, status?: ReportStatus): Promise<reportEntity[]> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('report')
+      .leftJoinAndSelect('report.reporter', 'reporter')
+      .leftJoinAndSelect('report.assignee', 'assignee')
+      .where('report.assigneeId = :assigneeId', { assigneeId });
+
+    if (status) {
+      queryBuilder.andWhere('report.status = :status', { status });
+    }
+
+    return queryBuilder
+      .orderBy('report.createdAt', 'DESC')
+      .getMany();
+  }
+
+  /**
    * Save a report entity (create or update)
    * @param report - The report entity to save
    * @returns The saved report entity

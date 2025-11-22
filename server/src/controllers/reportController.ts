@@ -6,7 +6,7 @@ import { ReportCategory } from '@models/dto/ReportCategory';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { User } from '@models/dto/User';
-import { userRepository } from '../repositories/userRepository'; 
+import { userRepository } from '../repositories/userRepository';
 
 /**
  * Report Controller
@@ -113,8 +113,15 @@ class ReportController {
    */
   async getMyAssignedReports(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // TODO: Implement assigned reports logic
-      res.status(501).json({ error: 'Not implemented yet' });
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+
+      const userId = (req.user as any).id;
+      const status = req.query.status as ReportStatus | undefined;
+
+      const reports = await reportService.getMyAssignedReports(userId, status);
+      res.status(200).json(reports);
     } catch (error) {
       next(error);
     }

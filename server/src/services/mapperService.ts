@@ -13,6 +13,7 @@ import { ReportCategory } from "@models/dto/ReportCategory";
 import { Report } from "@dto/Report";
 import { CategoryRoleMapping } from '../models/dto/CategoryRoleMapping';
 import { categoryRoleEntity } from '../models/entity/categoryRoleEntity';
+import { ReportStatus } from "@models/dto/ReportStatus";
 
 
 export function createErrorDTO(
@@ -130,6 +131,46 @@ export function mapReportEntityToResponse(report: reportEntity, photos: any[], l
     assigneeId: report.assigneeId || null,
     createdAt: report.createdAt,
     updatedAt: report.updatedAt,
+  };
+}
+
+/**
+ * Maps a reportEntity to ReportResponse DTO
+ * Handles location parsing from PostGIS automatically
+ */
+export function mapReportEntityToReportResponse(entity: reportEntity): ReportResponse {
+  // Parse PostGIS geography point to lat/lng
+  // Format: "POINT(longitude latitude)" or JSON format depending on query
+  let location = { latitude: 0, longitude: 0 };
+  
+  if (typeof entity.location === 'string') {
+    // Parse WKT format: "POINT(lng lat)"
+    const match = entity.location.match(/POINT\(([^ ]+) ([^ ]+)\)/);
+    if (match) {
+      location = {
+        longitude: parseFloat(match[1]),
+        latitude: parseFloat(match[2])
+      };
+    }
+  } else if (entity.location && typeof entity.location === 'object') {
+    // Already parsed as object
+    location = entity.location;
+  }
+
+  return {
+    id: entity.id,
+    reporterId: entity.isAnonymous ? null : entity.reporterId,
+    title: entity.title,
+    description: entity.description,
+    category: entity.category as ReportCategory,
+    location,
+    photos: [], // Photos loaded via relations
+    isAnonymous: entity.isAnonymous,
+    status: entity.status as ReportStatus,
+    rejectionReason: entity.rejectionReason || null,
+    assigneeId: entity.assigneeId || null,
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt
   };
 }
 
