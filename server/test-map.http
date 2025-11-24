@@ -1,0 +1,107 @@
+@baseUrl = http://localhost:3001/api
+@contentType = application/json
+
+###############################################
+# REPORT MAP TESTS (PT07)
+###############################################
+
+### 1. Login as Admin (Required for Map Endpoint)
+# @name loginAdmin
+POST {{baseUrl}}/sessions
+Content-Type: {{contentType}}
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+### 2. Get All Available Categories
+GET {{baseUrl}}/reports/categories
+Content-Type: {{contentType}}
+
+### 3. Get Map Reports - No Parameters (should return all approved reports, clustered by default)
+GET {{baseUrl}}/reports/map
+Content-Type: {{contentType}}
+
+### 4. Get Map Reports - Individual Reports (zoom > 12)
+GET {{baseUrl}}/reports/map?zoom=15
+Content-Type: {{contentType}}
+
+### 5. Get Map Reports - Clustered Reports (zoom <= 12)
+GET {{baseUrl}}/reports/map?zoom=10
+Content-Type: {{contentType}}
+
+### 6. Get Map Reports - High Zoom (very detailed)
+GET {{baseUrl}}/reports/map?zoom=18
+Content-Type: {{contentType}}
+
+### 7. Get Map Reports - Low Zoom (very clustered)
+GET {{baseUrl}}/reports/map?zoom=5
+Content-Type: {{contentType}}
+
+### 8. Get Map Reports - With Bounding Box (Milan area example)
+GET {{baseUrl}}/reports/map?zoom=13&minLat=45.45&maxLat=45.48&minLng=9.18&maxLng=9.20
+Content-Type: {{contentType}}
+
+### 9. Get Map Reports - With Category Filter (Roads)
+GET {{baseUrl}}/reports/map?zoom=15&category=Roads%20and%20Urban%20Furnishings
+Content-Type: {{contentType}}
+
+### 10. Get Map Reports - With Category Filter (Public Lighting)
+GET {{baseUrl}}/reports/map?zoom=15&category=Public%20Lighting
+Content-Type: {{contentType}}
+
+### 11. Get Map Reports - With Category Filter (Waste)
+GET {{baseUrl}}/reports/map?zoom=15&category=Waste
+Content-Type: {{contentType}}
+
+### 12. Get Map Reports - Clustered with Bounding Box and Category
+GET {{baseUrl}}/reports/map?zoom=8&minLat=45.0&maxLat=46.0&minLng=9.0&maxLng=10.0&category=Public%20Lighting
+Content-Type: {{contentType}}
+
+###############################################
+# ERROR CASES - MAP ENDPOINT
+###############################################
+
+### 13. Get Map Reports - Invalid Zoom Too High (should fail with 400)
+GET {{baseUrl}}/reports/map?zoom=25
+Content-Type: {{contentType}}
+
+### 14. Get Map Reports - Invalid Zoom Too Low (should fail with 400)
+GET {{baseUrl}}/reports/map?zoom=0
+Content-Type: {{contentType}}
+
+### 15. Get Map Reports - Invalid Zoom Format (should fail with 400)
+GET {{baseUrl}}/reports/map?zoom=abc
+Content-Type: {{contentType}}
+
+### 16. Get Map Reports - Invalid Bounding Box (minLat >= maxLat, should fail with 400)
+GET {{baseUrl}}/reports/map?minLat=45.48&maxLat=45.45&minLng=9.18&maxLng=9.20
+Content-Type: {{contentType}}
+
+### 17. Get Map Reports - Invalid Bounding Box (minLng >= maxLng, should fail with 400)
+GET {{baseUrl}}/reports/map?minLat=45.45&maxLat=45.48&minLng=9.20&maxLng=9.18
+Content-Type: {{contentType}}
+
+### 18. Get Map Reports - Incomplete Bounding Box (should fail with 400)
+GET {{baseUrl}}/reports/map?minLat=45.45&maxLat=45.48
+Content-Type: {{contentType}}
+
+### 19. Get Map Reports - Invalid Latitude Range (should fail with 400)
+GET {{baseUrl}}/reports/map?minLat=-95&maxLat=45.48&minLng=9.18&maxLng=9.20
+Content-Type: {{contentType}}
+
+### 20. Get Map Reports - Invalid Longitude Range (should fail with 400)
+GET {{baseUrl}}/reports/map?minLat=45.45&maxLat=45.48&minLng=-185&maxLng=9.20
+Content-Type: {{contentType}}
+
+### 21. Get Map Reports - Unauthenticated (should fail with 401)
+# Logout first
+DELETE {{baseUrl}}/sessions/current
+Content-Type: {{contentType}}
+
+###
+
+### 22. Try to access map without authentication
+GET {{baseUrl}}/reports/map?zoom=13
+Content-Type: {{contentType}}

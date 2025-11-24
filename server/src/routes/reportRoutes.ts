@@ -821,7 +821,7 @@ const router = express.Router();
 router.get('/categories', reportController.getCategories);
 
 // Get reports for interactive map (authenticated users)
-// router.get('/map', isLoggedIn, reportController.getMapReports);
+router.get('/map', isLoggedIn, reportController.getMapReports);
 
 // Get reports assigned to current user (authenticated users - typically technical staff)
 // router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
