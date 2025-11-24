@@ -20,7 +20,6 @@ async function handleResponse(response) {
   return data;
 }
 
-
 // POST /api/sessions
 export async function login(arg1, arg2) {
   // support login({ username, password }) or login(username, password)
@@ -42,6 +41,7 @@ export async function login(arg1, arg2) {
 
 // GET /api/sessions/current
 export async function getCurrentUser() {
+  try {
     const response = await fetch(`${BASE}/current`, {
       method: 'GET',
       headers: {
@@ -50,7 +50,17 @@ export async function getCurrentUser() {
       credentials: 'include',
     });
 
+    if (response.status === 401) {
+      return null;
+    }
+
     return await handleResponse(response);
+  } catch (error) {
+    if (error.status === 401) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 // DELETE /api/sessions/current

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Alert, Card, Form, Button, Container, Row, Col, InputGroup, Spinner } from "react-bootstrap";
 import { login } from "../api/authApi"; 
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaUser, FaLock, FaArrowLeft } from "react-icons/fa";
+// Assicurati che questo import punti al file CSS aggiornato
 import "../css/Login.css";
 
 export default function Login({ onLoginSuccess }) {
@@ -24,7 +25,6 @@ export default function Login({ onLoginSuccess }) {
       ...prev,
       [field]: value
     }));
-    // Clear error when user starts typing
     if (error) setError("");
   };
 
@@ -47,8 +47,19 @@ export default function Login({ onLoginSuccess }) {
     e.preventDefault();
     setError("");
 
+    // Trim username per rimuovere spazi all'inizio e alla fine
+    const trimmedUsername = formData.username.trim();
+    
+    // Aggiorna lo stato con l'username trim()mato
+    if (trimmedUsername !== formData.username) {
+      setFormData(prev => ({
+        ...prev,
+        username: trimmedUsername
+      }));
+    }
+
     // Enhanced client-side validation
-    if (!formData.username.trim()) {
+    if (!trimmedUsername) {
       setError("Please enter your username");
       return;
     }
@@ -60,7 +71,8 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      const userData = await login(formData.username, formData.password);
+      // Usa l'username trim()mato per il login
+      const userData = await login(trimmedUsername, formData.password);
 
       if (onLoginSuccess) {
         onLoginSuccess(userData);
@@ -93,16 +105,16 @@ export default function Login({ onLoginSuccess }) {
   };
 
   return (
-    <Container fluid className="login-page-container">
-      <Row className="login-row">
+    <Container fluid className="log-page-container">
+      <Row className="log-row">
         <Col xs={12} sm={10} md={8} lg={6} xl={4}>
-          <Card className="login-card">
-            <Card.Body className="login-card-body">
+          <Card className="log-card">
+            <Card.Body className="log-card-body">
               
               {/* Back Button */}
               <Button
                 variant="link"
-                className="back-btn"
+                className="log-back-btn"
                 onClick={() => navigate("/")}
                 disabled={loading}
               >
@@ -111,16 +123,16 @@ export default function Login({ onLoginSuccess }) {
               </Button>
 
               {/* Header */}
-              <div className="login-header">
-                <div className="logo-container">
+              <div className="log-header">
+                <div className="log-logo-container">
                   <img
                     src="/participium-logo.png"
                     alt="Participium Logo"
-                    className="login-logo"
+                    className="log-logo"
                   />
                 </div>
-                <h1 className="login-title">Welcome Back</h1>
-                <p className="login-subtitle">
+                <h1 className="log-title">Welcome Back</h1>
+                <p className="log-subtitle">
                   Sign in to your account
                 </p>
               </div>
@@ -131,20 +143,20 @@ export default function Login({ onLoginSuccess }) {
                   variant="danger"
                   onClose={() => setError("")}
                   dismissible
-                  className="login-alert animated-alert"
+                  className="log-alert log-animated-alert"
                 >
                   <div className="d-flex align-items-center">
-                    <div className="alert-message">{error}</div>
+                    <div className="log-alert-message"> {error} </div>
                   </div>
                 </Alert>
               )}
 
               {/* Login Form */}
-              <Form onSubmit={handleLogin} noValidate className="login-form">
+              <Form onSubmit={handleLogin} noValidate className="log-form">
                 {/* Username Field */}
-                <Form.Group className="login-form-group floating-label-group">
-                  <div className={`form-control-container ${isFocused.username || formData.username ? 'focused' : ''}`}>
-                    <FaUser className="input-icon" />
+                <Form.Group className="log-form-group log-floating-label-group">
+                  <div className={`log-form-control-container ${isFocused.username || formData.username ? 'focused' : ''}`}>
+                    <FaUser className="log-input-icon" />
                     <Form.Control
                       type="text"
                       placeholder={(isFocused.username ? '' : 'username')}
@@ -153,18 +165,18 @@ export default function Login({ onLoginSuccess }) {
                       onFocus={() => handleFocus('username')}
                       onBlur={() => handleBlur('username')}
                       disabled={loading}
-                      className="login-input modern-input"
+                      className="log-modern-input"
                     />
-                    <Form.Label className="floating-label">
+                    <Form.Label className="log-floating-label">
                       Username
                     </Form.Label>
                   </div>
                 </Form.Group>
 
                 {/* Password Field */}
-                <Form.Group className="login-form-group floating-label-group">
-                  <div className={`form-control-container ${isFocused.password || formData.password ? 'focused' : ''}`}>
-                    <FaLock className="input-icon" />
+                <Form.Group className="log-form-group log-floating-label-group">
+                  <div className={`log-form-control-container ${isFocused.password || formData.password ? 'focused' : ''}`}>
+                    <FaLock className="log-input-icon" />
                     <Form.Control
                       type={showPassword ? "text" : "password"}
                       placeholder={(isFocused.password ? '' : 'password')}
@@ -173,9 +185,9 @@ export default function Login({ onLoginSuccess }) {
                       onFocus={() => handleFocus('password')}
                       onBlur={() => handleBlur('password')}
                       disabled={loading}
-                      className="modern-input password-input"
+                      className="log-modern-input log-password-input"
                     />
-                    <Form.Label className="floating-label">
+                    <Form.Label className="log-floating-label">
                       Password
                     </Form.Label>
                     <Button
@@ -183,7 +195,7 @@ export default function Login({ onLoginSuccess }) {
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={loading}
                       aria-label={showPassword ? "Hide password" : "Show password"}
-                      className="password-toggle-btn"
+                      className="log-password-toggle-btn"
                     >
                       {showPassword ? <FaEyeSlash /> : <FaEye />}
                     </Button>
@@ -193,7 +205,7 @@ export default function Login({ onLoginSuccess }) {
                 {/* Login Button */}
                 <button
                   type="submit"
-                  className="btn btn-custom-primary login-btn login-btn-primary modern-btn"
+                  className="btn log-btn-custom-primary log-btn log-btn-primary log-modern-btn"
                   disabled={loading}
                 >
                   {loading ? (
@@ -212,13 +224,13 @@ export default function Login({ onLoginSuccess }) {
               </Form>
 
               {/* Footer */}
-              <div className="login-footer">
-                <span className="login-footer-text">
+              <div className="log-footer">
+                <span className="log-footer-text">
                   Don't have an account?{" "}
                 </span>
                 <Button
                   variant="link"
-                  className="login-link-btn"
+                  className="log-link-btn"
                   onClick={() => !loading && navigate("/register")}
                   disabled={loading}
                 >

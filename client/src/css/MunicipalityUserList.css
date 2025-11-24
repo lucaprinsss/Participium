@@ -1,514 +1,439 @@
-/* --- Variabili allineate alla palette --- */
 :root {
   --brand-red: #A12B32;
-  --brand-red-hover: #b40612;
-  --primary: var(--brand-red);
-  --primary-hover: var(--brand-red-hover);
-  --bg-lighter: #f8f9fa;
+  --brand-red-hover: #8a232a;
+  --brand-dark: #0f172a; 
+  --brand-navy: #1e293b;
+  --accent-blue: #3b82f6;      
+  --accent-blue-soft: #eff6ff; 
+  --accent-teal: #0d9488;     
+  --accent-teal-soft: #f0fdfa;
+  --bg-page: #f8fafc;        
+  --bg-card: #ffffff;
+  --bg-hover: #f1f5f9;
+  --border-subtle: #e2e8f0;
+  --text-main: #334155;
   --text-muted: #6c757d;
-  --text-dark: #212529;
-  --card-bg: #ffffff;
-  --accent-light: #fdf6f6;
-  --border-light: rgba(161, 43, 50, 0.1);
-  --shadow-soft: 0 4px 20px rgba(161, 43, 50, 0.08);
-  --shadow-hover: 0 8px 30px rgba(161, 43, 50, 0.15);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --radius-md: 0.75rem;       
+  --radius-lg: 1rem;           
 }
 
-/* --- Container Principale --- */
+/* --- Main Container --- */
 .municipalityUserList-modern {
   width: 100%;
-  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-main);
+  animation: fadeInSmooth 0.6s ease-out;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes fadeInSmooth {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Header con Filtri --- */
+/* --- Header --- */
 .mul-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  padding: 0 0.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .mul-title {
   font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--text-dark);
-  letter-spacing: -0.025em;
+  font-weight: 700;
+  color: var(--brand-dark); 
   margin: 0;
-  background: linear-gradient(135deg, var(--text-dark) 0%, var(--brand-red) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  letter-spacing: -0.025em;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.mul-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10%;
+  height: 80%;
+  width: 4px;
+  background: var(--brand-red);
+  border-radius: 2px;
 }
 
 .mul-filters {
   display: flex;
-  align-items: center;
   gap: 1rem;
 }
 
-.mul-role-filter {
-  min-width: 200px;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border-light);
-  border-radius: 0.75rem;
-  background: var(--card-bg);
-  color: var(--text-dark);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+.mul-filter-dropdown {
+  width: 300px; 
 }
 
-.mul-role-filter:focus {
-  outline: none;
-  border-color: var(--brand-red);
-  box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.1);
+.mul-filter-dropdown-departments {
+  width: 400px; 
+}
+
+/* --- DROPDOWNS (FIXED) --- */
+.dropdown-toggle.modern-dropdown-toggle {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  background: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.dropdown-toggle.modern-dropdown-toggle::after { display: none; }
+
+.dropdown-toggle.modern-dropdown-toggle .dropdown-icon {
+  color: var(--text-muted); 
+  transition: color 0.2s;
+}
+
+.dropdown-toggle.modern-dropdown-toggle:hover:not(:disabled) {
+  border-color: var(--brand-navy); 
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.dropdown-toggle.modern-dropdown-toggle:hover .dropdown-icon {
+  color: var(--brand-navy);
+}
+
+.dropdown-toggle.modern-dropdown-toggle[aria-expanded="true"] {
+  border-color: var(--brand-red) !important; 
+  box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.1) !important;
+}
+
+.dropdown-toggle.modern-dropdown-toggle[aria-expanded="true"] .dropdown-icon {
+  color: var(--brand-red);
+}
+
+/* --- DROPDOWN MENU FIX --- */
+.modern-dropdown-menu {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 0.5rem;
+  /* REMOVED: animation and transform causing glitches */
+  /* React-Bootstrap/Popper.js handles positioning now */
+}
+
+.modern-dropdown-menu .dropdown-item {
+  color: var(--text-main);
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.modern-dropdown-menu .dropdown-item:hover {
+  background: var(--bg-page); 
+  color: var(--brand-dark);
+}
+
+.modern-dropdown-menu .dropdown-item.active {
+  background: var(--brand-navy) !important; 
+  color: #fff !important;
 }
 
 /* --- Card Container --- */
 .mul-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: 1rem;
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.mul-card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  /* CHANGED: visible so dropdowns can overflow */
+  overflow: visible; 
 }
 
 .mul-card-body {
-  padding: 2rem;
+  padding: 0; 
 }
 
-/* --- Stati di Loading e Empty --- */
-.mul-loading,
-.mul-empty {
+/* --- Loading & Empty --- */
+.mul-loading, .mul-empty {
+  padding: 4rem 2rem;
   text-align: center;
-  padding: 3rem 2rem;
   color: var(--text-muted);
 }
 
-.mul-loading-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
 .mul-loading-spinner {
-  width: 3rem;
-  height: 3rem;
-  border: 3px solid var(--accent-light);
-  border-top: 3px solid var(--brand-red);
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-subtle);
+  border-top: 3px solid var(--brand-red); 
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.mul-empty-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.mul-empty-icon {
-  font-size: 3rem;
-  color: var(--accent-light);
-  opacity: 0.7;
-}
-
-/* --- Tabella Moderna --- */
 .mul-table-wrapper {
-  overflow-x: auto;
-  border-radius: 0.75rem;
-  background: var(--card-bg);
+  width: 100%;
+  /* Allow horizontal scroll for table only if needed */
+  overflow-x: auto; 
 }
 
 .mul-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.mul-table thead {
-  background: linear-gradient(135deg, var(--accent-light) 0%, rgba(253, 246, 246, 0.8) 100%);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  min-width: 800px;
 }
 
 .mul-table th {
-  padding: 1.25rem 1.5rem;
-  text-align: left;
+  background: var(--bg-page);
+  color: var(--brand-navy); 
   font-weight: 600;
-  color: var(--brand-red);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 2px solid var(--border-light);
-}
-
-.mul-table tbody tr {
-  border-bottom: 1px solid var(--border-light);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.mul-table tbody tr:hover {
-  background: var(--accent-light);
-  transform: scale(1.01);
-  box-shadow: 0 4px 15px rgba(161, 43, 50, 0.1);
-}
-
-.mul-table tbody tr:last-child {
-  border-bottom: none;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
 }
 
 .mul-table td {
-  padding: 1.25rem 1.5rem;
-  color: var(--text-dark);
-  font-weight: 500;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  vertical-align: middle;
+  font-size: 0.9rem;
 }
 
-/* --- Badge Ruolo --- */
+.mul-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.mul-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.mul-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* --- Badges --- */
 .mul-role-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  background: var(--accent-light);
-  border: 1px solid rgba(161, 43, 50, 0.2);
-  border-radius: 1rem;
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  background: var(--accent-teal-soft);
+  color: var(--accent-teal);
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  border-radius: 2rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--brand-red);
-  text-transform: capitalize;
-  transition: all 0.3s ease;
+  letter-spacing: 0.02em;
 }
 
-.mul-table tbody tr:hover .mul-role-badge {
-  background: var(--brand-red);
-  color: white;
-  transform: scale(1.05);
-}
-
-/* --- Azioni --- */
+/* --- Actions Buttons --- */
 .mul-actions {
   display: flex;
   gap: 0.75rem;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  opacity: 0.6; 
+  transition: opacity 0.2s;
 }
 
-.mul-table tbody tr:hover .mul-actions {
+.mul-table tr:hover .mul-actions {
   opacity: 1;
 }
 
 .mul-btn {
-  padding: 0.625rem 1.25rem;
+  padding: 0.4rem 0.8rem;
   border: none;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  gap: 0.4rem;
+  transition: all 0.2s;
 }
 
+/* Edit Button */
 .mul-btn-edit {
-  background: rgba(161, 43, 50, 0.1);
-  color: var(--brand-red);
-  border: 1px solid rgba(161, 43, 50, 0.2);
+  background: var(--accent-blue-soft);
+  color: var(--accent-blue);
 }
 
 .mul-btn-edit:hover {
-  background: var(--brand-red);
+  background: var(--accent-blue);
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(161, 43, 50, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
+/* Delete Button */
 .mul-btn-delete {
-  background: rgba(220, 53, 69, 0.1);
-  color: #dc3545;
-  border: 1px solid rgba(220, 53, 69, 0.2);
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .mul-btn-delete:hover {
-  background: #dc3545;
+  background: #dc2626;
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.3);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
 }
 
-/* --- Modali Moderne --- */
-.mul-modal-overlay {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
+/* --- Modals --- */
 .mul-modal-content {
   border: none;
-  border-radius: 1.5rem;
-  box-shadow: 0 20px 60px rgba(161, 43, 50, 0.2);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
 .mul-modal-header {
-  background: linear-gradient(135deg, var(--accent-light) 0%, var(--card-bg) 100%);
-  border-bottom: 1px solid var(--border-light);
-  padding: 1.5rem 2rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 1.5rem;
 }
 
 .mul-modal-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: var(--text-dark);
-  margin: 0;
+  color: var(--brand-dark);
 }
 
 .mul-modal-body {
   padding: 2rem;
+  background: var(--bg-card);
 }
 
 .mul-modal-footer {
-  background: var(--bg-lighter);
-  border-top: 1px solid var(--border-light);
-  padding: 1.5rem 2rem;
-}
-
-/* --- Form Moderne --- */
-.mul-edit-form {
+  background: var(--bg-page);
+  border-top: 1px solid var(--border-subtle);
+  padding: 1.25rem 2rem;
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  justify-content: flex-end;
+  gap: 1rem;
 }
 
-.mul-field {
-  display: flex;
-  flex-direction: column;
-}
-
+/* --- Forms inside Modal --- */
 .mul-label {
+  font-size: 0.85rem;
   font-weight: 600;
-  font-size: 0.875rem;
-  color: var(--text-dark);
+  color: var(--brand-navy);
   margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  display: block;
 }
 
 .mul-required::after {
-  content: "*";
+  content: " *";
   color: var(--brand-red);
 }
 
-.mul-edit-form input,
-.mul-select {
+.mul-edit-form input {
   width: 100%;
-  padding: 1rem 1.25rem;
-  background: var(--card-bg);
-  color: var(--text-dark);
-  border: 1px solid var(--border-light);
-  border-radius: 0.75rem;
-  font-size: 0.875rem;
-  transition: all 0.3s ease;
-  font-family: inherit;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--brand-dark);
+  transition: all 0.2s;
+  font-size: 0.95rem;
 }
 
-.mul-edit-form input:focus,
-.mul-select:focus {
+.mul-edit-form input:focus {
   outline: none;
-  border-color: var(--brand-red);
-  box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.1);
-  transform: translateY(-1px);
-}
-
-.mul-edit-form input:disabled,
-.mul-select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: var(--bg-lighter);
+  border-color: var(--accent-blue); 
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .mul-readonly {
-  background: var(--bg-lighter) !important;
+  background: var(--bg-page) !important;
   color: var(--text-muted) !important;
-  cursor: not-allowed;
-}
-
-.mul-help-text {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 0.5rem;
-  font-style: italic;
+  border-color: transparent !important;
 }
 
 .name-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
-/* --- Bottoni Modali --- */
+.mul-help-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* --- Modal Buttons --- */
 .mul-modal-btn {
   padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  transition: all 0.2s;
 }
 
 .mul-modal-btn-cancel {
-  background: var(--bg-lighter);
+  background: white;
+  border: 1px solid var(--border-subtle);
   color: var(--text-muted);
-  border: 1px solid var(--border-light);
 }
 
 .mul-modal-btn-cancel:hover {
-  background: var(--text-muted);
-  color: white;
-  transform: translateY(-1px);
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: #cbd5e1;
 }
 
 .mul-modal-btn-confirm {
-  background: var(--brand-red);
+  background: var(--brand-red); 
   color: white;
-  border: 1px solid var(--brand-red);
+  box-shadow: 0 4px 6px -1px rgba(161, 43, 50, 0.2);
 }
 
 .mul-modal-btn-confirm:hover {
   background: var(--brand-red-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(161, 43, 50, 0.3);
+  box-shadow: 0 6px 8px -1px rgba(161, 43, 50, 0.3);
 }
 
 .mul-modal-btn-danger {
-  background: #dc3545;
+  background: #dc2626;
   color: white;
-  border: 1px solid #dc3545;
 }
 
 .mul-modal-btn-danger:hover {
-  background: #c82333;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.3);
+  background: #b91c1c;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
 }
 
-/* --- Responsive Design --- */
-@media (max-width: 1024px) {
+/* --- Responsive --- */
+@media (max-width: 768px) {
   .mul-header {
     flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
+    align-items: flex-start;
   }
   
-  .mul-filters {
-    justify-content: flex-end;
+  .mul-filters, .mul-filter-dropdown {
+    width: 100%;
   }
-}
 
-@media (max-width: 768px) {
-  .mul-card-body {
-    padding: 1.5rem;
-  }
-  
-  .mul-table-wrapper {
-    border-radius: 0.5rem;
-  }
-  
-  .mul-table th,
-  .mul-table td {
-    padding: 1rem;
-  }
-  
   .name-row {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .mul-actions {
     opacity: 1;
-    flex-direction: column;
-  }
-  
-  .mul-btn {
-    justify-content: center;
   }
 }
-
-@media (max-width: 480px) {
-  .mul-card-body {
-    padding: 1rem;
-  }
-  
-  .mul-table-wrapper {
-    font-size: 0.8rem;
-  }
-  
-  .mul-table th,
-  .mul-table td {
-    padding: 0.75rem 0.5rem;
-  }
-  
-  .mul-filters {
-    flex-direction: column;
-  }
-  
-  .mul-role-filter {
-    min-width: auto;
-  }
-}
-
-/* --- Animazioni Avanzate --- */
-.mul-table tbody tr {
-  animation: slideInRow 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  opacity: 0;
-  transform: translateX(-20px);
-}
-
-@keyframes slideInRow {
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.mul-table tbody tr:nth-child(1) { animation-delay: 0.1s; }
-.mul-table tbody tr:nth-child(2) { animation-delay: 0.2s; }
-.mul-table tbody tr:nth-child(3) { animation-delay: 0.3s; }
-.mul-table tbody tr:nth-child(4) { animation-delay: 0.4s; }
-.mul-table tbody tr:nth-child(5) { animation-delay: 0.5s; }

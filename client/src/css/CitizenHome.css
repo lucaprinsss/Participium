@@ -1,0 +1,227 @@
+:root {
+  --brand-red: #A12B32;
+  --brand-red-hover: #b40612;
+  --primary: var(--brand-red);
+  --primary-hover: var(--brand-red-hover);
+  --bg-lighter: #f8f9fa;
+  --text-muted: #6c757d;
+  --text-dark: #212529;
+  --text-darker: #1a1a1a;
+  --card-bg: #ffffff;
+  --accent-light: #fdf6f6;
+  --border-light: rgba(161, 43, 50, 0.1);
+  --shadow-soft: 0 0.4rem 1.6rem rgba(161, 43, 50, 0.08);
+  
+  /* Misure dinamiche */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  
+  --border-radius-sm: 0.5rem;
+  --border-radius-md: 0.75rem;
+  --border-radius-lg: 1rem;
+}
+
+.ch-wrapper {
+  width: 100%;
+  max-width: min(1200px, 95vw);
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+/* Header */
+.ch-header {
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-light);
+  text-align: center;
+}
+
+.ch-title {
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-weight: 800;
+  color: var(--text-darker);
+  margin: 0 0 var(--spacing-xs) 0;
+  line-height: 1.2;
+}
+
+.ch-subtitle {
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Main Grid */
+.ch-main-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-xl);
+}
+
+/* Section Titles */
+.ch-section-title {
+  font-size: clamp(1.3rem, 3vw, 1.5rem);
+  font-weight: 700;
+  color: var(--text-darker);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+/* Features List */
+.ch-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.ch-feature-card {
+  display: flex;
+  align-items: flex-start;
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-soft);
+}
+
+.ch-feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 2rem rgba(161, 43, 50, 0.12);
+}
+
+.ch-feature-icon {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--border-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-light);
+  color: var(--brand-red);
+  margin-right: var(--spacing-md);
+  font-size: 1.25rem;
+}
+
+.ch-feature-text h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-darker);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.ch-feature-text p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Actions Section */
+.ch-actions-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.ch-action-card {
+  background: var(--card-bg);
+  border: 2px solid var(--border-light);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.ch-action-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(161, 43, 50, 0.05), transparent);
+  transition: left 0.6s;
+}
+
+.ch-action-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand-red);
+  box-shadow: 0 0.5rem 2rem rgba(161, 43, 50, 0.15);
+}
+
+.ch-action-card:hover::before {
+  left: 100%;
+}
+
+.ch-action-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-darker);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.ch-action-desc {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Desktop Layout */
+@media (min-width: 768px) {
+  .ch-wrapper {
+    padding: var(--spacing-xl);
+  }
+  
+  .ch-main-grid {
+    grid-template-columns: 1.5fr 1fr;
+    gap: var(--spacing-xl);
+  }
+  
+  .ch-header {
+    text-align: left;
+  }
+  
+  .ch-subtitle {
+    margin: 0;
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 767px) {
+  .ch-wrapper {
+    padding: var(--spacing-sm);
+  }
+  
+  .ch-feature-card {
+    flex-direction: column;
+    text-align: center;
+    padding: var(--spacing-md);
+  }
+  
+  .ch-feature-icon {
+    margin-right: 0;
+    margin-bottom: var(--spacing-sm);
+    align-self: center;
+  }
+  
+  .ch-action-card {
+    padding: var(--spacing-md);
+  }
+}
+
+/* Touch improvements */
+@media (hover: none) {
+  .ch-feature-card:hover,
+  .ch-action-card:hover {
+    transform: none;
+  }
+}

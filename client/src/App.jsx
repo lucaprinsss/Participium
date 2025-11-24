@@ -6,6 +6,10 @@ import Register from "./pages/Register.jsx";
 import Home from "./pages/Homepage.jsx";
 import Navbar from "./components/Navbar.jsx";
 import MainPage from "./pages/MainPage.jsx";
+import LoadingScreen from "./components/LoadingScreen.jsx";
+import MapPage from "./pages/MapPage.jsx";
+
+import "./App.css";
 
 function App() {
   const location = useLocation();
@@ -13,60 +17,176 @@ function App() {
 
   const [user, setUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
-  const hideNavbar = location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/";
+  // Definizione delle route che non mostrano la navbar
+  const noNavbarRoutes = ["/login", "/register", "/"];
+  const hideNavbar = noNavbarRoutes.includes(location.pathname);
 
+  // Gestione classe CSS per la navbar
   useEffect(() => {
     if (hideNavbar) {
       document.body.classList.remove('has-navbar');
     } else {
       document.body.classList.add('has-navbar');
     }
+
+    // Cleanup
+    return () => {
+      document.body.classList.remove('has-navbar');
+    };
   }, [hideNavbar]);
 
+  // Gestione autenticazione
   useEffect(() => {
-    setIsAuthLoading(true);
-    getCurrentUser()
-      .then(setUser) 
-      .catch(() => setUser(null)) 
-      .finally(() => setIsAuthLoading(false));
-  }, [location.pathname]);
+    let isMounted = true;
+    
+    const checkAuthentication = async () => {
+      if (!isMounted) return;
+      
+      setIsAuthLoading(true);
+      setAuthError(null);
+      
+      try {
+        const userData = await getCurrentUser();
+        if (isMounted) {
+          setUser(userData);
+          
+          // Automatic redirect if user is logged in and is on login/register
+          if (userData && (location.pathname === "/login" || location.pathname === "/register")) {
+            navigate("/home", { replace: true });
+          }
+        }
+      } catch (error) {
+        if (isMounted) {
+          setUser(null);
+          setAuthError(error.message || "Errore durante il caricamento della sessione");
+          
+          // If user is not authenticated, redirect to login unless on public routes
+          if (!noNavbarRoutes.includes(location.pathname)) {
+            navigate("/login", { replace: true });
+          }
+        }
+      } finally {
+        if (isMounted) {
+          setIsAuthLoading(false);
+        }
+      }
+    };
 
-  // --- Logout handler ---
+    checkAuthentication();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [location.pathname, navigate]);
+
+  // Logout handler
   const handleLogout = async () => {
-    await logout();
-    setUser(null);
-    navigate("/login");
+    try {
+      await logout();
+      setUser(null);
+      setAuthError(null);
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setAuthError("Errore durante il logout");
+    }
   };
 
-  const ProtectedHome = () => {
+  // Protected Route Wrapper
+  const ProtectedRoute = ({ children }) => {
     if (isAuthLoading) {
-      return <div>Loading session...</div>; 
+      return <LoadingScreen message="Verifica accesso..." />;
     }
+
     if (!user) {
       return <Navigate to="/login" replace />;
     }
-    return <Home user={user} />; 
+
+    return children;
   };
 
+  //If still loading auth state, show loading screen (except on root)
+  if (isAuthLoading && location.pathname !== "/" && !noNavbarRoutes.includes(location.pathname)) {
+    return <LoadingScreen message="Caricamento..." />;
+  }
+
   return (
-    <>
+    <div className="app-container">
       {!hideNavbar && <Navbar user={user} onLogout={handleLogout} />}
+      
+      {authError && !isAuthLoading && (
+        <div className="global-error-banner">
+          <span>{authError}</span>
+          <button onClick={() => setAuthError(null)} className="close-error-btn">×</button>
+        </div>
+      )}
 
-      <Routes>
-        <Route path="/" element={<MainPage />} />
-        
-        <Route 
-          path="/login" 
-          element={<Login onLoginSuccess={setUser} />} 
-        />
-        
-        <Route path="/register" element={<Register />} />
-        
-        <Route path="/home" element={<ProtectedHome />} />
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<MainPage />} />
+          
+          <Route 
+            path="/login" 
+            element={
+              user ? <Navigate to="/home" replace /> : <Login onLoginSuccess={setUser} />
+            } 
+          />
+          
+          <Route 
+            path="/register" 
+            element={
+              user ? <Navigate to="/home" replace /> : <Register />
+            } 
+          />
+          
+          <Route 
+            path="/home" 
+            element={
+              <ProtectedRoute>
+                {<Home user={user} />}
+              </ProtectedRoute>
+            } 
+          />
 
-      </Routes>
-    </>
+          <Route 
+            path="/new-report" 
+            element={
+              <ProtectedRoute>
+                <MapPage user={user} />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/my-reports" 
+            element={
+              <ProtectedRoute>
+                <div>Profile Page - To be implemented</div>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Route 404 */}
+          <Route 
+            path="*" 
+            element={
+              <div className="not-found-container">
+                <h2>404 - Page Not Found</h2>
+                <p>The page you are looking for does not exist.</p>
+                <button 
+                  onClick={() => navigate("/")}
+                  className="home-btn"
+                >
+                  Go to Home
+                </button>
+              </div>
+            } 
+          />
+        </Routes>
+      </main>
+    </div>
   );
 }
 

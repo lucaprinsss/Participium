@@ -1,34 +1,8 @@
-:root {
-  --brand-red: #A12B32;
-  --brand-red-hover: #b40612;
-  --brand-red-light: rgba(161, 43, 50, 0.1);
-
-  --primary: var(--brand-red);
-  --primary-hover: var(--brand-red-hover);
-
-  --bg-lighter: var(--bg-light, #f8f9fa);
-  --radius-xl: 1rem;
-  --radius-lg: 0.75rem;
-  --radius-md: 0.5rem;
-  
-  --font-base: 1rem;
-  --font-medium: 500;
-  --font-semibold: 600;
-  --font-bold: 700;
-  --font-sm: 0.875rem;
-  --font-xs: 0.75rem;
-  
-  --text-muted: var(--text-muted, #6c757d);
-  --text-light: #adb5bd;
-  
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
+/* NOTA: Il blocco :root è stato rimosso.
+   Si presume che queste variabili siano definite in un file CSS globale (es. index.css). */
 
 /* PAGE CONTAINER */
-.login-page-container {
+.log-page-container {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -36,10 +10,32 @@
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   padding: 1rem;
   margin: 0;
+
+
+  
+  /* Misure dinamiche e compatte */
+  --space-xs: clamp(0.375rem, 1vw, 0.5rem);
+  --space-sm: clamp(0.5rem, 1.25vw, 0.75rem);
+  --space-md: clamp(0.75rem, 1.5vw, 1rem);
+  --space-lg: clamp(1rem, 2vw, 1.25rem);
+  --space-xl: clamp(1.25rem, 2.5vw, 1.5rem);
+  --space-2xl: clamp(1.5rem, 3vw, 2rem);
+  
+  --text-xs: clamp(0.75rem, 1vw, 0.875rem);
+  --text-sm: clamp(0.875rem, 1.25vw, 1rem);
+  --text-base: clamp(1rem, 1.5vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 2vw, 1.375rem);
+  --text-xl: clamp(1.375rem, 2.5vw, 1.75rem);
+  --text-2xl: clamp(1.75rem, 3vw, 2.25rem);
+  
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
 }
 
 
-.login-row {
+.log-row {
   width: 100%;
   justify-content: center;
   margin: 0;
@@ -47,7 +43,7 @@
 }
 
 /* CARD */
-.login-card {
+.log-card {
   border-radius: var(--radius-xl);
   border: none;
   width: 100%;
@@ -59,25 +55,25 @@
   backdrop-filter: blur(10px);
 }
 
-.login-card-body {
+.log-card-body {
   padding: 2rem;
   position: relative;
 }
 
 @media (min-width: 576px) {
-  .login-card-body {
+  .log-card-body {
     padding: 2.5rem;
   }
 }
 
 @media (min-width: 768px) {
-  .login-card-body {
+  .log-card-body {
     padding: 3rem;
   }
 }
 
 /* BACK BUTTON */
-.back-btn {
+.log-back-btn {
   position: absolute;
   top: 1rem;
   left: 1rem;
@@ -90,79 +86,81 @@
   transition: var(--transition);
 }
 
-.back-btn:hover {
+.log-back-btn:hover {
   color: var(--primary);
   background: var(--brand-red-light);
   border-radius: var(--radius-md);
 }
 
 /* HEADER */
-.login-header {
+.log-header {
   text-align: center;
   margin-bottom: 2rem;
   margin-top: 1rem;
 }
 
-.logo-container {
+.log-logo-container {
   margin-bottom: 1.5rem;
 }
 
-.login-logo {
+.log-logo {
   max-height: 100px;
   width: auto;
   margin-bottom: 1rem;
   transition: var(--transition);
 }
 
-.login-title {
+.log-title {
   font-size: 1.75rem;
   font-weight: var(--font-bold);
   color: #212529;
   margin-bottom: 0.5rem;
+  margin-top: -1.5rem;
 }
 
-.login-subtitle {
+.log-subtitle {
   color: var(--text-muted);
   font-size: var(--font-base);
   margin-bottom: 0;
 }
 
 @media (min-width: 576px) {
-  .login-logo {
+  .log-logo {
     max-height: 120px;
   }
-  
-  .login-title {
+
+  .log-title {
     font-size: 2rem;
   }
 }
 
 /* ALERT */
-.login-alert {
+.log-alert {
   margin-bottom: 1.5rem;
   border: none;
   border-radius: var(--radius-lg);
   padding: 1rem;
 }
 
-.animated-alert {
-  animation: slideInDown 0.3s ease-out;
+.log-animated-alert {
+  animation: log-slideInDown 0.3s ease-out;
 }
 
-.alert-icon {
+.log-alert-icon {
   margin-right: 0.75rem;
   font-size: 1.1rem;
 }
 
-.alert-message {
+.log-alert-message {
   flex: 1;
 }
 
-@keyframes slideInDown {
+@keyframes log-slideInDown {
   from {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -170,34 +168,37 @@
 }
 
 /* FORM */
-.login-form {
+.log-form {
   margin-bottom: 1.5rem;
 }
 
-.login-form-group {
+.log-form-group {
   margin-bottom: 1.5rem;
 }
 
-.floating-label-group {
+.log-floating-label-group {
   position: relative;
 }
 
-.form-control-container {
+.log-form-control-container {
   position: relative;
   transition: var(--transition);
 }
 
-/* FIX 1 & 2: Label styling and text visibility */
-.form-control-container.focused .floating-label,
-.form-control-container:has(.modern-input:not(:placeholder-shown)) .floating-label {
+/* *** MODIFICA RICHIESTA ***
+   Aggiornato per corrispondere alla logica di Register.css
+   (aggiunto z-index e font-size) */
+.log-form-control-container.focused .log-floating-label,
+.log-form-control-container:has(.log-modern-input:not(:placeholder-shown)) .log-floating-label {
   transform: translateY(-120%) scale(0.85);
   color: var(--primary);
-  background: white;
   padding: 0 0.5rem;
   margin-left: -0.25rem;
+  z-index: 2;
+  font-size: var(--font-sm);
 }
 
-.input-icon {
+.log-input-icon {
   position: absolute;
   left: 1rem;
   top: 50%;
@@ -207,11 +208,11 @@
   transition: var(--transition);
 }
 
-.form-control-container.focused .input-icon {
+.log-form-control-container.focused .log-input-icon {
   color: var(--primary);
 }
 
-.modern-input {
+.log-modern-input {
   border-radius: var(--radius-lg);
   border: 2px solid #e9ecef;
   padding-left: 3rem !important;
@@ -224,14 +225,14 @@
   z-index: 2;
 }
 
-.modern-input:focus {
+.log-modern-input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 0.2rem rgba(161, 43, 50, 0.25);
   background: #fff;
   outline: none;
 }
 
-.floating-label {
+.log-floating-label {
   position: absolute;
   left: 3rem;
   top: 50%;
@@ -246,16 +247,15 @@
   background: transparent;
 }
 
-/* FIX 3: Password toggle button positioning */
-.password-input {
+.log-password-input {
   padding-right: 3.5rem !important;
 }
 
-.form-control-container:has(.password-input) {
+.log-form-control-container:has(.log-password-input) {
   position: relative;
 }
 
-.password-toggle-btn {
+.log-password-toggle-btn {
   position: absolute !important;
   right: 0.5rem;
   top: 50%;
@@ -270,26 +270,19 @@
   width: auto;
 }
 
-.password-toggle-btn:hover {
+.log-password-toggle-btn:hover {
   background: var(--brand-red-light) !important;
   color: var(--primary) !important;
 }
 
-.password-toggle-btn:focus {
+.log-password-toggle-btn:focus {
   box-shadow: none !important;
 }
 
-/* Remove Bootstrap InputGroup styles that cause issues */
-.input-group {
-  position: static !important;
-}
-
-.input-group > .form-control {
-  position: static !important;
-}
+/* Rimossi selettori .input-group generici */
 
 /* BUTTONS */
-.modern-btn {
+.log-modern-btn {
   border-radius: var(--radius-lg);
   border: none;
   padding: 0.875rem 1.5rem;
@@ -299,16 +292,16 @@
   overflow: hidden;
 }
 
-.modern-btn:hover {
+.log-modern-btn:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
-.modern-btn:active {
+.log-modern-btn:active {
   transform: translateY(0);
 }
 
-.login-btn {
+.log-btn {
   width: 100%;
   font-weight: var(--font-semibold);
   padding-top: 0.875rem;
@@ -316,24 +309,24 @@
   font-size: var(--font-base);
 }
 
-.login-btn-primary {
+.log-btn-primary {
   margin-bottom: 1rem;
 }
 
 /* FOOTER */
-.login-footer {
+.log-footer {
   text-align: center;
   padding-top: 1.5rem;
   border-top: 1px solid #e9ecef;
 }
 
-.login-footer-text {
+.log-footer-text {
   color: var(--text-muted);
   font-size: var(--font-sm);
 }
 
-.login-link-btn,
-.btn-link.login-link-btn {
+.log-link-btn,
+.btn-link.log-link-btn {
   padding: 0;
   font-size: var(--font-sm);
   font-weight: var(--font-semibold);
@@ -346,10 +339,10 @@
   transition: var(--transition);
 }
 
-.login-link-btn:hover,
-.btn-link.login-link-btn:hover,
-.login-link-btn:focus,
-.btn-link.login-link-btn:focus {
+.log-link-btn:hover,
+.btn-link.log-link-btn:hover,
+.log-link-btn:focus,
+.btn-link.log-link-btn:focus {
   color: var(--primary-hover) !important;
   text-decoration: underline;
   background-color: transparent;
@@ -358,7 +351,7 @@
 }
 
 /* CUSTOM PRIMARY BUTTON */
-.btn-custom-primary {
+.log-btn-custom-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
   border: none;
   color: #ffffff;
@@ -368,7 +361,7 @@
   overflow: hidden;
 }
 
-.btn-custom-primary::before {
+.log-btn-custom-primary::before {
   content: '';
   position: absolute;
   top: 0;
@@ -379,19 +372,19 @@
   transition: left 0.5s;
 }
 
-.btn-custom-primary:hover::before {
+.log-btn-custom-primary:hover::before {
   left: 100%;
 }
 
-.btn-custom-primary:hover {
+.log-btn-custom-primary:hover {
   background: linear-gradient(135deg, var(--primary-hover) 0%, var(--brand-red) 100%);
   color: #ffffff;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
-.btn-custom-primary:disabled,
-.btn-custom-primary.disabled {
+.log-btn-custom-primary:disabled,
+.log-btn-custom-primary.disabled {
   background: var(--primary);
   opacity: 0.65;
   cursor: not-allowed;
@@ -401,51 +394,52 @@
 
 /* RESPONSIVE IMPROVEMENTS */
 @media (max-width: 576px) {
-  .login-page-container {
+  .log-page-container {
     padding: 0.5rem;
   }
-  
-  .login-card-body {
+
+  .log-card-body {
     padding: 1.5rem;
   }
-  
-  .login-header {
+
+  .log-header {
     margin-bottom: 1.5rem;
   }
-  
-  .login-logo {
+
+  .log-logo {
     max-height: 80px;
   }
-  
-  .login-title {
+
+  .log-title {
     font-size: 1.5rem;
   }
-  
-  .modern-input {
+
+  .log-modern-input {
     padding-left: 2.5rem !important;
     padding-right: 3rem !important;
-    font-size: 16px; /* Prevent zoom on iOS */
+    font-size: 16px;
+    /* Prevent zoom on iOS */
   }
-  
-  .floating-label {
+
+  .log-floating-label {
     left: 2.5rem;
   }
-  
-  .input-icon {
+
+  .log-input-icon {
     left: 0.75rem;
   }
-  
-  .password-toggle-btn {
+
+  .log-password-toggle-btn {
     right: 0.25rem;
   }
 }
 
 @media (max-width: 360px) {
-  .login-card-body {
+  .log-card-body {
     padding: 1.25rem;
   }
-  
-  .modern-input {
+
+  .log-modern-input {
     height: 52px;
     font-size: var(--font-sm);
   }

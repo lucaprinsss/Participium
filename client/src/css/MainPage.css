@@ -2,7 +2,6 @@
   width: 100%;
 }
 
-/* --- Variabili colore allineate a Login/Register --- */
 :root {
   --brand-red: #A12B32;
   --brand-red-hover: #b40612;
@@ -26,7 +25,7 @@
   box-sizing: border-box;
 }
 
-/* Background colors allineati alla palette */
+/* Background colors */
 .section-hero {
   background-color: var(--card-bg);
 }
@@ -49,9 +48,15 @@
 }
 
 .hp-container {
-  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  max-width: 1800px;
+}
+
+.hero-container {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1200px; 
 }
 
 .section-title {
@@ -85,6 +90,8 @@
   grid-template-columns: 1fr;
   gap: 3rem;
   align-items: center;
+  max-width: 1200px; 
+  margin: 0 auto; 
 }
 
 .hero-title {
@@ -93,6 +100,7 @@
   font-weight: 800;
   margin-bottom: 1rem;
   line-height: 1.2;
+  text-align: center; 
 }
 
 .hero-subtitle {
@@ -100,19 +108,25 @@
   color: var(--brand-red);
   font-weight: 600;
   margin-bottom: 1.5rem;
+  text-align: center; 
 }
 
 .hero-description {
   font-size: 1.05rem;
   color: var(--text-muted);
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 2.5rem;
   max-width: 600px;
+  text-align: center; 
+  margin-left: auto;
+  margin-right: auto; 
+  text-align-last: center;
 }
 
 .hero-actions {
   display: flex;
   gap: 1rem;
+  justify-content: center; 
 }
 
 .hero-logo-container {
@@ -122,10 +136,8 @@
 }
 
 .hero-logo-left {
-  max-height: 200px;
+  max-height: 250px; 
   width: auto;
-  border-radius: 1rem;
-  box-shadow: 0 10px 30px rgba(161, 43, 50, 0.15);
 }
 
 /* --- How It Works --- */
@@ -166,7 +178,9 @@
 .hiw-card-desc {
   font-size: 0.95rem;
   color: var(--text-muted);
-  line-height: 1.6;
+  line-height: 1.7;
+  text-align: center;
+  text-align-last: center;
 }
 
 /* --- Feature Sections --- */
@@ -177,11 +191,17 @@
   align-items: center;
 }
 
+.feature-text {
+  width: 100%;
+}
+
 .feature-description {
   font-size: 1.1rem;
   color: var(--text-muted);
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 2rem;
+  text-align: left;
+  max-width: none;
 }
 
 .feature-list {
@@ -199,7 +219,12 @@
   gap: 1rem;
   font-size: 1rem;
   color: var(--text-dark);
-  line-height: 1.5;
+  line-height: 1.6;
+}
+
+.feature-list-text {
+  flex: 1;
+  line-height: 1.6;
 }
 
 .feature-list svg {
@@ -212,6 +237,8 @@
 .feature-list strong {
   color: var(--brand-red);
   font-weight: 600;
+  display: inline-block;
+  margin-bottom: 0.25rem;
 }
 
 .feature-visual {
@@ -246,8 +273,10 @@
   font-size: 1.15rem;
   color: #ffffff;
   opacity: 0.9;
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 2.5rem;
+  text-align: center;
+  text-align-last: center;
 }
 
 /* --- Buttons --- */
@@ -278,7 +307,71 @@
 }
 
 /* --- Media Queries per Layout Responsive --- */
-@media (min-width: 768px) {
+
+/* Tablet and medium screens (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .section-hero,
+  .section-how-it-works,
+  .section-features,
+  .section-admin,
+  .section-cta {
+    padding: 4rem 2rem;
+  }
+
+  .hero-content {
+    grid-template-columns: 1.2fr 1fr;
+    gap: 3rem;
+    max-width: 90%;
+  }
+
+  .feature-item {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    max-width: 90%;
+  }
+
+  .hero-title,
+  .hero-subtitle,
+  .hero-description {
+    text-align: left;
+  }
+  
+  .hero-actions {
+    justify-content: flex-start;
+  }
+  
+  .hero-description {
+    margin-left: 0;
+    margin-right: 0;
+    text-align: left;
+    text-align-last: left;
+    max-width: 500px;
+  }
+
+  .hiw-card-desc {
+    text-align: center;
+    text-align-last: center;
+    padding: 0 0.5rem;
+  }
+
+  .feature-description {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 600px;
+  }
+
+  .feature-list li {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .hero-logo-left {
+    max-height: 300px;
+  }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
   .section-hero,
   .section-how-it-works,
   .section-features,
@@ -287,39 +380,45 @@
     padding: 5rem 2rem;
   }
 
-  /* Layout Hero 60/40 */
   .hero-content {
-    grid-template-columns: 1.2fr 1fr;
+    grid-template-columns: 1.6fr 1fr;
     gap: 4rem;
+    max-width: 1100px;
   }
 
-  /* Layout Feature 50/50 */
   .feature-item {
     grid-template-columns: 1fr 1fr;
     gap: 4rem;
+    max-width: 1100px;
   }
 
-  /* Reverse order for admin section */
-  .feature-item.reverse .feature-text {
-    order: 2;
+  .hero-title,
+  .hero-subtitle,
+  .hero-description {
+    text-align: left;
+  }
+  
+  .hero-actions {
+    justify-content: flex-start;
+  }
+  
+  .hero-description {
+    margin-left: 0;
+    margin-right: 0;
+    text-align: left;
+    text-align-last: left;
   }
 
-  .feature-item.reverse .feature-visual {
-    order: 1;
-  }
-
-  .hero-logo-left {
-    max-height: 250px;
-  }
-}
-
-@media (min-width: 1024px) {
   .hiw-grid {
     gap: 2.5rem;
   }
   
   .hiw-card {
     padding: 3rem 2rem;
+  }
+
+  .hero-logo-left {
+    max-height: 380px;
   }
 }
 
@@ -335,7 +434,7 @@
 
   .hero-actions {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
   }
 
   .hp-btn {
@@ -345,5 +444,48 @@
 
   .feature-list li {
     font-size: 0.95rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .hero-title,
+  .hero-subtitle,
+  .hero-description {
+    text-align: center;
+  }
+  
+  .hero-description {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    text-align-last: center;
+  }
+
+  .hiw-card-desc,
+  .feature-description,
+  .cta-subtitle {
+    text-align: center;
+    text-align-last: center;
+  }
+
+  .feature-list {
+    align-items: center;
+  }
+
+  .feature-list li {
+    text-align: left;
+    max-width: 100%;
+  }
+}
+
+/* Big screens */
+@media (min-width: 1400px) {
+  .hero-content {
+    max-width: 1200px;
+  }
+  
+  .feature-item {
+    max-width: 1200px;
   }
 }

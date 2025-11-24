@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "../api/authApi";
-import { useNavigate, useLocation } from "react-router-dom"; 
-import CitizenHome from "../components/CitizenHome";
+import { useNavigate } from "react-router-dom"; 
+import CitizenHome from "../components/citizenHome";
 import AdminHome from "../components/AdminHome";
-import MunicipalityUserHome from "../components/MunicipalityUserHome";
+import MunicipalityUserHome from "../components/municipalityUserHome";
 
 export default function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   
-  const location = useLocation(); 
-
   useEffect(() => {
     getCurrentUser()
       .then(setUser)
@@ -24,23 +22,10 @@ export default function Home() {
       return null;
     }
     
-
-    const queryParams = new URLSearchParams(location.search);
-    const viewAs = queryParams.get('view_as');
-
-    const actualRole = (user.role || "").toString().toLowerCase();
-    const isAdmin = actualRole.includes("admin") || actualRole.includes("administrator");
-
-    if (isAdmin && viewAs) {
-      if (viewAs === 'citizen') {
-        return <CitizenHome user={user} />;
-      }
-      if (viewAs === 'officer') {
-        return <MunicipalityUserHome user={user} />;
-      }
-    }
-
-    if (actualRole.includes("citizen")) {
+    const actualRole = (user.role_name || "").toString().toLowerCase();
+    const isAdmin = actualRole.includes("administrator");
+    
+    if (actualRole.includes("citizen") || actualRole.includes("Citizen")) {
       return <CitizenHome user={user} />;
     }
     if (isAdmin) {
@@ -51,14 +36,8 @@ export default function Home() {
   };
 
   return (
-    <div className="homepage">
       <div className="hp-container">
-        <div className="hp-main">
-          <div className="hp-left">
             {getComponentToRender()}
-          </div>
-        </div>
       </div>
-    </div>
   );
 }

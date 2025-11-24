@@ -91,6 +91,7 @@ export default function MainPage() {
       {/* ===== Features for Citizens ===== */}
       <section className="section-features">
         <div className="hp-container feature-item">
+
           <div className="feature-text">
             <h2 className="section-title-left">For Every Citizen</h2>
             <p className="feature-description">
@@ -100,21 +101,28 @@ export default function MainPage() {
             <ul className="feature-list">
               <li>
                 <FaCameraRetro />
-                <strong>Photo Uploads:</strong> Add multiple photos to
-                provide clear visual context for your report.
+                <div className="feature-list-text">
+                  <strong>Photo Uploads:</strong> Add multiple photos to
+                  provide clear visual context for your report.
+                </div>
               </li>
               <li>
                 <FaMapMarkedAlt />
-                <strong>Precise Geolocation:</strong> Use an interactive map
-                to pinpoint the exact location of the problem.
+                <div className="feature-list-text">
+                  <strong>Precise Geolocation:</strong> Use an interactive map
+                  to pinpoint the exact location of the problem.
+                </div>
               </li>
               <li>
                 <FaTasks />
-                <strong>Track Status:</strong> Follow your report's journey
-                from "Submitted" to "In Progress" and "Resolved".
+                <div className="feature-list-text">
+                  <strong>Track Status:</strong> Follow your report's journey
+                  from "Submitted" to "In Progress" and "Resolved".
+                </div>
               </li>
             </ul>
           </div>
+
           <div className="feature-visual">
             <img
               src="/mainPage/citizens.png"
@@ -122,12 +130,20 @@ export default function MainPage() {
               className="feature-image"
             />
           </div>
+
         </div>
       </section>
 
       {/* ===== Features for Administration ===== */}
       <section className="section-admin">
-        <div className="hp-container feature-item reverse">
+        <div className="hp-container feature-item">
+          <div className="feature-visual">
+            <img
+              src="/mainPage/administration.jpeg"
+              alt="Admin dashboard analytics"
+              className="feature-image"
+            />
+          </div>
           <div className="feature-text">
             <h2 className="section-title-left">For the Administration</h2>
             <p className="feature-description">
@@ -137,28 +153,28 @@ export default function MainPage() {
             <ul className="feature-list">
               <li>
                 <FaTasks />
-                <strong>Manage Reports:</strong> Accept, reject, or comment
-                on new submissions in one centralized dashboard.
+                <div className="feature-list-text">
+                  <strong>Manage Reports:</strong> Accept, reject, or comment
+                  on new submissions in one centralized dashboard.
+                </div>
               </li>
               <li>
                 <FaChartLine />
-                <strong>Analytics:</strong> Identify problem hotspots and
-                track resolution times to optimize resources.
+                <div className="feature-list-text">
+                  <strong>Analytics:</strong> Identify problem hotspots and
+                  track resolution times to optimize resources.
+                </div>
               </li>
               <li>
                 <FaShieldAlt />
-                <strong>Role-Based Access:</strong> Administrators and
-                Municipality Officers have different views and permissions.
+                <div className="feature-list-text">
+                  <strong>Role-Based Access:</strong> Administrators and
+                  Municipality Officers have different views and permissions.
+                </div>
               </li>
             </ul>
           </div>
-          <div className="feature-visual">
-            <img
-              src="/mainPage/administration.jpeg"
-              alt="Admin dashboard analytics"
-              className="feature-image"
-            />
-          </div>
+          
         </div>
       </section>
 

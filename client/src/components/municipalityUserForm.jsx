@@ -1,414 +1,389 @@
-import React, { useState, useEffect } from "react";
-import { Alert } from "react-bootstrap";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { Alert, Dropdown } from "react-bootstrap";
 import { createMunicipalityUser, getAllRoles } from "../api/municipalityUserApi";
+import { getRolesByDepartment, getAllDepartments } from "../api/departmentAPI";
 import "../css/MunicipalityUserForm.css";
-import { FaEye, FaEyeSlash, FaUserPlus, FaTimes, FaCheck, FaShieldAlt } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaUserPlus, FaTimes, FaCheck, FaShieldAlt, FaBuilding } from "react-icons/fa";
+
+// --- Utility Functions ---
+const cleanInput = (value, isEmail = false) => {
+  if (typeof value !== 'string') return value;
+  const noSpaces = value.replace(/\s/g, '');
+  return isEmail ? noSpaces.toLowerCase() : noSpaces;
+};
+
+const calculateStrength = (password) => {
+  if (!password) return 0;
+  let strength = 0;
+  if (password.length >= 6) strength += 1;
+  if (password.length >= 8) strength += 1;
+  if (/[A-Z]/.test(password)) strength += 1;
+  if (/[0-9]/.test(password)) strength += 1;
+  if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+  return strength;
+};
+
+const getStrengthColor = (strength) => {
+  const colors = ["#dc3545", "#ff6b35", "#ffa726", "#9ccc65", "#4caf50"];
+  return colors[strength] || "#dc3545";
+};
+
+// --- Sub-Components ---
+
+const FormInput = ({ label, name, type = "text", value, placeholder, onChange, disabled, required = true }) => {
+  const handleKeyDown = (e) => {
+    if (e.key === " ") e.preventDefault();
+  };
+
+  const handleChange = (e) => {
+    const cleaned = cleanInput(e.target.value, type === "email");
+    onChange(name, cleaned);
+  };
+
+  return (
+    <div className="form-group" style={{ width: '100%' }}>
+      <label className="muf-form-label">
+        <span>{label}</span>
+        {required && <span className="muf-required-asterisk">*</span>}
+      </label>
+      <input
+        type={type}
+        name={name}
+        placeholder={placeholder}
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        disabled={disabled}
+        className="muf-modern-input"
+        autoComplete="off"
+        style={{ width: '100%' }}
+      />
+    </div>
+  );
+};
+
+const FormSelect = ({ label, icon: Icon, value, options, onChange, disabled, placeholder, loading }) => {
+  const selectedName = options.find(opt => String(opt.id) === String(value))?.name;
+
+  return (
+    <div className="form-group" style={{ width: '100%' }}>
+      <label className="muf-form-label">
+        <span>{label}</span>
+        <span className="muf-required-asterisk">*</span>
+      </label>
+      <Dropdown onSelect={(val) => onChange(val)}>
+        <Dropdown.Toggle
+          className="muf-modern-dropdown-toggle"
+          disabled={disabled}
+          id={`dropdown-${label}`}
+          style={{ width: '100%' }}
+        >
+          <Icon className="muf-dropdown-icon" />
+          <span className="muf-dropdown-toggle-text">
+            {loading ? "Loading..." : (selectedName || placeholder)}
+          </span>
+        </Dropdown.Toggle>
+        <Dropdown.Menu className="muf-modern-dropdown-menu" style={{ width: '100%' }}>
+          {options.map(opt => (
+            <Dropdown.Item
+              key={opt.id}
+              eventKey={opt.id}
+              active={String(value) === String(opt.id)}
+            >
+              {opt.name}
+            </Dropdown.Item>
+          ))}
+        </Dropdown.Menu>
+      </Dropdown>
+    </div>
+  );
+};
+
+// --- Main Component ---
 
 export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    firstName: "",
-    lastName: "",
-    role: "",
+    username: "", email: "", password: "", confirmPassword: "",
+    firstName: "", lastName: "", department: "", role: "",
   });
-  const [roles, setRoles] = useState([]);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loadingRoles, setLoadingRoles] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
+  
+  const [data, setData] = useState({ departments: [], roles: [] });
+  const [status, setStatus] = useState({ loading: false, error: "", success: "", loadingDepts: true, loadingRoles: false });
+  const [showPwd, setShowPwd] = useState({ main: false, confirm: false });
 
+  // Derived state for password strength
+  const passwordStrength = useMemo(() => calculateStrength(formData.password), [formData.password]);
+
+  // Initial Data Load
   useEffect(() => {
+    let isMounted = true;
+    getAllDepartments()
+      .then(depts => {
+        if (isMounted) {
+          setData(prev => ({ ...prev, departments: depts }));
+          setStatus(prev => ({ ...prev, loadingDepts: false }));
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load departments", err);
+        if (isMounted) setStatus(prev => ({ ...prev, loadingDepts: false }));
+      });
+    return () => { isMounted = false; };
+  }, []);
+
+  // Fetch Roles when Department changes
+  useEffect(() => {
+    if (!formData.department) {
+      setData(prev => ({ ...prev, roles: [] }));
+      return;
+    }
+
     const fetchRoles = async () => {
+      setStatus(prev => ({ ...prev, loadingRoles: true }));
       try {
-        console.log("Fetching roles...");
-        const rolesList = await getAllRoles();
-        console.log("Roles fetched successfully:", rolesList);
-        setRoles(rolesList);
+        const deptId = parseInt(formData.department);
+        let rolesList = await getRolesByDepartment(deptId);
+        setData(prev => ({ ...prev, roles: rolesList }));
       } catch (err) {
-        console.error("Failed to fetch roles:", err);
-        if (err.status === 403) {
-          setError("You don't have permission to view roles. Please make sure you're logged in as an administrator.");
-        } else if (err.status === 401) {
-          setError("You are not authenticated. Please log in again.");
-        } else {
-          setError(`Failed to load roles: ${err.message}`);
+        console.error("Role fetch error, fallback to all", err);
+        try {
+          const allRoles = await getAllRoles();
+          setData(prev => ({ ...prev, roles: allRoles }));
+        } catch (e) {
+          setStatus(prev => ({ ...prev, error: "Failed to load roles." }));
         }
       } finally {
-        setLoadingRoles(false);
+        setStatus(prev => ({ ...prev, loadingRoles: false }));
       }
     };
 
     fetchRoles();
-  }, []);
+  }, [formData.department]);
 
-  const calculatePasswordStrength = (password) => {
-    let strength = 0;
-    if (password.length >= 6) strength += 1;
-    if (password.length >= 8) strength += 1;
-    if (/[A-Z]/.test(password)) strength += 1;
-    if (/[0-9]/.test(password)) strength += 1;
-    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
-    return strength;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    if (name === "password") {
-      setPasswordStrength(calculatePasswordStrength(value));
-    }
-  };
-
-  const getPasswordStrengthColor = () => {
-    const colors = ["#dc3545", "#ff6b35", "#ffa726", "#9ccc65", "#4caf50"];
-    return colors[passwordStrength] || "#dc3545";
-  };
-
-  const validateForm = () => {
-    const errors = [];
-
-    if (!formData.firstName.trim()) errors.push("Please enter the first name");
-    if (!formData.lastName.trim()) errors.push("Please enter the last name");
-    if (!formData.username.trim()) errors.push("Please enter a username");
-    if (!formData.email.trim()) errors.push("Please enter an email");
+  // Handlers
+  const updateField = useCallback((name, value) => {
+    setFormData(prev => {
+      // Se stiamo cambiando il dipartimento, resettiamo il ruolo
+      if (name === 'department') {
+        return { ...prev, department: value, role: "" };
+      }
+      
+      // Per tutti gli altri campi (incluso 'role'), aggiorniamo normalmente
+      return { ...prev, [name]: value };
+    });
     
+    if (status.error) setStatus(prev => ({ ...prev, error: "" }));
+  }, [status.error]);
+
+  const togglePwd = (field) => setShowPwd(prev => ({ ...prev, [field]: !prev[field] }));
+
+  const validate = () => {
+    if (!formData.firstName.trim()) return "Enter first name";
+    if (!formData.lastName.trim()) return "Enter last name";
+    if (!formData.username.trim()) return "Enter username";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) errors.push("Please enter a valid email address");
-    
-    if (!formData.password.trim()) errors.push("Please enter a password");
-    if (formData.password.length < 6) errors.push("Password must be at least 6 characters long");
-    if (!formData.confirmPassword.trim()) errors.push("Please confirm your password");
-    if (formData.password !== formData.confirmPassword) errors.push("Passwords do not match");
-    if (!formData.role) errors.push("Please select a role");
-
-    return errors;
+    if (!emailRegex.test(formData.email)) return "Invalid email format";
+    if (formData.password.length < 6) return "Password min 6 chars";
+    if (formData.password !== formData.confirmPassword) return "Passwords do not match";
+    if (!formData.department) return "Select a department";
+    if (!formData.role) return "Select a role";
+    return null;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setStatus(prev => ({ ...prev, error: "", success: "" }));
 
-    const errors = validateForm();
-    if (errors.length > 0) {
-      setError(errors[0]);
+    const errorMsg = validate();
+    if (errorMsg) {
+      setStatus(prev => ({ ...prev, error: errorMsg }));
       return;
     }
 
-    setLoading(true);
+    setStatus(prev => ({ ...prev, loading: true }));
 
     try {
+      const selectedDept = data.departments.find(d => String(d.id) === String(formData.department));
+      const selectedRole = data.roles.find(r => String(r.id) === String(formData.role));
+
       const payload = {
         username: formData.username,
         email: formData.email,
         password: formData.password,
         first_name: formData.firstName,
         last_name: formData.lastName,
-        role: formData.role,
+        department_name: selectedDept?.name || "",
+        role_name: selectedRole?.name || "",
       };
 
       const newUser = await createMunicipalityUser(payload);
-      setSuccess(`User "${newUser.username}" created successfully!`);
+      
+      setStatus(prev => ({ ...prev, success: `User "${newUser.username}" created!`, loading: false }));
+      setFormData({ username: "", email: "", password: "", confirmPassword: "", firstName: "", lastName: "", department: "", role: "" });
+      
+      if (onUserCreated) onUserCreated(newUser);
+      setTimeout(() => setStatus(prev => ({ ...prev, success: "" })), 5000);
 
-      setFormData({
-        username: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        firstName: "",
-        lastName: "",
-        role: "",
-      });
-
-      if (onUserCreated) {
-        onUserCreated(newUser);
-      }
-
-      setTimeout(() => {
-        setSuccess("");
-      }, 5000);
     } catch (err) {
-      console.error("Failed to create user:", err);
-      setFormData((prev) => ({ ...prev, password: "", confirmPassword: "" }));
-
-      if (err.status === 409) {
-        setError("Username or email already exists. Please try another.");
-      } else if (err.status === 403) {
-        setError("You don't have permission to create users.");
-      } else if (err.status === 400) {
-        setError(err.message || "Invalid data. Please check your input.");
-      } else if (!navigator.onLine) {
-        setError("No internet connection. Please check your network.");
-      } else {
-        setError(err.message || "Failed to create user. Please try again.");
-      }
-    } finally {
-      setLoading(false);
+      console.error(err);
+      setFormData(prev => ({ ...prev, password: "", confirmPassword: "" }));
+      let errMsg = "Failed to create user.";
+      if (err.status === 409) errMsg = "Username/Email already exists.";
+      else if (err.status === 403) errMsg = "Permission denied.";
+      
+      setStatus(prev => ({ ...prev, error: errMsg, loading: false }));
     }
   };
 
   return (
-    <div className="modern-user-form">
-      <div className="form-glass-container">
-        <div className="form-header">
-          <div className="header-icon">
-            <FaUserPlus />
-          </div>
-          <h2 className="form-title">
-            Create New Municipality User
-          </h2>
-          <p className="form-subtitle">
-            Add a new user to the municipality management system
-          </p>
+    <div className="muf-user-form" style={{ width: '100%' }}>
+      <div className="muf-form-glass-container">
+        {/* Header */}
+        <div className="muf-form-header">
+          <div className="muf-header-icon"><FaUserPlus /></div>
+          <h2 className="muf-form-title">Create new Municipality User</h2>
+          <p className="muf-form-subtitle">Add a new user to the municipality management system</p>
         </div>
 
-        {(error || success) && (
-          <div className="alert-container">
-            {error && (
-              <Alert variant="danger" onClose={() => setError("")} dismissible className="modern-alert">
-                <div className="alert-content">
-                  <FaTimes className="alert-icon" />
-                  {error}
-                </div>
-              </Alert>
-            )}
-            {success && (
-              <Alert variant="success" onClose={() => setSuccess("")} dismissible className="modern-alert">
-                <div className="alert-content">
-                  <FaCheck className="alert-icon" />
-                  {success}
-                </div>
-              </Alert>
-            )}
-          </div>
-        )}
+        {/* Alerts */}
+        <div className="muf-alert-container">
+          {status.error && (
+            <Alert variant="danger" onClose={() => setStatus(p => ({...p, error: ""}))} dismissible className="muf-modern-alert">
+              <div className="muf-alert-content"><FaTimes className="alert-icon" />{status.error}</div>
+            </Alert>
+          )}
+          {status.success && (
+            <Alert variant="success" onClose={() => setStatus(p => ({...p, success: ""}))} dismissible className="muf-modern-alert">
+              <div className="muf-alert-content"><FaCheck className="alert-icon" />{status.success}</div>
+            </Alert>
+          )}
+        </div>
 
-        <form className="modern-form" onSubmit={handleSubmit} noValidate>
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">
-                <span>First Name</span>
-                <span className="required-asterisk">*</span>
-              </label>
-              <input
-                type="text"
-                name="firstName"
-                placeholder="Enter first name"
-                value={formData.firstName}
-                onChange={handleChange}
-                disabled={loading}
-                className="modern-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span>Last Name</span>
-                <span className="required-asterisk">*</span>
-              </label>
-              <input
-                type="text"
-                name="lastName"
-                placeholder="Enter last name"
-                value={formData.lastName}
-                onChange={handleChange}
-                disabled={loading}
-                className="modern-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span>Username</span>
-                <span className="required-asterisk">*</span>
-              </label>
-              <input
-                type="text"
-                name="username"
-                placeholder="Choose a username"
-                value={formData.username}
-                onChange={handleChange}
-                disabled={loading}
-                className="modern-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span>Email Address</span>
-                <span className="required-asterisk">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                placeholder="user@municipality.com"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={loading}
-                className="modern-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span>Password</span>
-                <span className="required-asterisk">*</span>
-              </label>
-              <div className="password-container">
-                <div className="password-input-wrapper">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    placeholder="Create password (min. 6 characters)"
-                    value={formData.password}
-                    onChange={handleChange}
-                    disabled={loading}
-                    className="modern-input password-input"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle modern-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={loading}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-                {formData.password && (
-                  <div className="password-strength">
-                    <div className="strength-bar">
-                      <div 
-                        className="strength-fill"
-                        style={{
-                          width: `${(passwordStrength / 5) * 100}%`,
-                          backgroundColor: getPasswordStrengthColor()
-                        }}
-                      />
-                    </div>
-                    <div className="strength-labels">
-                      <span>Weak</span>
-                      <span>Strong</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+        <form className="muf-modern-form" onSubmit={handleSubmit} noValidate>
+          <div className="muf-form-cards-container">
             
-
-            <div className="form-group">
-              <label className="form-label">
-                <span>Confirm Password</span>
-                <span className="required-asterisk">*</span>
-              </label>
-              <div className="password-input-wrapper">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="modern-input password-input"
-                />
-                <button
-                  type="button"
-                  className="password-toggle modern-toggle"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={loading}
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                >
-                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
+            {/* Personal Info Card */}
+            <div className="muf-form-card">
+              <div className="muf-card-header">
+                <div className="muf-card-icon"><FaUserPlus /></div>
+                <div>
+                  <h3 className="muf-card-title">Personal Information</h3>
+                  <p className="muf-card-subtitle">Basic user details</p>
+                </div>
               </div>
-              {formData.password && formData.confirmPassword && (
-                <div className="password-match">
-                  {formData.password === formData.confirmPassword ? (
-                    <span className="match-success">✓ Passwords match</span>
-                  ) : (
-                    <span className="match-error">✗ Passwords don't match</span>
+              <div className="muf-form-grid">
+                <FormInput label="First Name" name="firstName" value={formData.firstName} onChange={updateField} placeholder="Enter first name" disabled={status.loading} />
+                <FormInput label="Last Name" name="lastName" value={formData.lastName} onChange={updateField} placeholder="Enter last name" disabled={status.loading} />
+                <FormInput label="Username" name="username" value={formData.username} onChange={updateField} placeholder="Enter username" disabled={status.loading} />
+                <FormInput label="Email Address" name="email" type="email" value={formData.email} onChange={updateField} placeholder="user@municipality.com" disabled={status.loading} />
+              </div>
+            </div>
+
+            {/* Access & Role Card */}
+            <div className="muf-form-card">
+              <div className="muf-card-header">
+                <div className="muf-card-icon"><FaShieldAlt /></div>
+                <div>
+                  <h3 className="muf-card-title">Access & Role</h3>
+                  <p className="muf-card-subtitle">Security and permissions</p>
+                </div>
+              </div>
+              <div className="muf-form-grid">
+                <FormSelect 
+                  label="Department" 
+                  icon={FaBuilding} 
+                  value={formData.department} 
+                  options={data.departments} 
+                  onChange={(val) => updateField('department', val)}
+                  disabled={status.loading || status.loadingDepts}
+                  loading={status.loadingDepts}
+                  placeholder="Select department"
+                />
+                
+                <FormSelect 
+                  label="User Role" 
+                  icon={FaShieldAlt} 
+                  value={formData.role} 
+                  options={data.roles} 
+                  onChange={(val) => updateField('role', val)}
+                  disabled={status.loading || status.loadingRoles || !formData.department}
+                  loading={status.loadingRoles}
+                  placeholder={!formData.department ? "Select department first" : "Select user role"}
+                />
+
+                {/* Password Field */}
+                <div className="form-group" style={{ width: '100%' }}>
+                  <label className="muf-form-label"><span>Password</span><span className="muf-required-asterisk">*</span></label>
+                  <div className="muf-password-container">
+                    <div className="muf-password-input-wrapper">
+                      <input
+                        type={showPwd.main ? "text" : "password"}
+                        className="muf-modern-input muf-password-input"
+                        placeholder="Create password (min. 6 chars)"
+                        value={formData.password}
+                        onChange={(e) => updateField('password', e.target.value)}
+                        disabled={status.loading}
+                        style={{ width: '100%' }}
+                      />
+                      <button type="button" className="muf-password-toggle-btn" onClick={() => togglePwd('main')} disabled={status.loading}>
+                        {showPwd.main ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    {formData.password && (
+                      <div className="muf-password-strength">
+                        <div className="muf-strength-bar" style={{width: '100%'}}>
+                          <div className="muf-strength-fill" style={{ width: `${(passwordStrength / 5) * 100}%`, backgroundColor: getStrengthColor(passwordStrength) }} />
+                        </div>
+                        <div className="muf-strength-labels"><span>Weak</span><span>Strong</span></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Confirm Password Field */}
+                <div className="form-group" style={{ width: '100%' }}>
+                  <label className="muf-form-label"><span>Confirm Password</span><span className="muf-required-asterisk">*</span></label>
+                  <div className="muf-password-input-wrapper">
+                    <input
+                      type={showPwd.confirm ? "text" : "password"}
+                      className="muf-modern-input muf-password-input"
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => updateField('confirmPassword', e.target.value)}
+                      disabled={status.loading}
+                      style={{ width: '100%' }}
+                    />
+                    <button type="button" className="muf-password-toggle-btn" onClick={() => togglePwd('confirm')} disabled={status.loading}>
+                      {showPwd.confirm ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {formData.password && formData.confirmPassword && (
+                    <div className="muf-password-match">
+                      {formData.password === formData.confirmPassword 
+                        ? <span className="muf-match-success">✓ Passwords match</span>
+                        : <span className="muf-match-error">✗ Passwords don't match</span>}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                <span>User Role</span>
-                <span className="required-asterisk">*</span>
-              </label>
-              <div className="select-wrapper">
-                <FaShieldAlt className="select-icon" />
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  disabled={loading || loadingRoles}
-                  className="modern-select"
-                >
-                  <option value="">
-                    {loadingRoles ? "Loading roles..." : "Select user role"}
-                  </option>
-                  {roles.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           </div>
 
-          <div className="form-actions">
+          <div className="muf-form-actions">
             <button
               type="button"
-              className="modern-btn secondary"
+              className="muf-modern-btn secondary"
               onClick={() => {
-                setFormData({
-                  username: "",
-                  email: "",
-                  password: "",
-                  confirmPassword: "",
-                  firstName: "",
-                  lastName: "",
-                  role: "",
-                });
-                setError("");
-                setSuccess("");
+                setFormData({ username: "", email: "", password: "", confirmPassword: "", firstName: "", lastName: "", department: "", role: "" });
+                setStatus(p => ({...p, error: "", success: ""}));
                 if (onCancel) onCancel();
               }}
-              disabled={loading}
+              disabled={status.loading}
             >
-              <FaTimes />
-              Cancel
+              <FaTimes /> Cancel
             </button>
-
-            <button
-              type="submit"
-              className="modern-btn primary"
-              disabled={loading || loadingRoles}
-            >
-              {loading ? (
-                <>
-                  <div className="loading-spinner"></div>
-                  Creating User...
-                </>
-              ) : (
-                <>
-                  <FaUserPlus />
-                  Create User
-                </>
-              )}
+            <button type="submit" className="muf-modern-btn primary" disabled={status.loading || status.loadingDepts || status.loadingRoles}>
+              {status.loading ? <><div className="muf-loading-spinner"></div> Creating...</> : <><FaUserPlus /> Create User</>}
             </button>
           </div>
         </form>

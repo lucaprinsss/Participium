@@ -1,73 +1,107 @@
 import { useState, useEffect } from "react";
-import { Alert, Modal } from "react-bootstrap";
+import { Alert, Modal, Dropdown } from "react-bootstrap";
+import { FaFilter, FaBuilding } from "react-icons/fa";
 import { 
   getAllMunicipalityUsers, 
   deleteMunicipalityUser,
   updateMunicipalityUser,
-  getAllRoles
+  getAllRoles,
 } from "../api/municipalityUserApi";
-import "../css/MunicipalityUserList.css";
+import { getRolesByDepartment, getAllDepartments } from "../api/departmentAPI";
+
+import "../css/MunicipalityUserList.css"; 
 
 export default function MunicipalityUserList({ refreshTrigger }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [roles, setRoles] = useState([]);
-  const [roleFilter, setRoleFilter] = useState("");
   
-  // Edit modal state
+  // Filters states
+  const [roles, setRoles] = useState([]);
+  const [departments, setDepartments] = useState([]); 
+  const [roleFilter, setRoleFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState(""); 
+  const [loadingRoles, setLoadingRoles] = useState(false);
+
+  // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [editForm, setEditForm] = useState({
-    username: "",
-    email: "",
-    firstName: "",
-    lastName: "",
-    role: "",
-  });
+  const [editForm, setEditForm] = useState({ username: "", email: "", firstName: "", lastName: "", role: "" });
   const [editLoading, setEditLoading] = useState(false);
 
-  // Delete confirmation state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingUser, setDeletingUser] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Fetch users and roles
+  // Initial Data Fetch
   useEffect(() => {
-    fetchUsers();
-    fetchRoles();
+    const initData = async () => {
+      setLoading(true);
+      try {
+        const [usersData, departmentsData] = await Promise.all([
+          getAllMunicipalityUsers(),
+          getAllDepartments()
+        ]);
+
+        setUsers(usersData);
+        setDepartments(departmentsData);
+      } catch (err) {
+        console.error("Failed to fetch initial data:", err);
+        if (err.status === 403) {
+          setError("You don't have permission to view data.");
+        } else if (err.status === 401) {
+          setError("You are not authenticated.");
+        } else {
+          setError(`Failed to load data: ${err.message}`);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initData();
   }, [refreshTrigger]);
 
-  const fetchRoles = async () => {
-    try {
-      const rolesList = await getAllRoles();
-      setRoles(rolesList);
-    } catch (err) {
-      console.error("Failed to fetch roles:", err);
-    }
-  };
+  // Fetch Roles when Department Filter changes
+  useEffect(() => {
+    const fetchRoles = async () => {
+      setLoadingRoles(true);
+      setRoleFilter(""); 
+      
+      try {
+        let rolesList;
+        if (departmentFilter) {
+          rolesList = await getRolesByDepartment(departmentFilter);
+        } else {
+          rolesList = await getAllRoles();
+        }
+        setRoles(rolesList);
+      } catch (err) {
+        console.error("Failed to fetch roles:", err);
+        setError("Failed to load roles for the selected department: " + departmentFilter);
+        setRoles([]);
+      } finally {
+        setLoadingRoles(false);
+      }
+    };
+
+    fetchRoles();
+  }, [departmentFilter]);
 
   const fetchUsers = async () => {
     try {
-      setLoading(true);
-      setError("");
       const usersList = await getAllMunicipalityUsers();
       setUsers(usersList);
     } catch (err) {
       console.error("Failed to fetch users:", err);
-      if (err.status === 403) {
-        setError("You don't have permission to view users.");
-      } else if (err.status === 401) {
-        setError("You are not authenticated. Please log in again.");
-      } else {
-        setError(`Failed to load users: ${err.message}`);
-      }
+      setError(`Failed to load users: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // --- Edit Modal Functions ---
   const handleEdit = (user) => {
     setEditingUser(user);
     setEditForm({
@@ -75,17 +109,14 @@ export default function MunicipalityUserList({ refreshTrigger }) {
       email: user.email,
       firstName: user.first_name || "",
       lastName: user.last_name || "",
-      role: user.role,
+      role: user.role_name,
     });
     setShowEditModal(true);
   };
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setEditForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handleEditSubmit = async (e) => {
@@ -93,16 +124,8 @@ export default function MunicipalityUserList({ refreshTrigger }) {
     setError("");
     setSuccess("");
 
-    if (!editForm.email.trim()) {
-      setError("Email is required");
-      return;
-    }
-    if (!editForm.firstName.trim()) {
-      setError("First name is required");
-      return;
-    }
-    if (!editForm.lastName.trim()) {
-      setError("Last name is required");
+    if (!editForm.email.trim() || !editForm.firstName.trim() || !editForm.lastName.trim()) {
+      setError("All fields are required");
       return;
     }
 
@@ -120,29 +143,21 @@ export default function MunicipalityUserList({ refreshTrigger }) {
       
       setSuccess(`User "${editForm.username}" updated successfully!`);
       setShowEditModal(false);
-      
       await fetchUsers();
 
-      setTimeout(() => {
-        setSuccess("");
-      }, 5000);
+      setTimeout(() => setSuccess(""), 5000);
     } catch (err) {
       console.error("Failed to update user:", err);
-      
-      if (err.status === 409) {
-        setError("Username or email already exists.");
-      } else if (err.status === 403) {
-        setError("You don't have permission to update users.");
-      } else if (err.status === 404) {
-        setError("User not found.");
-      } else {
-        setError(err.message || "Failed to update user.");
-      }
+      if (err.status === 409) setError("Username or email already exists.");
+      else if (err.status === 403) setError("You don't have permission to update users.");
+      else if (err.status === 404) setError("User not found.");
+      else setError(err.message || "Failed to update user.");
     } finally {
       setEditLoading(false);
     }
   };
 
+  // --- Delete Modal Functions ---
   const handleDeleteClick = (user) => {
     setDeletingUser(user);
     setShowDeleteModal(true);
@@ -155,59 +170,123 @@ export default function MunicipalityUserList({ refreshTrigger }) {
 
     try {
       await deleteMunicipalityUser(deletingUser.id);
-      
       setSuccess(`User "${deletingUser.username}" deleted successfully!`);
       setShowDeleteModal(false);
       setDeletingUser(null);
-      
       await fetchUsers();
-
-      setTimeout(() => {
-        setSuccess("");
-      }, 5000);
+      setTimeout(() => setSuccess(""), 5000);
     } catch (err) {
       console.error("Failed to delete user:", err);
-      
-      if (err.status === 403) {
-        setError("You don't have permission to delete users.");
-      } else if (err.status === 404) {
-        setError("User not found.");
-      } else {
-        setError(err.message || "Failed to delete user.");
-      }
+      if (err.status === 403) setError("You don't have permission to delete users.");
+      else if (err.status === 404) setError("User not found.");
+      else setError(err.message || "Failed to delete user.");
       setShowDeleteModal(false);
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  const filteredUsers = roleFilter 
-    ? users.filter(user => user.role === roleFilter)
-    : users;
+  // --- Filter Handler Functions ---
+  const handleDepartmentSelect = (value) => setDepartmentFilter(value);
+  
+  const getSelectedDepartmentName = () => {
+    if (!departmentFilter) return "All Departments";
+    return departments.find(d => d.id === parseInt(departmentFilter))?.name;
+  };
+  
+  const handleRoleFilterSelect = (value) => setRoleFilter(value);
+
+  const getRoleFilterName = () => {
+    if (!roleFilter) return "All Roles";
+    return roleFilter.name || roleFilter;
+  };
+
+  // --- Filter Logic ---
+  const filteredUsers = users.filter(user => {
+    const selectedDeptName = departmentFilter 
+      ? departments.find(d => d.id === parseInt(departmentFilter))?.name 
+      : null;
+
+    const departmentMatch = !departmentFilter || user.department_name === selectedDeptName;
+    const roleMatch = !roleFilter || 
+                      (typeof roleFilter === 'string' ? user.role_name === roleFilter : user.role_name === roleFilter.name);
+
+    return departmentMatch && roleMatch;
+  });
 
   return (
     <div className="municipalityUserList-modern">
-      {/* Header con Filtri */}
+      {/* Header */}
       <div className="mul-header">
-        <h1 className="mul-title">Users Management</h1>
+        <h1 className="mul-title">Officers Management</h1>
         
         <div className="mul-filters">
-          <select
-            className="mul-role-filter"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
+          {/* Department Dropdown */}
+          <Dropdown 
+            onSelect={handleDepartmentSelect} 
+            className="mul-filter-dropdown-departments"
           >
-            <option value="">All Roles</option>
-            {roles.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
+            <Dropdown.Toggle 
+              className="modern-dropdown-toggle" 
+              id="department-filter-dropdown"
+            >
+              <FaBuilding className="dropdown-icon" />
+              <span className="dropdown-toggle-text">{getSelectedDepartmentName()}</span>
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="modern-dropdown-menu">
+              <Dropdown.Item eventKey="" active={departmentFilter === ""}>
+                All Departments
+              </Dropdown.Item>
+              {departments.map((dept) => (
+                <Dropdown.Item 
+                  key={dept.id} 
+                  eventKey={dept.id}
+                  active={departmentFilter === dept.id.toString()}
+                >
+                  {dept.name}
+                </Dropdown.Item>
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
+
+          {/* Role Dropdown */}
+          <Dropdown 
+            onSelect={handleRoleFilterSelect} 
+            className="mul-filter-dropdown"
+          >
+            <Dropdown.Toggle 
+              className="modern-dropdown-toggle" 
+              id="role-filter-dropdown"
+              disabled={loadingRoles} 
+            >
+              <FaFilter className="dropdown-icon" />
+              <span className="dropdown-toggle-text">
+                {loadingRoles ? "Loading roles..." : getRoleFilterName()}
+              </span>
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="modern-dropdown-menu">
+              <Dropdown.Item eventKey="" active={roleFilter === ""}>
+                All Roles
+              </Dropdown.Item>
+              {roles.map((role) => {
+                 const roleValue = typeof role === 'object' ? role.name : role;
+                 const roleKey = typeof role === 'object' ? role.id : role;
+                 return (
+                  <Dropdown.Item 
+                    key={roleKey} 
+                    eventKey={roleValue}
+                    active={roleFilter === roleValue}
+                  >
+                    {roleValue}
+                  </Dropdown.Item>
+                 );
+              })}
+            </Dropdown.Menu>
+          </Dropdown>
         </div>
       </div>
 
-      {/* Alert Messages */}
+      {/* Alerts */}
       {error && (
         <Alert variant="danger" onClose={() => setError("")} dismissible className="mb-4">
           {error}
@@ -220,8 +299,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
         </Alert>
       )}
 
-
-      {/* Card Container */}
+      {/* Main Card */}
       <div className="mul-card">
         <div className="mul-card-body">
           {loading ? (
@@ -236,9 +314,9 @@ export default function MunicipalityUserList({ refreshTrigger }) {
               <div className="mul-empty-content">
                 <div className="mul-empty-icon">👥</div>
                 <div>
-                  {roleFilter 
-                    ? `No users found with role "${roleFilter}".`
-                    : "No municipality users found. Create one to get started."
+                  {roleFilter || departmentFilter
+                    ? "No users match the current filters."
+                    : "No municipality users found."
                   }
                 </div>
               </div>
@@ -249,8 +327,8 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                 <thead>
                   <tr>
                     <th>Username</th>
-                    <th>Name</th>
                     <th>Email</th>
+                    <th>Department</th>
                     <th>Role</th>
                     <th>Actions</th>
                   </tr>
@@ -258,31 +336,19 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                 <tbody>
                   {filteredUsers.map((user) => (
                     <tr key={user.id}>
-                      <td>
-                        <strong>{user.username}</strong>
-                      </td>
-                      <td>
-                        {`${user.first_name || ""} ${user.last_name || ""}`.trim() || "N/A"}
-                      </td>
+                      <td><strong>{user.username}</strong></td>
                       <td>{user.email}</td>
-                      <td>
-                        <span className="mul-role-badge">{user.role}</span>
-                      </td>
+                      <td>{user.department_name}</td>
+                      <td><span className="mul-role-badge">{user.role_name}</span></td>
                       <td>
                         <div className="mul-actions">
-                          <button
-                            className="mul-btn mul-btn-edit"
-                            onClick={() => handleEdit(user)}
-                          >
+                          <button className="mul-btn mul-btn-edit" onClick={() => handleEdit(user)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                             </svg>
                             Edit
                           </button>
-                          <button
-                            className="mul-btn mul-btn-delete"
-                            onClick={() => handleDeleteClick(user)}
-                          >
+                          <button className="mul-btn mul-btn-delete" onClick={() => handleDeleteClick(user)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                             </svg>
@@ -300,13 +366,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
       </div>
 
       {/* Edit Modal */}
-      <Modal 
-        show={showEditModal} 
-        onHide={() => setShowEditModal(false)} 
-        centered
-        dialogClassName="mul-modal-content"
-        contentClassName="mul-modal-overlay"
-      >
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered dialogClassName="mul-modal-content">
         <Modal.Header closeButton className="mul-modal-header">
           <Modal.Title className="mul-modal-title">Edit User</Modal.Title>
         </Modal.Header>
@@ -314,107 +374,44 @@ export default function MunicipalityUserList({ refreshTrigger }) {
           <form onSubmit={handleEditSubmit} className="mul-edit-form">
             <div className="name-row">
               <div className="mul-field">
-                <label className="mul-label">
-                  <span className="mul-required">First Name</span>
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={editForm.firstName}
-                  onChange={handleEditChange}
-                  disabled={editLoading}
-                  required
-                />
+                <label className="mul-label"><span className="mul-required">First Name</span></label>
+                <input type="text" name="firstName" value={editForm.firstName} onChange={handleEditChange} disabled={editLoading} required />
               </div>
-
               <div className="mul-field">
-                <label className="mul-label">
-                  <span className="mul-required">Last Name</span>
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={editForm.lastName}
-                  onChange={handleEditChange}
-                  disabled={editLoading}
-                  required
-                />
+                <label className="mul-label"><span className="mul-required">Last Name</span></label>
+                <input type="text" name="lastName" value={editForm.lastName} onChange={handleEditChange} disabled={editLoading} required />
               </div>
             </div>
 
             <div className="mul-field">
               <label className="mul-label">Username</label>
-              <input
-                type="text"
-                name="username"
-                value={editForm.username}
-                disabled
-                className="mul-readonly"
-              />
-              <small className="mul-help-text">
-                Username cannot be changed
-              </small>
+              <input type="text" value={editForm.username} disabled className="mul-readonly" />
+              <small className="mul-help-text">Username cannot be changed</small>
             </div>
 
             <div className="mul-field">
-              <label className="mul-label">
-                <span className="mul-required">Email</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={editForm.email}
-                onChange={handleEditChange}
-                disabled={editLoading}
-                required
-              />
+              <label className="mul-label"><span className="mul-required">Email</span></label>
+              <input type="email" name="email" value={editForm.email} onChange={handleEditChange} disabled={editLoading} required />
             </div>
 
             <div className="mul-field">
               <label className="mul-label">Role</label>
-              <input
-                type="text"
-                name="role"
-                value={editForm.role}
-                disabled
-                className="mul-readonly"
-              />
+              <input type="text" value={editForm.role} disabled className="mul-readonly" />
             </div>
           </form>
         </Modal.Body>
         <Modal.Footer className="mul-modal-footer">
-          <button 
-            className="mul-modal-btn mul-modal-btn-cancel"
-            onClick={() => setShowEditModal(false)} 
-            disabled={editLoading}
-          >
+          <button className="mul-modal-btn mul-modal-btn-cancel" onClick={() => setShowEditModal(false)} disabled={editLoading}>
             Cancel
           </button>
-          <button 
-            className="mul-modal-btn mul-modal-btn-confirm"
-            onClick={handleEditSubmit} 
-            disabled={editLoading}
-          >
-            {editLoading ? (
-              <>
-                <div className="mul-loading-spinner" style={{ width: '16px', height: '16px' }}></div>
-                Saving...
-              </>
-            ) : (
-              'Save Changes'
-            )}
+          <button className="mul-modal-btn mul-modal-btn-confirm" onClick={handleEditSubmit} disabled={editLoading}>
+            {editLoading ? (<><div className="mul-loading-spinner" style={{ width: '16px', height: '16px' }}></div> Saving...</>) : 'Save Changes'}
           </button>
         </Modal.Footer>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal 
-        show={showDeleteModal} 
-        onHide={() => setShowDeleteModal(false)} 
-        centered
-        dialogClassName="mul-modal-content"
-        contentClassName="mul-modal-overlay"
-      >
+      {/* Delete Modal */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered dialogClassName="mul-modal-content">
         <Modal.Header closeButton className="mul-modal-header">
           <Modal.Title className="mul-modal-title">Confirm Deletion</Modal.Title>
         </Modal.Header>
@@ -426,32 +423,17 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                 Delete <strong>{deletingUser.username}</strong>?
               </p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                This action cannot be undone and all associated data will be permanently removed.
+                This action cannot be undone.
               </p>
             </div>
           )}
         </Modal.Body>
         <Modal.Footer className="mul-modal-footer">
-          <button 
-            className="mul-modal-btn mul-modal-btn-cancel"
-            onClick={() => setShowDeleteModal(false)} 
-            disabled={deleteLoading}
-          >
+          <button className="mul-modal-btn mul-modal-btn-cancel" onClick={() => setShowDeleteModal(false)} disabled={deleteLoading}>
             Cancel
           </button>
-          <button 
-            className="mul-modal-btn mul-modal-btn-danger"
-            onClick={handleDeleteConfirm} 
-            disabled={deleteLoading}
-          >
-            {deleteLoading ? (
-              <>
-                <div className="mul-loading-spinner" style={{ width: '16px', height: '16px' }}></div>
-                Deleting...
-              </>
-            ) : (
-              'Delete User'
-            )}
+          <button className="mul-modal-btn mul-modal-btn-danger" onClick={handleDeleteConfirm} disabled={deleteLoading}>
+            {deleteLoading ? (<><div className="mul-loading-spinner" style={{ width: '16px', height: '16px' }}></div> Deleting...</>) : 'Delete User'}
           </button>
         </Modal.Footer>
       </Modal>
