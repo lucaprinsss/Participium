@@ -6,7 +6,6 @@ import { ReportCategory } from '@models/dto/ReportCategory';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { User } from '@models/dto/User';
-import { userRepository } from '../repositories/userRepository';
 
 /**
  * Report Controller
@@ -53,13 +52,6 @@ class ReportController {
       }
 
       const userId = (req.user as User).id;
-      
-      const userEntity = await userRepository.findUserById(userId);
-      
-      if (!userEntity) {
-        throw new UnauthorizedError('User not found');
-      }      
-      
       const { status, category } = req.query;
       
       let reportStatus: ReportStatus | undefined;
@@ -83,7 +75,7 @@ class ReportController {
       }
 
       const reports = await reportService.getAllReports(
-        userEntity,
+        userId,
         reportStatus,
         reportCategory
       );
@@ -151,22 +143,12 @@ class ReportController {
       }
 
       const userId = (req.user as User).id;
-      const userEntity = await userRepository.findUserById(userId);
-      
-      if (!userEntity) {
-        throw new UnauthorizedError('User not found');
-      }
-
       const reportId = parseInt(req.params.id);
-      if (isNaN(reportId)) {
-        throw new BadRequestError('Invalid report ID');
-      }
-
       const { category } = req.body;
 
       const approvedReport = await reportService.approveReport(
         reportId, 
-        userEntity,
+        userId,
         category as ReportCategory | undefined
       );
       
@@ -187,26 +169,13 @@ class ReportController {
       }
 
       const userId = (req.user as User).id;
-      const userEntity = await userRepository.findUserById(userId);
-      
-      if (!userEntity) {
-        throw new UnauthorizedError('User not found');
-      }
-
       const reportId = parseInt(req.params.id);
-      if (isNaN(reportId)) {
-        throw new BadRequestError('Invalid report ID');
-      }
-
       const { rejectionReason } = req.body;
-      if (!rejectionReason) {
-        throw new BadRequestError('rejectionReason is required in request body');
-      }
 
       const rejectedReport = await reportService.rejectReport(
         reportId, 
         rejectionReason, 
-        userEntity
+        userId
       );
       
       res.status(200).json(rejectedReport);

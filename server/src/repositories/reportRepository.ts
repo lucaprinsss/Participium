@@ -108,6 +108,7 @@ class ReportRepository {
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.reporter', 'reporter')
       .leftJoinAndSelect('report.assignee', 'assignee')
+      .leftJoinAndSelect('report.photos', 'photos')
       .where('report.assigneeId = :assigneeId', { assigneeId });
 
     if (status) {

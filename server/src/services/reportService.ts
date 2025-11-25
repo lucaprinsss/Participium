@@ -151,12 +151,18 @@ class ReportService {
    * Enforces authorization: pending reports only for public relations officers
    */
   async getAllReports(
-    user: userEntity, 
+    userId: number, 
     status?: ReportStatus,
     category?: ReportCategory
   ): Promise<ReportResponse[]> {
     
-    const userRole = user.departmentRole?.role?.name;
+    const userEntity = await userRepository.findUserById(userId);
+    
+    if (!userEntity) {
+      throw new UnauthorizedError('User not found');
+    }
+    
+    const userRole = userEntity.departmentRole?.role?.name;
     
     if (!userRole) {
       throw new UnauthorizedError('User role not found');
@@ -216,9 +222,13 @@ class ReportService {
    */
   async approveReport(
     reportId: number, 
-    user: userEntity, 
+    userId: number, 
     newCategory?: ReportCategory
   ): Promise<Report> {
+
+    if (isNaN(reportId)) {
+      throw new BadRequestError('Invalid report ID');
+    }
 
     const report = await reportRepository.findReportById(reportId);
     if (!report) {
@@ -275,8 +285,12 @@ class ReportService {
   async rejectReport(
     reportId: number, 
     rejectionReason: string, 
-    user: userEntity
+    userId: number
   ): Promise<Report> {
+
+    if (isNaN(reportId)) {
+      throw new BadRequestError('Invalid report ID');
+    }
 
     if (!rejectionReason || rejectionReason.trim().length === 0) {
       throw new BadRequestError('Rejection reason is required');
