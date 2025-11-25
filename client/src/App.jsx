@@ -115,13 +115,6 @@ function App() {
   return (
     <div className="app-container">
       {!hideNavbar && <Navbar user={user} onLogout={handleLogout} />}
-      
-      {authError && !isAuthLoading && (
-        <div className="global-error-banner">
-          <span>{authError}</span>
-          <button onClick={() => setAuthError(null)} className="close-error-btn">×</button>
-        </div>
-      )}
 
       <main className="main-content">
         <Routes>

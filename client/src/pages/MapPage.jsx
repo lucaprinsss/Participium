@@ -784,8 +784,8 @@ const MapPage = () => {
                 </small>
               </div>
 
-              {/* Anonymous Checkbox */}
-              <div className="mp-form-group">
+              {/* TODO: Anonymous Checkbox */}
+              {/* <div className="mp-form-group">
                 <label className="mp-checkbox-label">
                   <input
                     type="checkbox"
@@ -798,7 +798,7 @@ const MapPage = () => {
                   </span>
                   <span className="mp-checkbox-text">Invia in anonimo</span>
                 </label>
-              </div>
+              </div> */}
 
               {/* Form Actions */}
               <div className="mp-form-actions">

@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Alert, Card, Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
 import { registerCitizen } from "../api/citizenApi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock, FaArrowLeft, FaIdCard } from "react-icons/fa";
-// Assicurati che questo import punti al file CSS aggiornato
 import "../css/Register.css";
 
 export default function Register() {
   const navigate = useNavigate();
+  const location = useLocation(); // Hook per leggere lo stato della navigazione
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "", username: "", password: "", confirmPassword: ""
@@ -20,6 +20,14 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focusedField, setFocusedField] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
+
+  // EFFETTO: Controlla se ci sono errori passati al caricamento della pagina
+  useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   const trimValue = (value) => typeof value === 'string' ? value.trim() : value;
   const removeAllSpaces = (value) => typeof value === 'string' ? value.replace(/\s/g, '') : value;
@@ -118,20 +126,21 @@ export default function Register() {
 
     setFormData(cleanedFormData);
 
-    if (!cleanedFormData.firstName) return setError("Please enter your first name");
-    if (!cleanedFormData.lastName) return setError("Please enter your last name");
-    if (!cleanedFormData.email) return setError("Please enter your email");
+    // Validazione Client-side (Tradotta in Italiano)
+    if (!cleanedFormData.firstName) return setError("Inserisci il tuo nome");
+    if (!cleanedFormData.lastName) return setError("Inserisci il tuo cognome");
+    if (!cleanedFormData.email) return setError("Inserisci la tua email");
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanedFormData.email)) return setError("Please enter a valid email address");
-    if (/[A-Z]/.test(cleanedFormData.email)) return setError("Email must not contain uppercase letters");
+    if (!emailRegex.test(cleanedFormData.email)) return setError("Inserisci un indirizzo email valido");
+    if (/[A-Z]/.test(cleanedFormData.email)) return setError("L'email non deve contenere lettere maiuscole");
     
-    if (!cleanedFormData.username) return setError("Please enter a username");
-    if (cleanedFormData.username.length < 3) return setError("Username must be at least 3 characters long");
+    if (!cleanedFormData.username) return setError("Scegli un username");
+    if (cleanedFormData.username.length < 3) return setError("L'username deve contenere almeno 3 caratteri");
     
-    if (!cleanedFormData.password) return setError("Please enter a password");
-    if (cleanedFormData.password.length < 6) return setError("Password must be at least 6 characters long");
-    if (cleanedFormData.password !== cleanedFormData.confirmPassword) return setError("Passwords do not match");
+    if (!cleanedFormData.password) return setError("Inserisci una password");
+    if (cleanedFormData.password.length < 6) return setError("La password deve contenere almeno 6 caratteri");
+    if (cleanedFormData.password !== cleanedFormData.confirmPassword) return setError("Le password non coincidono");
 
     setLoading(true);
 
@@ -140,27 +149,33 @@ export default function Register() {
         username: cleanedFormData.username,
         email: cleanedFormData.email,
         password: cleanedFormData.password,
-        first_name: cleanedFormData.firstName,
-        last_name: cleanedFormData.lastName,
+        first_name: cleanedFormData.firstName, // Rispetta la regola first_name
+        last_name: cleanedFormData.lastName,   // Rispetta la regola last_name
         role: "Citizen",
       };
 
       await registerCitizen(payload);
-      setSuccess("Account created successfully! Redirecting to login...");
+      setSuccess("Account creato con successo! Reindirizzamento al login...");
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       console.error("Registration failed:", err);
       setFormData(prev => ({ ...prev, password: "", confirmPassword: "" }));
       setPasswordStrength(0); // Reset strength on error
 
-      if (err.status === 409) {
-        setError("Username or email already exists. Please try another.");
+      // GESTIONE ERRORI AVANZATA (Identica al Login)
+      if (!err.status && (err.message === "Failed to fetch" || err.message.includes("Network"))) {
+        // Caso specifico: Il server è giù
+        setError("Impossibile contattare il server. Verifica la tua connessione o riprova più tardi.");
+      } else if (err.status === 409) {
+        setError("Username o email già esistenti. Scegline altri.");
       } else if (err.status === 400) {
-        setError(err.message || "Invalid registration data. Please check your input.");
-      } else if (!navigator.onLine) {
-        setError("No internet connection. Please check your network.");
+        setError(err.message || "Dati non validi. Controlla i campi inseriti.");
+      } else if (err.status >= 500) {
+        setError("Internal server error.");
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setError("Nessuna connessione internet rilevata.");
       } else {
-        setError(err.message || "Registration failed. Please try again later.");
+        setError(err.message || "Registrazione fallita. Si prega di riprovare.");
       }
     } finally {
       setLoading(false);
@@ -183,7 +198,7 @@ export default function Register() {
                 disabled={loading}
               >
                 <FaArrowLeft className="me-2" />
-                Back to Main
+                Torna alla Home
               </Button>
 
               <div className="reg-header">
@@ -194,10 +209,11 @@ export default function Register() {
                     className="reg-logo"
                   />
                 </div>
-                <h1 className="reg-title">Join Participium</h1>
-                <p className="reg-subtitle">Create your account</p>
+                <h1 className="reg-title">Unisciti a Participium</h1>
+                <p className="reg-subtitle">Crea il tuo account</p>
               </div>
 
+              {/* Error Alert migliorato */}
               {error && (
                 <Alert variant="danger" dismissible onClose={() => setError("")} className="reg-alert">
                   {error}
@@ -219,7 +235,7 @@ export default function Register() {
                           <FaUser className="reg-input-icon" />
                           <Form.Control
                             type="text"
-                            placeholder={isFieldActive(field) ? '' : field === "firstName" ? "first name" : "last name"}
+                            placeholder={isFieldActive(field) ? '' : field === "firstName" ? "nome" : "cognome"}
                             value={formData[field]}
                             onChange={(e) => handleInputChange(field, e.target.value)}
                             onFocus={() => setFocusedField(field)}
@@ -228,7 +244,7 @@ export default function Register() {
                             className="reg-modern-input"
                           />
                           <Form.Label className="reg-floating-label">
-                            {field === "firstName" ? "First Name" : "Last Name"}
+                            {field === "firstName" ? "Nome" : "Cognome"}
                           </Form.Label>
                         </div>
                       </Form.Group>
@@ -265,7 +281,7 @@ export default function Register() {
                       <FaLock className="reg-input-icon" />
                       <Form.Control
                         type={field === "password" ? (showPassword ? "text" : "password") : (showConfirmPassword ? "text" : "password")}
-                        placeholder={isFieldActive(field) ? '' : field === "password" ? "password" : "confirm password"}
+                        placeholder={isFieldActive(field) ? '' : field === "password" ? "password" : "conferma password"}
                         value={formData[field]}
                         onChange={(e) => handleInputChange(field, e.target.value)}
                         onFocus={() => setFocusedField(field)}
@@ -274,7 +290,7 @@ export default function Register() {
                         className="reg-modern-input reg-password-input"
                       />
                       <Form.Label className="reg-floating-label">
-                        {field === "password" ? "Password" : "Confirm Password"}
+                        {field === "password" ? "Password" : "Conferma Password"}
                       </Form.Label>
                       <Button
                         variant="outline-secondary"
@@ -285,7 +301,7 @@ export default function Register() {
                         {field === "password" ? (showPassword ? <FaEyeSlash /> : <FaEye />) : (showConfirmPassword ? <FaEyeSlash /> : <FaEye />)}
                       </Button>
                     </div>
-                    {/* PASSWORD STRENGTH METER INSERTION */}
+                    {/* PASSWORD STRENGTH METER */}
                     {field === "password" && formData.password && (
                       <div className="reg-password-strength">
                         <div className="reg-strength-bar">
@@ -298,8 +314,8 @@ export default function Register() {
                           />
                         </div>
                         <div className="reg-strength-labels">
-                          <span>Weak</span>
-                          <span>Strong</span>
+                          <span>Debole</span>
+                          <span>Forte</span>
                         </div>
                       </div>
                     )}
@@ -314,23 +330,23 @@ export default function Register() {
                   {loading ? (
                     <>
                       <Spinner animation="border" size="sm" className="me-2" />
-                      Creating account...
+                      Registrazione in corso...
                     </>
                   ) : (
-                    "Create account"
+                    "Crea account"
                   )}
                 </button>
               </Form>
 
               <div className="reg-footer">
-                <span className="reg-footer-text">Already have an account? </span>
+                <span className="reg-footer-text">Hai già un account? </span>
                 <Button
                   variant="link"
                   className="reg-link-btn"
                   onClick={() => !loading && navigate("/login")}
                   disabled={loading}
                 >
-                  Sign in
+                  Accedi
                 </Button>
               </div>
             </Card.Body>

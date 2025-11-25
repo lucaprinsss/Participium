@@ -1,17 +1,19 @@
-import { useState } from "react";
-import { Alert, Card, Form, Button, Container, Row, Col, InputGroup, Spinner } from "react-bootstrap";
-import { login } from "../api/authApi"; 
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Alert, Card, Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
+import { login } from "../api/authApi";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaUser, FaLock, FaArrowLeft } from "react-icons/fa";
-// Assicurati che questo import punti al file CSS aggiornato
 import "../css/Login.css";
 
 export default function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
+  const location = useLocation(); // Hook per leggere lo stato della navigazione (errori in arrivo)
+  
   const [formData, setFormData] = useState({
     username: "",
     password: ""
   });
+  
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,15 +22,25 @@ export default function Login({ onLoginSuccess }) {
     password: false
   });
 
+  // EFFETTO: Controlla se ci sono errori passati al caricamento della pagina
+  // (es. redirect da un interceptor axios o da un'altra pagina per errore server)
+  useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error);
+      // Puliamo lo stato della history per non mostrare l'errore se l'utente aggiorna la pagina
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    // Nascondi l'errore appena l'utente inizia a scrivere per correggere
     if (error) setError("");
   };
 
-  
   const handleFocus = (field) => {
     setIsFocused(prev => ({
       ...prev,
@@ -47,31 +59,26 @@ export default function Login({ onLoginSuccess }) {
     e.preventDefault();
     setError("");
 
-    // Trim username per rimuovere spazi all'inizio e alla fine
     const trimmedUsername = formData.username.trim();
-    
-    // Aggiorna lo stato con l'username trim()mato
+
+    // Aggiorna UI se necessario
     if (trimmedUsername !== formData.username) {
-      setFormData(prev => ({
-        ...prev,
-        username: trimmedUsername
-      }));
+      setFormData(prev => ({ ...prev, username: trimmedUsername }));
     }
 
-    // Enhanced client-side validation
+    // Validazione Client-side
     if (!trimmedUsername) {
-      setError("Please enter your username");
+      setError("Inserisci il tuo username.");
       return;
     }
     if (!formData.password.trim()) {
-      setError("Please enter your password");
+      setError("Inserisci la tua password.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Usa l'username trim()mato per il login
       const userData = await login(trimmedUsername, formData.password);
 
       if (onLoginSuccess) {
@@ -81,23 +88,30 @@ export default function Login({ onLoginSuccess }) {
       navigate("/home");
     } catch (err) {
       console.error("Login failed:", err);
-
-      // Clear password field on error
+      
+      // Resetta la password in caso di errore per sicurezza
       setFormData(prev => ({ ...prev, password: "" }));
 
-      // Enhanced error handling
-      if (err.status === 401) {
-        setError("Invalid username or password. Please try again.");
+      // GESTIONE ERRORI AVANZATA
+      // Priorità: Status Code -> Messaggio Network -> Messaggio Generico
+      
+      if (!err.status && (err.message === "Failed to fetch" || err.message.includes("Network"))) {
+        // Caso specifico: Il server è giù o non raggiungibile (Errore di caricamento/connessione)
+        setError("Impossibile contattare il server. Verifica la tua connessione o riprova più tardi.");
+      } else if (err.status === 401) {
+        setError("Username o password non validi.");
       } else if (err.status === 400) {
-        setError("Invalid request. Please check your input.");
+        setError("Dati mancanti o non validi. Controlla i campi.");
       } else if (err.status === 403) {
-        setError("Account temporarily locked. Please try again later.");
+        setError("Account temporaneamente bloccato o non attivo.");
       } else if (err.status >= 500) {
-        setError("Server error. Please try again later.");
+        // Errori interni del server mostrati come errori del form
+        setError("Internal server error.");
       } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        setError("No internet connection. Please check your network.");
+        setError("Nessuna connessione internet rilevata.");
       } else {
-        setError(err.message || "Login failed. Please try again.");
+        // Fallback sul messaggio dell'errore o messaggio generico
+        setError(err.message || "Login fallito. Si prega di riprovare.");
       }
     } finally {
       setLoading(false);
@@ -119,7 +133,7 @@ export default function Login({ onLoginSuccess }) {
                 disabled={loading}
               >
                 <FaArrowLeft className="me-2" />
-                Back to Main
+                Torna alla Home
               </Button>
 
               {/* Header */}
@@ -131,13 +145,13 @@ export default function Login({ onLoginSuccess }) {
                     className="log-logo"
                   />
                 </div>
-                <h1 className="log-title">Welcome Back</h1>
+                <h1 className="log-title">Bentornato</h1>
                 <p className="log-subtitle">
-                  Sign in to your account
+                  Accedi al tuo account
                 </p>
               </div>
 
-              {/* Error Alert */}
+              {/* Error Alert - Ora mostra anche errori server e di caricamento */}
               {error && (
                 <Alert
                   variant="danger"
@@ -194,7 +208,6 @@ export default function Login({ onLoginSuccess }) {
                       variant="outline-secondary"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={loading}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
                       className="log-password-toggle-btn"
                     >
                       {showPassword ? <FaEyeSlash /> : <FaEye />}
@@ -215,10 +228,10 @@ export default function Login({ onLoginSuccess }) {
                         size="sm"
                         className="me-2"
                       />
-                      Signing in...
+                      Accesso in corso...
                     </>
                   ) : (
-                    "Sign in"
+                    "Accedi"
                   )}
                 </button>
               </Form>
@@ -226,7 +239,7 @@ export default function Login({ onLoginSuccess }) {
               {/* Footer */}
               <div className="log-footer">
                 <span className="log-footer-text">
-                  Don't have an account?{" "}
+                  Non hai un account?{" "}
                 </span>
                 <Button
                   variant="link"
@@ -234,7 +247,7 @@ export default function Login({ onLoginSuccess }) {
                   onClick={() => !loading && navigate("/register")}
                   disabled={loading}
                 >
-                  Create one
+                  Registrati
                 </Button>
               </div>
             </Card.Body>
