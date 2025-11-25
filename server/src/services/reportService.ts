@@ -109,8 +109,8 @@ class ReportService {
     try {
       // Prepare report data for repository
       const reportEntityData = {
-        reporterId: reportData.isAnonymous ? null as any : userId,
-        reporter: reportData.isAnonymous ? null as any : undefined,
+        // Always save the reporter ID, even for anonymous reports
+        reporterId: userId,
         title: reportData.title.trim(),
         description: reportData.description.trim(),
         category: reportData.category,

@@ -24,7 +24,7 @@ class ReportRepository {
    * @returns The created report entity with photos saved.
    */
   public async createReport(
-        reportData: Omit<reportEntity, 'id' | 'createdAt' | 'updatedAt' | 'status'>,
+        reportData: Omit<reportEntity, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'reporter' | 'assignee' | 'assigneeId'>,
         filePaths: string[]
     ): Promise<reportEntity> {
     
