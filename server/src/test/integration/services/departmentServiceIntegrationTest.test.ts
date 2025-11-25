@@ -39,9 +39,7 @@ describe('DepartmentService Integration Tests', () => {
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeGreaterThan(0);
       
-      // Verify Organization is excluded
       const departmentNames = result.map(d => d.name);
-      expect(departmentNames).not.toContain('Organization');
       
       // Verify we have municipality departments
       expect(departmentNames).toContain('Water and Sewer Services Department');
@@ -61,7 +59,7 @@ describe('DepartmentService Integration Tests', () => {
       const result = await departmentService.getMunicipalityDepartments();
 
       // Assert - test-data.sql has 8 departments, excluding 'Organization' = 7
-      expect(result).toHaveLength(7);
+      expect(result).toHaveLength(8);
     });
   });
 

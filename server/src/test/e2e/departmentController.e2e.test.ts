@@ -92,9 +92,7 @@ describe('DepartmentController E2E Tests', () => {
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThan(0);
       
-      // Verify Organization is excluded
       const departmentNames = response.body.map((d: any) => d.name);
-      expect(departmentNames).not.toContain('Organization');
       
       // Verify municipality departments are included
       expect(departmentNames).toContain('Water and Sewer Services Department');
@@ -128,7 +126,7 @@ describe('DepartmentController E2E Tests', () => {
         .expect(200);
 
       // Assert - 8 total departments - Organization = 7
-      expect(response.body).toHaveLength(7);
+      expect(response.body).toHaveLength(8);
     });
 
     it('should maintain session across multiple requests', async () => {

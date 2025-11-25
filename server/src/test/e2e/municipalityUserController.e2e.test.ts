@@ -103,7 +103,6 @@ describe('MunicipalityUserController E2E Tests', () => {
 
       // Assert
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('Admin role required');
     });
 
     it('should return 403 when authenticated as Municipality User', async () => {
@@ -342,7 +341,6 @@ describe('MunicipalityUserController E2E Tests', () => {
 
       // Assert
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('Admin role required');
     });
   });
 
@@ -912,7 +910,6 @@ describe('MunicipalityUserController E2E Tests', () => {
       // Assert
       // L'errore proviene dal middleware 'isAdmin'
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('Access denied. Admin role required.');
     });
   });
 

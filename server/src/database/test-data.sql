@@ -128,7 +128,7 @@ INSERT INTO users (
 ) VALUES (
   'teststaffmember',
   'teststaffmember@example.com',
-  'bd7e8f9a3c21456789abcdef01234567:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+  'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
   'Test',
   'StaffMember',
   (SELECT dr.id FROM department_roles dr
