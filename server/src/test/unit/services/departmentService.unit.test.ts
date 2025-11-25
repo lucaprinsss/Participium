@@ -19,7 +19,7 @@ describe('DepartmentService Unit Tests', () => {
   // --- Test per getMunicipalityDepartments() ---
   describe('getMunicipalityDepartments', () => {
     
-    it('should return all departments except Organization', async () => {
+    it('should return all departments', async () => {
       // Arrange
       const mockDepartments: DepartmentEntity[] = [
         { id: 1, name: 'Organization', departmentRoles: [] },
@@ -35,24 +35,8 @@ describe('DepartmentService Unit Tests', () => {
 
       // Assert
       expect(departmentRepository.findAll).toHaveBeenCalledTimes(1);
-      expect(result).toHaveLength(3);
-      expect(result.map(d => d.name)).not.toContain('Organization');
-      expect(result.map(d => d.name)).toEqual(['Public Works', 'Environment', 'Urban Planning']);
-    });
-
-    it('should return empty array if only Organization exists', async () => {
-      // Arrange
-      const mockDepartments: DepartmentEntity[] = [
-        { id: 1, name: 'Organization', departmentRoles: [] },
-      ];
-
-      jest.spyOn(departmentRepository, 'findAll').mockResolvedValue(mockDepartments);
-
-      // Act
-      const result = await departmentService.getMunicipalityDepartments();
-
-      // Assert
-      expect(result).toHaveLength(0);
+      expect(result).toHaveLength(4);
+      expect(result.map(d => d.name)).toEqual(['Organization', 'Public Works', 'Environment', 'Urban Planning']);
     });
 
     it('should return all departments if no Organization exists', async () => {
