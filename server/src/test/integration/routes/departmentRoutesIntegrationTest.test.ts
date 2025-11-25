@@ -1,3 +1,6 @@
+jest.mock('@middleware/authMiddleware');
+jest.mock('@controllers/departmentController');
+
 import request from 'supertest';
 import express, { Express } from 'express';
 import departmentRouter from '../../../routes/departmentRoutes';
@@ -5,8 +8,7 @@ import departmentRouter from '../../../routes/departmentRoutes';
 import { requireRole } from '@middleware/authMiddleware';
 import departmentController from '@controllers/departmentController';
 
-jest.mock('@middleware/authMiddleware');
-jest.mock('@controllers/departmentController');
+
 
 const app: Express = express();
 
