@@ -1,4 +1,4 @@
-import { userRepository } from '@repositories/userRepository';
+﻿import { userRepository } from '@repositories/userRepository';
 import { reportService } from '../../../services/reportService';
 import { BadRequestError } from '../../../models/errors/BadRequestError';
 import { ReportCategory } from '../../../models/dto/ReportCategory';
@@ -7,49 +7,52 @@ import { userEntity } from '@models/entity/userEntity';
 import { reportEntity } from '@models/entity/reportEntity';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
-import { reportRepository } from '@repositories/reportRepository';<<<<<<< test_story6
-import { userRepository } from '@repositories/userRepository';
+import { reportRepository } from '@repositories/reportRepository';
 import { categoryRoleRepository } from '@repositories/categoryRoleRepository';
-import { UnauthorizedError } from '@models/errors/UnauthorizedError';
-import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
 import { NotFoundError } from '@models/errors/NotFoundError';
+import { photoRepository } from '@repositories/photoRepository';
+import { storageService } from '@services/storageService';
+import * as photoValidationUtils from '@utils/photoValidationUtils';
+import * as mapperService from '@services/mapperService';
 
 jest.mock('@repositories/userRepository');
 jest.mock('@repositories/reportRepository');
-jest.mock('@repositories/userRepository');
 jest.mock('@repositories/categoryRoleRepository');
+jest.mock('@repositories/photoRepository');
+jest.mock('@services/storageService');
+jest.mock('@utils/photoValidationUtils');
 jest.mock('@services/mapperService');
 
 import { mapReportEntityToReportResponse, mapReportEntityToDTO } from '../../../services/mapperService';
+
+// Helper function to create mock report entities
+const createMockReport = (overrides?: Partial<reportEntity>): reportEntity => {
+  const mockReport: reportEntity = {
+    id: 1,
+    reporterId: 100,
+    title: 'Test Report',
+    description: 'Test Description',
+    category: ReportCategory.ROADS,
+    location: 'POINT(7.6869005 45.0703393)',
+    status: ReportStatus.ASSIGNED,
+    isAnonymous: false,
+    assigneeId: 50,
+    rejectionReason: '',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-02'),
+    reporter: {} as userEntity,
+    assignee: {} as userEntity,
+    photos: [],
+    ...overrides,
+  };
+  return mockReport;
+};
 
 describe('ReportService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
-  // Helper function to create mock report entities
-  const createMockReport = (overrides?: Partial<reportEntity>): reportEntity => {
-    const mockReport: reportEntity = {
-      id: 1,
-      reporterId: 100,
-      title: 'Test Report',
-      description: 'Test Description',
-      category: ReportCategory.ROADS,
-      location: 'POINT(7.6869005 45.0703393)',
-      status: ReportStatus.ASSIGNED,
-      isAnonymous: false,
-      assigneeId: 50,
-      rejectionReason: '',
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-02'),
-      reporter: {} as userEntity,
-      assignee: {} as userEntity,
-      photos: [],
-      ...overrides,
-    };
-    return mockReport;
-  };
 
   describe('getAllCategories', () => {
     it('should return all report categories', async () => {
@@ -658,7 +661,8 @@ describe('ReportService additional unit tests', () => {
     it('returns filtered reports for non-officer users', async () => {
       const user = makeUser('Citizen');
       (userRepository.findUserById as jest.Mock).mockResolvedValue(user);
-
+    });
+  });
   describe('getAllReports', () => {
     const createMockUser = (role: string, overrides?: Partial<userEntity>): userEntity => ({
       id: 1,
@@ -1458,14 +1462,4 @@ describe('ReportService additional unit tests', () => {
       });
     });
   });
-
-
-
-
-
-
-
-
-
-
 });
