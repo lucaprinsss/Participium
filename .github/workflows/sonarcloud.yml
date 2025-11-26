@@ -2,42 +2,39 @@ name: SonarCloud Scan
 
 on:
   push:
-    branches: 
-      -"main"
-      -"QA"
+    branches:
+      - "main"
+      - "QA"
   pull_request:
     branches:
-      -"main"
-      -"QA"
+      - "main"
+      - "QA"
     types: [opened, synchronize, reopened]
+
 jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout del codice
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # needed for complete history
+          fetch-depth: 0
 
-      # Install dependencies server
-      - name: Install server dependencies
-        run: npm ci --prefix server
-
-      # Install dependencies client
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm i
+      - name: Install server dependencies
+        run: npm ci --prefix server
+
+      - name: Install client dependencies
+        run: npm ci --prefix client
 
       - name: Run Tests with Coverage
-        run: npm run test:coverage
+        run: npm run test:coverage --prefix server
 
-      # Analisi SonarCloud
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
         env:
