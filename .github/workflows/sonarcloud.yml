@@ -5,10 +5,12 @@ on:
     branches:
       - "main"
       - "QA"
+      - "dev"
   pull_request:
     branches:
       - "main"
       - "QA"
+      - "dev"
     types: [opened, synchronize, reopened]
 
 jobs:
