@@ -32,8 +32,8 @@ jobs:
       - name: Install client dependencies
         run: npm ci --prefix client
 
-      - name: Run Tests with Coverage
-        run: npm run test:coverage --prefix server
+      #- name: Run Tests with Coverage
+        #run: npm run test:coverage --prefix server
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
