@@ -1,18 +1,20 @@
+import { userRepository } from '@repositories/userRepository';
 import { reportService } from '../../../services/reportService';
 import { BadRequestError } from '../../../models/errors/BadRequestError';
 import { ReportCategory } from '../../../models/dto/ReportCategory';
 import { ReportStatus } from '@models/dto/ReportStatus';
 import { userEntity } from '@models/entity/userEntity';
 import { reportEntity } from '@models/entity/reportEntity';
-import { reportRepository } from '@repositories/reportRepository';
+import { UnauthorizedError } from '@models/errors/UnauthorizedError';
+import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
+import { reportRepository } from '@repositories/reportRepository';<<<<<<< test_story6
 import { userRepository } from '@repositories/userRepository';
 import { categoryRoleRepository } from '@repositories/categoryRoleRepository';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
 import { NotFoundError } from '@models/errors/NotFoundError';
 
-
-// Mock dei repository
+jest.mock('@repositories/userRepository');
 jest.mock('@repositories/reportRepository');
 jest.mock('@repositories/userRepository');
 jest.mock('@repositories/categoryRoleRepository');
@@ -200,7 +202,7 @@ describe('ReportService', () => {
       });
     });
 
-    describe('valid locations within Turin', () => {
+  describe('valid locations within Turin', () => {
       it('should not throw error for Turin city center (Piazza Castello)', () => {
         expect(() => {
           reportService.validateLocation({ latitude: 45.0703393, longitude: 7.6869005 });
@@ -567,15 +569,95 @@ describe('ReportService', () => {
       });
     });
   });
+});
 
+describe('ReportService additional unit tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
+  describe('getAllCategories', () => {
+    it('returns all enum values', async () => {
+      const result = await reportService.getAllCategories();
+      expect(result).toEqual(Object.values(ReportCategory));
+    });
+  });
 
+  describe('createReport', () => {
+    const request = {
+      title: 'Title',
+      description: 'Desc',
+      category: ReportCategory.WASTE,
+      location: { latitude: 45.0703393, longitude: 7.6869005 },
+      photos: ['data:image/png;base64,iVBORw0KGgo='],
+      isAnonymous: false,
+    };
 
+    it('creates report and saves photos', async () => {
+      jest.spyOn(photoValidationUtils, 'validatePhotos').mockReturnValue({ isValid: true });
+      jest.spyOn(storageService, 'uploadPhoto').mockResolvedValue('uploads/reports/1/photo1.png');
+      const created = { id: 1, status: ReportStatus.PENDING_APPROVAL } as any;
+      jest.spyOn(reportRepository, 'createReport').mockResolvedValue(created);
+      jest.spyOn(photoRepository, 'savePhotosForReport').mockResolvedValue(undefined as any);
+      const photos = [{ id: 1, storageUrl: 'uploads/reports/1/photo1.png' } as any];
+      jest.spyOn(photoRepository, 'getPhotosByReportId').mockResolvedValue(photos as any);
+      const expected = { id: 1 } as any;
+      jest.spyOn(mapperService, 'mapReportEntityToResponse').mockReturnValue(expected);
 
+      const result = await reportService.createReport(request as any, 123);
+      expect(result).toBe(expected);
+      expect(reportRepository.createReport).toHaveBeenCalled();
+      expect(photoRepository.savePhotosForReport).toHaveBeenCalledWith(1, ['uploads/reports/1/photo1.png']);
+      expect(photoRepository.getPhotosByReportId).toHaveBeenCalledWith(1);
+      expect(mapperService.mapReportEntityToResponse).toHaveBeenCalledWith(created, photos, request.location);
+    });
 
+    it('throws when photo validation fails', async () => {
+      jest.spyOn(photoValidationUtils, 'validatePhotos').mockReturnValue({ isValid: false, error: 'Invalid' });
+      await expect(reportService.createReport(request as any, 123)).rejects.toThrow(BadRequestError);
+    });
 
+    it('cleans up photos on database error after creation', async () => {
+      jest.spyOn(photoValidationUtils, 'validatePhotos').mockReturnValue({ isValid: true });
+      const created = { id: 55, status: ReportStatus.PENDING_APPROVAL } as any;
+      jest.spyOn(reportRepository, 'createReport').mockResolvedValue(created);
+      jest.spyOn(storageService, 'uploadPhoto').mockResolvedValue('uploads/reports/55/photo1.png');
+      jest.spyOn(photoRepository, 'savePhotosForReport').mockRejectedValue(new Error('DB error'));
+      const cleanup = jest.spyOn(storageService, 'deleteReportPhotos').mockResolvedValue(undefined as any);
 
+      await expect(reportService.createReport(request as any, 999)).rejects.toThrow('DB error');
+      expect(cleanup).toHaveBeenCalledWith(55);
+    });
+  });
 
+  describe('getAllReports', () => {
+    const makeUser = (roleName: string) => ({
+      id: 1,
+      departmentRole: { role: { name: roleName } },
+    }) as userEntity;
+
+    it('throws UnauthorizedError when user not found', async () => {
+      (userRepository.findUserById as jest.Mock).mockResolvedValue(null);
+      await expect(reportService.getAllReports(999)).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('throws UnauthorizedError when user role missing', async () => {
+      (userRepository.findUserById as jest.Mock).mockResolvedValue({ id: 1 } as userEntity);
+      await expect(reportService.getAllReports(1)).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('throws InsufficientRightsError when requesting pending without proper role', async () => {
+      const user = makeUser('Citizen');
+      (userRepository.findUserById as jest.Mock).mockResolvedValue(user);
+      
+      await expect(
+        reportService.getAllReports(user.id, ReportStatus.PENDING_APPROVAL)
+      ).rejects.toThrow(InsufficientRightsError);
+    });
+
+    it('returns filtered reports for non-officer users', async () => {
+      const user = makeUser('Citizen');
+      (userRepository.findUserById as jest.Mock).mockResolvedValue(user);
 
   describe('getAllReports', () => {
     const createMockUser = (role: string, overrides?: Partial<userEntity>): userEntity => ({

@@ -17,6 +17,17 @@ describe('geoValidationUtils', () => {
       expect(isValidCoordinate(NaN, 0)).toBe(false);
       expect(isValidCoordinate(0, NaN)).toBe(false);
     });
+    it('should return false for non-number types', () => {
+      expect(isValidCoordinate('45' as any, 7.6869005 as any)).toBe(false);
+      expect(isValidCoordinate(45.0703393 as any, '7.68' as any)).toBe(false);
+      expect(isValidCoordinate(undefined as any, 7.6869005 as any)).toBe(false);
+      expect(isValidCoordinate(45.0703393 as any, undefined as any)).toBe(false);
+      expect(isValidCoordinate(null as any, 7.6869005 as any)).toBe(false);
+      expect(isValidCoordinate(45.0703393 as any, null as any)).toBe(false);
+      expect(isValidCoordinate(true as any, 7.6869005 as any)).toBe(false);
+      expect(isValidCoordinate(45.0703393 as any, false as any)).toBe(false);
+      expect(isValidCoordinate({} as any, [] as any)).toBe(false);
+    });
   });
 
   describe('isWithinTurinBoundaries', () => {
@@ -46,6 +57,14 @@ describe('geoValidationUtils', () => {
       expect(isWithinTurinBoundaries(91, 0)).toBe(false);
       expect(isWithinTurinBoundaries(0, 181)).toBe(false);
       expect(isWithinTurinBoundaries(NaN, NaN)).toBe(false);
+    });
+    it('should return false for non-number types', () => {
+      expect(isWithinTurinBoundaries('45' as any, 7.6869005 as any)).toBe(false);
+      expect(isWithinTurinBoundaries(45.0703393 as any, '7.68' as any)).toBe(false);
+      expect(isWithinTurinBoundaries(undefined as any, 7.6869005 as any)).toBe(false);
+      expect(isWithinTurinBoundaries(45.0703393 as any, undefined as any)).toBe(false);
+      expect(isWithinTurinBoundaries(null as any, 7.6869005 as any)).toBe(false);
+      expect(isWithinTurinBoundaries(45.0703393 as any, null as any)).toBe(false);
     });
   });
 });
