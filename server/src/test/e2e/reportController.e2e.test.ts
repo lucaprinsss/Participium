@@ -14,6 +14,7 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
   let technicianId: number;
   let technicianCookies: string[];
   let citizenId: number;
+  let citizenCookies: string[];
 
   // Usa utenti di test già presenti in test-data.sql
   const TECHNICIAN_USERNAME = 'teststaffmember';
@@ -49,6 +50,7 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     citizenId = citizenResult[0].id;
 
     technicianCookies = await loginAs(TECHNICIAN_USERNAME, TECHNICIAN_PASSWORD);
+    citizenCookies = await loginAs(CITIZEN_USERNAME, CITIZEN_PASSWORD);
   });
 
 afterAll(async () => {
@@ -180,6 +182,152 @@ afterAll(async () => {
 
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body).toHaveLength(0);
+    });
+  });
+
+  describe('POST /api/reports', () => {
+    it('should create a new report successfully', async () => {
+      const newReport = {
+        title: 'Valid test report title',
+        description: 'This is a valid test description with sufficient length',
+        category: ReportCategory.ROADS,
+        location: {
+            latitude: 45.0703393,
+            longitude: 7.6869005,
+            address: 'Via Roma 1, Torino'
+          },
+          isAnonymous: false,
+          photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD86P8Ag5t/4Lpftzf8E4v+CwnxO+DPwH+P3/Cvfht4e8N/D2+0vQf+FZeBNc+zz6j4C0PUL2T7XrPhu+vJvMvLu4l2vcuqbyqKqKqqP6PP+CL3/BVD4+f8FMP2DPDnxp+P3wz+Gfwy8U69r2uaReeG/h1qniG/0q1i026WCKZJvEum6ddmR1BLAwBQRwSea/zsP+D3X/lM98Z/+xJ+F/8A6qfRK/0Gf+Dbf/lBF+zJ/wBhzx1/6l7ygD/9k=']
+      };
+
+      const response = await request(app)
+        .post('/api/reports')
+        .set('Cookie', citizenCookies)
+        .send(newReport)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.title).toBe(newReport.title);
+      expect(response.body.reporterId).toBe(citizenId);
+      expect(response.body.status).toBe(ReportStatus.PENDING_APPROVAL);
+    });
+
+    it('should return 401 if user is not authenticated', async () => {
+      const newReport = {
+        title: 'Valid unauthorized report',
+        description: 'This is a valid description for an unauthorized report',
+        category: ReportCategory.ROADS,
+        location: {
+          latitude: 45.0703393,
+          longitude: 7.6869005,
+          address: 'Via Roma 1, Torino'
+        },
+        isAnonymous: false
+      };
+
+      await request(app)
+        .post('/api/reports')
+        .send(newReport)
+        .expect(401);
+    });
+
+    it('should return 400 for invalid report data', async () => {
+      const invalidReport = {
+        // title is missing
+        description: 'This is a test description',
+        category: ReportCategory.ROADS,
+        location: {
+          latitude: 45.0703393,
+          longitude: 7.6869005,
+          address: 'Via Roma 1, Torino'
+        },
+        isAnonymous: false
+      };
+
+      await request(app)
+        .post('/api/reports')
+        .set('Cookie', citizenCookies)
+        .send(invalidReport)
+        .expect(400);
+    });
+  });
+
+  describe('GET /api/reports', () => {
+    beforeEach(async () => {
+      await cleanDatabase();
+      // Insert some reports for testing
+      await AppDataSource.query(
+        `INSERT INTO reports 
+          (reporter_id, title, description, category, location, status, is_anonymous, created_at)
+         VALUES
+          ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8),
+          ($1, $9, $10, $11, ST_GeogFromText($12), $13, $7, $14)`,
+        [
+          citizenId,
+          'Report 1 Title',
+          'Valid description for report 1',
+          ReportCategory.PUBLIC_LIGHTING,
+          'POINT(7.68 45.07)',
+          ReportStatus.PENDING_APPROVAL,
+          false,
+          new Date(),
+          'Report 2 Title',
+          'Valid description for report 2',
+          ReportCategory.ROADS,
+          'POINT(7.69 45.06)',
+          ReportStatus.ASSIGNED,
+          new Date(),
+        ]
+      );
+    });
+
+    it('should return all reports for authenticated user', async () => {
+      const response = await request(app)
+        .get('/api/reports')
+        .set('Cookie', citizenCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].status).toBe(ReportStatus.ASSIGNED);
+    });
+
+    it('should filter reports by status', async () => {
+      const response = await request(app)
+        .get('/api/reports')
+        .set('Cookie', citizenCookies)
+        .query({ status: ReportStatus.ASSIGNED })
+        .expect(200);
+
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].status).toBe(ReportStatus.ASSIGNED);
+    });
+
+    it('should filter reports by category', async () => {
+      const response = await request(app)
+        .get('/api/reports')
+        .set('Cookie', citizenCookies)
+        .query({ category: ReportCategory.ROADS })
+        .expect(200);
+
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].category).toBe(ReportCategory.ROADS);
+    });
+
+    it('should filter reports by status and category', async () => {
+      const response = await request(app)
+        .get('/api/reports')
+        .set('Cookie', citizenCookies)
+        .query({ status: ReportStatus.ASSIGNED, category: ReportCategory.ROADS })
+        .expect(200);
+
+      expect(response.body.length).toBe(1);
+    });
+
+    it('should return 401 if user is not authenticated', async () => {
+      await request(app)
+        .get('/api/reports')
+        .expect(401);
     });
   });
 });
