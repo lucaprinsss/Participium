@@ -182,4 +182,184 @@ afterAll(async () => {
       expect(response.body).toHaveLength(0);
     });
   });
+
+  describe('GET /api/reports/map', () => {
+    beforeEach(async () => {
+      // Inserisci report con diverse categorie e stati per la mappa
+      await AppDataSource.query(
+        `INSERT INTO reports 
+          (reporter_id, title, description, category, location, status, assignee_id, is_anonymous, created_at)
+         VALUES
+          ($1, $2, $3, $4, ST_GeogFromText($5), $6, NULL, $7, $8),
+          ($1, $9, $10, $11, ST_GeogFromText($12), $13, $14, $7, $15),
+          ($1, $16, $17, $18, ST_GeogFromText($19), $20, $14, $7, $21),
+          ($1, $22, $23, $24, ST_GeogFromText($25), $26, $14, $7, $27)`,
+        [
+          citizenId,
+          // Report 1 - PENDING_APPROVAL
+          'Broken sidewalk',
+          'Sidewalk needs repair',
+          ReportCategory.ROADS,
+          'POINT(7.6869005 45.0703393)',
+          ReportStatus.PENDING_APPROVAL,
+          false,
+          new Date('2024-01-01'),
+          // Report 2 - ASSIGNED
+          'Street light broken',
+          'Lamp not working',
+          ReportCategory.PUBLIC_LIGHTING,
+          'POINT(7.6932941 45.0692403)',
+          ReportStatus.ASSIGNED,
+          technicianId,
+          new Date('2024-01-02'),
+          // Report 3 - IN_PROGRESS
+          'Graffiti on wall',
+          'Graffiti removal needed',
+          ReportCategory.OTHER,
+          'POINT(7.6782069 45.0625748)',
+          ReportStatus.IN_PROGRESS,
+          new Date('2024-01-03'),
+          // Report 4 - RESOLVED
+          'Trash overflow',
+          'Trash bin is full',
+          ReportCategory.WASTE,
+          'POINT(7.6950000 45.0700000)',
+          ReportStatus.RESOLVED,
+          new Date('2024-01-04')
+        ]
+      );
+    });
+
+    it('should return all reports for the map', async () => {
+      const response = await request(app)
+        .get('/api/reports/map')
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(4);
+
+      // Verifica che ogni report abbia i campi necessari per la mappa
+      response.body.forEach((report: any) => {
+        expect(report).toHaveProperty('id');
+        expect(report).toHaveProperty('title');
+        expect(report).toHaveProperty('category');
+        expect(report).toHaveProperty('status');
+        expect(report).toHaveProperty('location');
+        expect(report.location).toHaveProperty('latitude');
+        expect(report.location).toHaveProperty('longitude');
+      });
+    });
+
+    it('should filter reports by category', async () => {
+      const response = await request(app)
+        .get('/api/reports/map')
+        .query({ category: ReportCategory.PUBLIC_LIGHTING })
+        .expect(200);
+
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].category).toBe(ReportCategory.PUBLIC_LIGHTING);
+      expect(response.body[0].title).toBe('Street light broken');
+    });
+
+    it('should filter reports by status', async () => {
+      const response = await request(app)
+        .get('/api/reports/map')
+        .query({ status: ReportStatus.ASSIGNED })
+        .expect(200);
+
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].status).toBe(ReportStatus.ASSIGNED);
+      expect(response.body[0].title).toBe('Street light broken');
+    });
+
+    it('should filter reports by multiple statuses', async () => {
+      const response = await request(app)
+        .get('/api/reports/map')
+        .query({ status: `${ReportStatus.ASSIGNED},${ReportStatus.IN_PROGRESS}` })
+        .expect(200);
+
+      expect(response.body.length).toBe(2);
+      const statuses = response.body.map((r: any) => r.status);
+      expect(statuses).toContain(ReportStatus.ASSIGNED);
+      expect(statuses).toContain(ReportStatus.IN_PROGRESS);
+    });
+
+    it('should filter reports by category and status', async () => {
+      const response = await request(app)
+        .get('/api/reports/map')
+        .query({ 
+          category: ReportCategory.PUBLIC_LIGHTING,
+          status: ReportStatus.ASSIGNED
+        })
+        .expect(200);
+
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].category).toBe(ReportCategory.PUBLIC_LIGHTING);
+      expect(response.body[0].status).toBe(ReportStatus.ASSIGNED);
+    });
+
+    it('should return empty array when no reports match filters', async () => {
+      const response = await request(app)
+        .get('/api/reports/map')
+        .query({ 
+          category: ReportCategory.ROADS,
+          status: ReportStatus.RESOLVED
+        })
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveLength(0);
+    });
+
+    it('should exclude rejected reports from map', async () => {
+      // Aggiungi un report rifiutato
+      await AppDataSource.query(
+        `INSERT INTO reports 
+          (reporter_id, title, description, category, location, status, is_anonymous, rejection_reason, created_at)
+         VALUES ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8, $9)`,
+        [
+          citizenId,
+          'Rejected report',
+          'This was rejected',
+          ReportCategory.OTHER,
+          'POINT(7.6800000 45.0650000)',
+          ReportStatus.REJECTED,
+          false,
+          'Invalid report',
+          new Date('2024-01-05')
+        ]
+      );
+
+      const response = await request(app)
+        .get('/api/reports/map')
+        .expect(200);
+
+      // Non dovrebbe includere il report rifiutato
+      expect(response.body.length).toBe(4);
+      expect(response.body.every((r: any) => r.status !== ReportStatus.REJECTED)).toBe(true);
+    });
+
+    it('should return reports with valid geographic coordinates', async () => {
+      const response = await request(app)
+        .get('/api/reports/map')
+        .expect(200);
+
+      response.body.forEach((report: any) => {
+        expect(report.location.latitude).toBeGreaterThanOrEqual(-90);
+        expect(report.location.latitude).toBeLessThanOrEqual(90);
+        expect(report.location.longitude).toBeGreaterThanOrEqual(-180);
+        expect(report.location.longitude).toBeLessThanOrEqual(180);
+      });
+    });
+
+    it('should work without authentication for public map access', async () => {
+      const response = await request(app)
+        .get('/api/reports/map')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+    });
+  });
 });
