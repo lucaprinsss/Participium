@@ -164,21 +164,21 @@ describe('AuthController Integration Tests', () => {
 
     // NOTE: This test is temporarily skipped because mocking findUserById interferes with Passport's deserializeUser.
     // The test needs to be rewritten to simulate errors without breaking the authentication flow.
-    it.skip('should return 500 if error occurs while fetching current user', async () => {
-      await agent
-        .post('/api/sessions')
-        .send({
-          username: TEST_USER_CREDENTIALS.username,
-          password: TEST_USER_CREDENTIALS.password,
-        });
+    // it.skip('should return 500 if error occurs while fetching current user', async () => {
+    //   await agent
+    //     .post('/api/sessions')
+    //     .send({
+    //       username: TEST_USER_CREDENTIALS.username,
+    //       password: TEST_USER_CREDENTIALS.password,
+    //     });
 
-      const mockError = new Error('Internal server error');
-      jest.spyOn(userRepository, 'findUserById').mockRejectedValue(mockError);
+    //   const mockError = new Error('Internal server error');
+    //   jest.spyOn(userRepository, 'findUserById').mockRejectedValue(mockError);
 
-      const response = await agent.get('/api/sessions/current');
-      expect(response.status).toBe(500);
-      expect(response.text).toContain(mockError.message);
-    });
+    //   const response = await agent.get('/api/sessions/current');
+    //   expect(response.status).toBe(500);
+    //   expect(response.text).toContain(mockError.message);
+    // });
 
   });
 
@@ -212,21 +212,21 @@ describe('AuthController Integration Tests', () => {
 
     // NOTE: This test is temporarily skipped because mocking findUserById interferes with Passport's deserializeUser.
     // The test needs to be rewritten to simulate errors without breaking the authentication flow.
-    it.skip('should return 500 if error occurs during logout', async () => {
-      await agent
-        .post('/api/sessions')
-        .send({
-          username: TEST_USER_CREDENTIALS.username,
-          password: TEST_USER_CREDENTIALS.password,
-        });
+    // it.skip('should return 500 if error occurs during logout', async () => {
+    //   await agent
+    //     .post('/api/sessions')
+    //     .send({
+    //       username: TEST_USER_CREDENTIALS.username,
+    //       password: TEST_USER_CREDENTIALS.password,
+    //     });
 
-      const mockError = new Error('Internal server error');
-      jest.spyOn(userRepository, 'findUserById').mockRejectedValue(mockError);
+    //   const mockError = new Error('Internal server error');
+    //   jest.spyOn(userRepository, 'findUserById').mockRejectedValue(mockError);
 
-      const response = await agent.delete('/api/sessions/current');
-      expect(response.status).toBe(500);
-      expect(response.text).toContain(mockError.message);
-    });
+    //   const response = await agent.delete('/api/sessions/current');
+    //   expect(response.status).toBe(500);
+    //   expect(response.text).toContain(mockError.message);
+    // });
   });
 
 });

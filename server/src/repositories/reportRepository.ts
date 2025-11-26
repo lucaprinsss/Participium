@@ -1,11 +1,10 @@
 import { AppDataSource } from '../database/connection';
-import { reportEntity } from '../models/entity/reportEntity';
+import { reportEntity } from '@entity/reportEntity';
 import { MapReportResponse } from '../models/dto/output/MapReportResponse';
 import { ClusteredReportResponse } from '../models/dto/output/ClusteredReportResponse';
 import { ReportCategory } from '../models/dto/ReportCategory';
 import { ReportStatus } from '../models/dto/ReportStatus';
 import { Repository } from "typeorm";
-import { reportEntity } from "@entity/reportEntity";
 import { photoRepository } from "./photoRepository";
 
 

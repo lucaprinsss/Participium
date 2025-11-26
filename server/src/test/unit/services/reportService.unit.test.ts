@@ -210,7 +210,7 @@ describe('ReportService', () => {
       });
     });
 
-  describe('valid locations within Turin', () => {
+    describe('valid locations within Turin', () => {
       it('should not throw error for Turin city center (Piazza Castello)', () => {
         expect(() => {
           reportService.validateLocation({ latitude: 45.0703393, longitude: 7.6869005 });

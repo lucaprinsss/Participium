@@ -695,4 +695,262 @@ describe('ReportController', () => {
       });
     });
   });
+
+  describe('getMapReports', () => {
+    describe('validation', () => {
+      it('should reject invalid zoom level (too low)', async () => {
+        mockRequest.query = { zoom: '0' };
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+        expect(mockNext).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Zoom level must be between 1 and 20' })
+        );
+      });
+
+      it('should reject invalid zoom level (too high)', async () => {
+        mockRequest.query = { zoom: '21' };
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+        expect(mockNext).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'Zoom level must be between 1 and 20' })
+        );
+      });
+
+      it('should reject incomplete bounding box (only minLat)', async () => {
+        mockRequest.query = { minLat: '45.0' };
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+        expect(mockNext).toHaveBeenCalledWith(
+          expect.objectContaining({ 
+            message: 'Bounding box requires all parameters: minLat, maxLat, minLng, maxLng' 
+          })
+        );
+      });
+
+      it('should reject invalid latitude range', async () => {
+        mockRequest.query = { 
+          minLat: '-91',
+          maxLat: '45.0',
+          minLng: '7.0',
+          maxLng: '8.0'
+        };
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+        expect(mockNext).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'minLat must be between -90 and 90' })
+        );
+      });
+
+      it('should reject invalid longitude range', async () => {
+        mockRequest.query = { 
+          minLat: '45.0',
+          maxLat: '46.0',
+          minLng: '-181',
+          maxLng: '8.0'
+        };
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+        expect(mockNext).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'minLng must be between -180 and 180' })
+        );
+      });
+
+      it('should reject when minLat >= maxLat', async () => {
+        mockRequest.query = { 
+          minLat: '46.0',
+          maxLat: '45.0',
+          minLng: '7.0',
+          maxLng: '8.0'
+        };
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+        expect(mockNext).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'minLat must be less than maxLat' })
+        );
+      });
+
+      it('should reject when minLng >= maxLng', async () => {
+        mockRequest.query = { 
+          minLat: '45.0',
+          maxLat: '46.0',
+          minLng: '8.0',
+          maxLng: '7.0'
+        };
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+        expect(mockNext).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'minLng must be less than maxLng' })
+        );
+      });
+    });
+
+    describe('successful requests', () => {
+      it('should return map reports without filters', async () => {
+        const mockReports = [
+          {
+            id: 1,
+            title: 'Pothole',
+            category: ReportCategory.ROADS,
+            status: ReportStatus.ASSIGNED,
+            location: { latitude: 45.0, longitude: 7.0 },
+            reporterName: 'John Doe',
+            isAnonymous: false,
+            createdAt: new Date()
+          }
+        ];
+
+        (reportService.getMapReports as jest.Mock).mockResolvedValue(mockReports);
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(reportService.getMapReports).toHaveBeenCalledWith({
+          zoom: undefined,
+          minLat: undefined,
+          maxLat: undefined,
+          minLng: undefined,
+          maxLng: undefined,
+          category: undefined
+        });
+        expect(mockResponse.status).toHaveBeenCalledWith(200);
+        expect(mockResponse.json).toHaveBeenCalledWith(mockReports);
+      });
+
+      it('should return map reports with valid zoom level', async () => {
+        mockRequest.query = { zoom: '15' };
+
+        const mockReports = [
+          {
+            id: 1,
+            title: 'Pothole',
+            category: ReportCategory.ROADS,
+            status: ReportStatus.ASSIGNED,
+            location: { latitude: 45.0, longitude: 7.0 },
+            reporterName: 'John Doe',
+            isAnonymous: false,
+            createdAt: new Date()
+          }
+        ];
+
+        (reportService.getMapReports as jest.Mock).mockResolvedValue(mockReports);
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(reportService.getMapReports).toHaveBeenCalledWith(
+          expect.objectContaining({ zoom: 15 })
+        );
+        expect(mockResponse.status).toHaveBeenCalledWith(200);
+      });
+
+      it('should return map reports with valid bounding box', async () => {
+        mockRequest.query = { 
+          minLat: '45.0',
+          maxLat: '46.0',
+          minLng: '7.0',
+          maxLng: '8.0'
+        };
+
+        (reportService.getMapReports as jest.Mock).mockResolvedValue([]);
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(reportService.getMapReports).toHaveBeenCalledWith({
+          zoom: undefined,
+          minLat: 45.0,
+          maxLat: 46.0,
+          minLng: 7.0,
+          maxLng: 8.0,
+          category: undefined
+        });
+        expect(mockResponse.status).toHaveBeenCalledWith(200);
+      });
+
+      it('should return map reports with category filter', async () => {
+        mockRequest.query = { category: ReportCategory.ROADS };
+
+        (reportService.getMapReports as jest.Mock).mockResolvedValue([]);
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(reportService.getMapReports).toHaveBeenCalledWith(
+          expect.objectContaining({ category: ReportCategory.ROADS })
+        );
+        expect(mockResponse.status).toHaveBeenCalledWith(200);
+      });
+    });
+
+    describe('error handling', () => {
+      it('should call next with error when service throws', async () => {
+        const error = new Error('Service error');
+        (reportService.getMapReports as jest.Mock).mockRejectedValue(error);
+
+        await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(error);
+        expect(mockResponse.status).not.toHaveBeenCalled();
+      });
+    });
+  });
 });
+

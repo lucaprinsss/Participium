@@ -11,7 +11,6 @@ import { NotFoundError } from '../models/errors/NotFoundError';
 import { isWithinTurinBoundaries, isValidCoordinate } from '../utils/geoValidationUtils';
 import { dataUriToBuffer, extractMimeType, validatePhotos } from '../utils/photoValidationUtils';
 import { storageService } from './storageService';
-import { reportRepository } from '../repositories/reportRepository';
 import { photoRepository } from '../repositories/photoRepository';
 import { categoryRoleRepository } from '../repositories/categoryRoleRepository';
 import { userRepository } from '../repositories/userRepository';
@@ -79,11 +78,6 @@ class ReportService {
   }
 
   /**
-   * Create a new report
-   * TODO: Implement when needed
-   */
-  async createReport(): Promise<void> {
-    throw new Error('Not implemented yet');
    * Validate if a location is within Turin city boundaries
    * @param location - The location object with latitude and longitude
    * @throws BadRequestError if location is missing or coordinates are invalid or outside Turin boundaries
@@ -236,14 +230,6 @@ class ReportService {
     });
 
     return filteredReports.map(report => mapReportEntityToReportResponse(report));
-  }
-
-  /**
-   * Get all reports with optional filters
-   * TODO: Implement when needed
-   */
-  async getAllReports(): Promise<void> {
-    throw new Error('Not implemented yet');
   }
 
   /**

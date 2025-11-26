@@ -1,11 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { reportService } from '../services/reportService';
-import { BadRequestError } from '../models/errors/BadRequestError';
+import { BadRequestError } from '@models/errors/BadRequestError';
 import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
 import { ReportStatus } from '@models/dto/ReportStatus';
 import { ReportCategory } from '@models/dto/ReportCategory';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
-import { BadRequestError } from '@models/errors/BadRequestError';
 import { User } from '@models/dto/User';
 
 /**
@@ -114,6 +113,27 @@ class ReportController {
       }
 
       const userId = (req.user as User).id;
+      const reportData: CreateReportRequest = req.body;
+
+      const newReport = await reportService.createReport(reportData, userId);
+      
+      res.status(201).json(newReport);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get all reports with optional filters
+   * GET /api/reports
+   */
+  async getAllReports(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+
+      const userId = (req.user as User).id;
       const { status, category } = req.query;
       
       let reportStatus: ReportStatus | undefined;
@@ -143,19 +163,6 @@ class ReportController {
       );
       
       res.status(200).json(reports);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Get all reports with optional filters
-   * GET /api/reports
-   */
-  async getAllReports(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      // TODO: Implement get all reports logic
-      res.status(501).json({ error: 'Not implemented yet' });
     } catch (error) {
       next(error);
     }
