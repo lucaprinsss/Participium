@@ -19,8 +19,6 @@ import {
   FaSave,
   FaCamera,
   FaTimes,
-  FaUserSecret,
-  FaUser,
   FaListUl,
   FaExternalLinkAlt
 } from 'react-icons/fa';
