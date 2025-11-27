@@ -5,7 +5,13 @@ import { FaFilter, FaList } from "react-icons/fa";
 import '../css/MunicipalityUserHome.css';
 
 // IMPORT API
-import { getReports, getAllCategories, approveReport, rejectReport } from '../api/reportApi';
+import {
+  getReports,
+  getAllCategories,
+  approveReport,
+  rejectReport,
+  getReportsAssignedToMe,
+} from "../api/reportApi";
 
 const ALL_STATUSES = ["Pending Approval", "Assigned", "In Progress", "Suspended", "Rejected", "Resolved"];
 
@@ -85,40 +91,51 @@ const userDepartmentCategory = isStaffMember
   }, [user, isStaffMember, userDepartmentCategory]);
 
   // --- DATA FETCHING ---
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const categoriesData = await getAllCategories();
-      setAllCategories(categoriesData || []);
+const fetchData = async () => {
+  setIsLoading(true);
+  try {
+    const categoriesData = await getAllCategories();
+    setAllCategories(categoriesData || []);
 
-      const reportsData = await getReports();
-      console.log("REPORT TROVATI:", reportsData);
-
-      const formattedReports = reportsData.map((report) => ({
-        ...report,
-        createdAt: new Date(report.createdAt),
-
-        images: report.photos
-          ? report.photos.map((p) => (typeof p === "string" ? p : p.storageUrl))
-          : [],
-      }));
-
-      // Ordina per data (più recente prima)
-      formattedReports.sort((a, b) => b.createdAt - a.createdAt);
-
-      setReports(formattedReports);
-      setApiError(null);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setApiError("Impossibile caricare i dati. Riprova più tardi.");
-    } finally {
-      setIsLoading(false);
+    // Use different endpoint based on user role
+    let reportsData;
+    if (isStaffMember) {
+      // Staff members: get only their assigned reports
+      console.log("📋 Fetching reports assigned to:", user.username);
+      reportsData = await getReportsAssignedToMe();
+    } else {
+      // Admin/PR Officer: get all reports
+      console.log("👑 Fetching all reports (Admin/PR)");
+      reportsData = await getReports();
     }
-  };
+
+    console.log("REPORT TROVATI:", reportsData);
+
+    const formattedReports = reportsData.map((report) => ({
+      ...report,
+      createdAt: new Date(report.createdAt),
+
+      images: report.photos
+        ? report.photos.map((p) => (typeof p === "string" ? p : p.storageUrl))
+        : [],
+    }));
+
+    // Ordina per data (più recente prima)
+    formattedReports.sort((a, b) => b.createdAt - a.createdAt);
+
+    setReports(formattedReports);
+    setApiError(null);
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    setApiError("Impossibile caricare i dati.  Riprova più tardi.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [isStaffMember]);
 
   // --- Helpers ---
   const formatLocation = (loc) => {
@@ -160,18 +177,8 @@ const filteredReports = reports.filter((report) => {
     categoryFilter === "" || report.category === categoryFilter;
   const statusMatch = statusFilter === "" || report.status === statusFilter;
 
-  // ENFORCE department filtering for staff members
-  if (isStaffMember && userDepartmentCategory) {
-    // Staff can ONLY see:
-    // 1. Reports from their department category
-    // 2. With status "Assigned"
-    const departmentMatch = report.category === userDepartmentCategory;
-    const assignedOnly = report.status === "Assigned";
-
-    return departmentMatch && assignedOnly && categoryMatch && statusMatch;
-  }
-
-  // Admin sees everything (with optional filters)
+  // Backend already filters by assignee for staff members
+  // Just apply the UI filters (category and status)
   return categoryMatch && statusMatch;
 });
 
@@ -380,7 +387,7 @@ const filteredReports = reports.filter((report) => {
           <>
             <Modal.Header closeButton className="bg-light">
               <div>
-                <Modal.Title className="text-primary mb-1">
+                <Modal.Title className="text-danger mb-1">
                   {selectedReport.title}
                 </Modal.Title>
                 <small className="text-muted">
@@ -428,36 +435,39 @@ const filteredReports = reports.filter((report) => {
                   </div>
                 </Col>
                 <Col xs={12}>
-                  <h6 className="text-primary fw-bold mt-2">Description</h6>
+                  <h6 className="text-danger fw-bold mt-2">Description</h6>
                   <p>{selectedReport.description}</p>
                 </Col>
-                <Col xs={12}>
-                  <h6 className="text-primary fw-bold">
-                    Attached Photos ({selectedReport.images.length})
-                  </h6>
-                  {selectedReport.images.length > 0 ? (
-                    <div className="d-flex flex-wrap gap-3">
-                      {selectedReport.images.map((img, index) => (
-                        <div
-                          key={index}
-                          className="mu-report-img-container"
-                          onClick={() => openImage(img)}
-                        >
-                          <img
-                            src={img}
-                            alt={`Attachment ${index}`}
-                            className="mu-report-img"
-                          />
-                          <div className="mu-img-overlay">
-                            <BsEye className="text-white fs-3" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted fst-italic small">No images.</p>
-                  )}
-                </Col>
+                {/* Only show photos to Admin/PR Officer, hide from staff */}
+{! isStaffMember && (
+  <Col xs={12}>
+    <h6 className="text-primary fw-bold">
+      Attached Photos ({selectedReport.images.length})
+    </h6>
+    {selectedReport.images.length > 0 ? (
+      <div className="d-flex flex-wrap gap-3">
+        {selectedReport.images. map((img, index) => (
+          <div
+            key={index}
+            className="mu-report-img-container"
+            onClick={() => openImage(img)}
+          >
+            <img
+              src={img}
+              alt={`Attachment ${index}`}
+              className="mu-report-img"
+            />
+            <div className="mu-img-overlay">
+              <BsEye className="text-white fs-3" />
+            </div>
+          </div>
+        ))}
+      </div>
+          ) : (
+            <p className="text-muted fst-italic small">No images.</p>
+          )}
+        </Col>
+          )}
 
                 {/* Error Message Area */}
                 {errorMsg && (
