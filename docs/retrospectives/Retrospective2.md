@@ -82,31 +82,30 @@ Total number of tests: 744
 ## ASSESSMENT
 
 - What did go wrong in the sprint?
-   - We under estimated the hours for implementing some stories (we underestimated sprint planning and we overestimated code review).
-   - We spent more hours on story 5 with less story point (2) but for the story 4 that has more story point (5) we spent less hours . 
+   - We under estimated the hours for implementing some stories (we underestimated Sprint Planning and Feature implementation while we overestimated Code Reviews).
+   - We spent more hours on Story 5 wich has 2 Story Points, while for Story 4 that has more Story Point (5) we spent less hours. 
    - We were on a rush to finish in the last days. 
 
 - What caused your errors in estimation (if any)?
    - We had some internal role changes from back-end to front-end and vice versa. It took more time for the new roles to be adapted with the tasks they were assigned to.
-   - Since we committed 5 stories with respect to the previous 3, each person did not make it in time to schedule their personal tasks in a optimal way.
   
 - What lessons did you learn (both positive and negative) in this sprint?
   - We can do more than three tasks per Sprint so we will keep this pace.
-  - We learned that we need to be more on time for our assigned tasks . 
+  - We learned that we need to be more on time for our assigned tasks. 
 
 - Which improvement goals set in the previous retrospective were you able to achieve?
-  - Improve sprint planning and enhance task parallelization: carefully review and define tasks to avoid overlaps and excessive specificity and ensuring tasks can be worked on simultaneously by different team members.
-  - Enhance team coordination: we still had some issues in coordinating tasks and sharing information because we didn't have a clear plan for task dependencies as it was the first sprint for the project.
-  - We were able to finish 5 stories in this sprint and we had a progress with respect to the last sprint that we only did 3 stories done. 
+  - Improve Sprint Planning and enhance task parallelization: in this Sprint our tasks was less overlapped than the previuos Sprint.
+  - Enhance team coordination: we still had some issues in coordinating tasks and sharing information but we definetely improved.
+  - To do more Stories: we were able to finish 5 Stories in this Sprint and we had a progress with respect to the last Sprint where we only did 3 Stories. 
 
 - Which ones you were not able to achieve? Why? 
- - Finish tasks before the deadline: aim to complete all tasks 1–2 days before the sprint ends. This buffer allows time for integration, testing, and addressing unexpected issues.
+ - Finish tasks some days before the deadline: the aim was to complete all tasks 1–2 days before the Sprint end but we miss this goal because we did not schedule correctly our personal tasks (we committed to 5 Stories instead of 3 Stories).
 
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
-  - The improvement of sprint planning was obvious but we still can do better and dedicate more time for not having the same misunderstandings in estimation of tasks.
-  - To stablish internal deadline for the stories, so we would be more organized and on time.
+  - To keep improving Sprint Planning, we made some improvement from the previous Sprint but we still have to work on it. We will dedicate more time to it and we will try to plan ahead. 
+  - To be more organized and on time, by stablishing internal deadline for the stories.
 
 - One thing you are proud of as a Team!!
-  - 
+  - We dobled our velocity in this Sprint, we made something we thought we were not able to do!
 
   
