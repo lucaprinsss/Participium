@@ -9,7 +9,7 @@ export class photoEntity {
   @Column()
   reportId!: number;
 
-  @ManyToOne(() => reportEntity, { onDelete: "CASCADE" })
+  @ManyToOne(() => reportEntity, (report) => report.photos, { onDelete: "CASCADE" })
   @JoinColumn({ name: "report_id" })
   report!: reportEntity;
 

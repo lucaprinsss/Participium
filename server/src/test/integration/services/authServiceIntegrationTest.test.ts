@@ -1,8 +1,7 @@
 import { authService } from '../../../services/authService';
 import { userEntity } from '../../../models/entity/userEntity';
-import { UserResponse } from '../../../models/dto/UserResponse';
-
-import { UserRole } from '../../../models/dto/UserRole';
+import { UserResponse } from '../../../models/dto/output/UserResponse';
+import { createMockMunicipalityUser, createMockCitizen } from '@test/utils/mockEntities';
 
 describe('AuthService Integration Tests', () => {
   let mockUserEntity: userEntity;
@@ -11,18 +10,18 @@ describe('AuthService Integration Tests', () => {
   beforeEach(() => {
     const creationDate = new Date('2023-01-01T12:00:00Z');
 
-    mockUserEntity = new userEntity();
-    mockUserEntity.id = 123;
-    mockUserEntity.username = 'testuser';
-    mockUserEntity.firstName = 'Mario';
-    mockUserEntity.lastName = 'Rossi';
-    mockUserEntity.email = 'mario.rossi@example.com';
-    mockUserEntity.role = 'Administrator'; 
+    mockUserEntity = createMockMunicipalityUser('Administrator', 'Administration', {
+      id: 123,
+      username: 'testuser',
+      firstName: 'Mario',
+      lastName: 'Rossi',
+      email: 'mario.rossi@example.com',
+      personalPhotoUrl: 'http://example.com/photo.jpg',
+      telegramUsername: '@mariorossi',
+      emailNotificationsEnabled: true,
+      createdAt: creationDate,
+    });
     mockUserEntity.passwordHash = 'hash_super_segreto_da_nascondere';
-    mockUserEntity.personalPhotoUrl = 'http://example.com/photo.jpg';
-    mockUserEntity.telegramUsername = '@mariorossi';
-    mockUserEntity.emailNotificationsEnabled = true;
-    mockUserEntity.createdAt = creationDate;
 
     expectedDtoResponse = {
       id: 123,
@@ -30,7 +29,8 @@ describe('AuthService Integration Tests', () => {
       email: 'mario.rossi@example.com',
       first_name: 'Mario',
       last_name: 'Rossi',
-      role: UserRole.ADMINISTRATOR, 
+      role_name: 'Administrator',
+      department_name: 'Administration',
     };
   });
 
@@ -58,12 +58,22 @@ describe('AuthService Integration Tests', () => {
 
   it('should map a different role (e.g., Citizen) correctly', () => {
     // Arrange
-    mockUserEntity.role = 'Citizen'; 
+    mockUserEntity = createMockCitizen({
+      id: 123,
+      username: 'testuser',
+      firstName: 'Mario',
+      lastName: 'Rossi',
+      email: 'mario.rossi@example.com',
+    });
     const expressUser: Express.User = mockUserEntity;
 
     const expectedCitizenResponse: UserResponse = {
-      ...expectedDtoResponse,
-      role: UserRole.CITIZEN,
+      id: 123,
+      username: 'testuser',
+      email: 'mario.rossi@example.com',
+      first_name: 'Mario',
+      last_name: 'Rossi',
+      role_name: 'Citizen',
     };
 
     // Act

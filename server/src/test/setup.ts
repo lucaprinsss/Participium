@@ -5,15 +5,16 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
+// Silenzia completamente i log di dotenv
+process.env.DOTENV_CONFIG_DEBUG = 'false';
+
 // Load .env.test BEFORE anything else
 if (process.env.NODE_ENV === 'test' || process.argv.some(arg => arg.includes('test'))) {
   const envPath = path.resolve(__dirname, '../../.env.test');
-  const result = dotenv.config({ path: envPath, override: true });
+  const result = dotenv.config({ path: envPath, override: true, debug: false });
   
   if (result.error) {
     console.error('Error loading .env.test:', result.error);
-  } else {
-    console.log('✓ Test environment variables loaded from .env.test');
-    console.log(`✓ Database: ${process.env.DB_NAME} at ${process.env.DB_HOST}:${process.env.DB_PORT}`);
   }
+  // Rimossi i log di successo per mantenere l'output pulito
 }

@@ -18,9 +18,9 @@ const handleResponse = async (response) => {
   return response.json();
 };
 
-/**
+/** 
  * Create a new municipality user
- * @param {Object} userData - User data (username, email, password, first_name, last_name, role_id)
+ * @param {Object} userData - User data (username, email, password, first_name, last_name, role_name, department_name )
  * @returns {Promise<Object>} Created user
  */
 export const createMunicipalityUser = async (userData) => {
@@ -133,5 +133,8 @@ export const getAllRoles = async () => {
     credentials: "include",
   });
 
+
   return handleResponse(response);
 };
+
+

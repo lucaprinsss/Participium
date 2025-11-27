@@ -1,6 +1,6 @@
-# Participium - Database Structure (v2)
+# Participium - Database Structure (v3)
 
-This document describes the database schema (Version 2.0) designed for the **Participium** application.
+This document describes the database schema (Version 4.0) designed for the **Participium** application.
 
 * **Database System:** PostgreSQL (v15+)
 * **Required Extensions:** `postgis` (for geolocation data)
@@ -16,6 +16,7 @@ Participium is a citizen reporting system that allows users to submit reports ab
 - **Media Attachments** (photos)
 - **Communication** (comments, messages, notifications)
 - **Geolocation** (using PostGIS for spatial data)
+- **Automatic Assignment Workflow**
 
 ---
 
@@ -23,21 +24,7 @@ Participium is a citizen reporting system that allows users to submit reports ab
 
 To ensure data integrity and consistency, the following enumerated types have been defined.
 
-### `user_role`
-Defines the roles a user can have within the system.
-
-| Value | Description |
-|-------|-------------|
-| `Citizen` | Regular user who submits reports (default) |
-| `Administrator` | System administrator with full access |
-| `Municipal Public Relations Officer` | Manages public relations and communications |
-| `Municipal Administrator` | Administrative management role |
-| `Technical Office Staff Member` | Technical office staff for field work |
-| `Urban Planning Manager` | Manages urban planning aspects |
-| `Private Building Manager` | Manages private building issues |
-| `Infrastructure Manager` | Manages infrastructure maintenance |
-| `Maintenance Staff Member` | Performs maintenance operations |
-| `Public Green Spaces Manager` | Manages parks and green areas |
+> **Note:** The `user_role` ENUM has been removed in V3. User roles are now managed through the relational tables `departments`, `roles`, and `department_roles`.
 
 ### `report_category`
 Predefined categories for citizen reports.
@@ -80,7 +67,7 @@ Stores information for all system actors (citizens, operators, administrators).
 | `first_name` | `VARCHAR(100)` | NOT NULL | User's first name |
 | `last_name` | `VARCHAR(100)` | NOT NULL | User's last name |
 | `password_hash` | `VARCHAR(255)` | NOT NULL | Hashed password |
-| `role` | `user_role` | NOT NULL, DEFAULT 'Citizen' | User role (see ENUM) |
+| `department_role_id` | `INT` | **FOREIGN KEY** → `department_roles(id)`, NOT NULL | User's position (department + role combination) |
 | `email` | `VARCHAR(255)` | NOT NULL, UNIQUE | Email address (used for notifications) |
 | `personal_photo_url` | `TEXT` | NULLABLE | URL to user's profile photo |
 | `telegram_username` | `VARCHAR(100)` | NULLABLE, UNIQUE | Telegram username for bot integration |
@@ -92,6 +79,12 @@ Stores information for all system actors (citizens, operators, administrators).
 - Unique index on `username`
 - Unique index on `email`
 - Unique index on `telegram_username` (where not null)
+- Foreign key index on `department_role_id`
+
+**Notes:**
+- In V3, user roles are no longer stored as an ENUM but are managed through the `department_role_id` foreign key
+- Each user is assigned to a specific "position" which is a combination of department and role
+- Citizens are assigned to the 'Organization' department with 'Citizen' role
 
 ---
 
@@ -203,6 +196,104 @@ Bidirectional messaging between a citizen and an operator, related to a specific
 
 ---
 
+### 7. `departments`
+Stores municipality departments that handle different types of reports.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique department identifier |
+| `name` | `VARCHAR(100)` | NOT NULL, UNIQUE | Department name (e.g., "Water and Sewer Services Department", "Public Infrastructure and Accessibility Department") |
+
+**Indexes:**
+- Primary key on `id`
+- Unique index on `name`
+
+**Pre-populated Departments:**
+- `Organization` (for system roles like Citizen and Administrator)
+- `Water and Sewer Services Department`
+- `Public Infrastructure and Accessibility Department`
+- `Public Lighting Department`
+- `Waste Management Department`
+- `Mobility and Traffic Management Department`
+- `Parks, Green Areas and Recreation Department`
+- `General Services Department`
+
+---
+
+### 8. `roles`
+Stores permission levels and job roles that can be assigned to users across departments.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique role identifier |
+| `name` | `VARCHAR(100)` | NOT NULL, UNIQUE | Role name (e.g., "Department Director", "Water Network staff member", "Civil Engineer") |
+| `description` | `TEXT` | NULLABLE | Role description |
+
+**Indexes:**
+- Primary key on `id`
+- Unique index on `name`
+
+**System roles:**
+- `Citizen` - Standard citizen user
+- `Administrator` - System Administrator with full access
+- `Municipal Public Relations Officer` - Reviews and approves/rejects citizen reports
+
+**Department-specific roles:**
+- `Department Director` - Director of a department (applicable to all technical departments)
+- `Water Network staff member` - Manages water network maintenance
+- `Sewer System staff member` - Manages sewer system maintenance
+- `Road Maintenance staff member` - Maintains road infrastructure
+- `Accessibility staff member` - Ensures accessibility compliance
+- `Electrical staff member` - Manages electrical systems
+- `Recycling Program staff member` - Coordinates recycling programs
+- `Traffic management staff member` - Manages traffic systems
+- `Parks Maintenance staff member` - Maintains parks and green areas
+- `Customer Service staff member` - Provides customer service
+- `Building Maintenance staff member` - Maintains building facilities
+- `Support Officer` - Provides general support services
+
+---
+
+### 9. `department_roles`
+Defines valid "positions" by linking departments to roles. This table represents which role types are applicable within each department (e.g., a "Water Network staff member" role exists within the "Water and Sewer Services Department").
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique position identifier |
+| `department_id` | `INT` | **FOREIGN KEY** → `departments(id)` ON DELETE CASCADE, NOT NULL | Department |
+| `role_id` | `INT` | **FOREIGN KEY** → `roles(id)` ON DELETE CASCADE, NOT NULL | Role within the department |
+
+**Constraints:**
+- **UNIQUE** constraint `uq_department_role` on `(department_id, role_id)` to prevent duplicate department-role combinations
+
+**Indexes:**
+- Primary key on `id`
+- Foreign key index on `department_id`
+- Foreign key index on `role_id`
+- Unique index on `(department_id, role_id)`
+
+**Notes:**
+- This is NOT a user assignment table; it defines valid position types
+- Users are assigned to positions via the `users.department_role_id` foreign key
+- The Admin UI can use this table to show only valid roles when filtering by department
+
+
+### 10. `category_role_mapping`
+**NEW in V4:** Maps report categories to specific technical roles for automatic assignment.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique mapping identifier |
+| `category` | `report_category` | NOT NULL, UNIQUE | Report category (from ENUM) |
+| `role_id` | `INT` | **FOREIGN KEY** → `roles(id)`, NOT NULL | Technical role responsible for this category |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Mapping creation date |
+
+**Indexes:**
+- Primary key on `id`
+- Unique index on `category`
+- Foreign key index on `role_id`
+---
+
 ## Entity Relationships
 
 ```
@@ -216,9 +307,98 @@ reports (1) ────────────< (N) photos
 reports (1) ────────────< (N) comments
 reports (1) ────────────< (N) notifications
 reports (1) ────────────< (N) messages
+
+departments (1) ────────< (N) department_roles [department_id]
+departments (1) ────────< (N) category_department_mapping [department_id]
+
+roles (1) ──────────────< (N) department_roles [role_id]
+department_roles (1) ───< (N) users [department_role_id]
 ```
 
+**Key Relationship:**
+- Each user has ONE `department_role_id` that references a specific position in `department_roles`
+- Each position in `department_roles` defines a valid combination of department and role
+- Multiple users can share the same position (e.g., multiple "Water Network staff members" in the same department)
+
 ---
+
+## Default Data
+
+The initialization script populates the following default data:
+
+### Departments (8 total)
+1. **Organization** - For system-level roles (Admin, Citizen)
+2. **Water and Sewer Services Department**
+3. **Public Infrastructure and Accessibility Department**
+4. **Public Lighting Department**
+5. **Waste Management Department**
+6. **Mobility and Traffic Management Department**
+7. **Parks, Green Areas and Recreation Department**
+8. **General Services Department**
+
+
+
+
+**Pre-populated Position Combinations (22 total):**
+
+**Organization Department:**
+- Citizen
+- Administrator
+- Municipal Public Relations Officer
+
+**Water and Sewer Services Department:**
+- Department Director
+- Water Network staff member
+- Sewer System staff member
+
+**Public Infrastructure and Accessibility Department:**
+- Department Director
+- Road Maintenance staff member
+- Accessibility staff member
+
+**Public Lighting Department:**
+- Department Director
+- Electrical staff member
+
+**Waste Management Department:**
+- Department Director
+- Recycling Program staff member
+
+**Mobility and Traffic Management Department:**
+- Department Director
+- Traffic management staff member
+
+**Parks, Green Areas and Recreation Department:**
+- Department Director
+- Parks Maintenance staff member
+
+**General Services Department:**
+- Department Director
+- Customer Service staff member
+- Building Maintenance staff member
+- Support Officer
+
+---
+
+
+### Default Administrator User
+- **Username:** `admin`
+- **Password:** `admin`
+- **Email:** `admin@participium.local`
+- **Position:** Organization / Administrator
+- **Name:** System Administrator
+
+---
+
+## Automatic Assignment Workflow
+
+**NEW in V4:** The system supports automatic assignment of approved reports:
+
+1. **Citizen submits report** → Status: "Pending Approval"
+2. **Municipal Public Relations Officer reviews** → Can optionally modify category
+3. **Officer approves report** → System uses `category_role_mapping` to find responsible department
+4. **System assigns to technical staff** → Finds available staff member in that department
+5. **Status changes to "Assigned"** → Technical staff receives the task
 
 ## Database Initialization
 
@@ -234,3 +414,8 @@ The [`docker-compose.yml`](server/docker-compose.yml ) file automatically runs [
 |---------|------|---------|
 | 1.0 | 2025-11 | Initial schema design |
 | 1.1 | 2025-11-08 | Updated user roles - expanded from 4 to 10 roles with specific municipal responsibilities |
+| 2.0 | 2025-01-12 | Added geolocation support with PostGIS for citizen reports |
+| 3.0 | 2025-11-17 | **Major refactoring:** Replaced ENUM-based roles with relational role system. Added `departments`, `roles`, and `department_roles` tables. Changed `users.role` to `users.department_role_id` for flexible role-department assignments. Pre-populated 8 departments and 24+ roles covering various municipal services. |
+| 4.0 | 2025-11-22 | **Added automatic assignment:** Added `category_role_mapping` table to map report categories to departments. Reduced role count from 24 to 15 (consolidated similar roles). |
+
+

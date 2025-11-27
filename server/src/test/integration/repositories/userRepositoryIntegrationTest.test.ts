@@ -1,19 +1,23 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals';
 import { AppDataSource } from "@database/connection";
 import { userRepository } from "@repositories/userRepository";
+import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { userEntity } from "@models/entity/userEntity";
 import { In } from 'typeorm'; 
 
 type CreateUserInput = Parameters<typeof userRepository.createUserWithPassword>[0];
 
 const random = () => Math.floor(Math.random() * 1000000);
+
+let defaultCitizenRoleId: number;
+
 const buildUserData = (overrides: Partial<CreateUserInput> = {}): CreateUserInput => ({
   username: `testuser_${random()}`,
   firstName: "Test",
   lastName: "User",
   email: `test.user.${random()}@example.com`,
   password: "securePass123",
-  role: "Citizen",
+  departmentRoleId: defaultCitizenRoleId,
   emailNotificationsEnabled: true,
   ...overrides,
 });
@@ -27,6 +31,12 @@ describe('UserRepository Integration Tests', () => {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
     }
+    // Get Citizen role ID dynamically
+    const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    if (!citizenDeptRole) {
+      throw new Error('Citizen role not found in database');
+    }
+    defaultCitizenRoleId = citizenDeptRole.id;
   });
 
   // Final cleanup of all created users
@@ -86,7 +96,7 @@ describe('UserRepository Integration Tests', () => {
       expect(savedUser.email).toBe(newUser.email);
       expect(savedUser.passwordHash).toBeDefined();
       expect(savedUser.passwordHash).not.toContain(newUser.password);
-      expect(savedUser.role).toBe('Citizen');
+      expect(savedUser.departmentRoleId).toBe(1);
       expect(savedUser.emailNotificationsEnabled).toBe(true);
       expect(savedUser.createdAt).toBeInstanceOf(Date);
     });

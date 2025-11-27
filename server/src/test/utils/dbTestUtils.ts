@@ -8,8 +8,7 @@ import * as path from 'path';
 export function loadTestEnvironment(): void {
   if (process.env.NODE_ENV === 'test') {
     const envPath = path.resolve(__dirname, '../../../.env.test');
-    dotenv.config({ path: envPath, override: true });
-    console.log('Test environment loaded from .env.test');
+    dotenv.config({ path: envPath, override: true, debug: false });
   }
 }
 
@@ -36,10 +35,10 @@ export async function cleanDatabase(): Promise<void> {
     await queryRunner.query('TRUNCATE TABLE messages CASCADE;');
     
     // Pulisci solo utenti creati durante i test (non quelli di test-data.sql)
-    await queryRunner.query(
-      'DELETE FROM users WHERE username NOT IN ($1, $2, $3, $4);',
-      ['testcitizen', 'testmunicipality', 'testadmin', 'testuser_nonotif']
-    );
+await queryRunner.query(
+  'DELETE FROM users WHERE username NOT IN ($1, $2, $3, $4, $5);',
+  ['testcitizen', 'testmunicipality', 'testadmin', 'testuser_nonotif', 'teststaffmember']
+);
 
     // Riabilita constraints
     await queryRunner.query('SET session_replication_role = DEFAULT;');

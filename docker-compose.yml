@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # 1. Database (PostgreSQL + PostGIS)
+  db:
+    image: scofield28/participium-team10:db-release-1
+    build: ./server/src/database
+    container_name: participium_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: participium_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d participium_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Backend (Node.js API)
+  server:
+    image: scofield28/participium-team10:server-release-1
+    build: ./server
+    container_name: participium_server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      # Qui 'db' è il nome del servizio definito sopra (magia del DNS di Docker)
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: participium_db
+      # Assicuriamo che gli upload siano gestiti localmente
+      STORAGE_TYPE: local
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Persistenza delle foto caricate (collega la cartella del container a quella locale)
+      - ./server/uploads:/app/uploads
+
+  # 3. Frontend (Nginx + React)
+  client:
+    image: scofield28/participium-team10:client-release-1
+    build: ./client
+    container_name: participium_client
+    restart: unless-stopped
+    ports:
+      # Mappa la porta 80 del container (Nginx) sulla porta 80 del tuo PC
+      - "80:80"
+    depends_on:
+      - server
+
+volumes:
+  postgres_data:

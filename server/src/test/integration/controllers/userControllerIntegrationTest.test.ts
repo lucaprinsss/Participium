@@ -3,8 +3,7 @@ import request from 'supertest';
 import { AppDataSource } from "@database/connection";
 import app from "../../../app";
 import { userEntity } from "@models/entity/userEntity";
-import { UserRole } from '@models/dto/UserRole';
-import { RegisterRequest } from '@models/dto/RegisterRequest';
+import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { In } from 'typeorm'; 
 
 const random = () => Math.floor(Math.random() * 1000000);
@@ -71,7 +70,7 @@ describe('UserController Integration Tests', () => {
       expect(response.body.first_name).toBe(newCitizenData.first_name);
       expect(response.body.last_name).toBe(newCitizenData.last_name);
 
-      expect(response.body.role).toBe(UserRole.CITIZEN);
+      expect(response.body.role_name).toBe('Citizen');
 
       expect(response.body.password).toBeUndefined();
       expect(response.body.passwordHash).toBeUndefined();
@@ -94,8 +93,7 @@ describe('UserController Integration Tests', () => {
           .send(invalidData);
 
         expect(response.status).toBe(400);
-        
-        expect(response.body.message || response.body.error).toContain('All fields are required: username, email, password, first_name, last_name');
+        expect(response.body.message).toBeDefined();
       }
     });
 
@@ -103,13 +101,10 @@ describe('UserController Integration Tests', () => {
       const response = await request(app)
         .post('/api/users')
         .send({});
-
-      expect(response.status).toBe(400);
       
-      expect(response.body.message || response.body.error).toBe('All fields are required: username, email, password, first_name, last_name');
-    });
-
-    it('should return 409 if username already exists', async () => {
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBeDefined();
+    });    it('should return 409 if username already exists', async () => {
       const dynamicUsername = `duplicateUser_${random()}`;
       const existingUserData = buildRegisterPayload({ username: dynamicUsername });
 

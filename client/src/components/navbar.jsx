@@ -1,110 +1,87 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { getCurrentUser, logout } from "../api/authApi";
-import { Navbar as BSNavbar, Container, Nav, Button } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import "../css/Navbar.css";
 
-export default function Navbar() {
-  const [user, setUser] = useState(null);
+export default function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    getCurrentUser()
-      .then((u) => {
-        setUser(u);
-      })
-      .catch(() => {
-        // User not authenticated - silently handle
-        setUser(null);
-      });
-  }, [location.pathname]); // Re-fetch user when navigation changes
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-  // Show logout when user is authenticated and on /home or any sub-route
-  const showLogout = user && location.pathname.startsWith("/home");
-
-  const handleLogout = async () => {
-    await logout();
-    setUser(null);
-    navigate("/login");
+  const getInitials = (firstName, lastName) => {
+    const first = firstName?.charAt(0).toUpperCase() || '';
+    const last = lastName?.charAt(0).toUpperCase() || '';
+    return first + last || 'U'; 
   };
 
-  const handleBrandClick = () => {
-    // If user is authenticated, go to home, otherwise go to login
-    navigate(user ? "/home" : "/");
+  const getDisplayRole = () => user?.role_name || 'User';
+  const isAdmin = user?.role_name === 'Administrator';
+
+  const getUsername = () => {
+    return user?.username || 'User'; 
   };
 
   return (
-    <BSNavbar 
-      fixed="top"
-      style={{ 
-        backgroundColor: 'var(--primary)', 
-        boxShadow: 'var(--shadow-md)',
-        padding: '1rem 0',
-        zIndex: 1030
-      }} 
-      variant="dark" 
-      expand="lg"
-    >
-      <Container fluid className="px-4">
-        <BSNavbar.Brand 
-          onClick={handleBrandClick}
-          style={{ 
-            fontSize: 'var(--font-xl)', 
-            fontWeight: 'var(--font-bold)',
-            letterSpacing: '-0.025em',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem'
-          }}
-        >
-          <img 
-            src="/participium-logo.png" 
-            alt="Participium Logo" 
-            style={{ height: '32px', width: 'auto' }}
-          />
-          Participium
-        </BSNavbar.Brand>
-        <BSNavbar.Toggle aria-controls="basic-navbar-nav" />
-        <BSNavbar.Collapse id="basic-navbar-nav">
-          <Nav className="ms-auto align-items-center">
-            {showLogout && (
-              <>
-                <div className="text-light me-3">
-                  <div 
-                    style={{ 
-                      fontWeight: 'var(--font-medium)',
-                      fontSize: 'var(--font-sm)'
-                    }}
-                  >
-                    {user.username}
-                  </div>
-                  <div 
-                    style={{ 
-                      fontSize: '0.8rem',
-                      opacity: 0.8
-                    }}
-                  >
-                    {user.role}
-                  </div>
+    <nav className={`navbar-modern ${scrolled ? 'navbar-scrolled' : ''}`}>
+      <div className="navbar-container">
+        {/* Left Section */}
+        <div className="navbar-left-section">
+          <div 
+            className="navbar-brand"
+            onClick={() => navigate("/")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && navigate("/")}
+          >
+            <img
+              src="/participium-circle.jpg"
+              alt="Participium Logo"
+              className="brand-logo"
+            />
+            <span className="brand-text">Participium</span>
+          </div>
+
+          {user && (
+            <button className="home-btn-navbar" onClick={() => navigate("/home")}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              <span>Home</span>
+            </button>
+          )}
+        </div>
+
+        {/* Right Section */}
+        {user && (
+          <div className="navbar-right-section">
+            <div className="user-info-card">
+              <div className="user-avatar">
+                {getInitials(user.first_name, user.last_name)}
+              </div>
+              <div className="user-details">
+                <div className="user-name">{getUsername()}</div>
+                <div className={`user-role ${isAdmin ? 'admin' : ''}`}>
+                  {getDisplayRole()}
                 </div>
-                <Button
-                  variant="light"
-                  onClick={handleLogout}
-                  style={{
-                    fontWeight: 'var(--font-medium)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '0.5rem 1.5rem',
-                    minHeight: 'var(--btn-height-sm)'
-                  }}
-                >
-                  Logout
-                </Button>
-              </>
-            )}
-          </Nav>
-        </BSNavbar.Collapse>
-      </Container>
-    </BSNavbar>
+              </div>
+            </div>
+
+            <button className="logout-btn-modern" onClick={onLogout}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16,17 21,12 16,7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
+      </div>
+    </nav>
   );
 }

@@ -20,7 +20,6 @@ async function handleResponse(response) {
   return data;
 }
 
-
 // POST /api/sessions
 export async function login(arg1, arg2) {
   // support login({ username, password }) or login(username, password)
@@ -28,7 +27,6 @@ export async function login(arg1, arg2) {
     ? arg1
     : { username: arg1, password: arg2 };
 
-  try {
     const response = await fetch(`${BASE}`, {
       method: 'POST',
       headers: {
@@ -39,9 +37,6 @@ export async function login(arg1, arg2) {
     });
 
     return await handleResponse(response);
-  } catch (error) {
-    throw error;
-  }
 }
 
 // GET /api/sessions/current
@@ -55,15 +50,21 @@ export async function getCurrentUser() {
       credentials: 'include',
     });
 
+    if (response.status === 401) {
+      return null;
+    }
+
     return await handleResponse(response);
   } catch (error) {
+    if (error.status === 401) {
+      return null;
+    }
     throw error;
   }
 }
 
 // DELETE /api/sessions/current
 export async function logout() {
-  try {
     const response = await fetch(`${BASE}/current`, {
       method: 'DELETE',
       headers: {
@@ -73,9 +74,6 @@ export async function logout() {
     });
 
     return await handleResponse(response);
-  } catch (error) {
-    throw error;
-  }
 }
 
 export default { login, getCurrentUser, logout };

@@ -2,11 +2,15 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import passport from "passport";
 import session from "express-session";
+import path from "path";
 import {setupSwagger } from "@config/swagger";
 import { configurePassport } from "@config/passport";
+import { storageConfig } from "@config/storage";
 import authRoutes from "@routes/authRoutes";
 import userRoutes from "@routes/userRoutes";
 import roleRoutes from "@routes/roleRoutes";
+import reportRoutes from '@routes/reportRoutes';
+import departmentRoutes from "@routes/departmentRoutes";
 import municipalityUserRoutes from "@routes/municipalityUserRoutes";
 import {errorHandler} from "@middleware/errorMiddelware";
 
@@ -18,7 +22,15 @@ app.use(cors({
   origin: [ 'http://localhost:5173', 'http://localhost:5174' ],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+// Serve static files (uploaded photos) when using local storage
+if (storageConfig.provider === 'local') {
+  const uploadsPath = path.join(process.cwd(), storageConfig.local.uploadDir);
+  app.use(`/${storageConfig.local.uploadDir}`, express.static(uploadsPath));
+  console.log(`Serving static files from: ${uploadsPath}`);
+}
 
 // Session configuration
 app.use(session({
@@ -47,8 +59,10 @@ setupSwagger(app);
 // API routes
 app.use("/api/sessions", authRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/roles", roleRoutes);
+app.use("/api/departments", departmentRoutes);
 app.use("/api/municipality/users", municipalityUserRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Check endpoint to verify server is running
 app.get("/health", (req: Request, res: Response) => {

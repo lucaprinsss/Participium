@@ -81,8 +81,7 @@ describe('User Routes Integration Tests (Registration)', () => {
         .send(incompleteRequest);
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('All fields are required');
-      expect(mockRegister).toHaveBeenCalledTimes(1);
+      expect(res.body.message).toMatch(/first name|last name|password/i);
     });
 
     it('should return 409 if username already exists', async () => {

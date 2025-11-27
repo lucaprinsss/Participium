@@ -1,11 +1,12 @@
 import { municipalityUserService } from '@services/municipalityUserService';
 import { userRepository } from '@repositories/userRepository';
+import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
-import { UserRole } from '@models/dto/UserRole'; 
-import { RegisterRequest } from '@models/dto/RegisterRequest';
+import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { userEntity } from '@models/entity/userEntity';
-import { UserResponse } from '@models/dto/UserResponse';
+import { UserResponse } from '@models/dto/output/UserResponse';
+import { createMockMunicipalityUser, createMockCitizen, createMockDepartmentRole } from '@test/utils/mockEntities';
 
 import { NotFoundError } from '@models/errors/NotFoundError';
 import { BadRequestError } from '@models/errors/BadRequestError';
@@ -15,24 +16,22 @@ import { AppError } from '@models/errors/AppError';
 import { Not, In } from 'typeorm';
 
 jest.mock('@repositories/userRepository');
+jest.mock('@repositories/departmentRoleRepository');
 jest.mock('@services/loggingService');
 jest.mock('@services/mapperService');
 
 const mockedUserRepository = userRepository as jest.Mocked<typeof userRepository>;
+const mockedDepartmentRoleRepository = departmentRoleRepository as jest.Mocked<typeof departmentRoleRepository>;
 const mockedLogInfo = logInfo as jest.Mock;
 const mockedMapper = mapUserEntityToUserResponse as jest.Mock;
 
-const mockStaffEntity: userEntity = {
+const mockStaffEntity: userEntity = createMockMunicipalityUser('Municipal Administrator', 'Public Relations', {
   id: 1,
   username: 'staff.user',
   email: 'staff@test.com',
   firstName: 'Staff',
   lastName: 'User',
-  role: UserRole.MUNICIPAL_ADMINISTRATOR, 
-  passwordHash: 'hashedpassword',
-  createdAt: new Date(),
-  emailNotificationsEnabled: true,
-};
+});
 
 const mockStaffResponse: UserResponse = {
   id: 1,
@@ -40,27 +39,37 @@ const mockStaffResponse: UserResponse = {
   email: 'staff@test.com',
   first_name: 'Staff',
   last_name: 'User',
-  role: UserRole.MUNICIPAL_ADMINISTRATOR, 
+  role_name: 'Municipal Administrator',
+  department_name: 'Public Relations',
 };
 
-const mockCitizenEntity: userEntity = {
-  ...mockStaffEntity,
+const mockCitizenEntity: userEntity = createMockCitizen({
   id: 2,
   username: 'citizen.user',
-  role: UserRole.CITIZEN,
-};
+  email: 'citizen@test.com',
+  firstName: 'Citizen',
+  lastName: 'User',
+});
 
-const mockAdminEntity: userEntity = {
-  ...mockStaffEntity,
+const mockAdminEntity: userEntity = createMockMunicipalityUser('Administrator', 'Administration', {
   id: 3,
   username: 'admin.user',
-  role: UserRole.ADMINISTRATOR,
-};
+  email: 'admin@test.com',
+  firstName: 'Admin',
+  lastName: 'User',
+});
 
 describe('MunicipalityUserService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Mock departmentRoleRepository.findAll() to return a default set of department roles
+    const mockDepartmentRole = createMockDepartmentRole('Technical Office Staff Member', 'Public Relations');
+    mockedDepartmentRoleRepository.findAll.mockResolvedValue([mockDepartmentRole]);
+
+    // Mock userRepository.findUsersExcludingRoles() to return empty array by default
+    mockedUserRepository.findUsersExcludingRoles.mockResolvedValue([]);
 
     mockedMapper.mockImplementation((entity: userEntity) => {
       if (!entity) return null;
@@ -70,7 +79,8 @@ describe('MunicipalityUserService', () => {
         email: entity.email,
         first_name: entity.firstName,
         last_name: entity.lastName,
-        role: entity.role,
+        role_name: entity.departmentRole?.role?.name,
+        department_name: entity.departmentRole?.department?.name,
       };
     });
   });
@@ -82,20 +92,26 @@ describe('MunicipalityUserService', () => {
       first_name: 'New',
       last_name: 'Staff',
       password: 'Password123!',
-      role: UserRole.TECHNICAL_OFFICE_STAFF_MEMBER, 
+      role_name: 'Technical Office Staff Member', 
     };
 
     it('should create a new municipality user successfully', async () => {
       mockedUserRepository.existsUserByUsername.mockResolvedValue(false);
       mockedUserRepository.existsUserByEmail.mockResolvedValue(false);
       
-      const newEntity = { ...mockStaffEntity, id: 10, ...registerRequest };
+      const newEntity = createMockMunicipalityUser('Technical Office Staff Member', 'Public Relations', {
+        id: 10,
+        username: registerRequest.username,
+        email: registerRequest.email,
+        firstName: registerRequest.first_name,
+        lastName: registerRequest.last_name,
+      });
       mockedUserRepository.createUserWithPassword.mockResolvedValue(newEntity);
 
       const result = await municipalityUserService.createMunicipalityUser(registerRequest);
 
       expect(result.username).toBe(registerRequest.username);
-      expect(result.role).toBe(UserRole.TECHNICAL_OFFICE_STAFF_MEMBER);
+      expect(result.role_name).toBe('Technical Office Staff Member');
       expect(mockedUserRepository.existsUserByUsername).toHaveBeenCalledWith(registerRequest.username);
       expect(mockedUserRepository.existsUserByEmail).toHaveBeenCalledWith(registerRequest.email);
       expect(mockedUserRepository.createUserWithPassword).toHaveBeenCalledTimes(1);
@@ -103,7 +119,7 @@ describe('MunicipalityUserService', () => {
     });
 
     it('should throw BadRequestError when trying to create a CITIZEN', async () => {
-      const citizenRequest = { ...registerRequest, role: UserRole.CITIZEN };
+      const citizenRequest = { ...registerRequest, role_name: 'Citizen' };
       
       await expect(
         municipalityUserService.createMunicipalityUser(citizenRequest)
@@ -113,7 +129,7 @@ describe('MunicipalityUserService', () => {
     });
 
     it('should throw BadRequestError when trying to create an ADMINISTRATOR', async () => {
-      const adminRequest = { ...registerRequest, role: UserRole.ADMINISTRATOR };
+      const adminRequest = { ...registerRequest, role_name: 'Administrator' };
       
       await expect(
         municipalityUserService.createMunicipalityUser(adminRequest)
@@ -153,21 +169,18 @@ describe('MunicipalityUserService', () => {
 
   describe('getAllMunicipalityUsers', () => {
     it('should return an array of all municipality users', async () => {
-      mockedUserRepository.findAllUsers.mockResolvedValue([mockStaffEntity, mockStaffEntity]);
+      mockedUserRepository.findUsersExcludingRoles.mockResolvedValue([mockStaffEntity, mockStaffEntity]);
 
       const result = await municipalityUserService.getAllMunicipalityUsers();
 
       expect(result).toBeInstanceOf(Array);
       expect(result.length).toBe(2);
       expect(result[0]).toEqual(mockStaffResponse); 
-      expect(mockedUserRepository.findAllUsers).toHaveBeenCalledWith({
-        where: { role: Not(In([UserRole.CITIZEN, UserRole.ADMINISTRATOR])) },
-        order: { createdAt: 'DESC' },
-      });
+      expect(mockedUserRepository.findUsersExcludingRoles).toHaveBeenCalledWith(['Citizen', 'Administrator']);
     });
 
     it('should return an empty array if no users found', async () => {
-      mockedUserRepository.findAllUsers.mockResolvedValue([]);
+      mockedUserRepository.findUsersExcludingRoles.mockResolvedValue([]);
       const result = await municipalityUserService.getAllMunicipalityUsers();
       expect(result.length).toBe(0);
     });
@@ -177,7 +190,7 @@ describe('MunicipalityUserService', () => {
         .mockReturnValueOnce(mockStaffResponse) 
         .mockReturnValueOnce(null);              
 
-      mockedUserRepository.findAllUsers.mockResolvedValue([mockStaffEntity, mockStaffEntity]);
+      mockedUserRepository.findUsersExcludingRoles.mockResolvedValue([mockStaffEntity, mockStaffEntity]);
       
       const result = await municipalityUserService.getAllMunicipalityUsers();
 
@@ -260,14 +273,14 @@ describe('MunicipalityUserService', () => {
 
     it('should throw BadRequestError if trying to change role to CITIZEN', async () => {
       mockedUserRepository.findUserById.mockResolvedValue(mockStaffEntity);
-      const updateRoleData = { role: UserRole.CITIZEN };
+      const updateRoleData = { role_name: 'Citizen' };
 
       await expect(municipalityUserService.updateMunicipalityUser(1, updateRoleData)).rejects.toThrow(BadRequestError);
     });
     
     it('should throw BadRequestError if trying to change role to ADMINISTRATOR', async () => {
       mockedUserRepository.findUserById.mockResolvedValue(mockStaffEntity);
-      const updateRoleData = { role: UserRole.ADMINISTRATOR };
+      const updateRoleData = { role_name: 'Administrator' };
 
       await expect(municipalityUserService.updateMunicipalityUser(1, updateRoleData)).rejects.toThrow(BadRequestError);
     });
@@ -346,27 +359,35 @@ describe('MunicipalityUserService', () => {
   });
 
   describe('assignRole', () => {
-    const newRole = UserRole.URBAN_PLANNING_MANAGER; 
-    const updatedEntity = { ...mockStaffEntity, role: newRole };
+    const newRole = 'Urban Planning Manager'; 
+    const mockNewDepartmentRole = createMockDepartmentRole(newRole, 'Public Relations');
+    const updatedEntity = createMockMunicipalityUser(newRole, 'Public Relations', {
+      id: 1,
+      username: 'staff.user',
+      email: 'staff@test.com',
+      firstName: 'Staff',
+      lastName: 'User',
+    });
 
     it('should assign a valid role to a municipality user successfully', async () => {
+      mockedDepartmentRoleRepository.findAll.mockResolvedValue([mockNewDepartmentRole]);
       mockedUserRepository.findUserById.mockResolvedValue(mockStaffEntity);
       mockedUserRepository.updateUser.mockResolvedValue(updatedEntity);
 
       const result = await municipalityUserService.assignRole(1, newRole);
 
-      expect(result.role).toBe(newRole);
-      expect(mockedUserRepository.updateUser).toHaveBeenCalledWith(1, { role: newRole });
+      expect(result.role_name).toBe(newRole);
+      expect(mockedUserRepository.updateUser).toHaveBeenCalledWith(1, { departmentRoleId: mockNewDepartmentRole.id });
       expect(mockedLogInfo).toHaveBeenCalledWith(expect.stringContaining('Role assigned to user'));
     });
 
     it('should throw BadRequestError when trying to assign CITIZEN role', async () => {
-      await expect(municipalityUserService.assignRole(1, UserRole.CITIZEN)).rejects.toThrow(BadRequestError);
+      await expect(municipalityUserService.assignRole(1, 'Citizen')).rejects.toThrow(BadRequestError);
       expect(mockedUserRepository.findUserById).not.toHaveBeenCalled();
     });
     
     it('should throw BadRequestError when trying to assign ADMINISTRATOR role', async () => {
-      await expect(municipalityUserService.assignRole(1, UserRole.ADMINISTRATOR)).rejects.toThrow(BadRequestError);
+      await expect(municipalityUserService.assignRole(1, 'Administrator')).rejects.toThrow(BadRequestError);
       expect(mockedUserRepository.findUserById).not.toHaveBeenCalled();
     });
 

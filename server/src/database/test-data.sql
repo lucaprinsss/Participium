@@ -1,5 +1,5 @@
 -- ============================================
--- Test Data for E2E Testing
+-- Test Data for E2E Testing - V3 (with relational roles)
 -- ============================================
 
 -- Clear existing data (safety check)
@@ -18,7 +18,7 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  role,
+  department_role_id,
   email_notifications_enabled,
   created_at
 ) VALUES (
@@ -27,12 +27,15 @@ INSERT INTO users (
   '06823ad32eca25e900d651552cbab5d3:5a565be83f11375d46478da34a525b902bd83974501f229db2baff163a5ab7a397ef440214f0558a1c120f511e7307547577151ca17ac10263d8ab521e8307eb',
   'Test',
   'Citizen',
-  'Citizen',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'Organization' AND r.name = 'Citizen'),
   true,
   CURRENT_TIMESTAMP
 );
 
--- Test User 2: Municipality User
+-- Test User 2: Municipality User (Department Director)
 -- Username: testmunicipality
 -- Password: MuniPass123!
 INSERT INTO users (
@@ -41,7 +44,7 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  role,
+  department_role_id,
   email_notifications_enabled,
   created_at
 ) VALUES (
@@ -50,7 +53,10 @@ INSERT INTO users (
   'a8157c4cbabc7231d0c471354393d547:86e29403471520224daaec377dfc9c814141708e551957077843fa26cb7a4eabc0da62e82ef6cc204e304da61c12131bbba843319193e275bb79c74ac5cca442',
   'Test',
   'Municipality',
-  'Municipal Administrator',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'Public Infrastructure and Accessibility Department' AND r.name = 'Department Director'),
   true,
   CURRENT_TIMESTAMP
 );
@@ -64,7 +70,7 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  role,
+  department_role_id,
   email_notifications_enabled,
   created_at
 ) VALUES (
@@ -73,7 +79,10 @@ INSERT INTO users (
   '8fe97f776b7ee432bc26b59685766dde:0a98fd0c723f3ea46e8216ea964d35502e423f7e030329027876931fc26325f0557ae2f6701f8f179fcdf1bbdb44897654e2a7cffb5e87c0d100094b791c3e83',
   'Test',
   'Admin',
-  'Administrator',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'Organization' AND r.name = 'Administrator'),
   true,
   CURRENT_TIMESTAMP
 );
@@ -87,7 +96,7 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  role,
+  department_role_id,
   email_notifications_enabled,
   created_at
 ) VALUES (
@@ -96,8 +105,37 @@ INSERT INTO users (
   '4c2c3c54743456758e61a087dd614843:f6058f47f69fe0ee4c617bb96d79209727e1f41905f841bb39271ea295bb90294809bddac0651b065f1082d512bc045009a3246220e3b3105606dbf7e3d9e5e7',
   'No',
   'Notifications',
-  'Citizen',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'Organization' AND r.name = 'Citizen'),
   false,
+  CURRENT_TIMESTAMP
+);
+
+-- Test User 5: Municipality Staff Member (Water Network)
+-- Username: teststaffmember
+-- Password: StaffPass123!
+INSERT INTO users (
+  username, 
+  email, 
+  password_hash, 
+  first_name, 
+  last_name, 
+  department_role_id,
+  email_notifications_enabled,
+  created_at
+) VALUES (
+  'teststaffmember',
+  'teststaffmember@example.com',
+  'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
+  'Test',
+  'StaffMember',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'Water and Sewer Services Department' AND r.name = 'Water Network staff member'),
+  true,
   CURRENT_TIMESTAMP
 );
 
@@ -108,13 +146,17 @@ INSERT INTO users (
 
 -- Display inserted test users (excluding password hash)
 SELECT 
-  id,
-  username,
-  email,
-  first_name,
-  last_name,
-  role,
-  email_notifications_enabled,
-  created_at
-FROM users
-ORDER BY id;
+  u.id,
+  u.username,
+  u.email,
+  u.first_name,
+  u.last_name,
+  r.name AS role_name,
+  d.name AS department_name,
+  u.email_notifications_enabled,
+  u.created_at
+FROM users u
+JOIN department_roles dr ON u.department_role_id = dr.id
+JOIN roles r ON dr.role_id = r.id
+JOIN departments d ON dr.department_id = d.id
+ORDER BY u.id;

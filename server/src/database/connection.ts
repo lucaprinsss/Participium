@@ -4,7 +4,7 @@ import { snakeCase } from "typeorm/util/StringUtils";
 import * as dotenv from 'dotenv';
 import { logger } from "@services/loggingService";
 
-dotenv.config();
+dotenv.config({ debug: false });
 
 /**
  * Custom naming strategy that converts camelCase property names to snake_case column names
@@ -26,9 +26,9 @@ export const AppDataSource = new DataSource({
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    synchronize: process.env.NODE_ENV === 'development', // true just for development
+    synchronize: false,
     logging: false,
-    entities: [__dirname + '/../models/entity/**/*.ts'],
+    entities: [__dirname + '/../models/entity/**/*.{ts,js}'],
     migrations: [],
     subscribers: [],
     namingStrategy: new SnakeCaseNamingStrategy(),

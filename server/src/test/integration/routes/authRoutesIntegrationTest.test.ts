@@ -1,3 +1,6 @@
+jest.mock('@controllers/authController');
+jest.mock('@middleware/authMiddleware');
+
 import request from 'supertest'; 
 import express, { Express } from 'express';
 import session from 'express-session';
@@ -6,8 +9,7 @@ import authRouter from '../../../routes/authRoutes';
 import AuthController from '@controllers/authController';
 import { isLoggedIn } from '@middleware/authMiddleware';
 
-jest.mock('@controllers/authController');
-jest.mock('@middleware/authMiddleware');
+
 
 const app: Express = express();
 

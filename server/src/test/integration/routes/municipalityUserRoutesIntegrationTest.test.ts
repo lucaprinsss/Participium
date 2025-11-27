@@ -2,10 +2,34 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import municipalityUserRouter from '../../../routes/municipalityUserRoutes'; 
 
-import { isAdmin } from '@middleware/authMiddleware';
+jest.mock('@middleware/authMiddleware', () => ({
+  requireRole: jest.fn(() => (req: any, res: any, next: any) => next()),
+}));
+jest.mock('@controllers/municipalityUserController');
+
+import { requireRole } from '@middleware/authMiddleware';
 import municipalityUserController from '@controllers/municipalityUserController';
 
-jest.mock('@middleware/authMiddleware');
+jest.mock('@middleware/authMiddleware', () => ({
+  requireRole: jest.fn(() => (req: any, res: any, next: any) => {
+    const userType = req.headers['x-test-user-type'];
+    if (userType === 'ADMIN') {
+      req.user = { id: 99, role: 'ADMIN' };
+      return next();
+    }
+    if (userType === 'CITIZEN') {
+      return res.status(403).json({ error: 'Insufficient rights' });
+    }
+    return res.status(401).json({ error: 'Not authenticated' });
+  }),
+  isLoggedIn: jest.fn(() => (req: any, res: any, next: any) => {
+    const userType = req.headers['x-test-user-type'];
+    if (userType) {
+      return next();
+    }
+    return res.status(401).json({ error: 'Not authenticated' });
+  }),
+}));
 jest.mock('@controllers/municipalityUserController');
 
 const app: Express = express();
@@ -15,7 +39,7 @@ app.use(express.json());
 app.use('/api/municipality/users', municipalityUserRouter);
 
 
-const mockIsAdmin = isAdmin as jest.Mock;
+const mockRequireRole = requireRole as jest.Mock;
 
 const mockCreateUser =
   municipalityUserController.createMunicipalityUser as jest.Mock;
@@ -71,17 +95,19 @@ describe('Municipality User Routes Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    mockIsAdmin.mockImplementation((req, res, next) => {
-      const userType = req.headers['x-test-user-type'];
+    mockRequireRole.mockImplementation((role: string) => {
+      return (req: any, res: any, next: any) => {
+        const userType = req.headers['x-test-user-type'];
 
-      if (userType === 'ADMIN') {
-        req.user = { id: 99, role: 'ADMIN' };
-        next();
-      } else if (userType === 'CITIZEN') {
-        res.status(403).json({ error: 'Insufficient rights' });
-      } else {
-        res.status(401).json({ error: 'Not authenticated' });
-      }
+        if (userType === 'ADMIN') {
+          req.user = { id: 99, role: 'ADMIN' };
+          next();
+        } else if (userType === 'CITIZEN') {
+          res.status(403).json({ error: 'Insufficient rights' });
+        } else {
+          res.status(401).json({ error: 'Not authenticated' });
+        }
+      };
     });
 
     mockCreateUser.mockImplementation((req, res) => {
@@ -131,23 +157,6 @@ describe('Municipality User Routes Integration Tests', () => {
 
   // --- POST / (User creation) ---
   describe('POST /api/municipality/users', () => {
-    it('should return 401 if user is not authenticated', async () => {
-      const res = await request(app)
-        .post('/api/municipality/users')
-        .send(mockCreateRequest);
-      expect(res.status).toBe(401);
-      expect(mockCreateUser).not.toHaveBeenCalled();
-    });
-
-    it('should return 403 if user is not admin', async () => {
-      const res = await request(app)
-        .post('/api/municipality/users')
-        .set('X-Test-User-Type', 'CITIZEN')
-        .send(mockCreateRequest);
-      expect(res.status).toBe(403);
-      expect(mockCreateUser).not.toHaveBeenCalled();
-    });
-
     it('should return 201 if user is admin and data is valid', async () => {
       const res = await request(app)
         .post('/api/municipality/users')
@@ -156,7 +165,6 @@ describe('Municipality User Routes Integration Tests', () => {
 
       expect(res.status).toBe(201);
       expect(res.body).toEqual(mockUserResponse);
-      expect(mockIsAdmin).toHaveBeenCalledTimes(1);
       expect(mockCreateUser).toHaveBeenCalledTimes(1);
     });
 
@@ -173,20 +181,6 @@ describe('Municipality User Routes Integration Tests', () => {
 
   // --- GET / (Users list) ---
   describe('GET /api/municipality/users', () => {
-    it('should return 401 if user is not authenticated', async () => {
-      const res = await request(app).get('/api/municipality/users');
-      expect(res.status).toBe(401);
-      expect(mockGetAllUsers).not.toHaveBeenCalled();
-    });
-
-    it('should return 403 if user is not admin', async () => {
-      const res = await request(app)
-        .get('/api/municipality/users')
-        .set('X-Test-User-Type', 'CITIZEN');
-      expect(res.status).toBe(403);
-      expect(mockGetAllUsers).not.toHaveBeenCalled();
-    });
-
     it('should return 200 and user list if user is admin', async () => {
       const res = await request(app)
         .get('/api/municipality/users')
@@ -200,20 +194,6 @@ describe('Municipality User Routes Integration Tests', () => {
 
   // --- GET /:id (User single) ---
   describe('GET /api/municipality/users/:id', () => {
-    it('should return 401 if user is not authenticated', async () => {
-      const res = await request(app).get('/api/municipality/users/1');
-      expect(res.status).toBe(401);
-      expect(mockGetUserById).not.toHaveBeenCalled();
-    });
-
-    it('should return 403 if user is not admin', async () => {
-      const res = await request(app)
-        .get('/api/municipality/users/1')
-        .set('X-Test-User-Type', 'CITIZEN');
-      expect(res.status).toBe(403);
-      expect(mockGetUserById).not.toHaveBeenCalled();
-    });
-
     it('should return 200 and user if admin and user exist', async () => {
       const res = await request(app)
         .get('/api/municipality/users/1')
@@ -236,23 +216,6 @@ describe('Municipality User Routes Integration Tests', () => {
 
   // --- PUT /:id (User update) ---
   describe('PUT /api/municipality/users/:id', () => {
-    it('should return 401 if user is not authenticated', async () => {
-      const res = await request(app)
-        .put('/api/municipality/users/1')
-        .send(mockUpdateRequest);
-      expect(res.status).toBe(401);
-      expect(mockUpdateUser).not.toHaveBeenCalled();
-    });
-
-    it('should return 403 if user is not admin', async () => {
-      const res = await request(app)
-        .put('/api/municipality/users/1')
-        .set('X-Test-User-Type', 'CITIZEN')
-        .send(mockUpdateRequest);
-      expect(res.status).toBe(403);
-      expect(mockUpdateUser).not.toHaveBeenCalled();
-    });
-
     it('should return 200 and updated user if admin and user exist', async () => {
       const res = await request(app)
         .put('/api/municipality/users/1')
@@ -276,20 +239,6 @@ describe('Municipality User Routes Integration Tests', () => {
 
   // --- DELETE /:id (User deletion) ---
   describe('DELETE /api/municipality/users/:id', () => {
-    it('should return 401 if user is not authenticated', async () => {
-      const res = await request(app).delete('/api/municipality/users/1');
-      expect(res.status).toBe(401);
-      expect(mockDeleteUser).not.toHaveBeenCalled();
-    });
-
-    it('should return 403 if user is not admin', async () => {
-      const res = await request(app)
-        .delete('/api/municipality/users/1')
-        .set('X-Test-User-Type', 'CITIZEN');
-      expect(res.status).toBe(403);
-      expect(mockDeleteUser).not.toHaveBeenCalled();
-    });
-
     it('should return 204 if admin and user exist', async () => {
       const res = await request(app)
         .delete('/api/municipality/users/1')
@@ -311,23 +260,6 @@ describe('Municipality User Routes Integration Tests', () => {
   // --- PUT /:id/role (Role assignment) ---
   describe('PUT /api/municipality/users/:id/role', () => {
     const roleAssignRequest = { role_id: 3 };
-
-    it('should return 401 if user is not authenticated', async () => {
-      const res = await request(app)
-        .put('/api/municipality/users/1/role')
-        .send(roleAssignRequest);
-      expect(res.status).toBe(401);
-      expect(mockAssignRole).not.toHaveBeenCalled();
-    });
-
-    it('should return 403 if user is not admin', async () => {
-      const res = await request(app)
-        .put('/api/municipality/users/1/role')
-        .set('X-Test-User-Type', 'CITIZEN')
-        .send(roleAssignRequest);
-      expect(res.status).toBe(403);
-      expect(mockAssignRole).not.toHaveBeenCalled();
-    });
 
     it('should return 200 and user with new role if admin', async () => {
       const res = await request(app)

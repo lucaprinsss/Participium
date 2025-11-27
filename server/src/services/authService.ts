@@ -1,4 +1,4 @@
-import { UserResponse } from '../models/dto/UserResponse';
+import { UserResponse } from '../models/dto/output/UserResponse';
 import { userEntity } from '../models/entity/userEntity';
 import { mapUserEntityToUserResponse } from './mapperService';
 

@@ -1,44 +1,43 @@
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "../api/authApi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; 
 import CitizenHome from "../components/CitizenHome";
-import AdminHome from "../components/adminHome";
+import AdminHome from "../components/AdminHome";
 import MunicipalityUserHome from "../components/MunicipalityUserHome";
-import "../css/homepage-page.css";
 
 export default function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-
+  
   useEffect(() => {
     getCurrentUser()
       .then(setUser)
       .catch(() => {
-        // User not authenticated, redirect to login
         navigate("/login");
       });
   }, [navigate]);
 
-  return (
-    <div className="homepage-page">
-      <div className="hp-container">
+  const getComponentToRender = () => {
+    if (!user) {
+      return null;
+    }
+    
+    const actualRole = (user.role_name || "").toString().toLowerCase();
+    const isAdmin = actualRole.includes("administrator");
+    
+    if (actualRole.includes("citizen") || actualRole.includes("Citizen")) {
+      return <CitizenHome user={user} />;
+    }
+    if (isAdmin) {
+      return <AdminHome />;
+    }
+    
+    return <MunicipalityUserHome user={user} />;
+  };
 
-        <div className="hp-main">
-          <div className="hp-left">
-            {/* primary content area - keep components below for when features are ready */}
-            {user &&
-              (() => {
-                const role = (user.role || "").toString().toLowerCase();
-                if (role.includes("citizen"))
-                  return <CitizenHome user={user} />;
-                if (role.includes("admin") || role.includes("administrator"))
-                  return <AdminHome />;
-                // All other roles are municipality staff
-                return <MunicipalityUserHome user={user} />;
-              })()}
-          </div>
-        </div>
+  return (
+      <div className="hp-container">
+            {getComponentToRender()}
       </div>
-    </div>
   );
 }

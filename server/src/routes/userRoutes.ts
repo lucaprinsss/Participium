@@ -1,5 +1,7 @@
+
 import express from 'express';
 import UserController from '@controllers/userController';
+import { validateRegisterInput } from '../middleware/registerUserMiddleware';
 
 const router = express.Router();
 
@@ -55,6 +57,6 @@ const router = express.Router();
  *             example:
  *               error: "Internal server error"
  */
-router.post('/', UserController.register);
+router.post('/', validateRegisterInput, UserController.register);
 
 export default router;

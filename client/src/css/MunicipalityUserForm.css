@@ -1,179 +1,467 @@
-/* Municipality User Form Styles */
-.municipality-user-form-card {
+.muf-user-form {
   width: 100%;
-  max-width: 600px;
+  max-width: 1020px; 
   margin: 0 auto;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md);
+  padding: 1.53rem; 
+
+  --gradient-primary: linear-gradient(135deg, var(--brand-red) 0%, #c44569 100%);
 }
 
-.municipality-user-form-card .card-body {
-  padding: 32px;
+.muf-form-glass-container {
+  background: var(--gradient-glass); 
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 1.53rem;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
 }
 
-.muf-title {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--navy);
-  margin: 0 0 8px 0;
+.muf-form-header {
+  background: linear-gradient(135deg, var(--brand-red) 0%, #c44569 100%); 
+  color: white;
+  padding: 1.7rem 2.295rem 1.275rem; 
   text-align: center;
+  position: relative;
 }
 
-.alert-container {
-  min-height: 70px;
-  margin-bottom: 16px;
+.muf-header-icon {
+  font-size: 2.125rem; 
+  margin-bottom: 0.85rem;
 }
 
-.muf-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.muf-form-title {
+  font-size: 1.87rem; 
+  font-weight: 800;
+  margin: 0 0 0.425rem 0; 
+  color: white;
 }
 
-.muf-field {
-  display: flex;
-  flex-direction: column;
+.muf-form-subtitle {
+  font-size: 0.935rem; 
+  opacity: 0.9;
+  margin: 0;
+  font-weight: 400;
 }
 
-.muf-label {
-  display: block;
+.muf-alert-container {
+  padding: 0 2.295rem; 
+  margin-top: 0.85rem; 
+  margin-bottom: -2.125rem; 
+}
+
+.muf-modern-alert {
+  border: none;
+  border-radius: 0.765rem; 
+  padding: 0.85rem 1.1475rem; 
   font-weight: 500;
-  font-size: 13px;
-  color: var(--text);
-  margin-bottom: 6px;
+  border-left: 4px solid transparent;
 }
 
-.muf-form input,
-.muf-select {
-  width: 100%;
-  padding: 10px 12px;
-  background: var(--card);
-  color: var(--text);
-  caret-color: var(--blue);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
-  box-sizing: border-box;
-  font-family: inherit;
+.muf-modern-alert.alert-danger {
+  background: rgba(220, 53, 69, 0.08);
+  color: #dc3545;
+  border-left-color: #dc3545;
 }
 
-.muf-form input:focus,
-.muf-select:focus {
-  outline: none;
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(30, 103, 200, 0.1);
+.muf-modern-alert.alert-success {
+  background: rgba(40, 167, 69, 0.08);
+  color: #28a745;
+  border-left-color: #28a745;
 }
 
-.muf-form input:disabled,
-.muf-select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #f6f8fa;
+.muf-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 0.57375rem; 
+  font-weight: 600;
 }
 
-.muf-select {
-  cursor: pointer;
+.muf-modern-form {
+  padding: 2.295rem; 
 }
 
-.muf-select:disabled {
-  cursor: not-allowed;
-}
-
-.name-row {
+.muf-form-cards-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 1.7rem; 
+  margin-bottom: 1.7rem;
 }
 
-.muf-submit-btn {
-  width: 100%;
-  padding: 12px;
-  background: var(--blue);
-  border: none;
-  color: white;
-  font-weight: 600;
-  font-size: 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s, opacity 0.2s;
-  margin-top: 8px;
+.muf-form-card {
+  background: var(--card-bg); 
+  border-radius: 1.1475rem; 
+  padding: 1.7rem; 
+  box-shadow: 0 3.06px 9.18px rgba(161, 43, 50, 0.05);
+  border: 1px solid var(--border-light); 
 }
 
-.muf-submit-btn:hover:not(:disabled) {
-  background: #1557b0;
-}
-
-.muf-submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .municipality-user-form-card .card-body {
-    padding: 24px;
-  }
-
-  .name-row {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-
-
-/* Form buttons container */
-.muf-actions {
+.muf-card-header {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
+  align-items: center;
+  gap: 0.765rem; 
+  margin-bottom: 1.275rem; 
+  padding-bottom: 0.765rem; 
+  border-bottom: 1px solid var(--border-light); 
 }
 
-/* Cancel button styles */
-.muf-cancel-btn {
-  background-color: var(--text-secondary);
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: var(--shadow-sm);
+.muf-card-icon {
+  font-size: 1.1475rem;
+  color: var(--brand-red); 
+  background: var(--accent-light); 
+  padding: 0.57375rem; 
+  border-radius: 0.765rem; 
 }
 
-.muf-cancel-btn:hover {
-  background-color: var(--text-primary);
-  box-shadow: var(--shadow-md);
+.muf-card-title {
+  font-size: 1.1475rem; 
+  font-weight: 700;
+  color: var(--text-darker); 
+  margin: 0;
 }
 
-/* Button styles when disabled */
-.muf-submit-btn:disabled,
-.muf-cancel-btn:disabled {
+.muf-card-subtitle {
+  font-size: 0.72675rem; 
+  color: var(--text-muted); 
+  margin-top: 0.19125rem; 
+}
+
+.muf-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.0625rem; 
+}
+
+
+.muf-form-label {
+  font-weight: 700;
+  color: var(--text-darker); 
+  font-size: 0.72675rem; 
+  display: flex;
+  align-items: center;
+  gap: 0.19125rem; 
+}
+
+.muf-required-asterisk {
+  color: var(--brand-red); 
+  font-weight: 800;
+}
+
+.muf-modern-input {
+  width: 100%;
+  padding: 0.765rem 0.95625rem; 
+  border: 2px solid var(--border-light); 
+  border-radius: 0.765rem; 
+  font-size: 0.765rem; 
+  background: var(--card-bg); 
+  transition: all 0.3s ease;
+  color: var(--text-darker); 
+}
+
+.muf-modern-input:focus {
+  outline: none;
+  border-color: var(--brand-red); 
+  box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.1);
+}
+
+.muf-modern-input:disabled {
+  background: var(--bg-lighter);
   opacity: 0.6;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
-/* Submit button styles */
-.muf-submit-btn {
-  background-color: var(--blue);
-  color: #ffffff;
+.muf-password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.muf-password-input {
+  padding-right: 2.55rem;
+}
+
+.muf-password-toggle-btn {
+  position: absolute;
+  right: 0.68rem; 
+  background: none;
   border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 0.95rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.34rem; 
+}
+
+.muf-password-toggle-btn:hover:not(:disabled) {
+  color: var(--brand-red);
+}
+
+.muf-password-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 0.34rem; 
+  margin-top: 0.5rem;
+}
+
+.muf-strength-bar {
+  height: 4px;
+  background: var(--bg-lighter);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.muf-strength-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.muf-strength-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.57375rem; 
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.muf-password-match {
+  font-size: 0.65025rem;
+  font-weight: 600;
+  margin-top: 0.19125rem;
+}
+
+.muf-match-success {
+  color: #28a745;
+}
+
+.muf-match-error {
+  color: #dc3545;
+}
+
+/* --- DROPDOWN --- */
+.dropdown-toggle.muf-modern-dropdown-toggle {
+  width: 100%;
+  padding: 0.765rem 0.95625rem; 
+  border: 2px solid var(--border-light); 
+  border-radius: 0.765rem; 
+  font-size: 0.765rem; 
+  background: var(--card-bg) !important;
+  transition: all 0.3s ease;
+  color: var(--text-darker) !important;
+  display: flex;
+  align-items: center;
+  gap: 0.6375rem; 
+  text-align: left;
+  justify-content: flex-start;
+  overflow: hidden; 
+}
+
+.dropdown-toggle.muf-modern-dropdown-toggle::after {
+  display: none;
+}
+
+.dropdown-toggle.muf-modern-dropdown-toggle {
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center; 
+  background-size: 16px;
+}
+
+.dropdown-toggle.muf-modern-dropdown-toggle .muf-dropdown-icon {
+  color: var(--text-muted); 
+  transition: color 0.3s ease;
+  flex-shrink: 0; 
+}
+
+.muf-dropdown-toggle-text {
+  flex: 1; 
+  min-width: 0; 
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-toggle.muf-modern-dropdown-toggle:hover:not(:disabled) {
+  border-color: var(--brand-red); 
+}
+
+.dropdown-toggle.muf-modern-dropdown-toggle:hover:not(:disabled) .muf-dropdown-icon {
+  color: var(--brand-red);
+}
+
+.dropdown-toggle.muf-modern-dropdown-toggle[aria-expanded="true"] {
+  border-color: var(--brand-red) !important;
+  box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.1) !important;
+}
+
+.dropdown-toggle.muf-modern-dropdown-toggle:disabled {
+  background: var(--bg-lighter) !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.muf-modern-dropdown-menu {
+  width: 100%;
+  background: var(--card-bg); 
+  border: 1px solid var(--border-light); 
+  border-radius: 0.765rem; 
+  box-shadow: var(--shadow-soft);
+  padding: 0.425rem; 
+  max-height: 212.5px; 
+  overflow-y: auto;
+  margin-top: 0.2125rem; 
+  overflow-x: hidden; 
+}
+
+.muf-modern-dropdown-menu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.muf-modern-dropdown-menu::-webkit-scrollbar-track {
+  background: var(--bg-lighter); 
+  border-radius: 4px;
+}
+
+.muf-modern-dropdown-menu::-webkit-scrollbar-thumb {
+  background: var(--brand-red);
+  border-radius: 4px;
+}
+
+.muf-modern-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-red-hover);
+}
+
+.muf-modern-dropdown-menu .dropdown-item {
+  color: var(--text-darker); 
+  padding: 0.6375rem 0.85rem; 
+  border-radius: 0.51rem; 
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.muf-modern-dropdown-menu .dropdown-item:hover,
+.muf-modern-dropdown-menu .dropdown-item:focus {
+  background: var(--accent-light); 
+  color: var(--brand-red); 
+}
+
+.muf-modern-dropdown-menu .dropdown-item.active,
+.muf-modern-dropdown-menu .dropdown-item:active {
+  background: var(--brand-red) !important;
+  color: white !important;
+}
+
+.muf-form-actions {
+  display: flex;
+  gap: 0.85rem; 
+  justify-content: center;
+  padding-top: 1.275rem; 
+  margin-top: 1.275rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.muf-modern-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.425rem; 
+  padding: 0.765rem 1.53rem;
+  border: none;
+  border-radius: 0.765rem; 
+  font-size: 0.765rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  min-width: 102px; 
+  justify-content: center;
 }
 
-.muf-submit-btn:hover {
-  background-color: #2a52cc; 
-  box-shadow: var(--shadow-md);
+.muf-modern-btn.primary {
+  background: var(--gradient-primary); 
+  color: white;
+}
+
+.muf-modern-btn.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(161, 43, 50, 0.3);
+}
+
+.muf-modern-btn.secondary {
+  background: var(--card-bg); 
+  color: var(--text-darker); 
+  border: 2px solid var(--border-light); 
+}
+
+.muf-modern-btn.secondary:hover:not(:disabled) {
+  background: var(--accent-light); 
+  border-color: var(--brand-red); 
+  color: var(--brand-red); 
+  transform: translateY(-2px);
+}
+
+.muf-modern-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.muf-loading-spinner {
+  width: 0.85rem; 
+  height: 0.85rem; 
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: muf-spin 1s linear infinite;
+}
+
+@keyframes muf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .muf-user-form {
+    padding: 0.85rem; 
+  }
+  
+  .muf-form-header {
+    padding: 1.275rem 0.85rem 0.85rem;
+  }
+  
+  .muf-modern-form {
+    padding: 1.275rem 0.85rem; 
+  }
+  
+  .muf-form-cards-container {
+    grid-template-columns: 1fr;
+    gap: 1.275rem; 
+  }
+  
+  .muf-form-card {
+    padding: 1.275rem; 
+  }
+  
+  .muf-form-actions {
+    flex-direction: column;
+  }
+  
+  .muf-modern-btn {
+    width: 100%;
+  }
+  
+  .muf-header-icon {
+    font-size: 1.7rem; 
+  }
+  
+  .muf-form-title {
+    font-size: 1.53rem;
+  }
+  
+  .dropdown-toggle.muf-modern-dropdown-toggle {
+    padding: 0.68rem 0.765rem; 
+    font-size: 0.7225rem; 
+    background-position: right 0.68rem center; 
+    gap: 0.425rem;
+  }
+
 }

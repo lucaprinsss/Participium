@@ -1,7 +1,7 @@
 import { userRepository } from '@repositories/userRepository';
 import { userEntity } from '@models/entity/userEntity';
-import { UserRole } from '@models/dto/UserRole';
 import * as passwordUtils from '@utils/passwordUtils';
+import { createMockCitizen } from '@test/utils/mockEntities';
 
 // Mock delle dipendenze
 jest.mock('@database/connection');
@@ -20,6 +20,7 @@ describe('UserRepository Unit Tests', () => {
       where: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
       getOne: jest.fn(),
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
     };
 
     // Setup mock del repository TypeORM
@@ -48,27 +49,23 @@ describe('UserRepository Unit Tests', () => {
       password: 'SecurePass123!',
       firstName: 'Test',
       lastName: 'User',
-      role: 'citizen' as UserRole,
+      departmentRoleId: 1,
     };
 
     it('should create user with hashed password successfully', async () => {
       // Arrange
-      const mockCreatedUser = {
+      const mockCreatedUser = createMockCitizen({
         id: 1,
         username: validUserData.username,
         email: validUserData.email,
-        passwordHash: 'mocksalt:mockhash',
         firstName: validUserData.firstName,
         lastName: validUserData.lastName,
-        role: validUserData.role,
-        emailNotificationsEnabled: true,
-        personalPhotoUrl: undefined,
-        telegramUsername: undefined,
-        createdAt: new Date(),
-      };
+      });
+      mockCreatedUser.passwordHash = 'mocksalt:mockhash';
 
       mockRepository.create.mockReturnValue(mockCreatedUser);
       mockRepository.save.mockResolvedValue(mockCreatedUser);
+      mockQueryBuilder.getOne.mockResolvedValue(mockCreatedUser);
 
       // Act
       const result = await userRepository.createUserWithPassword(validUserData);
@@ -81,7 +78,7 @@ describe('UserRepository Unit Tests', () => {
           email: validUserData.email,
           firstName: validUserData.firstName,
           lastName: validUserData.lastName,
-          role: validUserData.role,
+          departmentRoleId: validUserData.departmentRoleId,
           passwordHash: 'mocksalt:mockhash',
         })
       );
@@ -92,22 +89,18 @@ describe('UserRepository Unit Tests', () => {
 
     it('should set default emailNotificationsEnabled to true', async () => {
       // Arrange
-      const mockCreatedUser = {
+      const mockCreatedUser = createMockCitizen({
         id: 1,
         username: validUserData.username,
         email: validUserData.email,
-        passwordHash: 'mocksalt:mockhash',
         firstName: validUserData.firstName,
         lastName: validUserData.lastName,
-        role: validUserData.role,
-        emailNotificationsEnabled: true,
-        personalPhotoUrl: undefined,
-        telegramUsername: undefined,
-        createdAt: new Date(),
-      };
+      });
+      mockCreatedUser.passwordHash = 'mocksalt:mockhash';
 
       mockRepository.create.mockReturnValue(mockCreatedUser);
       mockRepository.save.mockResolvedValue(mockCreatedUser);
+      mockQueryBuilder.getOne.mockResolvedValue(mockCreatedUser);
 
       // Act
       const result = await userRepository.createUserWithPassword(validUserData);
@@ -122,22 +115,19 @@ describe('UserRepository Unit Tests', () => {
         ...validUserData,
         emailNotificationsEnabled: false,
       };
-      const mockCreatedUser = {
+      const mockCreatedUser = createMockCitizen({
         id: 1,
         username: userDataWithNotifications.username,
         email: userDataWithNotifications.email,
-        passwordHash: 'mocksalt:mockhash',
         firstName: userDataWithNotifications.firstName,
         lastName: userDataWithNotifications.lastName,
-        role: userDataWithNotifications.role,
-        emailNotificationsEnabled: false,
-        personalPhotoUrl: undefined,
-        telegramUsername: undefined,
-        createdAt: new Date(),
-      };
+      });
+      mockCreatedUser.passwordHash = 'mocksalt:mockhash';
+      mockCreatedUser.emailNotificationsEnabled = false;
 
       mockRepository.create.mockReturnValue(mockCreatedUser);
       mockRepository.save.mockResolvedValue(mockCreatedUser);
+      mockQueryBuilder.getOne.mockResolvedValue(mockCreatedUser);
 
       // Act
       const result = await userRepository.createUserWithPassword(userDataWithNotifications);
@@ -148,22 +138,18 @@ describe('UserRepository Unit Tests', () => {
 
     it('should hash password with salt', async () => {
       // Arrange
-      const mockCreatedUser = {
+      const mockCreatedUser = createMockCitizen({
         id: 1,
         username: validUserData.username,
         email: validUserData.email,
-        passwordHash: 'mocksalt:mockhash',
         firstName: validUserData.firstName,
         lastName: validUserData.lastName,
-        role: validUserData.role,
-        emailNotificationsEnabled: true,
-        personalPhotoUrl: undefined,
-        telegramUsername: undefined,
-        createdAt: new Date(),
-      };
+      });
+      mockCreatedUser.passwordHash = 'mocksalt:mockhash';
 
       mockRepository.create.mockReturnValue(mockCreatedUser);
       mockRepository.save.mockResolvedValue(mockCreatedUser);
+      mockQueryBuilder.getOne.mockResolvedValue(mockCreatedUser);
 
       // Act
       await userRepository.createUserWithPassword(validUserData);
@@ -192,22 +178,18 @@ describe('UserRepository Unit Tests', () => {
 
     it('should create user with all required fields', async () => {
       // Arrange
-      const mockCreatedUser = {
+      const mockCreatedUser = createMockCitizen({
         id: 1,
         username: validUserData.username,
         email: validUserData.email,
-        passwordHash: 'mocksalt:mockhash',
         firstName: validUserData.firstName,
         lastName: validUserData.lastName,
-        role: validUserData.role,
-        personalPhotoUrl: undefined,
-        telegramUsername: undefined,
-        emailNotificationsEnabled: true,
-        createdAt: new Date(),
-      };
+      });
+      mockCreatedUser.passwordHash = 'mocksalt:mockhash';
 
       mockRepository.create.mockReturnValue(mockCreatedUser);
       mockRepository.save.mockResolvedValue(mockCreatedUser);
+      mockQueryBuilder.getOne.mockResolvedValue(mockCreatedUser);
 
       // Act
       const result = await userRepository.createUserWithPassword(validUserData);
@@ -219,7 +201,7 @@ describe('UserRepository Unit Tests', () => {
       expect(result).toHaveProperty('passwordHash');
       expect(result).toHaveProperty('firstName');
       expect(result).toHaveProperty('lastName');
-      expect(result).toHaveProperty('role');
+      expect(result).toHaveProperty('departmentRoleId');
       expect(result).toHaveProperty('createdAt');
     });
 
@@ -331,19 +313,14 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('findUserByUsername', () => {
-    const mockUser: userEntity = {
+    const mockUser: userEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
-      passwordHash: 'salt:hashedpassword',
       firstName: 'Test',
       lastName: 'User',
-      role: 'citizen',
-      personalPhotoUrl: undefined,
-      telegramUsername: undefined,
-      emailNotificationsEnabled: true,
-      createdAt: new Date(),
-    };
+    });
+    mockUser.passwordHash = 'salt:hashedpassword';
 
     it('should return user if found', async () => {
       // Arrange
@@ -399,7 +376,7 @@ describe('UserRepository Unit Tests', () => {
       expect(result).toHaveProperty('passwordHash');
       expect(result).toHaveProperty('firstName');
       expect(result).toHaveProperty('lastName');
-      expect(result).toHaveProperty('role');
+      expect(result).toHaveProperty('departmentRole');
     });
 
     it('should handle database errors', async () => {
@@ -429,53 +406,54 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('findUserById', () => {
-    const mockUser: userEntity = {
+    const mockUser: userEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
-      passwordHash: 'salt:hashedpassword',
       firstName: 'Test',
       lastName: 'User',
-      role: UserRole.CITIZEN,
-      personalPhotoUrl: undefined,
-      telegramUsername: undefined,
-      emailNotificationsEnabled: true,
-      createdAt: new Date(),
-    };
+    });
+    mockUser.passwordHash = 'salt:hashedpassword';
 
     beforeEach(() => {
-      mockRepository.findOneBy = jest.fn();
+      mockRepository.findOne = jest.fn();
     });
 
     it('should return user if found by ID', async () => {
       // Arrange
-      mockRepository.findOneBy.mockResolvedValue(mockUser);
+      mockRepository.findOne.mockResolvedValue(mockUser);
 
       // Act
       const result = await userRepository.findUserById(1);
 
       // Assert
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      });
       expect(result).toEqual(mockUser);
       expect(result?.id).toBe(1);
     });
 
     it('should return null if user not found', async () => {
       // Arrange
-      mockRepository.findOneBy.mockResolvedValue(null);
+      mockRepository.findOne.mockResolvedValue(null);
 
       // Act
       const result = await userRepository.findUserById(999);
 
       // Assert
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 999 });
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 999 },
+        relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      });
       expect(result).toBeNull();
     });
 
     it('should handle database errors', async () => {
       // Arrange
       const dbError = new Error('Database query failed');
-      mockRepository.findOneBy.mockRejectedValue(dbError);
+      mockRepository.findOne.mockRejectedValue(dbError);
 
       // Act & Assert
       await expect(
@@ -485,53 +463,54 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('findUserByEmail', () => {
-    const mockUser: userEntity = {
+    const mockUser: userEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
-      passwordHash: 'salt:hashedpassword',
       firstName: 'Test',
       lastName: 'User',
-      role: UserRole.CITIZEN,
-      personalPhotoUrl: undefined,
-      telegramUsername: undefined,
-      emailNotificationsEnabled: true,
-      createdAt: new Date(),
-    };
+    });
+    mockUser.passwordHash = 'salt:hashedpassword';
 
     beforeEach(() => {
-      mockRepository.findOneBy = jest.fn();
+      mockRepository.findOne = jest.fn();
     });
 
     it('should return user if found by email', async () => {
       // Arrange
-      mockRepository.findOneBy.mockResolvedValue(mockUser);
+      mockRepository.findOne.mockResolvedValue(mockUser);
 
       // Act
       const result = await userRepository.findUserByEmail('test@example.com');
 
       // Assert
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ email: 'test@example.com' });
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { email: 'test@example.com' },
+        relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      });
       expect(result).toEqual(mockUser);
       expect(result?.email).toBe('test@example.com');
     });
 
     it('should return null if user not found', async () => {
       // Arrange
-      mockRepository.findOneBy.mockResolvedValue(null);
+      mockRepository.findOne.mockResolvedValue(null);
 
       // Act
       const result = await userRepository.findUserByEmail('nonexistent@example.com');
 
       // Assert
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ email: 'nonexistent@example.com' });
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { email: 'nonexistent@example.com' },
+        relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      });
       expect(result).toBeNull();
     });
 
     it('should handle database errors', async () => {
       // Arrange
       const dbError = new Error('Database query failed');
-      mockRepository.findOneBy.mockRejectedValue(dbError);
+      mockRepository.findOne.mockRejectedValue(dbError);
 
       // Act & Assert
       await expect(
@@ -542,33 +521,23 @@ describe('UserRepository Unit Tests', () => {
 
   describe('findAllUsers', () => {
     const mockUsers: userEntity[] = [
-      {
+      createMockCitizen({
         id: 1,
         username: 'user1',
         email: 'user1@example.com',
-        passwordHash: 'salt:hash1',
         firstName: 'User',
         lastName: 'One',
-        role: UserRole.MUNICIPAL_ADMINISTRATOR,
-        personalPhotoUrl: undefined,
-        telegramUsername: undefined,
-        emailNotificationsEnabled: true,
-        createdAt: new Date(),
-      },
-      {
+      }),
+      createMockCitizen({
         id: 2,
         username: 'user2',
         email: 'user2@example.com',
-        passwordHash: 'salt:hash2',
         firstName: 'User',
         lastName: 'Two',
-        role: UserRole.TECHNICAL_OFFICE_STAFF_MEMBER,
-        personalPhotoUrl: undefined,
-        telegramUsername: undefined,
-        emailNotificationsEnabled: true,
-        createdAt: new Date(),
-      },
+      }),
     ];
+    mockUsers[0].passwordHash = 'salt:hash1';
+    mockUsers[1].passwordHash = 'salt:hash2';
 
     beforeEach(() => {
       mockRepository.find = jest.fn();
@@ -582,26 +551,11 @@ describe('UserRepository Unit Tests', () => {
       const result = await userRepository.findAllUsers();
 
       // Assert
-      expect(mockRepository.find).toHaveBeenCalledWith(undefined);
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      });
       expect(result).toEqual(mockUsers);
       expect(result).toHaveLength(2);
-    });
-
-    it('should return users with where filter', async () => {
-      // Arrange
-      const filteredUsers = [mockUsers[0]];
-      mockRepository.find.mockResolvedValue(filteredUsers);
-      const options = {
-        where: { role: UserRole.MUNICIPAL_ADMINISTRATOR }
-      };
-
-      // Act
-      const result = await userRepository.findAllUsers(options);
-
-      // Assert
-      expect(mockRepository.find).toHaveBeenCalledWith(options);
-      expect(result).toEqual(filteredUsers);
-      expect(result).toHaveLength(1);
     });
 
     it('should return users with order filter', async () => {
@@ -615,7 +569,10 @@ describe('UserRepository Unit Tests', () => {
       const result = await userRepository.findAllUsers(options);
 
       // Assert
-      expect(mockRepository.find).toHaveBeenCalledWith(options);
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        ...options,
+        relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      });
       expect(result).toEqual(mockUsers);
     });
 
@@ -623,7 +580,7 @@ describe('UserRepository Unit Tests', () => {
       // Arrange
       mockRepository.find.mockResolvedValue(mockUsers);
       const options = {
-        where: { role: UserRole.MUNICIPAL_ADMINISTRATOR },
+        where: { role: 'Municipal Administrator' },
         order: { createdAt: 'DESC' }
       };
 
@@ -631,7 +588,10 @@ describe('UserRepository Unit Tests', () => {
       const result = await userRepository.findAllUsers(options);
 
       // Assert
-      expect(mockRepository.find).toHaveBeenCalledWith(options);
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        ...options,
+        relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      });
       expect(result).toEqual(mockUsers);
     });
 
@@ -661,23 +621,18 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('updateUser', () => {
-    const mockUser: userEntity = {
+    const mockUser: userEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
-      passwordHash: 'salt:hashedpassword',
       firstName: 'Test',
       lastName: 'User',
-      role: UserRole.CITIZEN,
-      personalPhotoUrl: undefined,
-      telegramUsername: undefined,
-      emailNotificationsEnabled: true,
-      createdAt: new Date(),
-    };
+    });
+    mockUser.passwordHash = 'salt:hashedpassword';
 
     beforeEach(() => {
       mockRepository.update = jest.fn();
-      mockRepository.findOneBy = jest.fn();
+      mockRepository.findOne = jest.fn();
     });
 
     it('should update user successfully', async () => {
@@ -690,14 +645,17 @@ describe('UserRepository Unit Tests', () => {
       const updatedUser = { ...mockUser, ...updateData };
 
       mockRepository.update.mockResolvedValue({ affected: 1 });
-      mockRepository.findOneBy.mockResolvedValue(updatedUser);
+      mockRepository.findOne.mockResolvedValue(updatedUser);
 
       // Act
       const result = await userRepository.updateUser(1, updateData);
 
       // Assert
       expect(mockRepository.update).toHaveBeenCalledWith(1, updateData);
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      });
       expect(result).toEqual(updatedUser);
       expect(result.firstName).toBe('UpdatedName');
     });
@@ -708,7 +666,7 @@ describe('UserRepository Unit Tests', () => {
       const updatedUser = { ...mockUser, email: 'newemail@example.com' };
 
       mockRepository.update.mockResolvedValue({ affected: 1 });
-      mockRepository.findOneBy.mockResolvedValue(updatedUser);
+      mockRepository.findOne.mockResolvedValue(updatedUser);
 
       // Act
       const result = await userRepository.updateUser(1, updateData);
@@ -724,7 +682,7 @@ describe('UserRepository Unit Tests', () => {
       const updateData = { firstName: 'UpdatedName' };
 
       mockRepository.update.mockResolvedValue({ affected: 1 });
-      mockRepository.findOneBy.mockResolvedValue(null);
+      mockRepository.findOne.mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -743,21 +701,6 @@ describe('UserRepository Unit Tests', () => {
       await expect(
         userRepository.updateUser(1, updateData)
       ).rejects.toThrow('Database update failed');
-    });
-
-    it('should update role successfully', async () => {
-      // Arrange
-      const updateData = { role: UserRole.MUNICIPAL_ADMINISTRATOR };
-      const updatedUser = { ...mockUser, role: UserRole.MUNICIPAL_ADMINISTRATOR };
-
-      mockRepository.update.mockResolvedValue({ affected: 1 });
-      mockRepository.findOneBy.mockResolvedValue(updatedUser);
-
-      // Act
-      const result = await userRepository.updateUser(1, updateData);
-
-      // Assert
-      expect(result.role).toBe(UserRole.MUNICIPAL_ADMINISTRATOR);
     });
   });
 
@@ -811,19 +754,14 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('verifyCredentials', () => {
-    const mockUser: userEntity = {
+    const mockUser: userEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
-      passwordHash: 'mocksalt:mockhash',
       firstName: 'Test',
       lastName: 'User',
-      role: UserRole.CITIZEN,
-      personalPhotoUrl: undefined,
-      telegramUsername: undefined,
-      emailNotificationsEnabled: true,
-      createdAt: new Date(),
-    };
+    });
+    mockUser.passwordHash = 'mocksalt:mockhash';
 
     beforeEach(() => {
       mockQueryBuilder.getOne = jest.fn();
@@ -912,19 +850,14 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('save', () => {
-    const mockUser: userEntity = {
+    const mockUser: userEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
-      passwordHash: 'salt:hashedpassword',
       firstName: 'Test',
       lastName: 'User',
-      role: UserRole.CITIZEN,
-      personalPhotoUrl: undefined,
-      telegramUsername: undefined,
-      emailNotificationsEnabled: true,
-      createdAt: new Date(),
-    };
+    });
+    mockUser.passwordHash = 'salt:hashedpassword';
 
     beforeEach(() => {
       mockRepository.save = jest.fn();
@@ -956,7 +889,7 @@ describe('UserRepository Unit Tests', () => {
       expect(result).toHaveProperty('passwordHash');
       expect(result).toHaveProperty('firstName');
       expect(result).toHaveProperty('lastName');
-      expect(result).toHaveProperty('role');
+      expect(result).toHaveProperty('departmentRole');
     });
 
     it('should handle database errors', async () => {

@@ -1,16 +1,11 @@
 {
   "compilerOptions": {
-    // ES Modules support
     "target": "ES2022",
-    "module": "CommonJS", 
+    "module": "CommonJS",
     "lib": ["ES2022", "DOM"],
     "moduleResolution": "node",
-    
-    // Output
     "outDir": "./dist",
     "rootDir": ".",
-    
-    // Strict checks
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -18,12 +13,8 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false,
-    
-    // JSON and synthetic imports
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    
-    // Path aliases
     "baseUrl": "./src",
     "paths": {
       "@config/*": ["config/*"],
@@ -37,7 +28,8 @@
       "@dto/*": ["models/dto/*"],
       "@entity/*": ["models/entity/*"],
       "@errors/*": ["models/errors/*"],
-      "@database/*": ["database/*"]
+      "@database/*": ["database/*"],
+      "@test/*": ["test/*"]
     }
   },
   "include": [

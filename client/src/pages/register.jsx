@@ -1,299 +1,352 @@
-import { useState } from "react";
-import { Alert, Card, Form, Button, Container, Row, Col, InputGroup } from "react-bootstrap";
+import { useState, useEffect } from "react";
+import { Alert, Card, Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
 import { registerCitizen } from "../api/citizenApi";
-import { useNavigate } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useNavigate, useLocation } from "react-router-dom";
+import { FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock, FaArrowLeft, FaIdCard } from "react-icons/fa";
+import "../css/Register.css";
 
 export default function Register() {
   const navigate = useNavigate();
+  const location = useLocation(); // Hook to read navigation state
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formData, setFormData] = useState({
+    firstName: "", lastName: "", email: "", username: "", password: "", confirmPassword: ""
+  });
+  
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState(0);
+
+  // EFFECT: Check if there are errors passed on page load
+  useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  const trimValue = (value) => typeof value === 'string' ? value.trim() : value;
+  const removeAllSpaces = (value) => typeof value === 'string' ? value.replace(/\s/g, '') : value;
+
+  const calculatePasswordStrength = (password) => {
+    let strength = 0;
+    if (password.length >= 6) strength += 1;
+    if (password.length >= 8) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+    return strength;
+  };
+
+  const getPasswordStrengthColor = () => {
+    const colors = ["#dc3545", "#ff6b35", "#ffa726", "#9ccc65", "#4caf50"];
+    return colors[passwordStrength] || "#dc3545";
+  };
+
+  const handleInputChange = (field, value) => {
+    let cleanedValue = value;
+    
+    if (field === "email") {
+      cleanedValue = removeAllSpaces(value).toLowerCase();
+    } else if (["firstName", "lastName", "username"].includes(field)) {
+      cleanedValue = trimValue(value);
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: cleanedValue }));
+    
+    if (field === "password") {
+      setPasswordStrength(calculatePasswordStrength(cleanedValue));
+    }
+
+    if (error) setError("");
+  };
+
+  const handleBlur = (field) => {
+    const currentValue = formData[field];
+    let cleanedValue = currentValue;
+    
+    if (typeof currentValue === 'string') {
+      if (field === "email") {
+        cleanedValue = removeAllSpaces(currentValue).toLowerCase();
+      } else if (["firstName", "lastName", "username"].includes(field)) {
+        cleanedValue = trimValue(currentValue);
+      }
+      
+      if (cleanedValue !== currentValue) {
+        setFormData(prev => ({ ...prev, [field]: cleanedValue }));
+      }
+    }
+    
+    setFocusedField("");
+  };
+
+  const handleKeyDown = (e, field) => {
+    if (field === "email" && e.key === " ") {
+      e.preventDefault();
+    }
+  };
+
+  const handlePaste = (e, field) => {
+    if (field === "email") {
+      e.preventDefault();
+      const pastedText = e.clipboardData.getData('text');
+      const cleanedText = removeAllSpaces(pastedText).toLowerCase();
+      
+      const target = e.target;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      
+      const newValue = formData.email.substring(0, start) + cleanedText + formData.email.substring(end);
+      
+      setFormData(prev => ({ ...prev, email: newValue }));
+      
+      setTimeout(() => {
+        target.setSelectionRange(start + cleanedText.length, start + cleanedText.length);
+      }, 0);
+    }
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    // Client-side validation
-    if (!firstName.trim()) {
-      setError("Please enter your first name");
-      return;
-    }
-    if (!lastName.trim()) {
-      setError("Please enter your last name");
-      return;
-    }
-    if (!email.trim()) {
-      setError("Please enter your email");
-      return;
-    }
-    // Basic email validation
+    const cleanedFormData = {
+      firstName: trimValue(formData.firstName),
+      lastName: trimValue(formData.lastName),
+      email: removeAllSpaces(formData.email).toLowerCase(),
+      username: trimValue(formData.username),
+      password: formData.password,
+      confirmPassword: formData.confirmPassword
+    };
+
+    setFormData(cleanedFormData);
+
+    // Client-side Validation (Translated to English)
+    if (!cleanedFormData.firstName) return setError("Please enter your first name");
+    if (!cleanedFormData.lastName) return setError("Please enter your last name");
+    if (!cleanedFormData.email) return setError("Please enter your email");
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address");
-      return;
-    }
-    if (!username.trim()) {
-      setError("Please enter a username");
-      return;
-    }
-    if (username.length < 3) {
-      setError("Username must be at least 3 characters long");
-      return;
-    }
-    if (!password.trim()) {
-      setError("Please enter a password");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
+    if (!emailRegex.test(cleanedFormData.email)) return setError("Please enter a valid email address");
+    if (/[A-Z]/.test(cleanedFormData.email)) return setError("Email must not contain uppercase letters");
+    
+    if (!cleanedFormData.username) return setError("Please choose a username");
+    if (cleanedFormData.username.length < 3) return setError("Username must be at least 3 characters long");
+    
+    if (!cleanedFormData.password) return setError("Please enter a password");
+    if (cleanedFormData.password.length < 6) return setError("Password must be at least 6 characters long");
+    if (cleanedFormData.password !== cleanedFormData.confirmPassword) return setError("Passwords do not match");
 
     setLoading(true);
 
     try {
-      // Map client camelCase fields to server expected snake_case and include role
       const payload = {
-        username,
-        email,
-        password,
-        first_name: firstName,
-        last_name: lastName,
+        username: cleanedFormData.username,
+        email: cleanedFormData.email,
+        password: cleanedFormData.password,
+        first_name: cleanedFormData.firstName, // Respects first_name convention
+        last_name: cleanedFormData.lastName,   // Respects last_name convention
         role: "Citizen",
       };
 
       await registerCitizen(payload);
-
-      // Show success message
       setSuccess("Account created successfully! Redirecting to login...");
-
-      // Navigate to login after 2 seconds
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       console.error("Registration failed:", err);
+      setFormData(prev => ({ ...prev, password: "", confirmPassword: "" }));
+      setPasswordStrength(0); // Reset strength on error
 
-      // Clear password fields on error
-      setPassword("");
-      setConfirmPassword("");
-
-      // Set user-friendly error message
-      if (err.status === 409) {
-        setError("Username or email already exists. Please try another.");
+      // ADVANCED ERROR HANDLING (Identical to Login)
+      if (!err.status && (err.message === "Failed to fetch" || err.message.includes("Network"))) {
+        // Specific case: Server is down
+        setError("Unable to contact the server. Check your connection or try again later.");
+      } else if (err.status === 409) {
+        setError("Username or email already exists. Please choose another.");
       } else if (err.status === 400) {
-        setError(
-          err.message || "Invalid registration data. Please check your input."
-        );
-      } else if (!navigator.onLine) {
-        setError("No internet connection. Please check your network.");
+        setError(err.message || "Invalid data. Check the entered fields.");
+      } else if (err.status >= 500) {
+        setError("Internal server error.");
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setError("No internet connection detected.");
       } else {
-        setError(err.message || "Registration failed. Please try again later.");
+        setError(err.message || "Registration failed. Please try again.");
       }
     } finally {
       setLoading(false);
     }
   };
 
+  const isFieldActive = (field) => focusedField === field || formData[field];
+
   return (
-    <Container 
-      fluid 
-      className="d-flex align-items-center justify-content-center min-vh-100" 
-      style={{ backgroundColor: 'var(--bg-lighter)', padding: '2rem 0' }}
-    >
-      <Row className="w-100 justify-content-center">
+    <Container fluid className="reg-page-container">
+      <Row className="reg-row">
         <Col xs={12} sm={10} md={8} lg={6} xl={5}>
-          <Card 
-            className="shadow-lg" 
-            style={{ 
-              borderRadius: 'var(--radius-xl)',
-              border: 'none'
-            }}
-          >
-            <Card.Body className="p-5">
-              <div className="text-center mb-5">
-                <h1 
-                  style={{ 
-                    color: 'var(--primary)',
-                    fontWeight: 'var(--font-bold)',
-                    fontSize: 'var(--font-xxxl)',
-                    marginBottom: 'var(--spacing-sm)',
-                    letterSpacing: '-0.025em'
-                  }}
-                >
-                  Participium
-                </h1>
-                <p 
-                  className="text-muted mb-0" 
-                  style={{ fontSize: 'var(--font-base)' }}
-                >
-                  Create your account
-                </p>
+          <Card className="reg-card">
+            <Card.Body className="reg-card-body">
+              
+              <Button
+                variant="link"
+                className="reg-back-btn"
+                onClick={() => navigate("/")}
+                disabled={loading}
+              >
+                <FaArrowLeft className="me-2" />
+                Back to Home
+              </Button>
+
+              <div className="reg-header">
+                <div className="reg-logo-container">
+                  <img
+                    src="/participium-logo.png"
+                    alt="Participium Logo"
+                    className="reg-logo"
+                  />
+                </div>
+                <h1 className="reg-title">Join Participium</h1>
+                <p className="reg-subtitle">Create your account</p>
               </div>
 
+              {/* Improved Error Alert */}
               {error && (
-                <Alert variant="danger" onClose={() => setError("")} dismissible className="mb-4">
+                <Alert variant="danger" dismissible onClose={() => setError("")} className="reg-alert">
                   {error}
                 </Alert>
               )}
 
               {success && (
-                <Alert variant="success" onClose={() => setSuccess("")} dismissible className="mb-4">
+                <Alert variant="success" dismissible onClose={() => setSuccess("")} className="reg-alert">
                   {success}
                 </Alert>
               )}
 
-              <Form onSubmit={handleRegister} noValidate>
-                <Row className="mb-3">
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                        First Name
-                      </Form.Label>
-                      <Form.Control
-                        type="text"
-                        placeholder="First name"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        disabled={loading}
-                      />
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                        Last Name
-                      </Form.Label>
-                      <Form.Control
-                        type="text"
-                        placeholder="Last name"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        disabled={loading}
-                      />
-                    </Form.Group>
-                  </Col>
+              <Form onSubmit={handleRegister} noValidate className="reg-form">
+                <Row>
+                  {["firstName", "lastName"].map(field => (
+                    <Col xs={12} md={6} key={field}>
+                      <Form.Group className="reg-form-group">
+                        <div className={`reg-form-control-container ${isFieldActive(field) ? 'focused' : ''}`}>
+                          <FaUser className="reg-input-icon" />
+                          <Form.Control
+                            type="text"
+                            placeholder={isFieldActive(field) ? '' : field === "firstName" ? "first name" : "last name"}
+                            value={formData[field]}
+                            onChange={(e) => handleInputChange(field, e.target.value)}
+                            onFocus={() => setFocusedField(field)}
+                            onBlur={() => handleBlur(field)}
+                            disabled={loading}
+                            className="reg-modern-input"
+                          />
+                          <Form.Label className="reg-floating-label">
+                            {field === "firstName" ? "First Name" : "Last Name"}
+                          </Form.Label>
+                        </div>
+                      </Form.Group>
+                    </Col>
+                  ))}
                 </Row>
 
-                <Form.Group className="mb-3">
-                  <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                    Email
-                  </Form.Label>
-                  <Form.Control
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading}
-                  />
-                </Form.Group>
+                {["email", "username"].map(field => (
+                  <Form.Group className="reg-form-group" key={field}>
+                    <div className={`reg-form-control-container ${isFieldActive(field) ? 'focused' : ''}`}>
+                      {field === "email" ? <FaEnvelope className="reg-input-icon" /> : <FaIdCard className="reg-input-icon" />}
+                      <Form.Control
+                        type={field === "email" ? "email" : "text"}
+                        placeholder={isFieldActive(field) ? '' : field}
+                        value={formData[field]}
+                        onChange={(e) => handleInputChange(field, e.target.value)}
+                        onFocus={() => setFocusedField(field)}
+                        onBlur={() => handleBlur(field)}
+                        onKeyDown={(e) => field === "email" && handleKeyDown(e, field)}
+                        onPaste={(e) => field === "email" && handlePaste(e, field)}
+                        disabled={loading}
+                        className="reg-modern-input"
+                      />
+                      <Form.Label className="reg-floating-label">
+                        {field === "email" ? "Email" : "Username"}
+                      </Form.Label>
+                    </div>
+                  </Form.Group>
+                ))}
 
-                <Form.Group className="mb-3">
-                  <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                    Username
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Choose a username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={loading}
-                  />
-                </Form.Group>
+                {["password", "confirmPassword"].map(field => (
+                  <Form.Group className="reg-form-group" key={field}>
+                    <div className={`reg-form-control-container ${isFieldActive(field) ? 'focused' : ''}`}>
+                      <FaLock className="reg-input-icon" />
+                      <Form.Control
+                        type={field === "password" ? (showPassword ? "text" : "password") : (showConfirmPassword ? "text" : "password")}
+                        placeholder={isFieldActive(field) ? '' : field === "password" ? "password" : "confirm password"}
+                        value={formData[field]}
+                        onChange={(e) => handleInputChange(field, e.target.value)}
+                        onFocus={() => setFocusedField(field)}
+                        onBlur={() => handleBlur(field)}
+                        disabled={loading}
+                        className="reg-modern-input reg-password-input"
+                      />
+                      <Form.Label className="reg-floating-label">
+                        {field === "password" ? "Password" : "Confirm Password"}
+                      </Form.Label>
+                      <Button
+                        variant="outline-secondary"
+                        onClick={() => field === "password" ? setShowPassword(!showPassword) : setShowConfirmPassword(!showConfirmPassword)}
+                        disabled={loading}
+                        className="reg-password-toggle-btn"
+                      >
+                        {field === "password" ? (showPassword ? <FaEyeSlash /> : <FaEye />) : (showConfirmPassword ? <FaEyeSlash /> : <FaEye />)}
+                      </Button>
+                    </div>
+                    {/* PASSWORD STRENGTH METER */}
+                    {field === "password" && formData.password && (
+                      <div className="reg-password-strength">
+                        <div className="reg-strength-bar">
+                          <div
+                            className="reg-strength-fill"
+                            style={{
+                              width: `${(passwordStrength / 5) * 100}%`,
+                              backgroundColor: getPasswordStrengthColor()
+                            }}
+                          />
+                        </div>
+                        <div className="reg-strength-labels">
+                          <span>Weak</span>
+                          <span>Strong</span>
+                        </div>
+                      </div>
+                    )}
+                  </Form.Group>
+                ))}
 
-                <Form.Group className="mb-3">
-                  <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                    Password
-                  </Form.Label>
-                  <InputGroup>
-                    <Form.Control
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Choose a password (min. 6 characters)"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button
-                      variant="outline-secondary"
-                      onClick={() => setShowPassword(!showPassword)}
-                      disabled={loading}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? <FaEyeSlash /> : <FaEye />}
-                    </Button>
-                  </InputGroup>
-                </Form.Group>
-
-                <Form.Group className="mb-4">
-                  <Form.Label style={{ fontWeight: 'var(--font-medium)' }}>
-                    Confirm Password
-                  </Form.Label>
-                  <InputGroup>
-                    <Form.Control
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Re-enter your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button
-                      variant="outline-secondary"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      disabled={loading}
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                    >
-                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                    </Button>
-                  </InputGroup>
-                </Form.Group>
-
-                <Button 
-                  type="submit" 
-                  variant="primary" 
-                  className="w-100 mb-4" 
-                  size="lg"
+                <button
+                  type="submit"
+                  className="btn reg-btn-custom-primary reg-btn"
                   disabled={loading}
-                  style={{ fontWeight: 'var(--font-semibold)' }}
                 >
-                  {loading ? "Creating account..." : "Create account"}
-                </Button>
+                  {loading ? (
+                    <>
+                      <Spinner animation="border" size="sm" className="me-2" />
+                      Registering...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
+                </button>
               </Form>
 
-              <div className="text-center">
-                <span 
-                  className="text-muted" 
-                  style={{ fontSize: 'var(--font-sm)' }}
-                >
-                  Already have an account?{" "}
-                </span>
-                <Button 
-                  variant="link" 
-                  className="p-0" 
+              <div className="reg-footer">
+                <span className="reg-footer-text">Already have an account? </span>
+                <Button
+                  variant="link"
+                  className="reg-link-btn"
                   onClick={() => !loading && navigate("/login")}
                   disabled={loading}
-                  style={{ 
-                    fontSize: 'var(--font-sm)',
-                    fontWeight: 'var(--font-semibold)'
-                  }}
                 >
-                  Sign in
+                  Sign In
                 </Button>
               </div>
             </Card.Body>

@@ -1,8 +1,7 @@
 import request from 'supertest';
 import app from '../../app';
-import { AppDataSource } from '@database/connection';
 import { userRepository } from '@repositories/userRepository';
-import { UserRole } from '@models/dto/UserRole';
+import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { 
   setupTestDatabase, 
   teardownTestDatabase, 
@@ -51,7 +50,7 @@ describe('AuthController E2E Tests', () => {
       expect(response.body).toHaveProperty('email', 'testcitizen@example.com');
       expect(response.body).toHaveProperty('first_name', 'Test');
       expect(response.body).toHaveProperty('last_name', 'Citizen');
-      expect(response.body).toHaveProperty('role', 'Citizen');
+      expect(response.body).toHaveProperty('role_name', 'Citizen');
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).not.toHaveProperty('passwordHash');
       expect(response.headers['set-cookie']).toBeDefined();
@@ -67,7 +66,7 @@ describe('AuthController E2E Tests', () => {
         .expect(200);
 
       expect(response.body.username).toBe('testmunicipality');
-      expect(response.body.role).toBe('Municipal Administrator');
+      expect(response.body.role_name).toBe('Department Director');
     });
 
     it('should login successfully with testadmin user', async () => {
@@ -80,7 +79,7 @@ describe('AuthController E2E Tests', () => {
         .expect(200);
 
       expect(response.body.username).toBe('testadmin');
-      expect(response.body.role).toBe('Administrator');
+      expect(response.body.role_name).toBe('Administrator');
     });
 
     it('should return 401 with invalid username', async () => {
@@ -121,6 +120,12 @@ describe('AuthController E2E Tests', () => {
     };
 
     beforeEach(async () => {
+      // Get Citizen role ID dynamically
+      const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+      if (!citizenDeptRole) {
+        throw new Error('Citizen role not found in database');
+      }
+
       // Create user dynamically for this test
       dynamicUser = {
         username: 'dynamic_test_user',
@@ -136,7 +141,7 @@ describe('AuthController E2E Tests', () => {
         password: dynamicUser.password,
         firstName: dynamicUser.first_name,
         lastName: dynamicUser.last_name,
-        role: UserRole.CITIZEN,
+        departmentRoleId: citizenDeptRole.id,
       });
     });
 
@@ -180,7 +185,7 @@ describe('AuthController E2E Tests', () => {
       expect(response.body).toHaveProperty('email', 'testcitizen@example.com');
       expect(response.body).toHaveProperty('first_name', 'Test');
       expect(response.body).toHaveProperty('last_name', 'Citizen');
-      expect(response.body).toHaveProperty('role', 'Citizen');
+      expect(response.body).toHaveProperty('role_name', 'Citizen');
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).not.toHaveProperty('passwordHash');
     });

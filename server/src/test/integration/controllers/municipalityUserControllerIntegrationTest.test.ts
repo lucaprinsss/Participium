@@ -3,8 +3,8 @@ import request from 'supertest';
 import { AppDataSource } from "@database/connection";
 import app from "../../../app";
 import { userEntity } from "@models/entity/userEntity";
-import { UserRole } from '@models/dto/UserRole';
 import { userRepository } from '@repositories/userRepository';
+import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { RoleUtils } from '@utils/roleUtils';
 import { In } from 'typeorm';
 import { municipalityUserService } from '@services/municipalityUserService';
@@ -40,13 +40,22 @@ describe('MunicipalityUserController Integration Tests', () => {
     });
 
     beforeEach(async () => {
+        // Get dynamic department role IDs
+        const adminDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Administrator');
+        const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+        const employeeDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Water and Sewer Services Department', 'Water Network staff member');
+
+        if (!adminDeptRole || !citizenDeptRole || !employeeDeptRole) {
+            throw new Error('Required department roles not found in database');
+        }
+
         ADMIN_CREDENTIALS = {
             username: `admin_user${r()}`,
             password: 'AdminPassword123!',
             email: `admin${r()}@test.com`,
             firstName: 'Admin',
             lastName: 'User',
-            role: UserRole.ADMINISTRATOR
+            departmentRoleId: adminDeptRole.id
         };
         
         CITIZEN_CREDENTIALS = {
@@ -55,7 +64,7 @@ describe('MunicipalityUserController Integration Tests', () => {
             email: `citizen${r()}@test.com`,
             firstName: 'Citizen',
             lastName: 'User',
-            role: UserRole.CITIZEN
+            departmentRoleId: citizenDeptRole.id
         };
         
         EMPLOYEE_PAYLOAD = {
@@ -64,7 +73,8 @@ describe('MunicipalityUserController Integration Tests', () => {
             email: `employee${r()}@test.com`,
             first_name: 'Employee', 
             last_name: 'User',
-            role: UserRole.TECHNICAL_OFFICE_STAFF_MEMBER 
+            role_name: 'Water Network staff member',
+            department_name: 'Water and Sewer Services Department'
         };
 
         createdAdmin = await userRepository.createUserWithPassword({
@@ -81,7 +91,7 @@ describe('MunicipalityUserController Integration Tests', () => {
             email: EMPLOYEE_PAYLOAD.email,
             firstName: EMPLOYEE_PAYLOAD.first_name, 
             lastName: EMPLOYEE_PAYLOAD.last_name,
-            role: EMPLOYEE_PAYLOAD.role, 
+            departmentRoleId: employeeDeptRole.id,
             emailNotificationsEnabled: true
         });
 
@@ -135,9 +145,13 @@ describe('MunicipalityUserController Integration Tests', () => {
 
         it('should create a new user if authenticated as Admin (201)', async () => {
             const newUserData = {
-                ...EMPLOYEE_PAYLOAD,
                 username: `new_employee${r()}`,
-                email: `new${r()}@employee.com`
+                password: 'NewEmployee123!',
+                email: `new${r()}@employee.com`,
+                first_name: 'New',
+                last_name: 'Employee',
+                role_name: 'Road Maintenance staff member',
+                department_name: 'Public Infrastructure and Accessibility Department'
             };
             
             const response = await adminAgent
@@ -157,7 +171,7 @@ describe('MunicipalityUserController Integration Tests', () => {
         });
 
         it('should return 400 when trying to create a user with CITIZEN role', async () => {
-            const citizenPayload = { ...EMPLOYEE_PAYLOAD, role: UserRole.CITIZEN, username: `fail_citizen_${r()}`, email: `fail_citizen_${r()}@test.com` };
+            const citizenPayload = { ...EMPLOYEE_PAYLOAD, role_name: 'Citizen', username: `fail_citizen_${r()}`, email: `fail_citizen_${r()}@test.com` };
             const response = await adminAgent
                 .post('/api/municipality/users')
                 .send(citizenPayload);
@@ -165,7 +179,7 @@ describe('MunicipalityUserController Integration Tests', () => {
         });
 
         it('should return 400 when trying to create a user with ADMINISTRATOR role ', async () => {
-            const adminPayload = { ...EMPLOYEE_PAYLOAD, role: UserRole.ADMINISTRATOR, username: `fail_admin_${r()}`, email: `fail_admin_${r()}@test.com` };
+            const adminPayload = { ...EMPLOYEE_PAYLOAD, role_name: 'Administrator', username: `fail_admin_${r()}`, email: `fail_admin_${r()}@test.com` };
             const response = await adminAgent
                 .post('/api/municipality/users')
                 .send(adminPayload);
@@ -355,7 +369,7 @@ describe('MunicipalityUserController Integration Tests', () => {
         it('should return 400 when trying to change a role to CITIZEN', async () => {
             const response = await adminAgent
                 .put(`/api/municipality/users/${createdEmployee.id}`)
-                .send({ role: UserRole.CITIZEN });
+                .send({ role_name: 'Citizen' });
             expect(response.status).toBe(400);
         });
 
@@ -383,7 +397,7 @@ describe('MunicipalityUserController Integration Tests', () => {
 
     // --- PUT /api/municipality/users/:id/role (Assign Role) ------------
     describe('PUT /api/municipality/users/:id/role (Assign Role)', () => {
-        const rolePayload = { role: UserRole.MUNICIPAL_ADMINISTRATOR };
+        const rolePayload = { role_name: 'Department Director', department_name: 'Public Infrastructure and Accessibility Department' };
 
         it('should fail if not authenticated (401)', async () => {
             const response = await request(app)
@@ -405,7 +419,7 @@ describe('MunicipalityUserController Integration Tests', () => {
                 .send(rolePayload);
             
             expect(response.status).toBe(200);
-            expect(response.body.role).toBe(UserRole.MUNICIPAL_ADMINISTRATOR);
+            expect(response.body.role_name).toBe('Department Director');
         });
 
         it('should return 404 for a non-existent user ID', async () => {
@@ -433,16 +447,16 @@ describe('MunicipalityUserController Integration Tests', () => {
         it('should return 400 for an invalid role string', async () => {
             const response = await adminAgent
                 .put(`/api/municipality/users/${createdEmployee.id}/role`)
-                .send({ role: 'NOT_A_VALID_ROLE' });
+                .send({ role_name: 'NOT_A_VALID_ROLE' });
             
             expect(response.status).toBe(400);
-            expect(response.body.message || response.body.error).toBe('Invalid role specified');
+            expect(response.body.message || response.body.error).toContain('not found');
         });
 
         it('should return 400 when trying to assign CITIZEN role', async () => {
             const response = await adminAgent
                 .put(`/api/municipality/users/${createdEmployee.id}/role`)
-                .send({ role: UserRole.CITIZEN });
+                .send({ role_name: 'Citizen' });
             
             expect(response.status).toBe(400);
         });
@@ -450,7 +464,7 @@ describe('MunicipalityUserController Integration Tests', () => {
         it('should return 400 when trying to assign ADMINISTRATOR role', async () => {
             const response = await adminAgent
                 .put(`/api/municipality/users/${createdEmployee.id}/role`)
-                .send({ role: UserRole.ADMINISTRATOR });
+                .send({ role_name: 'Administrator' });
 
             expect(response.status).toBe(400);
         });
@@ -458,7 +472,7 @@ describe('MunicipalityUserController Integration Tests', () => {
         it('should return 400 when trying to assign a role to a CITIZEN user', async () => {
             const response = await adminAgent
                 .put(`/api/municipality/users/${createdCitizen.id}/role`) 
-                .send({ role: UserRole.TECHNICAL_OFFICE_STAFF_MEMBER });
+                .send({ role_name: 'Technical Office Staff Member' });
 
             expect(response.status).toBe(400);
         });
@@ -531,13 +545,15 @@ describe('MunicipalityUserController Integration Tests', () => {
         
         it('should return municipality roles if authenticated as Admin (200)', async () => {
             const response = await adminAgent.get('/api/roles');
-            const expectedRoles = RoleUtils.getAllMunicipalityRoles();
+            const expectedRoles = await RoleUtils.getAllMunicipalityRoles();
 
             expect(response.status).toBe(200);
             expect(response.body).toEqual(expectedRoles);
             
-            expect(response.body).toContain(UserRole.TECHNICAL_OFFICE_STAFF_MEMBER);
-            expect(response.body).not.toContain(UserRole.CITIZEN);
+            expect(response.body).toContain('Water Network staff member');
+            expect(response.body).toContain('Department Director');
+            expect(response.body).not.toContain('Citizen');
+            expect(response.body).not.toContain('Administrator');
         });
 
         it('should return 401 if not authenticated', async () => {

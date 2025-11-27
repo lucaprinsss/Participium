@@ -1,6 +1,7 @@
 import express from 'express';
 import municipalityUserController from '@controllers/municipalityUserController';
-import { isAdmin } from '@middleware/authMiddleware'; 
+import { requireRole } from '@middleware/authMiddleware';
+import { UserRole } from '@dto/UserRole'; 
 
 const router = express.Router();
 
@@ -11,15 +12,24 @@ const router = express.Router();
  *     tags: [Roles]
  *     summary: List municipality roles
  *     description: Returns all available municipality roles (excluding Citizen and Administrator)
+ *     security:
+ *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: List of municipality roles
+ *         description: List of municipality role names
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/UserRole'
+ *                 type: string
+ *               example:
+ *                 - "Municipal Public Relations Officer"
+ *                 - "Municipal Administrator"
+ *                 - "Technical Office Staff Member"
+ *                 - "Urban Planning Manager"
+ *                 - "Private Building Manager"
+ *                 - "Infrastructure Manager"
  *       401:
  *         description: Unauthorized
  *         content:
@@ -45,6 +55,6 @@ const router = express.Router();
  *             example:
  *               error: "Internal server error"   
  */
-router.get('/', isAdmin, municipalityUserController.getAllRoles);
+router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.getAllRoles);
 
 export default router;

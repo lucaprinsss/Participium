@@ -9,6 +9,7 @@ module.exports = {
   ],
   transform: {
     '^.+\\.ts$': 'ts-jest',
+    '^.+\\.geojson$': '<rootDir>/src/test/utils/geojsonTransformer.js',
   },
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -27,13 +28,21 @@ module.exports = {
     '^@database/(.*)$': '<rootDir>/src/database/$1',
     '^@middleware/(.*)$': '<rootDir>/src/middleware/$1',
     '^@models/(.*)$': '<rootDir>/src/models/$1',
+    '^@dto/(.*)$': '<rootDir>/src/models/dto/$1',
+    '^@entity/(.*)$': '<rootDir>/src/models/entity/$1',
     '^@errors/(.*)$': '<rootDir>/src/models/errors/$1',
     '^@repositories/(.*)$': '<rootDir>/src/repositories/$1',
     '^@routes/(.*)$': '<rootDir>/src/routes/$1',
     '^@services/(.*)$': '<rootDir>/src/services/$1',
     '^@utils/(.*)$': '<rootDir>/src/utils/$1',
+    '^@test/(.*)$': '<rootDir>/src/test/$1',
   },
   testTimeout: 10000,
   clearMocks: true,
   restoreMocks: true,
+  silent: false,
+  verbose: false,
+  reporters: [
+    ['default', { summaryThreshold: 0 }]
+  ],
 };

@@ -1,6 +1,7 @@
 import express from 'express';
-import { isAdmin } from '@middleware/authMiddleware';
-import municipalityUserController from '@controllers/municipalityUserController';
+import { requireRole } from '@middleware/authMiddleware';
+import { UserRole } from '@dto/UserRole';
+import municipalityUserController from '../controllers/municipalityUserController';
 
 const router = express.Router();
 
@@ -23,20 +24,34 @@ const router = express.Router();
  *               - username
  *               - email
  *               - password
- *               - role_id
+ *               - first_name
+ *               - last_name
+ *               - role_name
  *             properties:
  *               username:
  *                 type: string
+ *                 example: "m.rossi"
  *               email:
  *                 type: string
+ *                 format: email
+ *                 example: "m.rossi@comune.torino.it"
  *               password:
  *                 type: string
+ *                 example: "SecurePass123!"
  *               first_name:
  *                 type: string
+ *                 example: "Mario"
  *               last_name:
  *                 type: string
- *               role_id:
- *                 type: integer
+ *                 example: "Rossi"
+ *               role_name:
+ *                 type: string
+ *                 description: Role name for the user
+ *                 example: "Municipal Administrator"
+ *               department_name:
+ *                 type: string
+ *                 description: Department name (optional, defaults to "Organization")
+ *                 example: "Administration"
  *     responses:
  *       201:
  *         description: Municipality user created successfully
@@ -85,7 +100,7 @@ const router = express.Router();
  *             example:
  *               error: "Username or email already exists"
  */
-router.post('/', isAdmin, municipalityUserController.createMunicipalityUser);
+router.post('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.createMunicipalityUser);
 
 
 /**
@@ -131,7 +146,7 @@ router.post('/', isAdmin, municipalityUserController.createMunicipalityUser);
  *             example:
  *               error: "Internal server error"
  */
-router.get('/', isAdmin, municipalityUserController.getAllMunicipalityUsers);
+router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.getAllMunicipalityUsers);
 
 
 /**
@@ -198,7 +213,7 @@ router.get('/', isAdmin, municipalityUserController.getAllMunicipalityUsers);
  *             example:
  *               error: "Internal server error"
  */
-router.get('/:id', isAdmin, municipalityUserController.getMunicipalityUserById);
+router.get('/:id', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.getMunicipalityUserById);
 
 /**
  * @swagger
@@ -225,10 +240,22 @@ router.get('/:id', isAdmin, municipalityUserController.getMunicipalityUserById);
  *             properties:
  *               first_name:
  *                 type: string
+ *                 example: "Mario"
  *               last_name:
  *                 type: string
- *               role_id:
- *                 type: integer
+ *                 example: "Rossi"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "mario.rossi@comune.it"
+ *               role_name:
+ *                 type: string
+ *                 description: New role name for the user
+ *                 example: "Technical Office Staff Member"
+ *               department_name:
+ *                 type: string
+ *                 description: New department name (optional)
+ *                 example: "Technical Office"
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -285,7 +312,7 @@ router.get('/:id', isAdmin, municipalityUserController.getMunicipalityUserById);
  *             example:
  *               error: "Internal server error"
  */
-router.put('/:id', isAdmin, municipalityUserController.updateMunicipalityUser);
+router.put('/:id', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.updateMunicipalityUser);
 
 
 /**
@@ -340,7 +367,7 @@ router.put('/:id', isAdmin, municipalityUserController.updateMunicipalityUser);
  *             example:
  *               error: "Internal server error"
  */
-router.delete('/:id', isAdmin, municipalityUserController.deleteMunicipalityUser);
+router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.deleteMunicipalityUser);
 
 
 /**
@@ -366,11 +393,16 @@ router.delete('/:id', isAdmin, municipalityUserController.deleteMunicipalityUser
  *           schema:
  *             type: object
  *             required:
- *               - role_id
+ *               - role_name
  *             properties:
- *               role_id:
- *                 type: integer
- *                 description: ID of the role to assign
+ *               role_name:
+ *                 type: string
+ *                 description: Name of the role to assign
+ *                 example: "Urban Planning Manager"
+ *               department_name:
+ *                 type: string
+ *                 description: Name of the department (optional, defaults to existing or "Organization")
+ *                 example: "Urban Planning"
  *     responses:
  *       200:
  *         description: Role assigned successfully
@@ -419,6 +451,6 @@ router.delete('/:id', isAdmin, municipalityUserController.deleteMunicipalityUser
  *             example:
  *               error: "Internal server error"
  */
-router.put('/:id/role', isAdmin, municipalityUserController.assignRole);
+router.put('/:id/role', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.assignRole);
 
 export default router;

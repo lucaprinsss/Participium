@@ -1,5 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { 
+  Entity, 
+  PrimaryGeneratedColumn, 
+  Column, 
+  CreateDateColumn, 
+  UpdateDateColumn, 
+  ManyToOne, 
+  JoinColumn, 
+  OneToMany 
+} from "typeorm";
 import { userEntity } from "./userEntity";
+import { photoEntity } from "./photoEntity";
 
 @Entity("reports")
 export class reportEntity {
@@ -43,7 +53,14 @@ export class reportEntity {
 
   @Column({ 
     type: "enum", 
-    enum: ["Pending Approval", "Assigned", "In Progress", "Suspended", "Rejected", "Resolved"],
+    enum: [
+      "Pending Approval",
+      "Assigned", 
+      "In Progress", 
+      "Suspended", 
+      "Rejected", 
+      "Resolved"
+    ],
     default: "Pending Approval"
   })
   status!: string;
@@ -57,6 +74,12 @@ export class reportEntity {
   @ManyToOne(() => userEntity, { nullable: true })
   @JoinColumn({ name: "assignee_id" })
   assignee?: userEntity;
+
+  @OneToMany(() => photoEntity, (photo) => photo.report, {
+    cascade: true,
+    eager: true 
+  })
+  photos!: photoEntity[];
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;

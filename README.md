@@ -2,32 +2,6 @@
 
 **Participium** is a citizen reporting platform that enables residents to report urban issues (potholes, broken street lights, waste management, etc.) and allows municipal staff to manage, assign, and resolve these reports efficiently.
 
-## Project Structure
-
-```
-Participium/
-├── client/                 # React frontend (Vite + TypeScript)
-│   ├── src/
-│   ├── public/
-│   └── package.json
-│
-├── server/                 # Node.js backend (Express + TypeScript)
-│   ├── src/
-│   │   ├── config/        # Passport, Swagger configuration
-│   │   ├── controllers/   # HTTP request handlers
-│   │   ├── database/      # Database connection & init.sql
-│   │   ├── middleware/    # Authentication, error handling
-│   │   ├── models/        # DTOs, Entities, Errors
-│   │   ├── repositories/  # Database access layer
-│   │   ├── routes/        # API endpoints
-│   │   ├── services/      # Business logic
-│   │   └── utils/         # Utility functions
-│   └── package.json
-│
-├── docker-compose.yml     # PostgreSQL + PostGIS container
-└── README.md              # This file
-```
-
 ## Quick Start
 
 ### Prerequisites
@@ -96,6 +70,33 @@ The backend will start on **`http://localhost:3001`**
 **API Documentation (Swagger):** [`http://localhost:3001/api-docs`](http://localhost:3001/api-docs)
 
 **OpenAPI Specification:** [`server/openapi.yaml`](server/openapi.yaml)
+
+#### Configure Storage Provider:
+
+Participium supports two storage options for uploaded photos:
+
+**Local Storage (Default - Development):**
+```bash
+npm run storage:local
+```
+Photos are stored in `server/uploads/reports/`
+
+**Cloudflare R2 (Production):**
+```bash
+npm run storage:r2
+```
+Photos are uploaded to Cloudflare R2 (requires configuration)
+
+**Check current storage configuration:**
+```bash
+npm run storage:status
+```
+
+**Setup Cloudflare R2:** See [`server/CLOUDFLARE_R2_SETUP.md`](server/CLOUDFLARE_R2_SETUP.md) for detailed instructions.
+
+**Typical Workflow:**
+- **Development:** Use `npm run storage:local` for local file storage
+- **Production:** Configure R2 credentials and run `npm run storage:r2` before deployment
 
 
 ### 4. Default Administrator Account
@@ -192,3 +193,41 @@ docker-compose logs -f db
 The database uses PostgreSQL with PostGIS for geolocation features.
 
 **Detailed schema documentation:** [`server/src/docs/database.md`](server/src/docs/database.md)
+
+
+## Deployment
+
+For production environments or a quick full-stack startup without manual setup, use the root-level Docker orchestration. This creates a containerized environment with the Database, Backend, and a production-build of the Frontend served by Nginx.
+
+### 1. Build and Start Containers
+
+From the **project root directory** (where the main `docker-compose.yml` is located), run:
+
+```bash
+docker compose up --build -d
+```
+
+This command will automatically:
+- Build the Backend image (compiling TypeScript).
+- Build the Frontend image (Vite build) and serve it via Nginx.
+- Start the PostgreSQL/PostGIS database.
+- Create an internal network connecting all services.
+
+### Access the Application
+Once the containers are running, the application is accessible at:
+- **Web Interface (Frontend)**: http://localhost (Served on standard HTTP port 80)
+- **Backend API**: http://localhost:3001
+- **API Documentation**: http://localhost:3001/api-docs
+
+### Stop the Application
+To stop the containers and remove the networks (data in the database volume will be preserved):
+
+```bash
+docker compose down
+```
+
+If you need to completely remove all data (including the database volume):
+
+```bash
+docker compose down -v
+```

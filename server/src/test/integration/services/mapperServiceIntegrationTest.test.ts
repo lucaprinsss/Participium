@@ -4,9 +4,9 @@ import {
 } from '../../../services/mapperService';
 
 import { userEntity } from '@models/entity/userEntity';
-import { UserResponse } from '@models/dto/UserResponse';
-import { UserRole } from '@models/dto/UserRole';
+import { UserResponse } from '@models/dto/output/UserResponse';
 import { ErrorDTO } from '@models/errors/ErrorDTO';
+import { createMockMunicipalityUser } from '@test/utils/mockEntities';
 
 describe('Mapper Service', () => {
   describe('mapUserEntityToUserResponse', () => {
@@ -27,17 +27,15 @@ describe('Mapper Service', () => {
 
     it('should correctly map a userEntity to a UserResponse', () => {
       // Arrange
-      const mockEntity = new userEntity();
-      mockEntity.id = 123;
-      mockEntity.username = 'testuser';
-      mockEntity.email = 'test@example.com';
-      mockEntity.firstName = 'Mario';
-      mockEntity.lastName = 'Rossi';
-      mockEntity.role = UserRole.ADMINISTRATOR; 
-      
+      const mockEntity = createMockMunicipalityUser('Administrator', 'Administration', {
+        id: 123,
+        username: 'testuser',
+        email: 'test@example.com',
+        firstName: 'Mario',
+        lastName: 'Rossi',
+        telegramUsername: 'tele_user',
+      });
       mockEntity.passwordHash = 'hash_segreto';
-      mockEntity.createdAt = new Date();
-      mockEntity.telegramUsername = 'tele_user';
       
       const expectedResponse: UserResponse = {
         id: 123,
@@ -45,7 +43,8 @@ describe('Mapper Service', () => {
         email: 'test@example.com',
         first_name: 'Mario',
         last_name: 'Rossi', 
-        role: UserRole.ADMINISTRATOR,
+        role_name: 'Administrator',
+        department_name: 'Administration',
       };
 
       // Act
