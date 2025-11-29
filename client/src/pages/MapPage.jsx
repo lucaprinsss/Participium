@@ -20,12 +20,19 @@ import {
   FaCamera,
   FaTimes,
   FaListUl,
-  FaExternalLinkAlt
+  FaExternalLinkAlt,
+  FaFilter,
+  FaUser,
+  FaUsers,
+  FaEye,
+  FaEyeSlash
 } from 'react-icons/fa';
 import { Dropdown } from 'react-bootstrap';
 
 // IMPORT API
+// Assicurati di avere getUser in userApi, o cambialo con authApi se è lì nel tuo progetto
 import { getAllCategories, createReport, getReports } from '../api/reportApi';
+import { getCurrentUser } from '../api/authApi'; 
 
 import '../css/MapPage.css';
 import ReportDetails from "../components/ReportDetails";
@@ -112,6 +119,17 @@ const MapPage = () => {
   const [turinData, setTurinData] = useState(null);
   const [turinBounds, setTurinBounds] = useState(null);
   const [turinPolygons, setTurinPolygons] = useState([]);
+  
+  // User State
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // --- Filter States ---
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
+  
+  // New States for Buttons
+  const [viewMode, setViewMode] = useState('all'); // 'all' or 'mine'
+  const [hideReports, setHideReports] = useState(false);
 
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -137,6 +155,8 @@ const MapPage = () => {
     photos: '',
     location: ''
   });
+
+  const STATUS_OPTIONS = ['Resolved', 'Assigned', 'Pending Approval', 'Rejected'];
 
   const convertToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -164,7 +184,21 @@ const MapPage = () => {
     return null;
   };
 
-  // 1. Load Categories
+  // 1. Load Current User
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+        // Non blocchiamo l'app, ma il filtro "My Reports" non funzionerà
+      }
+    };
+    fetchCurrentUser();
+  }, []);
+
+  // 2. Load Categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -188,7 +222,7 @@ const MapPage = () => {
     fetchCategories();
   }, []);
 
-  // 2. Load Logged-in User's Reports
+  // 3. Load Reports
   useEffect(() => {
     const fetchUserReports = async () => {
       try {
@@ -199,7 +233,7 @@ const MapPage = () => {
       } catch (error) {
         console.error("Error fetch user reports:", error);
         setNotification({
-          message: 'Unable to load your reports on the map.',
+          message: 'Unable to load reports on the map.',
           type: 'warning'
         });
         setTimeout(() => setNotification(null), 5000);
@@ -208,7 +242,7 @@ const MapPage = () => {
     fetchUserReports();
   }, []);
 
-  // 3. Load GeoJSON Boundaries
+  // 4. Load GeoJSON Boundaries
   useEffect(() => {
     const loadBoundaries = async () => {
       try {
@@ -313,7 +347,6 @@ const MapPage = () => {
     photos.forEach(photo => URL.revokeObjectURL(photo.preview));
     setPhotos([]);
 
-    // Reset manuale dell'input file se presente nel DOM (opzionale, gestito meglio in handlePhotoUpload)
     const fileInput = document.getElementById('photos');
     if (fileInput) fileInput.value = '';
 
@@ -333,16 +366,13 @@ const MapPage = () => {
     if (formErrors[fieldName]) setFormErrors(prev => ({ ...prev, [fieldName]: '' }));
   };
 
-  // --- CORREZIONE 2: Reset del valore input per permettere il re-upload ---
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
     
-    // Se non ci sono file (es. utente preme annulla), non fare nulla
     if (files.length === 0) return;
 
     if (photos.length + files.length > 3) {
       setFormErrors(prev => ({ ...prev, photos: 'Maximum 3 photos allowed.' }));
-      // Important: reset input even on error
       e.target.value = null; 
       return;
     }
@@ -356,7 +386,6 @@ const MapPage = () => {
     setPhotos(prev => [...prev, ...newPhotos]);
     setFormErrors(prev => ({ ...prev, photos: '' }));
     
-    // Reset input value to allow uploading the same file if removed
     e.target.value = null;
   };
 
@@ -399,8 +428,6 @@ const MapPage = () => {
     try {
       const base64Photos = await Promise.all(photos.map(photo => convertToBase64(photo.file)));
 
-      // --- CORRECTION 1: Correct payload handling to avoid DB error ---
-      // Make sure the backend receives the expected format (often snake_case)
       const reportData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -410,9 +437,7 @@ const MapPage = () => {
           longitude: parseFloat(formData.longitude)
         },
         photos: base64Photos,
-        // Send flag in snake_case for database/backend compatibility
         is_anonymous: formData.is_anonymous,
-        // Also keep camelCase if backend is hybrid, but is_anonymous is crucial for DBs
         isAnonymous: formData.is_anonymous 
       };
 
@@ -420,14 +445,9 @@ const MapPage = () => {
       console.log("FOTO: ", reportData.photos)
       await createReport(reportData);
       
-
-      // 1. Clear form WITHOUT showing reset notification
       handleClear(false);
-
-      // 2. Set success notification
       setNotification({ message: 'Report submitted successfully!', type: 'success' });
 
-      // Reload list to see new report on map
       const updatedReports = await getReports();
       if (Array.isArray(updatedReports)) setExistingReports(updatedReports);
 
@@ -479,13 +499,39 @@ const MapPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Resolved': return '#28a745'; // Green
-      case 'Rejected': return '#dc3545'; // Red
-      case 'Assigned': return '#007bff'; // Blue
-      case 'Pending Approval': return '#ffc107'; // Yellow
-      default: return '#fd7e14'; // Orange
+      case 'Resolved': return '#28a745'; 
+      case 'Rejected': return '#dc3545'; 
+      case 'Assigned': return '#007bff'; 
+      case 'Pending Approval': return '#ffc107'; 
+      default: return '#fd7e14'; 
     }
   };
+
+  // --- FILTER LOGIC ---
+  const filteredReports = existingReports.filter(report => {
+    // 1. Hide Button check
+    if (hideReports) return false;
+
+    // 2. Filter by Category
+    if (filterCategory !== 'All' && report.category !== filterCategory) return false;
+    
+    // 3. Filter by Status
+    if (filterStatus !== 'All' && report.status !== filterStatus) return false;
+
+    // 4. View Mode (All Users / My Reports)
+    if (viewMode === 'mine') {
+      // Se non abbiamo ancora caricato l'utente, non mostriamo nulla o aspettiamo
+      if (!currentUser) return false; 
+
+      // LOGICA FONDAMENTALE: Confronto ID
+      // Assumo che report.u_id sia il campo nel DB che indica l'autore
+      return report.reporter.id === currentUser.id;
+    }
+
+    if (report.status === 'Pending Approval' || report.status === 'Rejected') return false;
+
+    return true;
+  });
 
   return (
     <div className="mp-page">
@@ -516,6 +562,104 @@ const MapPage = () => {
       <main className="mp-main">
         {/* Map Container */}
         <div className="mp-section">
+          
+          {/* --- FILTER BAR --- */}
+          <div className="mp-filters-bar">
+            {/* 1. Category Filter */}
+            <div className="mp-grid-item">
+              <Dropdown onSelect={(k) => setFilterCategory(k)}>
+                <Dropdown.Toggle 
+                  className={`mp-modern-dropdown-toggle ${filterCategory !== 'All' ? 'active' : ''}`} 
+                  id="filter-category"
+                >
+                  <div className="mp-truncate-wrapper">
+                    <FaFilter className="mp-dropdown-icon" />
+                    <span className="mp-btn-text">
+                      {filterCategory === 'All' ? 'All Categories' : filterCategory}
+                    </span>
+                  </div>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="mp-modern-dropdown-menu">
+                  <Dropdown.Item eventKey="All" active={filterCategory === 'All'}>All Categories</Dropdown.Item>
+                  <Dropdown.Divider />
+                  {categories.map((cat, idx) => (
+                    <Dropdown.Item key={idx} eventKey={cat} active={filterCategory === cat}>
+                      {cat}
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+            </div>
+
+            {/* 2. Status Filter */}
+            <div className="mp-grid-item">
+              <Dropdown onSelect={(k) => setFilterStatus(k)}>
+                <Dropdown.Toggle 
+                  className={`mp-modern-dropdown-toggle ${filterStatus !== 'All' ? 'active' : ''}`}
+                  id="filter-status"
+                >
+                  <div className="mp-truncate-wrapper">
+                    <FaListUl className="mp-dropdown-icon" />
+                    <span className="mp-btn-text">
+                      {filterStatus === 'All' ? 'All Statuses' : filterStatus}
+                    </span>
+                  </div>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="mp-modern-dropdown-menu">
+                  <Dropdown.Item eventKey="All" active={filterStatus === 'All'}>All Statuses</Dropdown.Item>
+                  <Dropdown.Divider />
+                  {STATUS_OPTIONS.map((status, idx) => (
+                    <Dropdown.Item key={idx} eventKey={status} active={filterStatus === status}>
+                      {status}
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+            </div>
+
+            {/* 3. All Users / My Reports Button */}
+            <div className="mp-grid-item">
+              <button 
+                className={`mp-filter-btn ${viewMode === 'mine' ? 'active' : ''}`}
+                onClick={() => setViewMode(prev => prev === 'all' ? 'mine' : 'all')}
+                // Opzionale: disabilita se l'utente non è ancora caricato
+                disabled={!currentUser} 
+              >
+                {viewMode === 'all' ? (
+                   <>
+                    <FaUsers className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
+                    All Users
+                   </>
+                ) : (
+                   <>
+                    <FaUser className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
+                    My Reports
+                   </>
+                )}
+              </button>
+            </div>
+            
+            {/* 4. Hide / Show Button */}
+            <div className="mp-grid-item">
+              <button 
+                className={`mp-filter-btn ${hideReports ? 'alert-mode' : ''}`}
+                onClick={() => setHideReports(!hideReports)}
+              >
+                {hideReports ? (
+                  <>
+                    <FaEyeSlash className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
+                    Hidden
+                  </>
+                ) : (
+                  <>
+                    <FaEye className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
+                    Visible
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
           <div className="mp-container">
             {isLoadingMap ? (
               <div className="mp-loading">
@@ -543,7 +687,6 @@ const MapPage = () => {
 
                 {renderPolygons()}
 
-                {/* --- CLUSTERING OF EXISTING REPORTS --- */}
                 <MarkerClusterGroup
                   chunkedLoading
                   spiderfyOnMaxZoom={true}
@@ -555,8 +698,7 @@ const MapPage = () => {
                        className: 'mp-cluster-marker', 
                        iconSize: L.point(50, 50)});
                   }}>
-                  {existingReports.filter((report) => 
-                  report.status !== 'Pending Approval' && report.status !== 'Rejected').map((report) => {
+                  {filteredReports.map((report) => {
                     const position = getLatLngFromReport(report);
                     if (!position) return null;
 
@@ -609,7 +751,6 @@ const MapPage = () => {
                   })}
                 </MarkerClusterGroup>
 
-                {/* --- CREATION MARKER (Red) --- */}
                 {marker && (
                   <Marker
                     key={`new-${marker.id}`}
@@ -791,22 +932,6 @@ const MapPage = () => {
                   At least 1 photo required, maximum 3.
                 </small>
               </div>
-
-              {/* TODO: Anonymous Checkbox */}
-              {/* <div className="mp-form-group">
-                <label className="mp-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_anonymous}
-                    onChange={(e) => handleInputChange('is_anonymous', e.target.checked)}
-                    className="mp-checkbox-input"
-                  />
-                  <span className="mp-checkbox-icon">
-                    {formData.is_anonymous ? <FaUserSecret /> : <FaUser />}
-                  </span>
-                  <span className="mp-checkbox-text">Submit anonymously</span>
-                </label>
-              </div> */}
 
               {/* Form Actions */}
               <div className="mp-form-actions">

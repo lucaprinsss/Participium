@@ -1,27 +1,24 @@
 :root {
   --brand-red: #A12B32;
   --brand-red-hover: #b40612;
-  --primary: var(--brand-red);
-  --primary-hover: var(--brand-red-hover);
-  --bg-lighter: #f8f9fa;
+  --bg-page: #ffffff;
+  --bg-card-static: #f8f9fa; /* Sfondo grigio leggero per card non cliccabili */
+  --bg-card-interactive: #ffffff; /* Sfondo bianco puro per card cliccabili */
   --text-muted: #6c757d;
   --text-dark: #212529;
   --text-darker: #1a1a1a;
-  --card-bg: #ffffff;
-  --accent-light: #fdf6f6;
-  --border-light: rgba(161, 43, 50, 0.1);
-  --shadow-soft: 0 0.4rem 1.6rem rgba(161, 43, 50, 0.08);
+  --border-light: rgba(0, 0, 0, 0.08);
+  --border-brand: rgba(161, 43, 50, 0.2);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 12px 24px rgba(161, 43, 50, 0.12);
   
-  /* Misure dinamiche */
+  /* Misure */
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 1.5rem;
   --spacing-lg: 2rem;
   --spacing-xl: 3rem;
-  
-  --border-radius-sm: 0.5rem;
-  --border-radius-md: 0.75rem;
-  --border-radius-lg: 1rem;
+  --radius-lg: 1rem;
 }
 
 .ch-wrapper {
@@ -44,14 +41,14 @@
   font-weight: 800;
   color: var(--text-darker);
   margin: 0 0 var(--spacing-xs) 0;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .ch-subtitle {
   font-size: clamp(1rem, 2.5vw, 1.1rem);
   color: var(--text-muted);
   line-height: 1.6;
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto;
 }
 
@@ -62,15 +59,19 @@
   gap: var(--spacing-xl);
 }
 
-/* Section Titles */
+/* Titles */
 .ch-section-title {
-  font-size: clamp(1.3rem, 3vw, 1.5rem);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   font-weight: 700;
-  color: var(--text-darker);
+  color: var(--text-muted);
   margin: 0 0 var(--spacing-md) 0;
 }
 
-/* Features List */
+/* --- DIFFERENZIAZIONE VISIVA --- */
+
+/* 1. Feature Card (Statica/Informativa) */
 .ch-features-list {
   display: flex;
   flex-direction: column;
@@ -80,48 +81,43 @@
 .ch-feature-card {
   display: flex;
   align-items: flex-start;
-  background: var(--card-bg);
-  border: 1px solid var(--border-light);
-  border-radius: var(--border-radius-lg);
+  /* Visualmente "piatta" per suggerire non-cliccabilità */
+  background: var(--bg-card-static); 
+  border: 1px solid transparent; 
+  border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-soft);
-}
-
-.ch-feature-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0.5rem 2rem rgba(161, 43, 50, 0.12);
+  /* Nessuna ombra forte */
 }
 
 .ch-feature-icon {
   flex-shrink: 0;
-  width: 3rem;
-  height: 3rem;
-  border-radius: var(--border-radius-md);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-light);
+  background: rgba(161, 43, 50, 0.08);
   color: var(--brand-red);
   margin-right: var(--spacing-md);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
 }
 
 .ch-feature-text h3 {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-darker);
-  margin: 0 0 var(--spacing-xs) 0;
+  margin: 0 0 0.25rem 0;
 }
 
 .ch-feature-text p {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--text-muted);
-  line-height: 1.6;
+  line-height: 1.5;
   margin: 0;
 }
 
-/* Actions Section */
+/* 2. Action Card (Interattiva/Cliccabile) */
 .ch-actions-section {
   display: flex;
   flex-direction: column;
@@ -129,99 +125,182 @@
 }
 
 .ch-action-card {
-  background: var(--card-bg);
-  border: 2px solid var(--border-light);
-  border-radius: var(--border-radius-lg);
+  /* Visualmente "elevata" e bianca per attirare l'attenzione */
+  background: var(--bg-card-interactive);
+  border: 1px solid var(--border-light);
+  border-left: 4px solid var(--brand-red); /* Accento visuale */
+  border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
-  transition: all 0.3s ease;
   cursor: pointer;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
-}
-
-.ch-action-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(161, 43, 50, 0.05), transparent);
-  transition: left 0.6s;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .ch-action-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--brand-red);
-  box-shadow: 0 0.5rem 2rem rgba(161, 43, 50, 0.15);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--border-brand);
 }
 
-.ch-action-card:hover::before {
-  left: 100%;
+/* Effetto scia sul click/hover */
+.ch-action-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(161, 43, 50, 0.03), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.ch-action-card:hover::after {
+  transform: translateX(100%);
 }
 
 .ch-action-title {
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: var(--text-darker);
-  margin: 0 0 var(--spacing-xs) 0;
+  margin: 0 0 0.25rem 0;
 }
 
 .ch-action-desc {
   font-size: 0.95rem;
   color: var(--text-muted);
-  line-height: 1.6;
   margin: 0;
 }
 
-/* Desktop Layout */
+.ch-action-icon-wrapper {
+  color: var(--brand-red);
+  font-size: 1.2rem;
+  background: rgba(161, 43, 50, 0.05);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.ch-action-card:hover .ch-action-icon-wrapper {
+  background: var(--brand-red);
+  color: white;
+  transform: translateX(5px);
+}
+
+/* --- MODAL STYLES --- */
+.ch-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(26, 26, 26, 0.6); /* Backdrop dimming */
+  backdrop-filter: blur(4px); /* Glassmorphism blur */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.ch-modal-content {
+  background: #ffffff;
+  width: 90%;
+  max-width: 450px;
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  text-align: center;
+  position: relative;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ch-modal-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.ch-modal-close-btn:hover {
+  color: var(--text-darker);
+}
+
+.ch-modal-icon-box {
+  width: 60px;
+  height: 60px;
+  background: rgba(161, 43, 50, 0.1);
+  color: var(--brand-red);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  margin: 0 auto 1.5rem auto;
+}
+
+.ch-modal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-darker);
+  margin-bottom: 1rem;
+}
+
+.ch-modal-desc {
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.ch-modal-action-btn {
+  background: var(--brand-red);
+  color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+}
+
+.ch-modal-action-btn:hover {
+  background: var(--brand-red-hover);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Media Queries */
 @media (min-width: 768px) {
-  .ch-wrapper {
-    padding: var(--spacing-xl);
-  }
-  
-  .ch-main-grid {
-    grid-template-columns: 1.5fr 1fr;
-    gap: var(--spacing-xl);
-  }
-  
-  .ch-header {
-    text-align: left;
-  }
-  
-  .ch-subtitle {
-    margin: 0;
-  }
+  .ch-wrapper { padding: var(--spacing-xl); }
+  .ch-main-grid { grid-template-columns: 1.2fr 1fr; } /* Più spazio alle features */
+  .ch-header { text-align: left; }
+  .ch-subtitle { margin: 0; }
 }
 
-/* Mobile Optimizations */
 @media (max-width: 767px) {
-  .ch-wrapper {
-    padding: var(--spacing-sm);
-  }
-  
-  .ch-feature-card {
-    flex-direction: column;
-    text-align: center;
-    padding: var(--spacing-md);
-  }
-  
-  .ch-feature-icon {
-    margin-right: 0;
-    margin-bottom: var(--spacing-sm);
-    align-self: center;
-  }
-  
-  .ch-action-card {
-    padding: var(--spacing-md);
-  }
-}
-
-/* Touch improvements */
-@media (hover: none) {
-  .ch-feature-card:hover,
-  .ch-action-card:hover {
-    transform: none;
-  }
+  .ch-feature-card { flex-direction: column; }
+  .ch-feature-icon { margin-bottom: var(--spacing-sm); }
 }
