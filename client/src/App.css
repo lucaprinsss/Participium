@@ -1,10 +1,43 @@
-/* === Inserisci questo in index.css o App.css === */
+/* index.css */
 :root {
-  --brand-red: #A12B32;
-  --brand-red-hover: #b40612;
+  /* --- COLORI (Definiti qui per usarli ovunque) --- */
+  --primary: #a12b32; /* Esempio basato sul tuo codice */
+  --primary-hover: #8a242a;
+  --brand-red: #a12b32;
+  --brand-red-light: rgba(161, 43, 50, 0.1);
+  --text-dark: #212529;
+  --text-muted: #6c757d;
+  --text-light: #adb5bd;
+  --bg-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  
+  /* --- SPACING & BORDER --- */
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  
+  --transition: all 0.3s ease;
+}
+
+html {
+  /* IL CUORE DEL RIDIMENSIONAMENTO:
+     - Minimo: 14px (per non diventare illeggibile su mobile)
+     - Ideale: 0.7vw (scala in proporzione alla larghezza)
+     - Massimo: 24px (per schermi giganti come il 2560px e oltre)
+     
+     Esempio calcolo:
+     - A 1920px -> 1rem = ~14-15px
+     - A 2560px -> 1rem = ~18-19px (Tutto diventa più grande in proporzione)
+  */
+  font-size: clamp(14px, 0.7vw + 0.3rem, 24px);
+  scroll-behavior: smooth;
 }
 
 body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
