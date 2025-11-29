@@ -37,7 +37,7 @@ function App() {
     };
   }, [hideNavbar]);
 
-  // Gestione autenticazione
+  // Check authentication status on app load and on route change
   useEffect(() => {
     let isMounted = true;
     
@@ -60,7 +60,7 @@ function App() {
       } catch (error) {
         if (isMounted) {
           setUser(null);
-          setAuthError(error.message || "Errore durante il caricamento della sessione");
+          setAuthError(error.message || "Error during authentication check");
           
           // If user is not authenticated, redirect to login unless on public routes
           if (!noNavbarRoutes.includes(location.pathname)) {
@@ -90,14 +90,14 @@ function App() {
       navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
-      setAuthError("Errore durante il logout");
+      setAuthError("Error during logout. Please try again.");
     }
   };
 
   // Protected Route Wrapper
   const ProtectedRoute = ({ children }) => {
     if (isAuthLoading) {
-      return <LoadingScreen message="Verifica accesso..." />;
+      return <LoadingScreen message="Verifying access..." />;
     }
 
     if (!user) {
@@ -109,7 +109,7 @@ function App() {
 
   //If still loading auth state, show loading screen (except on root)
   if (isAuthLoading && location.pathname !== "/" && !noNavbarRoutes.includes(location.pathname)) {
-    return <LoadingScreen message="Caricamento..." />;
+    return <LoadingScreen message="Loading..." />;
   }
 
   return (

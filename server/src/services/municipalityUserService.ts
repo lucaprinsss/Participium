@@ -87,7 +87,7 @@ class MunicipalityUserService {
     logInfo(`Retrieved ${users.length} municipality users`);
     return users
       .map(user => mapUserEntityToUserResponse(user))
-      .filter(user => user !== null) as UserResponse[];
+      .filter(user => user !== null);
   }
 
   /**
@@ -115,19 +115,69 @@ class MunicipalityUserService {
   }
 
   /**
+   * Validate update data has at least one field
+   */
+  private validateUpdateData(updateData: Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string }>): void {
+    const { first_name, last_name, email, role_name, department_name } = updateData;
+    if (!first_name && !last_name && !email && !role_name && !department_name) {
+      throw new BadRequestError('At least one field must be provided for update');
+    }
+  }
+
+  /**
+   * Validate email uniqueness if changed
+   */
+  private async validateEmailUpdate(email: string | undefined, existingEmail: string): Promise<void> {
+    if (email && email !== existingEmail) {
+      const emailExists = await userRepository.existsUserByEmail(email);
+      if (emailExists) {
+        throw new ConflictError('Email already exists');
+      }
+    }
+  }
+
+  /**
+   * Resolve department role ID for role update
+   */
+  private async resolveDepartmentRoleId(role_name: string | undefined, department_name?: string): Promise<number | undefined> {
+    if (!role_name) {
+      return undefined;
+    }
+
+    if (role_name === 'Citizen' || role_name === 'Administrator') {
+      throw new BadRequestError('Cannot change role to Citizen or Administrator');
+    }
+
+    let matchingDepartmentRole;
+    if (department_name) {
+      matchingDepartmentRole = await departmentRoleRepository.findByDepartmentAndRole(department_name, role_name);
+    } else {
+      const allDepartmentRoles = await departmentRoleRepository.findAll();
+      matchingDepartmentRole = allDepartmentRoles.find(dr => dr.role?.name === role_name);
+    }
+
+    if (!matchingDepartmentRole) {
+      throw new BadRequestError(`Role ${role_name} not found in any department`);
+    }
+
+    return matchingDepartmentRole.id;
+  }
+
+  /**
    * Update municipality user
    * @param id User ID
-   * @param updateData Data to update (Nota: si aspetta camelCase)
+   * @param updateData Data to update (accepts snake_case from API)
    * @returns Updated user response
    * @throws NotFoundError if user not found
-   * @throws BadRequestError if trying to update non-municipality user
+   * @throws BadRequestError if trying to update non-municipality user or no fields provided
    */
   async updateMunicipalityUser(
     id: number,
-    updateData: Partial<{ firstName: string; lastName: string; email: string; role_name: string; department_name?: string }>
+    updateData: Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string }>
   ): Promise<UserResponse> {
+    this.validateUpdateData(updateData);
+
     const existingUser = await userRepository.findUserById(id);
-    
     if (!existingUser) {
       throw new NotFoundError('User not found');
     }
@@ -136,44 +186,14 @@ class MunicipalityUserService {
     if (existingRoleName === 'Citizen' || existingRoleName === 'Administrator') {
       throw new BadRequestError('Cannot modify Citizen or Administrator through this endpoint');
     }
-        if (updateData.email && updateData.email !== existingUser.email) {
-        const emailExists = await userRepository.existsUserByEmail(updateData.email);
-        if (emailExists) {
-            throw new ConflictError('Email already exists');
-        }
-    }
+
+    await this.validateEmailUpdate(updateData.email, existingUser.email);
     
-    // Handle role update
-    let departmentRoleId: number | undefined;
-    if (updateData.role_name) {
-      if (updateData.role_name === 'Citizen' || updateData.role_name === 'Administrator') {
-        throw new BadRequestError('Cannot change role to Citizen or Administrator');
-      }
-
-      // Find the department role for the new role
-      let matchingDepartmentRole;
-      if (updateData.department_name) {
-        matchingDepartmentRole = await departmentRoleRepository.findByDepartmentAndRole(
-          updateData.department_name,
-          updateData.role_name
-        );
-      } else {
-        const allDepartmentRoles = await departmentRoleRepository.findAll();
-        matchingDepartmentRole = allDepartmentRoles.find(
-          dr => dr.role?.name === updateData.role_name
-        );
-      }
-
-      if (!matchingDepartmentRole) {
-        throw new BadRequestError(`Role ${updateData.role_name} not found in any department`);
-      }
-
-      departmentRoleId = matchingDepartmentRole.id;
-    }
+    const departmentRoleId = await this.resolveDepartmentRoleId(updateData.role_name, updateData.department_name);
 
     const updatedUser = await userRepository.updateUser(id, {
-      firstName: updateData.firstName,
-      lastName: updateData.lastName,
+      firstName: updateData.first_name,
+      lastName: updateData.last_name,
       email: updateData.email,
       ...(departmentRoleId && { departmentRoleId })
     });

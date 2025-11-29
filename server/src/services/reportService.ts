@@ -17,7 +17,6 @@ import { userRepository } from '../repositories/userRepository';
 import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
 import { ReportResponse } from '../models/dto/output/ReportResponse';
 import { reportEntity } from '../models/entity/reportEntity';
-import { userEntity } from '@models/entity/userEntity';
 import { Report } from '@models/dto/Report'; 
 import { mapReportEntityToResponse, mapReportEntityToDTO, mapReportEntityToReportResponse } from './mapperService';
 
@@ -245,7 +244,7 @@ class ReportService {
 
   /**
    * Get a specific report by ID
-   * TODO: Implement when needed
+   * Not yet implemented
    */
   async getReportById(): Promise<void> {
     throw new Error('Not implemented yet');
@@ -262,7 +261,7 @@ class ReportService {
     newCategory?: ReportCategory
   ): Promise<Report> {
 
-    if (isNaN(reportId)) {
+    if (Number.isNaN(reportId)) {
       throw new BadRequestError('Invalid report ID');
     }
 
@@ -325,7 +324,7 @@ class ReportService {
     userId: number
   ): Promise<Report> {
 
-    if (isNaN(reportId)) {
+    if (Number.isNaN(reportId)) {
       throw new BadRequestError('Invalid report ID');
     }
 

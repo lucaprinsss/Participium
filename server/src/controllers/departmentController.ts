@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { departmentService } from "@services/departmentService";
-import { BadRequestError } from "@errors/BadRequestError";
+import { parseAndValidateId } from "@utils/idValidationUtils";
 
 /**
  * Controller for department-related endpoints
@@ -33,17 +33,7 @@ class DepartmentController {
     next: NextFunction
   ): Promise<void> => {
     try {
-      // Validate department ID (must be positive integer, reject decimals)
-      if (req.params.id.includes('.')) {
-        throw new BadRequestError("Invalid department ID. Must be a positive integer.");
-      }
-      
-      const departmentId = parseInt(req.params.id, 10);
-      
-      if (isNaN(departmentId) || departmentId <= 0) {
-        throw new BadRequestError("Invalid department ID. Must be a positive integer.");
-      }
-      
+      const departmentId = parseAndValidateId(req.params.id, 'department');
       const roles = await departmentService.getRolesByDepartment(departmentId);
       res.status(200).json(roles);
     } catch (error) {

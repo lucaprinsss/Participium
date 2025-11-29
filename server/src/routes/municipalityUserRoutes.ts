@@ -2,6 +2,8 @@ import express from 'express';
 import { requireRole } from '@middleware/authMiddleware';
 import { UserRole } from '@dto/UserRole';
 import municipalityUserController from '../controllers/municipalityUserController';
+import { validateDepartmentId } from '@middleware/validateDepartmentId';
+import { validateBodyFields } from '@middleware/validateBodyFields';
 
 const router = express.Router();
 
@@ -100,7 +102,12 @@ const router = express.Router();
  *             example:
  *               error: "Username or email already exists"
  */
-router.post('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.createMunicipalityUser);
+router.post(
+	'/',
+	requireRole(UserRole.ADMINISTRATOR),
+	validateBodyFields(['username', 'email', 'password', 'first_name', 'last_name', 'role_name']),
+	municipalityUserController.createMunicipalityUser
+);
 
 
 /**
@@ -213,7 +220,7 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.
  *             example:
  *               error: "Internal server error"
  */
-router.get('/:id', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.getMunicipalityUserById);
+router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId, municipalityUserController.getMunicipalityUserById);
 
 /**
  * @swagger
@@ -312,7 +319,7 @@ router.get('/:id', requireRole(UserRole.ADMINISTRATOR), municipalityUserControll
  *             example:
  *               error: "Internal server error"
  */
-router.put('/:id', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.updateMunicipalityUser);
+router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId, municipalityUserController.updateMunicipalityUser);
 
 
 /**
@@ -367,7 +374,7 @@ router.put('/:id', requireRole(UserRole.ADMINISTRATOR), municipalityUserControll
  *             example:
  *               error: "Internal server error"
  */
-router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.deleteMunicipalityUser);
+router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId, municipalityUserController.deleteMunicipalityUser);
 
 
 /**
@@ -451,6 +458,12 @@ router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), municipalityUserContr
  *             example:
  *               error: "Internal server error"
  */
-router.put('/:id/role', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.assignRole);
+router.put(
+	'/:id/role',
+	requireRole(UserRole.ADMINISTRATOR),
+	validateDepartmentId,
+	validateBodyFields(['role_name']),
+	municipalityUserController.assignRole
+);
 
 export default router;

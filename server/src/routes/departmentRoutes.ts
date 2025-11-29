@@ -1,5 +1,6 @@
 import express from 'express';
 import departmentController from '@controllers/departmentController';
+import { validateDepartmentId } from '@middleware/validateDepartmentId';
 import { requireRole } from '@middleware/authMiddleware';
 import { UserRole } from '@dto/UserRole';
 
@@ -152,6 +153,6 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), departmentController.getMun
  *             example:
  *               message: "Internal server error"
  */
-router.get('/:id/roles', requireRole(UserRole.ADMINISTRATOR), departmentController.getRolesByDepartment);
+router.get('/:id/roles', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId, departmentController.getRolesByDepartment);
 
 export default router;

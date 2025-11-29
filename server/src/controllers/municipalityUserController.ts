@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { municipalityUserService } from '@services/municipalityUserService';
-import { BadRequestError } from '@models/errors/BadRequestError';
 import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { RoleUtils } from '@utils/roleUtils';
+import { parseAndValidateId } from '@utils/idValidationUtils';
 
 /**
  * Controller for Municipality User management
@@ -15,10 +15,6 @@ class MunicipalityUserController {
   async createMunicipalityUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { username, email, password, first_name, last_name, role_name, department_name } = req.body;
-
-      if (!username || !email || !password || !first_name || !last_name || !role_name) {
-        throw new BadRequestError('All fields are required: username, email, password, first_name, last_name, role_name');
-      }
 
       const registerData: RegisterRequest = {
         username,
@@ -57,12 +53,7 @@ class MunicipalityUserController {
    */
   async getMunicipalityUserById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
-
-      if (isNaN(id)) {
-        throw new BadRequestError('Invalid user ID');
-      }
-
+      const id = parseAndValidateId(req.params.id, 'user');
       const user = await municipalityUserService.getMunicipalityUserById(id);
       res.status(200).json(user);
     } catch (error) {
@@ -76,26 +67,16 @@ class MunicipalityUserController {
    */
   async updateMunicipalityUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
-
-      if (isNaN(id)) {
-        throw new BadRequestError('Invalid user ID');
-      }
-
+      const id = parseAndValidateId(req.params.id, 'user');
       const { first_name, last_name, email, role_name, department_name } = req.body;
       
-      const updateData: any = {};
-      if (first_name) updateData.firstName = first_name;
-      if (last_name) updateData.lastName = last_name;
-      if (email) updateData.email = email;
-      if (role_name) updateData.role_name = role_name;
-      if (department_name) updateData.department_name = department_name;
-
-      if (Object.keys(updateData).length === 0) {
-        throw new BadRequestError('At least one field must be provided for update');
-      }
-
-      const updatedUser = await municipalityUserService.updateMunicipalityUser(id, updateData);
+      const updatedUser = await municipalityUserService.updateMunicipalityUser(id, {
+        first_name,
+        last_name,
+        email,
+        role_name,
+        department_name
+      });
       res.status(200).json(updatedUser);
     } catch (error) {
       next(error);
@@ -108,12 +89,7 @@ class MunicipalityUserController {
    */
   async deleteMunicipalityUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
-
-      if (isNaN(id)) {
-        throw new BadRequestError('Invalid user ID');
-      }
-
+      const id = parseAndValidateId(req.params.id, 'user');
       await municipalityUserService.deleteMunicipalityUser(id);
       res.status(204).send();
     } catch (error) {
@@ -127,16 +103,8 @@ class MunicipalityUserController {
    */
   async assignRole(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseAndValidateId(req.params.id, 'user');
       const { role_name, department_name } = req.body;
-
-      if (isNaN(id)) {
-        throw new BadRequestError('Invalid user ID');
-      }
-
-      if (!role_name) {
-        throw new BadRequestError('Role name is required');
-      }
 
       const updatedUser = await municipalityUserService.assignRole(id, role_name, department_name);
       res.status(200).json(updatedUser);

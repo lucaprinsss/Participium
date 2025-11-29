@@ -2,6 +2,9 @@ import express from 'express';
 import { reportController } from '@controllers/reportController';
 import { isLoggedIn, requireRole } from '@middleware/authMiddleware';
 import { validateCreateReport } from '@middleware/reportMiddleware';
+import { validateDepartmentId } from '@middleware/validateDepartmentId';
+import { validateMapQuery } from '@middleware/validateMapQuery';
+import { validateReportStatus, validateReportCategory } from '@middleware/validateQueryParams';
 import { UserRole } from '@dto/UserRole';
 
 const router = express.Router();
@@ -150,7 +153,7 @@ const router = express.Router();
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post('/', requireRole(UserRole.CITIZEN), validateCreateReport, reportController.createReport);
-router.get('/', isLoggedIn, reportController.getAllReports);
+router.get('/', isLoggedIn, validateReportStatus, validateReportCategory, reportController.getAllReports);
 
 /**
  * @swagger
@@ -286,7 +289,7 @@ router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/:id/approve', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), reportController.approveReport);
+router.put('/:id/approve', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), validateDepartmentId, reportController.approveReport);
 
 /**
  * @swagger
@@ -350,7 +353,7 @@ router.put('/:id/approve', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), repor
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/:id/reject', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), reportController.rejectReport);
+router.put('/:id/reject', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), validateDepartmentId, reportController.rejectReport);
 
 /**
  * @swagger
@@ -515,6 +518,6 @@ router.put('/:id/reject', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), report
  *               message: "An unexpected error occurred while retrieving map reports"
  *  
  */
-router.get('/map', isLoggedIn, reportController.getMapReports);
+router.get('/map', isLoggedIn, validateMapQuery, reportController.getMapReports);
 
 export default router;
