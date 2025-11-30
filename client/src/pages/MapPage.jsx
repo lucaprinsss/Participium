@@ -32,7 +32,7 @@ import { Dropdown } from 'react-bootstrap';
 
 // IMPORT API
 import { getAllCategories, createReport, getReports } from '../api/reportApi';
-import { getCurrentUser } from '../api/authApi'; 
+import { getCurrentUser } from '../api/authApi';
 
 import '../css/MapPage.css';
 import ReportDetails from "../components/ReportDetails";
@@ -124,17 +124,17 @@ const MapPage = () => {
   const [turinData, setTurinData] = useState(null);
   const [turinBounds, setTurinBounds] = useState(null);
   const [turinPolygons, setTurinPolygons] = useState([]);
-  
+
   // UX State: Form Visibility
   const [showForm, setShowForm] = useState(false);
-  
+
   // User State
   const [currentUser, setCurrentUser] = useState(null);
 
   // --- Filter States ---
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
-  
+
   const [viewMode, setViewMode] = useState('all'); // 'all' or 'mine'
   const [hideReports, setHideReports] = useState(false);
 
@@ -163,7 +163,7 @@ const MapPage = () => {
     location: ''
   });
 
-  const STATUS_OPTIONS = ['Resolved', 'Assigned', 'Pending Approval', 'Rejected'];
+  const STATUS_OPTIONS = ['Resolved', 'Assigned', "In Progress", "Suspended"];
 
   const convertToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -197,7 +197,7 @@ const MapPage = () => {
       const timer = setTimeout(() => {
         mapInstance.invalidateSize();
         if (showForm && marker) {
-            mapInstance.panTo([marker.lat, marker.lng], { animate: true, duration: 0.5 });
+          mapInstance.panTo([marker.lat, marker.lng], { animate: true, duration: 0.5 });
         }
       }, 500);
       return () => clearTimeout(timer);
@@ -363,7 +363,7 @@ const MapPage = () => {
 
     if (photos.length + files.length > 3) {
       setFormErrors(prev => ({ ...prev, photos: 'Maximum 3 photos allowed.' }));
-      e.target.value = null; 
+      e.target.value = null;
       return;
     }
 
@@ -398,7 +398,7 @@ const MapPage = () => {
     else if (formData.description.length > maxDescLength) errors.description = `Max ${maxDescLength} characters.`;
 
     // ... (rest of validation)
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -424,11 +424,11 @@ const MapPage = () => {
         },
         photos: base64Photos,
         is_anonymous: formData.is_anonymous,
-        isAnonymous: formData.is_anonymous 
+        isAnonymous: formData.is_anonymous
       };
 
       await createReport(reportData);
-      
+
       handleClear(false);
       setNotification({ message: 'Report submitted successfully!', type: 'success' });
 
@@ -483,11 +483,11 @@ const MapPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Resolved': return '#28a745'; 
-      case 'Rejected': return '#dc3545'; 
-      case 'Assigned': return '#007bff'; 
-      case 'Pending Approval': return '#ffc107'; 
-      default: return '#fd7e14'; 
+      case 'Resolved': return '#28a745';
+      case 'Rejected': return '#dc3545';
+      case 'Assigned': return '#007bff';
+      case 'Pending Approval': return '#ffc107';
+      default: return '#fd7e14';
     }
   };
 
@@ -497,7 +497,7 @@ const MapPage = () => {
     if (filterCategory !== 'All' && report.category !== filterCategory) return false;
     if (filterStatus !== 'All' && report.status !== filterStatus) return false;
     if (viewMode === 'mine') {
-      if (!currentUser) return false; 
+      if (!currentUser) return false;
       return report.reporter.id === currentUser.id;
     }
     if (report.status === 'Pending Approval' || report.status === 'Rejected') return false;
@@ -532,13 +532,13 @@ const MapPage = () => {
       {/* Main Content */}
       <main className="mp-main">
         <div className="mp-section">
-          
+
           {/* --- FILTER BAR --- */}
           <div className="mp-filters-bar">
             <div className="mp-grid-item">
               <Dropdown onSelect={(k) => setFilterCategory(k)}>
-                <Dropdown.Toggle 
-                  className={`mp-modern-dropdown-toggle ${filterCategory !== 'All' ? 'active' : ''}`} 
+                <Dropdown.Toggle
+                  className={`mp-modern-dropdown-toggle ${filterCategory !== 'All' ? 'active' : ''}`}
                   id="filter-category"
                 >
                   <div className="mp-truncate-wrapper">
@@ -562,7 +562,7 @@ const MapPage = () => {
 
             <div className="mp-grid-item">
               <Dropdown onSelect={(k) => setFilterStatus(k)}>
-                <Dropdown.Toggle 
+                <Dropdown.Toggle
                   className={`mp-modern-dropdown-toggle ${filterStatus !== 'All' ? 'active' : ''}`}
                   id="filter-status"
                 >
@@ -586,27 +586,27 @@ const MapPage = () => {
             </div>
 
             <div className="mp-grid-item">
-              <button 
+              <button
                 className={`mp-filter-btn ${viewMode === 'mine' ? 'active' : ''}`}
                 onClick={() => setViewMode(prev => prev === 'all' ? 'mine' : 'all')}
-                disabled={!currentUser} 
+                disabled={!currentUser}
               >
                 {viewMode === 'all' ? (
-                   <>
+                  <>
                     <FaUsers className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
                     All Users
-                   </>
+                  </>
                 ) : (
-                   <>
+                  <>
                     <FaUser className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
                     My Reports
-                   </>
+                  </>
                 )}
               </button>
             </div>
-            
+
             <div className="mp-grid-item">
-              <button 
+              <button
                 className={`mp-filter-btn ${hideReports ? 'alert-mode' : ''}`}
                 onClick={() => setHideReports(!hideReports)}
               >
@@ -627,7 +627,7 @@ const MapPage = () => {
 
           {/* --- SPLIT LAYOUT CONTAINER --- */}
           <div className={`mp-content-split ${showForm ? 'is-open' : ''}`}>
-            
+
             {/* LEFT COLUMN: MAP */}
             <div className="mp-map-column">
               <div className="mp-container">
@@ -645,7 +645,7 @@ const MapPage = () => {
                     scrollWheelZoom={true}
                     maxBounds={turinBounds}
                     maxBoundsViscosity={1.0}
-                    ref={setMapInstance} 
+                    ref={setMapInstance}
                   >
                     <TileLayer
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -667,8 +667,9 @@ const MapPage = () => {
                         const count = cluster.getChildCount();
                         return L.divIcon({
                           html: `<div class="mp-cluster-icon">${count}</div>`,
-                           className: 'mp-cluster-marker', 
-                           iconSize: L.point(50, 50)});
+                          className: 'mp-cluster-marker',
+                          iconSize: L.point(50, 50)
+                        });
                       }}>
                       {filteredReports.map((report) => {
                         const position = getLatLngFromReport(report);
@@ -731,14 +732,18 @@ const MapPage = () => {
                         zIndexOffset={1000}
                         eventHandlers={{
                           click: () => {
-                             if(!showForm) handleStartReport();
+                            // MODIFICA QUI:
+                            // Prima: if(!showForm) handleStartReport();
+                            // Adesso: Rimuove il marker se cliccato
+                            handleClear(false);
                           }
                         }}
                       >
                         <Tooltip permanent direction="top" offset={[0, -28]}>
                           <b>New Location</b><br />
                           {!showForm ? (
-                            <span style={{ fontSize: '0.8em', color: '#666' }}>Click "Create Report" below</span>
+                            // Aggiorniamo anche il testo del tooltip per coerenza
+                            <span style={{ fontSize: '0.8em', color: '#666' }}>Click marker to remove</span>
                           ) : (
                             <span style={{ fontSize: '0.8em', color: 'var(--brand-red)' }}>Position Locked</span>
                           )}
@@ -757,13 +762,13 @@ const MapPage = () => {
                         <span>Do you want to report an issue here?</span>
                       </div>
                       <div className="mp-floating-buttons">
-                        <button 
+                        <button
                           className="mp-btn-floating cancel"
                           onClick={() => handleClear(false)}
                         >
                           Cancel
                         </button>
-                        <button 
+                        <button
                           className="mp-btn-floating confirm"
                           onClick={handleStartReport}
                         >
@@ -785,27 +790,27 @@ const MapPage = () => {
             <div className="mp-form-column" ref={formSectionRef}>
               <div className="mp-form-card side-panel">
                 <div className="mp-form-header-row">
-                    <h2 className="mp-form-title compact">
-                        <FaMapMarkerAlt className="mp-form-title-icon" />
-                        New Report
-                    </h2>
-                    <button type="button" className="mp-close-panel-btn" onClick={() => handleClear()}>
-                        <FaTimes />
-                    </button>
+                  <h2 className="mp-form-title compact">
+                    <FaMapMarkerAlt className="mp-form-title-icon" />
+                    New Report
+                  </h2>
+                  <button type="button" className="mp-close-panel-btn" onClick={() => handleClear()}>
+                    <FaTimes />
+                  </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="mp-location-form compact">
-                  
+
                   {/* Coordinates Row (Compact) */}
                   <div className="mp-coords-group compact-coords">
-                      <div className="mp-form-group">
-                        <label className="mp-form-label-sm">Lat</label>
-                        <input type="text" className="mp-input-sm" value={formData.latitude} readOnly />
-                      </div>
-                      <div className="mp-form-group">
-                        <label className="mp-form-label-sm">Lng</label>
-                        <input type="text" className="mp-input-sm" value={formData.longitude} readOnly />
-                      </div>
+                    <div className="mp-form-group">
+                      <label className="mp-form-label-sm">Lat</label>
+                      <input type="text" className="mp-input-sm" value={formData.latitude} readOnly />
+                    </div>
+                    <div className="mp-form-group">
+                      <label className="mp-form-label-sm">Lng</label>
+                      <input type="text" className="mp-input-sm" value={formData.longitude} readOnly />
+                    </div>
                   </div>
 
                   {/* Title */}
@@ -827,14 +832,14 @@ const MapPage = () => {
                     <label htmlFor="category" className="mp-form-label">Category <span className="mp-required-asterisk">*</span></label>
                     {formErrors.category && <FormError message={formErrors.category} />}
                     <Dropdown onSelect={(value) => handleSelect('category', value)}>
-                        <Dropdown.Toggle className={`mp-modern-dropdown-toggle ${formErrors.category ? 'is-invalid' : ''}`} id="cat-drop">
-                           {isLoadingCategories ? "Loading..." : getSelectedCategoryName()}
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu className="mp-modern-dropdown-menu">
-                            {categories.map((cat, i) => (
-                                <Dropdown.Item key={i} eventKey={cat} active={formData.category === cat}>{cat}</Dropdown.Item>
-                            ))}
-                        </Dropdown.Menu>
+                      <Dropdown.Toggle className={`mp-modern-dropdown-toggle ${formErrors.category ? 'is-invalid' : ''}`} id="cat-drop">
+                        {isLoadingCategories ? "Loading..." : getSelectedCategoryName()}
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu className="mp-modern-dropdown-menu">
+                        {categories.map((cat, i) => (
+                          <Dropdown.Item key={i} eventKey={cat} active={formData.category === cat}>{cat}</Dropdown.Item>
+                        ))}
+                      </Dropdown.Menu>
                     </Dropdown>
                   </div>
 
@@ -844,7 +849,7 @@ const MapPage = () => {
                       Description <span className="mp-required-asterisk">*</span>
                     </label>
                     {formErrors.description && <FormError message={formErrors.description} />}
-                    
+
                     {/* WRAPPER PER POSIZIONAMENTO */}
                     <div className="mp-textarea-wrapper">
                       <textarea
@@ -867,19 +872,19 @@ const MapPage = () => {
                   <div className="mp-form-group">
                     <label className="mp-form-label">Photos ({photos.length}/3)</label>
                     {formErrors.photos && <FormError message={formErrors.photos} />}
-                    
+
                     <div className="mp-photo-row">
-                        <label htmlFor="photos" className={`mp-photo-upload-mini ${photos.length >= 3 ? 'disabled' : ''}`}>
-                            <FaCamera />
-                        </label>
-                        <input type="file" id="photos" multiple accept="image/*" onChange={handlePhotoUpload} className="mp-photo-input" disabled={photos.length >= 3} />
-                        
-                        {photos.map(photo => (
-                            <div key={photo.id} className="mp-photo-mini-preview">
-                                <img src={photo.preview} alt="Preview" />
-                                <button type="button" onClick={() => removePhoto(photo.id)}><FaTimes /></button>
-                            </div>
-                        ))}
+                      <label htmlFor="photos" className={`mp-photo-upload-mini ${photos.length >= 3 ? 'disabled' : ''}`}>
+                        <FaCamera />
+                      </label>
+                      <input type="file" id="photos" multiple accept="image/*" onChange={handlePhotoUpload} className="mp-photo-input" disabled={photos.length >= 3} />
+
+                      {photos.map(photo => (
+                        <div key={photo.id} className="mp-photo-mini-preview">
+                          <img src={photo.preview} alt="Preview" />
+                          <button type="button" onClick={() => removePhoto(photo.id)}><FaTimes /></button>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -901,7 +906,7 @@ const MapPage = () => {
       </main>
 
       {/* Report Detail Modal */}
-      <ReportDetails 
+      <ReportDetails
         show={showDetailModal}
         onHide={() => setShowDetailModal(false)}
         report={selectedReport}
