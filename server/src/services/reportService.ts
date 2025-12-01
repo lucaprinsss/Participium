@@ -332,22 +332,50 @@ class ReportService {
         report.rejectionReason = reason;
         break;
 
+      case ReportStatus.IN_PROGRESS:
+        if (report.status !== ReportStatus.ASSIGNED) {
+          throw new BadRequestError(
+            `Cannot start progress on report with status ${report.status}. Only assigned reports can be started.`
+          );
+        }
+        if (report.assigneeId !== userId) {
+          throw new InsufficientRightsError(
+            'Only the assigned technical staff can start progress on this report'
+          );
+        }
+        report.status = ReportStatus.IN_PROGRESS;
+        break;
+
+      case ReportStatus.SUSPENDED:
+        if (report.status !== ReportStatus.IN_PROGRESS) {
+          throw new BadRequestError(
+            `Cannot suspend report with status ${report.status}. Only reports in progress can be suspended.`
+          );
+        }
+        if (report.assigneeId !== userId) {
+          throw new InsufficientRightsError(
+            'Only the assigned technical staff can suspend this report'
+          );
+        }
+        report.status = ReportStatus.SUSPENDED;
+        break;
+
       case ReportStatus.RESOLVED:
         if (report.status !== ReportStatus.ASSIGNED && report.status !== ReportStatus.IN_PROGRESS) {
           throw new BadRequestError(
             `Cannot resolve report with status ${report.status}. Only reports with status Assigned or In Progress can be resolved.`
           );
         }
-        if (userRole !== 'Technical Manager' && userRole !== 'Technical Assistant') {
+        if (report.assigneeId !== userId) {
           throw new InsufficientRightsError(
-            'Only Technical Office Staff can resolve reports'
+            'Only the assigned technical staff can resolve this report'
           );
         }
         report.status = ReportStatus.RESOLVED;
         break;
         
       default:
-        throw new BadRequestError(`Invalid status: ${status}`);
+        throw new BadRequestError(`Invalid status update: ${status}`);
     }
 
     report.updatedAt = new Date();

@@ -257,6 +257,20 @@ const filteredReports = reports.filter((report) => {
     }
   };
 
+  const handleStatusUpdate = async (newStatus) => {
+    if (!selectedReport) return;
+    clearError();
+
+    try {
+      await updateReportStatus(selectedReport.id, newStatus);
+      await fetchData();
+      handleClose();
+    } catch (error) {
+      console.error(`Error updating status to ${newStatus}:`, error);
+      triggerError(error.message || `Failed to update status.`);
+    }
+  };
+
   return (
     <Container className="mu-home-container">
       <div className="mu-header-wrapper">
@@ -318,61 +332,78 @@ const filteredReports = reports.filter((report) => {
         </Alert>
       )}
 
-      <Card className="mu-home-card">
-        <Card.Body className="p-0">
-          {isLoading ? (
-            <div className="text-center p-5">
-              <Spinner animation="border" variant="primary" />
-              <p className="mt-2 text-muted">Loading reports...</p>
-            </div>
-          ) : filteredReports.length === 0 ? (
-            <div className="text-center p-5 text-muted">
-              <h5>No reports found</h5>
-              <p>Try adjusting your filters or check back later.</p>
-            </div>
-          ) : (
-            <Table responsive hover className="mu-table mb-0">
-              <thead className="bg-light">
-                <tr>
-                  <th>Category</th>
-                  <th>Title</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th className="text-end">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredReports.map((report) => (
-                  <tr key={report.id}>
-                    <td>
-                      <span className="fw-bold text-secondary">
-                        {report.category}
-                      </span>
-                    </td>
-                    <td>{report.title}</td>
-                    <td>{report.createdAt.toLocaleDateString()}</td>
-                    <td>
-                      <Badge bg={getStatusBadge(report.status)}>
-                        {report.status}
-                      </Badge>
-                    </td>
-                    <td className="text-end">
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="rounded-pill px-3"
-                        onClick={() => handleShow(report)}
-                      >
-                        <BsEye className="me-1" /> View
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </Card.Body>
-      </Card>
+      {/* Extracted report content logic */}
+      {(() => {
+        if (isLoading) {
+          return (
+            <Card className="mu-home-card">
+              <Card.Body className="p-0">
+                <div className="text-center p-5">
+                  <Spinner animation="border" variant="primary" />
+                  <p className="mt-2 text-muted">Loading reports...</p>
+                </div>
+              </Card.Body>
+            </Card>
+          );
+        } else if (filteredReports.length === 0) {
+          return (
+            <Card className="mu-home-card">
+              <Card.Body className="p-0">
+                <div className="text-center p-5 text-muted">
+                  <h5>No reports found</h5>
+                  <p>Try adjusting your filters or check back later.</p>
+                </div>
+              </Card.Body>
+            </Card>
+          );
+        } else {
+          return (
+            <Card className="mu-home-card">
+              <Card.Body className="p-0">
+                <Table responsive hover className="mu-table mb-0">
+                  <thead className="bg-light">
+                    <tr>
+                      <th>Category</th>
+                      <th>Title</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th className="text-end">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredReports.map((report) => (
+                      <tr key={report.id}>
+                        <td>
+                          <span className="fw-bold text-secondary">
+                            {report.category}
+                          </span>
+                        </td>
+                        <td>{report.title}</td>
+                        <td>{report.createdAt.toLocaleDateString()}</td>
+                        <td>
+                          <Badge bg={getStatusBadge(report.status)}>
+                            {report.status}
+                          </Badge>
+                        </td>
+                        <td className="text-end">
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="rounded-pill px-3"
+                            onClick={() => handleShow(report)}
+                          >
+                            <BsEye className="me-1" /> View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
+          );
+        }
+      })()}
 
       {/* --- Detail Modal --- */}
       <Modal
@@ -476,6 +507,34 @@ const filteredReports = reports.filter((report) => {
                       <BsExclamationTriangle className="mu-alert-icon" />
                       <span>{errorMsg}</span>
                     </div>
+                  </Col>
+                )}
+
+                {/* Staff Actions */}
+                {isStaffMember && ['Assigned', 'In Progress', 'Suspended'].includes(selectedReport.status) && (
+                  <Col xs={12} className="mt-4 pt-3 border-top">
+                    <h6 className="text-primary fw-bold">Update Report Status</h6>
+                    <DropdownButton
+                      id="dropdown-basic-button"
+                      title="Set Status To..."
+                      onSelect={handleStatusUpdate}
+                    >
+                      {selectedReport.status === 'Assigned' && (
+                        <>
+                          <Dropdown.Item eventKey="In Progress">In Progress</Dropdown.Item>
+                          <Dropdown.Item eventKey="Resolved">Resolved</Dropdown.Item>
+                        </>
+                      )}
+                      {selectedReport.status === 'In Progress' && (
+                        <>
+                          <Dropdown.Item eventKey="Suspended">Suspended</Dropdown.Item>
+                          <Dropdown.Item eventKey="Resolved">Resolved</Dropdown.Item>
+                        </>
+                      )}
+                      {selectedReport.status === 'Suspended' && (
+                        <Dropdown.Item eventKey="In Progress">Back to In Progress</Dropdown.Item>
+                      )}
+                    </DropdownButton>
                   </Col>
                 )}
               </Row>

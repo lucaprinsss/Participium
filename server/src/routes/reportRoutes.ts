@@ -305,7 +305,23 @@ router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/:id/status', requireRole([UserRole.PUBLIC_RELATIONS_OFFICER, UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT]), validateId(), validateReportUpdate, reportController.updateReportStatus);
+const allowedToUpdateRoles = [
+  'Municipal Public Relations Officer',
+  'Department Director',
+  'Water Network staff member',
+  'Sewer System staff member',
+  'Road Maintenance staff member',
+  'Accessibility staff member',
+  'Electrical staff member',
+  'Recycling Program staff member',
+  'Traffic management staff member',
+  'Parks Maintenance staff member',
+  'Customer Service staff member',
+  'Building Maintenance staff member',
+  'Support Officer'
+];
+
+router.put('/:id/status', requireRole(allowedToUpdateRoles), validateId(), validateReportUpdate, reportController.updateReportStatus);
 
 /**
  * @swagger
