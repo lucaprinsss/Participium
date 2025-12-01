@@ -249,7 +249,10 @@ describe('MunicipalityUserService', () => {
       const result = await municipalityUserService.updateMunicipalityUser(1, updateData);
 
       expect(result.first_name).toBe('Updated');
-      expect(mockedUserRepository.updateUser).toHaveBeenCalledWith(1, updateData);
+      // Service transforms first_name to firstName for repository
+      expect(mockedUserRepository.updateUser).toHaveBeenCalledWith(1, 
+        expect.objectContaining({ firstName: 'Updated' })
+      );
       expect(mockedLogInfo).toHaveBeenCalledWith(expect.stringContaining('Municipality user updated'));
     });
 

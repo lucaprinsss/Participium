@@ -19,6 +19,21 @@ jest.mock('@middleware/authMiddleware', () => ({
   }),
 }));
 jest.mock('@controllers/departmentController');
+jest.mock('@middleware/validateId', () => ({
+  validateId: jest.fn(() => (req: any, res: any, next: any) => {
+    const { id } = req.params;
+    const numericId = Number(id);
+    if (
+      id.includes('.') ||
+      Number.isNaN(numericId) ||
+      numericId <= 0 ||
+      !Number.isInteger(numericId)
+    ) {
+      return res.status(400).json({ message: 'Invalid department ID. Must be a positive integer.' });
+    }
+    next();
+  }),
+}));
 
 import request from 'supertest';
 import express, { Express } from 'express';
@@ -97,12 +112,7 @@ describe('Department Routes Integration Tests', () => {
     });
 
     mockGetRolesByDepartment.mockImplementation((req, res) => {
-      const id = parseInt(req.params.id, 10);
-      
-      // Check if the original string is a decimal (contains a dot)
-      if (req.params.id.includes('.') || isNaN(id) || id <= 0) {
-        return res.status(400).json({ error: 'Invalid department ID. Must be a positive integer.' });
-      }
+      const id = Number.parseInt(req.params.id, 10);
       
       if (id === 1) {
         res.status(200).json(mockRolesResponse);
@@ -175,7 +185,7 @@ describe('Department Routes Integration Tests', () => {
         .set('X-Test-User-Type', 'ADMIN');
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('Invalid department ID');
+      expect(res.body.message).toContain('Invalid department ID');
     });
 
     it('should return 400 if department ID is zero', async () => {
@@ -184,7 +194,7 @@ describe('Department Routes Integration Tests', () => {
         .set('X-Test-User-Type', 'ADMIN');
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('Invalid department ID');
+      expect(res.body.message).toContain('Invalid department ID');
     });
 
     it('should return 400 if department ID is negative', async () => {
@@ -193,7 +203,7 @@ describe('Department Routes Integration Tests', () => {
         .set('X-Test-User-Type', 'ADMIN');
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('Invalid department ID');
+      expect(res.body.message).toContain('Invalid department ID');
     });
 
     it('should return 400 if department ID is a decimal', async () => {
@@ -202,7 +212,7 @@ describe('Department Routes Integration Tests', () => {
         .set('X-Test-User-Type', 'ADMIN');
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('Invalid department ID');
+      expect(res.body.message).toContain('Invalid department ID');
     });
   });
 });

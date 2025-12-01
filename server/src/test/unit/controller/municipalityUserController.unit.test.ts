@@ -73,30 +73,6 @@ describe('MunicipalityUserController Unit Tests', () => {
       expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('should return 400 when required fields are missing', async () => {
-      // Arrange
-      mockRequest.body = {
-        username: 'test',
-        // email mancante
-        password: 'Password123!',
-      };
-
-      // Act
-      await municipalityUserController.createMunicipalityUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'All fields are required: username, email, password, first_name, last_name, role_name',
-        })
-      );
-      expect(municipalityUserService.createMunicipalityUser).not.toHaveBeenCalled();
-    });
-
     it('should handle service errors', async () => {
       // Arrange
       const requestData = {
@@ -208,25 +184,7 @@ describe('MunicipalityUserController Unit Tests', () => {
       expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('should return 400 for invalid ID', async () => {
-      // Arrange
-      mockRequest.params = { id: 'invalid' };
-
-      // Act
-      await municipalityUserController.getMunicipalityUserById(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'Invalid user ID',
-        })
-      );
-      expect(municipalityUserService.getMunicipalityUserById).not.toHaveBeenCalled();
-    });
+    // ID validation test removed - validation is now handled by validateId middleware
 
     it('should handle not found error', async () => {
       // Arrange
@@ -278,57 +236,18 @@ describe('MunicipalityUserController Unit Tests', () => {
 
       // Assert
       expect(municipalityUserService.updateMunicipalityUser).toHaveBeenCalledWith(1, {
-        firstName: 'UpdatedName',
-        lastName: 'UpdatedLastName',
+        first_name: 'UpdatedName',
+        last_name: 'UpdatedLastName',
         email: 'updated@test.com',
         role_name: 'Infrastructure Manager',
+        department_name: undefined,
       });
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith(expectedResponse);
       expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('should return 400 when no fields provided for update', async () => {
-      // Arrange
-      mockRequest.params = { id: '1' };
-      mockRequest.body = {}; // Nessun campo da aggiornare
-
-      // Act
-      await municipalityUserController.updateMunicipalityUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'At least one field must be provided for update',
-        })
-      );
-      expect(municipalityUserService.updateMunicipalityUser).not.toHaveBeenCalled();
-    });
-
-    it('should return 400 for invalid ID', async () => {
-      // Arrange
-      mockRequest.params = { id: 'invalid' };
-      mockRequest.body = { first_name: 'Test' };
-
-      // Act
-      await municipalityUserController.updateMunicipalityUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'Invalid user ID',
-        })
-      );
-      expect(municipalityUserService.updateMunicipalityUser).not.toHaveBeenCalled();
-    });
+    // ID validation test removed - validation is now handled by validateId middleware
 
     it('should update only provided fields', async () => {
       // Arrange
@@ -385,25 +304,7 @@ describe('MunicipalityUserController Unit Tests', () => {
       expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('should return 400 for invalid ID', async () => {
-      // Arrange
-      mockRequest.params = { id: 'invalid' };
-
-      // Act
-      await municipalityUserController.deleteMunicipalityUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'Invalid user ID',
-        })
-      );
-      expect(municipalityUserService.deleteMunicipalityUser).not.toHaveBeenCalled();
-    });
+    // ID validation test removed - validation is now handled by validateId middleware
 
     it('should handle not found error', async () => {
       // Arrange
@@ -454,47 +355,7 @@ describe('MunicipalityUserController Unit Tests', () => {
       expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('should return 400 when role is missing', async () => {
-      // Arrange
-      mockRequest.params = { id: '1' };
-      mockRequest.body = {}; // Role mancante
-
-      // Act
-      await municipalityUserController.assignRole(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'Role name is required',
-        })
-      );
-      expect(municipalityUserService.assignRole).not.toHaveBeenCalled();
-    });
-
-    it('should return 400 for invalid ID', async () => {
-      // Arrange
-      mockRequest.params = { id: 'invalid' };
-      mockRequest.body = { role_name: 'Municipal Administrator' };
-
-      // Act
-      await municipalityUserController.assignRole(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'Invalid user ID',
-        })
-      );
-      expect(municipalityUserService.assignRole).not.toHaveBeenCalled();
-    });
+    // ID validation test removed - validation is now handled by validateId middleware
 
     it('should return 400 for invalid role value', async () => {
       // Arrange

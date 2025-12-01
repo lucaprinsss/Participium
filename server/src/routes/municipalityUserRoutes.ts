@@ -2,7 +2,7 @@ import express from 'express';
 import { requireRole } from '@middleware/authMiddleware';
 import { UserRole } from '@dto/UserRole';
 import municipalityUserController from '../controllers/municipalityUserController';
-import { validateDepartmentId } from '@middleware/validateDepartmentId';
+import { validateId } from '@middleware/validateId';
 import { validateBodyFields } from '@middleware/validateBodyFields';
 
 const router = express.Router();
@@ -220,7 +220,7 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.
  *             example:
  *               error: "Internal server error"
  */
-router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId, municipalityUserController.getMunicipalityUserById);
+router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.getMunicipalityUserById);
 
 /**
  * @swagger
@@ -319,7 +319,7 @@ router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId, mu
  *             example:
  *               error: "Internal server error"
  */
-router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId, municipalityUserController.updateMunicipalityUser);
+router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.updateMunicipalityUser);
 
 
 /**
@@ -374,7 +374,7 @@ router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId, mu
  *             example:
  *               error: "Internal server error"
  */
-router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId, municipalityUserController.deleteMunicipalityUser);
+router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.deleteMunicipalityUser);
 
 
 /**
@@ -461,7 +461,7 @@ router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateDepartmentId,
 router.put(
 	'/:id/role',
 	requireRole(UserRole.ADMINISTRATOR),
-	validateDepartmentId,
+	validateId('id', 'user'),
 	validateBodyFields(['role_name']),
 	municipalityUserController.assignRole
 );

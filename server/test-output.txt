@@ -1,0 +1,1540 @@
+
+> participium-server@1.0.0 test
+> run-s test:db:up test:wait test:run test:db:down
+
+
+> participium-server@1.0.0 test:db:up
+> docker-compose -f docker-compose.test.yml up -d
+
+time="2025-12-01T10:17:35+01:00" level=warning msg="/Users/carola/Desktop/Participium/server/docker-compose.test.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container participium_test_db  Running
+
+> participium-server@1.0.0 test:wait
+> node -e "console.log('Waiting for database...'); setTimeout(() => console.log('Database ready'), 15000)" && node -e "const start = Date.now(); while(Date.now() - start < 15000);"
+
+Waiting for database...
+Database ready
+
+> participium-server@1.0.0 test:run
+> jest --runInBand --silent
+
+FAIL src/test/e2e/municipalityUserController.e2e.test.ts (14.195 s)
+  ● MunicipalityUserController E2E Tests › GET /api/municipality/users/:id - Get Municipality User By ID › should return 400 for invalid user ID
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Invalid user ID"
+    Received string:    "Invalid department ID. Must be a positive integer."
+
+      429 |       // Assert
+      430 |       expect(response.body).toHaveProperty('message');
+    > 431 |       expect(response.body.message).toContain('Invalid user ID');
+          |                                     ^
+      432 |     });
+      433 |
+      434 |     it('should return 404 for non-existent user ID', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:431:37)
+
+  ● MunicipalityUserController E2E Tests › PUT /api/municipality/users/:id - Update Municipality User › should return 400 for invalid user ID
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Invalid user ID"
+    Received string:    "Invalid department ID. Must be a positive integer."
+
+      579 |       // Assert
+      580 |       expect(response.body).toHaveProperty('message');
+    > 581 |       expect(response.body.message).toContain('Invalid user ID');
+          |                                     ^
+      582 |     });
+      583 |
+      584 |     it('should return 404 for non-existent user ID', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:581:37)
+
+  ● MunicipalityUserController E2E Tests › DELETE /api/municipality/users/:id - Delete Municipality User › should return 400 for invalid user ID
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Invalid user ID"
+    Received string:    "Invalid department ID. Must be a positive integer."
+
+      676 |       // Assert
+      677 |       expect(response.body).toHaveProperty('message');
+    > 678 |       expect(response.body.message).toContain('Invalid user ID');
+          |                                     ^
+      679 |     });
+      680 |
+      681 |     it('should return 404 for non-existent user ID', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:678:37)
+
+  ● MunicipalityUserController E2E Tests › PUT /api/municipality/users/:id/role - Assign Role › should return 400 when role is missing
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Role name is required"
+    Received string:    "Missing required field: role_name"
+
+      780 |       // Assert
+      781 |       expect(response.body).toHaveProperty('message');
+    > 782 |       expect(response.body.message).toContain('Role name is required');
+          |                                     ^
+      783 |     });
+      784 |
+      785 |     it('should return 400 for invalid user ID', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:782:37)
+
+  ● MunicipalityUserController E2E Tests › PUT /api/municipality/users/:id/role - Assign Role › should return 400 for invalid user ID
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Invalid user ID"
+    Received string:    "Invalid department ID. Must be a positive integer."
+
+      797 |       // Assert
+      798 |       expect(response.body).toHaveProperty('message');
+    > 799 |       expect(response.body.message).toContain('Invalid user ID');
+          |                                     ^
+      800 |     });
+      801 |
+      802 |     it('should return 400 for invalid role value', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:799:37)
+
+FAIL src/test/unit/controller/reportController.unit.test.ts
+  ● ReportController › getAllReports › status filter validation › should throw BadRequestError for invalid status
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      77 |         );
+      78 |
+    > 79 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+         |                          ^
+      80 |         expect(mockNext).toHaveBeenCalledWith(
+      81 |           expect.objectContaining({ 
+      82 |             message: expect.stringContaining('Invalid status') 
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:79:26)
+
+  ● ReportController › getAllReports › category filter validation › should throw BadRequestError for invalid category
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      161 |         );
+      162 |
+    > 163 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      164 |         expect(mockNext).toHaveBeenCalledWith(
+      165 |           expect.objectContaining({ 
+      166 |             message: expect.stringContaining('Invalid category') 
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:163:26)
+
+  ● ReportController › getMapReports › validation › should reject invalid zoom level (too low)
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      708 |         );
+      709 |
+    > 710 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      711 |         expect(mockNext).toHaveBeenCalledWith(
+      712 |           expect.objectContaining({ message: 'Zoom level must be between 1 and 20' })
+      713 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:710:26)
+
+  ● ReportController › getMapReports › validation › should reject invalid zoom level (too high)
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      723 |         );
+      724 |
+    > 725 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      726 |         expect(mockNext).toHaveBeenCalledWith(
+      727 |           expect.objectContaining({ message: 'Zoom level must be between 1 and 20' })
+      728 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:725:26)
+
+  ● ReportController › getMapReports › validation › should reject incomplete bounding box (only minLat)
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      738 |         );
+      739 |
+    > 740 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      741 |         expect(mockNext).toHaveBeenCalledWith(
+      742 |           expect.objectContaining({ 
+      743 |             message: 'Bounding box requires all parameters: minLat, maxLat, minLng, maxLng' 
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:740:26)
+
+  ● ReportController › getMapReports › validation › should reject invalid latitude range
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      760 |         );
+      761 |
+    > 762 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      763 |         expect(mockNext).toHaveBeenCalledWith(
+      764 |           expect.objectContaining({ message: 'minLat must be between -90 and 90' })
+      765 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:762:26)
+
+  ● ReportController › getMapReports › validation › should reject invalid longitude range
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      780 |         );
+      781 |
+    > 782 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      783 |         expect(mockNext).toHaveBeenCalledWith(
+      784 |           expect.objectContaining({ message: 'minLng must be between -180 and 180' })
+      785 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:782:26)
+
+  ● ReportController › getMapReports › validation › should reject when minLat >= maxLat
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      800 |         );
+      801 |
+    > 802 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      803 |         expect(mockNext).toHaveBeenCalledWith(
+      804 |           expect.objectContaining({ message: 'minLat must be less than maxLat' })
+      805 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:802:26)
+
+  ● ReportController › getMapReports › validation › should reject when minLng >= maxLng
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      820 |         );
+      821 |
+    > 822 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      823 |         expect(mockNext).toHaveBeenCalledWith(
+      824 |           expect.objectContaining({ message: 'minLng must be less than maxLng' })
+      825 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:822:26)
+
+  ● ReportController › getMapReports › successful requests › should return map reports with valid zoom level
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"zoom": 15}
+    Received: {"category": undefined, "maxLat": undefined, "maxLng": undefined, "minLat": undefined, "minLng": undefined, "zoom": undefined}
+
+    Number of calls: 1
+
+      886 |         );
+      887 |
+    > 888 |         expect(reportService.getMapReports).toHaveBeenCalledWith(
+          |                                             ^
+      889 |           expect.objectContaining({ zoom: 15 })
+      890 |         );
+      891 |         expect(mockResponse.status).toHaveBeenCalledWith(200);
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:888:45)
+
+  ● ReportController › getMapReports › successful requests › should return map reports with valid bounding box
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    - Expected
+    + Received
+
+      Object {
+        "category": undefined,
+    -   "maxLat": 46,
+    -   "maxLng": 8,
+    -   "minLat": 45,
+    -   "minLng": 7,
+    +   "maxLat": undefined,
+    +   "maxLng": undefined,
+    +   "minLat": undefined,
+    +   "minLng": undefined,
+        "zoom": undefined,
+      },
+
+    Number of calls: 1
+
+      908 |         );
+      909 |
+    > 910 |         expect(reportService.getMapReports).toHaveBeenCalledWith({
+          |                                             ^
+      911 |           zoom: undefined,
+      912 |           minLat: 45.0,
+      913 |           maxLat: 46.0,
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:910:45)
+
+FAIL src/test/unit/controller/municipalityUserController.unit.test.ts
+  ● MunicipalityUserController Unit Tests › createMunicipalityUser › should return 400 when required fields are missing
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "All fields are required: username, email, password, first_name, last_name, role_name"}
+
+    Number of calls: 0
+
+      90 |
+      91 |       // Assert
+    > 92 |       expect(mockNext).toHaveBeenCalledWith(
+         |                        ^
+      93 |         expect.objectContaining({
+      94 |           message: 'All fields are required: username, email, password, first_name, last_name, role_name',
+      95 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:92:24)
+
+  ● MunicipalityUserController Unit Tests › getMunicipalityUserById › should return 400 for invalid ID
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Invalid user ID"}
+    Received: [BadRequestError: Invalid user ID. Must be a positive integer.]
+
+    Number of calls: 1
+
+      221 |
+      222 |       // Assert
+    > 223 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      224 |         expect.objectContaining({
+      225 |           message: 'Invalid user ID',
+      226 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:223:24)
+
+  ● MunicipalityUserController Unit Tests › updateMunicipalityUser › should update municipality user successfully
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    - Expected
+    + Received
+
+      1,
+      Object {
+    +   "department_name": undefined,
+        "email": "updated@test.com",
+    -   "firstName": "UpdatedName",
+    -   "lastName": "UpdatedLastName",
+    +   "first_name": "UpdatedName",
+    +   "last_name": "UpdatedLastName",
+        "role_name": "Infrastructure Manager",
+      },
+
+    Number of calls: 1
+
+      278 |
+      279 |       // Assert
+    > 280 |       expect(municipalityUserService.updateMunicipalityUser).toHaveBeenCalledWith(1, {
+          |                                                              ^
+      281 |         firstName: 'UpdatedName',
+      282 |         lastName: 'UpdatedLastName',
+      283 |         email: 'updated@test.com',
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:280:62)
+
+  ● MunicipalityUserController Unit Tests › updateMunicipalityUser › should return 400 when no fields provided for update
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "At least one field must be provided for update"}
+
+    Number of calls: 0
+
+      302 |
+      303 |       // Assert
+    > 304 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      305 |         expect.objectContaining({
+      306 |           message: 'At least one field must be provided for update',
+      307 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:304:24)
+
+  ● MunicipalityUserController Unit Tests › updateMunicipalityUser › should return 400 for invalid ID
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Invalid user ID"}
+    Received: [BadRequestError: Invalid user ID. Must be a positive integer.]
+
+    Number of calls: 1
+
+      323 |
+      324 |       // Assert
+    > 325 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      326 |         expect.objectContaining({
+      327 |           message: 'Invalid user ID',
+      328 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:325:24)
+
+  ● MunicipalityUserController Unit Tests › deleteMunicipalityUser › should return 400 for invalid ID
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Invalid user ID"}
+    Received: [BadRequestError: Invalid user ID. Must be a positive integer.]
+
+    Number of calls: 1
+
+      398 |
+      399 |       // Assert
+    > 400 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      401 |         expect.objectContaining({
+      402 |           message: 'Invalid user ID',
+      403 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:400:24)
+
+  ● MunicipalityUserController Unit Tests › assignRole › should return 400 when role is missing
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Role name is required"}
+
+    Number of calls: 0
+
+      468 |
+      469 |       // Assert
+    > 470 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      471 |         expect.objectContaining({
+      472 |           message: 'Role name is required',
+      473 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:470:24)
+
+  ● MunicipalityUserController Unit Tests › assignRole › should return 400 for invalid ID
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Invalid user ID"}
+    Received: [BadRequestError: Invalid user ID. Must be a positive integer.]
+
+    Number of calls: 1
+
+      489 |
+      490 |       // Assert
+    > 491 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      492 |         expect.objectContaining({
+      493 |           message: 'Invalid user ID',
+      494 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:491:24)
+
+FAIL src/test/integration/services/municipalityUserServiceIntegrationTest.test.ts
+  ● Test suite failed to run
+
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m249[0m:[93m78[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m249[0m       const result = await municipalityUserService.updateMunicipalityUser(1, updateData);
+    [7m   [0m [91m                                                                             ~~~~~~~~~~[0m
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m259[0m:[93m72[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m259[0m       await expect(municipalityUserService.updateMunicipalityUser(999, updateData)).rejects.toThrow(NotFoundError);
+    [7m   [0m [91m                                                                       ~~~~~~~~~~[0m
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m265[0m:[93m70[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m265[0m       await expect(municipalityUserService.updateMunicipalityUser(2, updateData)).rejects.toThrow(BadRequestError);
+    [7m   [0m [91m                                                                     ~~~~~~~~~~[0m
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m271[0m:[93m70[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m271[0m       await expect(municipalityUserService.updateMunicipalityUser(3, updateData)).rejects.toThrow(BadRequestError);
+    [7m   [0m [91m                                                                     ~~~~~~~~~~[0m
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m324[0m:[93m70[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m324[0m       await expect(municipalityUserService.updateMunicipalityUser(1, updateData)).rejects.toThrow(AppError);
+    [7m   [0m [91m                                                                     ~~~~~~~~~~[0m
+
+FAIL src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts
+  ● Municipality User Routes Integration Tests › POST /api/municipality/users › should return 201 if user is admin and data is valid
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 400
+
+      164 |         .send(mockCreateRequest);
+      165 |
+    > 166 |       expect(res.status).toBe(201);
+          |                          ^
+      167 |       expect(res.body).toEqual(mockUserResponse);
+      168 |       expect(mockCreateUser).toHaveBeenCalledTimes(1);
+      169 |     });
+
+      at Object.<anonymous> (src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts:166:26)
+
+  ● Municipality User Routes Integration Tests › POST /api/municipality/users › should return 400 if user is admin but missing data
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "All fields are required"
+    Received: undefined
+
+      176 |
+      177 |       expect(res.status).toBe(400);
+    > 178 |       expect(res.body.error).toBe('All fields are required');
+          |                              ^
+      179 |     });
+      180 |   });
+      181 |
+
+      at Object.<anonymous> (src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts:178:30)
+
+  ● Municipality User Routes Integration Tests › PUT /api/municipality/users/:id/role › should return 200 and user with new role if admin
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 400
+
+      268 |         .send(roleAssignRequest);
+      269 |
+    > 270 |       expect(res.status).toBe(200);
+          |                          ^
+      271 |       expect(res.body.role_id).toBe(3);
+      272 |       expect(mockAssignRole).toHaveBeenCalledTimes(1);
+      273 |     });
+
+      at Object.<anonymous> (src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts:270:26)
+
+  ● Municipality User Routes Integration Tests › PUT /api/municipality/users/:id/role › should return 404 if admin and user do not exist
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 404
+    Received: 400
+
+      279 |         .send(roleAssignRequest);
+      280 |
+    > 281 |       expect(res.status).toBe(404);
+          |                          ^
+      282 |     });
+      283 |   });
+      284 |   
+
+      at Object.<anonymous> (src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts:281:26)
+
+FAIL src/test/integration/routes/departmentRoutesIntegrationTest.test.ts
+  ● Department Routes Integration Tests › GET /api/departments/:id/roles › should return 400 if department ID is not a number
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      176 |
+      177 |       expect(res.status).toBe(400);
+    > 178 |       expect(res.body.error).toContain('Invalid department ID');
+          |                              ^
+      179 |     });
+      180 |
+      181 |     it('should return 400 if department ID is zero', async () => {
+
+      at Object.<anonymous> (src/test/integration/routes/departmentRoutesIntegrationTest.test.ts:178:30)
+
+  ● Department Routes Integration Tests › GET /api/departments/:id/roles › should return 400 if department ID is zero
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      185 |
+      186 |       expect(res.status).toBe(400);
+    > 187 |       expect(res.body.error).toContain('Invalid department ID');
+          |                              ^
+      188 |     });
+      189 |
+      190 |     it('should return 400 if department ID is negative', async () => {
+
+      at Object.<anonymous> (src/test/integration/routes/departmentRoutesIntegrationTest.test.ts:187:30)
+
+  ● Department Routes Integration Tests › GET /api/departments/:id/roles › should return 400 if department ID is negative
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      194 |
+      195 |       expect(res.status).toBe(400);
+    > 196 |       expect(res.body.error).toContain('Invalid department ID');
+          |                              ^
+      197 |     });
+      198 |
+      199 |     it('should return 400 if department ID is a decimal', async () => {
+
+      at Object.<anonymous> (src/test/integration/routes/departmentRoutesIntegrationTest.test.ts:196:30)
+
+  ● Department Routes Integration Tests › GET /api/departments/:id/roles › should return 400 if department ID is a decimal
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      203 |
+      204 |       expect(res.status).toBe(400);
+    > 205 |       expect(res.body.error).toContain('Invalid department ID');
+          |                              ^
+      206 |     });
+      207 |   });
+      208 | });
+
+      at Object.<anonymous> (src/test/integration/routes/departmentRoutesIntegrationTest.test.ts:205:30)
+
+FAIL src/test/integration/routes/reportRoutesIntegrationTest.test.ts
+  ● Report Routes Integration Tests - Approve/Reject/GetAll › PUT /api/reports/:id/approve › should return 400 for invalid report ID
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Invalid report ID"
+    Received: undefined
+
+      273 |
+      274 |       expect(res.status).toBe(400);
+    > 275 |       expect(res.body.error).toBe('Invalid report ID');
+          |                              ^
+      276 |     });
+      277 |   });
+      278 |
+
+      at Object.<anonymous> (src/test/integration/routes/reportRoutesIntegrationTest.test.ts:275:30)
+
+  ● Report Routes Integration Tests - Approve/Reject/GetAll › PUT /api/reports/:id/reject › should return 400 for invalid report ID
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Invalid report ID"
+    Received: undefined
+
+      338 |
+      339 |       expect(res.status).toBe(400);
+    > 340 |       expect(res.body.error).toBe('Invalid report ID');
+          |                              ^
+      341 |     });
+      342 |
+      343 |     it('should handle different rejection reasons', async () => {
+
+      at Object.<anonymous> (src/test/integration/routes/reportRoutesIntegrationTest.test.ts:340:30)
+
+FAIL src/test/unit/services/storageService.unit.test.ts
+  ● StorageService (local provider) › uploads photo to local and returns relative path
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      30 |    */
+      31 |   private async uploadToLocal(buffer: Buffer, filename: string, reportId: number): Promise<string> {
+    > 32 |     const uploadDir = path.join(
+         |                            ^
+      33 |       process.cwd(),
+      34 |       storageConfig.uploadDir,
+      35 |       storageConfig.reportsDir,
+
+      at StorageService.uploadToLocal (src/services/storageService.ts:32:28)
+      at StorageService.uploadPhoto (src/services/storageService.ts:24:23)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:37:41)
+
+  ● StorageService (local provider) › deletes local report photos directory if exists
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      55 |   async deleteReportPhotos(reportId: number): Promise<void> {
+      56 |     // Delete local directory
+    > 57 |     const reportDir = path.join(
+         |                            ^
+      58 |       process.cwd(),
+      59 |       storageConfig.uploadDir,
+      60 |       storageConfig.reportsDir,
+
+      at StorageService.deleteReportPhotos (src/services/storageService.ts:57:28)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:66:26)
+
+  ● StorageService (R2 provider) › uploads photo to R2 using publicUrl when configured
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      30 |    */
+      31 |   private async uploadToLocal(buffer: Buffer, filename: string, reportId: number): Promise<string> {
+    > 32 |     const uploadDir = path.join(
+         |                            ^
+      33 |       process.cwd(),
+      34 |       storageConfig.uploadDir,
+      35 |       storageConfig.reportsDir,
+
+      at StorageService.uploadToLocal (src/services/storageService.ts:32:28)
+      at StorageService.uploadPhoto (src/services/storageService.ts:24:23)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:107:41)
+
+  ● StorageService (R2 provider) › uploads to R2 and returns key when publicUrl not set
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      30 |    */
+      31 |   private async uploadToLocal(buffer: Buffer, filename: string, reportId: number): Promise<string> {
+    > 32 |     const uploadDir = path.join(
+         |                            ^
+      33 |       process.cwd(),
+      34 |       storageConfig.uploadDir,
+      35 |       storageConfig.reportsDir,
+
+      at StorageService.uploadToLocal (src/services/storageService.ts:32:28)
+      at StorageService.uploadPhoto (src/services/storageService.ts:24:23)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:144:41)
+
+  ● StorageService (R2 provider) › deleteReportPhotos warns for R2 provider
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      55 |   async deleteReportPhotos(reportId: number): Promise<void> {
+      56 |     // Delete local directory
+    > 57 |     const reportDir = path.join(
+         |                            ^
+      58 |       process.cwd(),
+      59 |       storageConfig.uploadDir,
+      60 |       storageConfig.reportsDir,
+
+      at StorageService.deleteReportPhotos (src/services/storageService.ts:57:28)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:169:26)
+
+PASS src/test/integration/controllers/municipalityUserControllerIntegrationTest.test.ts (13.305 s)
+PASS src/test/unit/services/reportService.unit.test.ts
+PASS src/test/e2e/userController.e2e.test.ts
+PASS src/test/e2e/reportController.e2e.test.ts
+PASS src/test/e2e/departmentController.e2e.test.ts
+PASS src/test/e2e/authController.e2e.test.ts
+PASS src/test/integration/repositories/userRepositoryIntegrationTest.test.ts
+PASS src/test/integration/services/reportServiceIntegrationTest.test.ts
+PASS src/test/integration/repositories/reportRepositoryIntegrationTest.test.ts
+PASS src/test/integration/middleware/registerValidation.integration.test.ts
+PASS src/test/integration/controllers/reportControllerIntegrationTest.test.ts
+PASS src/test/integration/controllers/authControllerIntegrationTest.test.ts
+PASS src/test/integration/services/departmentServiceIntegrationTest.test.ts
+PASS src/test/integration/controllers/userControllerIntegrationTest.test.ts
+PASS src/test/unit/repository/userRepository.unit.test.ts
+PASS src/test/unit/services/departmentService.unit.test.ts
+PASS src/test/integration/routes/userRoutesIntegrationTest.test.ts
+PASS src/test/unit/repository/reportRepository.unit.test.ts
+PASS src/test/integration/services/userServiceIntegrationTest.test.ts
+PASS src/test/unit/controller/userController.unit.test.ts
+PASS src/test/integration/routes/authRoutesIntegrationTest.test.ts
+PASS src/test/integration/routes/roleRoutesIntegrationTest.test.ts
+PASS src/test/unit/controller/authController.unit.test.ts
+PASS src/test/unit/utils/photoValidationUtils.test.ts
+PASS src/test/integration/services/mapperServiceIntegrationTest.test.ts
+PASS src/test/integration/services/errorServiceIntegrationTest.test.ts
+PASS src/test/integration/services/authServiceIntegrationTest.test.ts
+PASS src/test/integration/services/loggingServiceIntegrationTest.test.ts
+PASS src/test/unit/middleware/registerValidation.unit.test.ts
+PASS src/test/unit/utils/geoValidationUtils.test.ts
+
+Summary of all failing tests
+FAIL src/test/e2e/municipalityUserController.e2e.test.ts (14.195 s)
+  ● MunicipalityUserController E2E Tests › GET /api/municipality/users/:id - Get Municipality User By ID › should return 400 for invalid user ID
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Invalid user ID"
+    Received string:    "Invalid department ID. Must be a positive integer."
+
+      429 |       // Assert
+      430 |       expect(response.body).toHaveProperty('message');
+    > 431 |       expect(response.body.message).toContain('Invalid user ID');
+          |                                     ^
+      432 |     });
+      433 |
+      434 |     it('should return 404 for non-existent user ID', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:431:37)
+
+  ● MunicipalityUserController E2E Tests › PUT /api/municipality/users/:id - Update Municipality User › should return 400 for invalid user ID
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Invalid user ID"
+    Received string:    "Invalid department ID. Must be a positive integer."
+
+      579 |       // Assert
+      580 |       expect(response.body).toHaveProperty('message');
+    > 581 |       expect(response.body.message).toContain('Invalid user ID');
+          |                                     ^
+      582 |     });
+      583 |
+      584 |     it('should return 404 for non-existent user ID', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:581:37)
+
+  ● MunicipalityUserController E2E Tests › DELETE /api/municipality/users/:id - Delete Municipality User › should return 400 for invalid user ID
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Invalid user ID"
+    Received string:    "Invalid department ID. Must be a positive integer."
+
+      676 |       // Assert
+      677 |       expect(response.body).toHaveProperty('message');
+    > 678 |       expect(response.body.message).toContain('Invalid user ID');
+          |                                     ^
+      679 |     });
+      680 |
+      681 |     it('should return 404 for non-existent user ID', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:678:37)
+
+  ● MunicipalityUserController E2E Tests › PUT /api/municipality/users/:id/role - Assign Role › should return 400 when role is missing
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Role name is required"
+    Received string:    "Missing required field: role_name"
+
+      780 |       // Assert
+      781 |       expect(response.body).toHaveProperty('message');
+    > 782 |       expect(response.body.message).toContain('Role name is required');
+          |                                     ^
+      783 |     });
+      784 |
+      785 |     it('should return 400 for invalid user ID', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:782:37)
+
+  ● MunicipalityUserController E2E Tests › PUT /api/municipality/users/:id/role - Assign Role › should return 400 for invalid user ID
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "Invalid user ID"
+    Received string:    "Invalid department ID. Must be a positive integer."
+
+      797 |       // Assert
+      798 |       expect(response.body).toHaveProperty('message');
+    > 799 |       expect(response.body.message).toContain('Invalid user ID');
+          |                                     ^
+      800 |     });
+      801 |
+      802 |     it('should return 400 for invalid role value', async () => {
+
+      at Object.<anonymous> (src/test/e2e/municipalityUserController.e2e.test.ts:799:37)
+
+FAIL src/test/unit/controller/reportController.unit.test.ts
+  ● ReportController › getAllReports › status filter validation › should throw BadRequestError for invalid status
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      77 |         );
+      78 |
+    > 79 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+         |                          ^
+      80 |         expect(mockNext).toHaveBeenCalledWith(
+      81 |           expect.objectContaining({ 
+      82 |             message: expect.stringContaining('Invalid status') 
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:79:26)
+
+  ● ReportController › getAllReports › category filter validation › should throw BadRequestError for invalid category
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      161 |         );
+      162 |
+    > 163 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      164 |         expect(mockNext).toHaveBeenCalledWith(
+      165 |           expect.objectContaining({ 
+      166 |             message: expect.stringContaining('Invalid category') 
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:163:26)
+
+  ● ReportController › getMapReports › validation › should reject invalid zoom level (too low)
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      708 |         );
+      709 |
+    > 710 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      711 |         expect(mockNext).toHaveBeenCalledWith(
+      712 |           expect.objectContaining({ message: 'Zoom level must be between 1 and 20' })
+      713 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:710:26)
+
+  ● ReportController › getMapReports › validation › should reject invalid zoom level (too high)
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      723 |         );
+      724 |
+    > 725 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      726 |         expect(mockNext).toHaveBeenCalledWith(
+      727 |           expect.objectContaining({ message: 'Zoom level must be between 1 and 20' })
+      728 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:725:26)
+
+  ● ReportController › getMapReports › validation › should reject incomplete bounding box (only minLat)
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      738 |         );
+      739 |
+    > 740 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      741 |         expect(mockNext).toHaveBeenCalledWith(
+      742 |           expect.objectContaining({ 
+      743 |             message: 'Bounding box requires all parameters: minLat, maxLat, minLng, maxLng' 
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:740:26)
+
+  ● ReportController › getMapReports › validation › should reject invalid latitude range
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      760 |         );
+      761 |
+    > 762 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      763 |         expect(mockNext).toHaveBeenCalledWith(
+      764 |           expect.objectContaining({ message: 'minLat must be between -90 and 90' })
+      765 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:762:26)
+
+  ● ReportController › getMapReports › validation › should reject invalid longitude range
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      780 |         );
+      781 |
+    > 782 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      783 |         expect(mockNext).toHaveBeenCalledWith(
+      784 |           expect.objectContaining({ message: 'minLng must be between -180 and 180' })
+      785 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:782:26)
+
+  ● ReportController › getMapReports › validation › should reject when minLat >= maxLat
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      800 |         );
+      801 |
+    > 802 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      803 |         expect(mockNext).toHaveBeenCalledWith(
+      804 |           expect.objectContaining({ message: 'minLat must be less than maxLat' })
+      805 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:802:26)
+
+  ● ReportController › getMapReports › validation › should reject when minLng >= maxLng
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<BadRequestError>
+
+    Number of calls: 0
+
+      820 |         );
+      821 |
+    > 822 |         expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+          |                          ^
+      823 |         expect(mockNext).toHaveBeenCalledWith(
+      824 |           expect.objectContaining({ message: 'minLng must be less than maxLng' })
+      825 |         );
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:822:26)
+
+  ● ReportController › getMapReports › successful requests › should return map reports with valid zoom level
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"zoom": 15}
+    Received: {"category": undefined, "maxLat": undefined, "maxLng": undefined, "minLat": undefined, "minLng": undefined, "zoom": undefined}
+
+    Number of calls: 1
+
+      886 |         );
+      887 |
+    > 888 |         expect(reportService.getMapReports).toHaveBeenCalledWith(
+          |                                             ^
+      889 |           expect.objectContaining({ zoom: 15 })
+      890 |         );
+      891 |         expect(mockResponse.status).toHaveBeenCalledWith(200);
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:888:45)
+
+  ● ReportController › getMapReports › successful requests › should return map reports with valid bounding box
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    - Expected
+    + Received
+
+      Object {
+        "category": undefined,
+    -   "maxLat": 46,
+    -   "maxLng": 8,
+    -   "minLat": 45,
+    -   "minLng": 7,
+    +   "maxLat": undefined,
+    +   "maxLng": undefined,
+    +   "minLat": undefined,
+    +   "minLng": undefined,
+        "zoom": undefined,
+      },
+
+    Number of calls: 1
+
+      908 |         );
+      909 |
+    > 910 |         expect(reportService.getMapReports).toHaveBeenCalledWith({
+          |                                             ^
+      911 |           zoom: undefined,
+      912 |           minLat: 45.0,
+      913 |           maxLat: 46.0,
+
+      at Object.<anonymous> (src/test/unit/controller/reportController.unit.test.ts:910:45)
+
+FAIL src/test/unit/controller/municipalityUserController.unit.test.ts
+  ● MunicipalityUserController Unit Tests › createMunicipalityUser › should return 400 when required fields are missing
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "All fields are required: username, email, password, first_name, last_name, role_name"}
+
+    Number of calls: 0
+
+      90 |
+      91 |       // Assert
+    > 92 |       expect(mockNext).toHaveBeenCalledWith(
+         |                        ^
+      93 |         expect.objectContaining({
+      94 |           message: 'All fields are required: username, email, password, first_name, last_name, role_name',
+      95 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:92:24)
+
+  ● MunicipalityUserController Unit Tests › getMunicipalityUserById › should return 400 for invalid ID
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Invalid user ID"}
+    Received: [BadRequestError: Invalid user ID. Must be a positive integer.]
+
+    Number of calls: 1
+
+      221 |
+      222 |       // Assert
+    > 223 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      224 |         expect.objectContaining({
+      225 |           message: 'Invalid user ID',
+      226 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:223:24)
+
+  ● MunicipalityUserController Unit Tests › updateMunicipalityUser › should update municipality user successfully
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    - Expected
+    + Received
+
+      1,
+      Object {
+    +   "department_name": undefined,
+        "email": "updated@test.com",
+    -   "firstName": "UpdatedName",
+    -   "lastName": "UpdatedLastName",
+    +   "first_name": "UpdatedName",
+    +   "last_name": "UpdatedLastName",
+        "role_name": "Infrastructure Manager",
+      },
+
+    Number of calls: 1
+
+      278 |
+      279 |       // Assert
+    > 280 |       expect(municipalityUserService.updateMunicipalityUser).toHaveBeenCalledWith(1, {
+          |                                                              ^
+      281 |         firstName: 'UpdatedName',
+      282 |         lastName: 'UpdatedLastName',
+      283 |         email: 'updated@test.com',
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:280:62)
+
+  ● MunicipalityUserController Unit Tests › updateMunicipalityUser › should return 400 when no fields provided for update
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "At least one field must be provided for update"}
+
+    Number of calls: 0
+
+      302 |
+      303 |       // Assert
+    > 304 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      305 |         expect.objectContaining({
+      306 |           message: 'At least one field must be provided for update',
+      307 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:304:24)
+
+  ● MunicipalityUserController Unit Tests › updateMunicipalityUser › should return 400 for invalid ID
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Invalid user ID"}
+    Received: [BadRequestError: Invalid user ID. Must be a positive integer.]
+
+    Number of calls: 1
+
+      323 |
+      324 |       // Assert
+    > 325 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      326 |         expect.objectContaining({
+      327 |           message: 'Invalid user ID',
+      328 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:325:24)
+
+  ● MunicipalityUserController Unit Tests › deleteMunicipalityUser › should return 400 for invalid ID
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Invalid user ID"}
+    Received: [BadRequestError: Invalid user ID. Must be a positive integer.]
+
+    Number of calls: 1
+
+      398 |
+      399 |       // Assert
+    > 400 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      401 |         expect.objectContaining({
+      402 |           message: 'Invalid user ID',
+      403 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:400:24)
+
+  ● MunicipalityUserController Unit Tests › assignRole › should return 400 when role is missing
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Role name is required"}
+
+    Number of calls: 0
+
+      468 |
+      469 |       // Assert
+    > 470 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      471 |         expect.objectContaining({
+      472 |           message: 'Role name is required',
+      473 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:470:24)
+
+  ● MunicipalityUserController Unit Tests › assignRole › should return 400 for invalid ID
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: ObjectContaining {"message": "Invalid user ID"}
+    Received: [BadRequestError: Invalid user ID. Must be a positive integer.]
+
+    Number of calls: 1
+
+      489 |
+      490 |       // Assert
+    > 491 |       expect(mockNext).toHaveBeenCalledWith(
+          |                        ^
+      492 |         expect.objectContaining({
+      493 |           message: 'Invalid user ID',
+      494 |         })
+
+      at Object.<anonymous> (src/test/unit/controller/municipalityUserController.unit.test.ts:491:24)
+
+FAIL src/test/integration/services/municipalityUserServiceIntegrationTest.test.ts
+  ● Test suite failed to run
+
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m249[0m:[93m78[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m249[0m       const result = await municipalityUserService.updateMunicipalityUser(1, updateData);
+    [7m   [0m [91m                                                                             ~~~~~~~~~~[0m
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m259[0m:[93m72[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m259[0m       await expect(municipalityUserService.updateMunicipalityUser(999, updateData)).rejects.toThrow(NotFoundError);
+    [7m   [0m [91m                                                                       ~~~~~~~~~~[0m
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m265[0m:[93m70[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m265[0m       await expect(municipalityUserService.updateMunicipalityUser(2, updateData)).rejects.toThrow(BadRequestError);
+    [7m   [0m [91m                                                                     ~~~~~~~~~~[0m
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m271[0m:[93m70[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m271[0m       await expect(municipalityUserService.updateMunicipalityUser(3, updateData)).rejects.toThrow(BadRequestError);
+    [7m   [0m [91m                                                                     ~~~~~~~~~~[0m
+    [96msrc/test/integration/services/municipalityUserServiceIntegrationTest.test.ts[0m:[93m324[0m:[93m70[0m - [91merror[0m[90m TS2559: [0mType '{ firstName: string; }' has no properties in common with type 'Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string | undefined; }>'.
+
+    [7m324[0m       await expect(municipalityUserService.updateMunicipalityUser(1, updateData)).rejects.toThrow(AppError);
+    [7m   [0m [91m                                                                     ~~~~~~~~~~[0m
+
+FAIL src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts
+  ● Municipality User Routes Integration Tests › POST /api/municipality/users › should return 201 if user is admin and data is valid
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 201
+    Received: 400
+
+      164 |         .send(mockCreateRequest);
+      165 |
+    > 166 |       expect(res.status).toBe(201);
+          |                          ^
+      167 |       expect(res.body).toEqual(mockUserResponse);
+      168 |       expect(mockCreateUser).toHaveBeenCalledTimes(1);
+      169 |     });
+
+      at Object.<anonymous> (src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts:166:26)
+
+  ● Municipality User Routes Integration Tests › POST /api/municipality/users › should return 400 if user is admin but missing data
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "All fields are required"
+    Received: undefined
+
+      176 |
+      177 |       expect(res.status).toBe(400);
+    > 178 |       expect(res.body.error).toBe('All fields are required');
+          |                              ^
+      179 |     });
+      180 |   });
+      181 |
+
+      at Object.<anonymous> (src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts:178:30)
+
+  ● Municipality User Routes Integration Tests › PUT /api/municipality/users/:id/role › should return 200 and user with new role if admin
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 400
+
+      268 |         .send(roleAssignRequest);
+      269 |
+    > 270 |       expect(res.status).toBe(200);
+          |                          ^
+      271 |       expect(res.body.role_id).toBe(3);
+      272 |       expect(mockAssignRole).toHaveBeenCalledTimes(1);
+      273 |     });
+
+      at Object.<anonymous> (src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts:270:26)
+
+  ● Municipality User Routes Integration Tests › PUT /api/municipality/users/:id/role › should return 404 if admin and user do not exist
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 404
+    Received: 400
+
+      279 |         .send(roleAssignRequest);
+      280 |
+    > 281 |       expect(res.status).toBe(404);
+          |                          ^
+      282 |     });
+      283 |   });
+      284 |   
+
+      at Object.<anonymous> (src/test/integration/routes/municipalityUserRoutesIntegrationTest.test.ts:281:26)
+
+FAIL src/test/integration/routes/departmentRoutesIntegrationTest.test.ts
+  ● Department Routes Integration Tests › GET /api/departments/:id/roles › should return 400 if department ID is not a number
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      176 |
+      177 |       expect(res.status).toBe(400);
+    > 178 |       expect(res.body.error).toContain('Invalid department ID');
+          |                              ^
+      179 |     });
+      180 |
+      181 |     it('should return 400 if department ID is zero', async () => {
+
+      at Object.<anonymous> (src/test/integration/routes/departmentRoutesIntegrationTest.test.ts:178:30)
+
+  ● Department Routes Integration Tests › GET /api/departments/:id/roles › should return 400 if department ID is zero
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      185 |
+      186 |       expect(res.status).toBe(400);
+    > 187 |       expect(res.body.error).toContain('Invalid department ID');
+          |                              ^
+      188 |     });
+      189 |
+      190 |     it('should return 400 if department ID is negative', async () => {
+
+      at Object.<anonymous> (src/test/integration/routes/departmentRoutesIntegrationTest.test.ts:187:30)
+
+  ● Department Routes Integration Tests › GET /api/departments/:id/roles › should return 400 if department ID is negative
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      194 |
+      195 |       expect(res.status).toBe(400);
+    > 196 |       expect(res.body.error).toContain('Invalid department ID');
+          |                              ^
+      197 |     });
+      198 |
+      199 |     it('should return 400 if department ID is a decimal', async () => {
+
+      at Object.<anonymous> (src/test/integration/routes/departmentRoutesIntegrationTest.test.ts:196:30)
+
+  ● Department Routes Integration Tests › GET /api/departments/:id/roles › should return 400 if department ID is a decimal
+
+    expect(received).toContain(expected) // indexOf
+
+    Matcher error: received value must not be null nor undefined
+
+    Received has value: undefined
+
+      203 |
+      204 |       expect(res.status).toBe(400);
+    > 205 |       expect(res.body.error).toContain('Invalid department ID');
+          |                              ^
+      206 |     });
+      207 |   });
+      208 | });
+
+      at Object.<anonymous> (src/test/integration/routes/departmentRoutesIntegrationTest.test.ts:205:30)
+
+FAIL src/test/integration/routes/reportRoutesIntegrationTest.test.ts
+  ● Report Routes Integration Tests - Approve/Reject/GetAll › PUT /api/reports/:id/approve › should return 400 for invalid report ID
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Invalid report ID"
+    Received: undefined
+
+      273 |
+      274 |       expect(res.status).toBe(400);
+    > 275 |       expect(res.body.error).toBe('Invalid report ID');
+          |                              ^
+      276 |     });
+      277 |   });
+      278 |
+
+      at Object.<anonymous> (src/test/integration/routes/reportRoutesIntegrationTest.test.ts:275:30)
+
+  ● Report Routes Integration Tests - Approve/Reject/GetAll › PUT /api/reports/:id/reject › should return 400 for invalid report ID
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Invalid report ID"
+    Received: undefined
+
+      338 |
+      339 |       expect(res.status).toBe(400);
+    > 340 |       expect(res.body.error).toBe('Invalid report ID');
+          |                              ^
+      341 |     });
+      342 |
+      343 |     it('should handle different rejection reasons', async () => {
+
+      at Object.<anonymous> (src/test/integration/routes/reportRoutesIntegrationTest.test.ts:340:30)
+
+FAIL src/test/unit/services/storageService.unit.test.ts
+  ● StorageService (local provider) › uploads photo to local and returns relative path
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      30 |    */
+      31 |   private async uploadToLocal(buffer: Buffer, filename: string, reportId: number): Promise<string> {
+    > 32 |     const uploadDir = path.join(
+         |                            ^
+      33 |       process.cwd(),
+      34 |       storageConfig.uploadDir,
+      35 |       storageConfig.reportsDir,
+
+      at StorageService.uploadToLocal (src/services/storageService.ts:32:28)
+      at StorageService.uploadPhoto (src/services/storageService.ts:24:23)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:37:41)
+
+  ● StorageService (local provider) › deletes local report photos directory if exists
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      55 |   async deleteReportPhotos(reportId: number): Promise<void> {
+      56 |     // Delete local directory
+    > 57 |     const reportDir = path.join(
+         |                            ^
+      58 |       process.cwd(),
+      59 |       storageConfig.uploadDir,
+      60 |       storageConfig.reportsDir,
+
+      at StorageService.deleteReportPhotos (src/services/storageService.ts:57:28)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:66:26)
+
+  ● StorageService (R2 provider) › uploads photo to R2 using publicUrl when configured
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      30 |    */
+      31 |   private async uploadToLocal(buffer: Buffer, filename: string, reportId: number): Promise<string> {
+    > 32 |     const uploadDir = path.join(
+         |                            ^
+      33 |       process.cwd(),
+      34 |       storageConfig.uploadDir,
+      35 |       storageConfig.reportsDir,
+
+      at StorageService.uploadToLocal (src/services/storageService.ts:32:28)
+      at StorageService.uploadPhoto (src/services/storageService.ts:24:23)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:107:41)
+
+  ● StorageService (R2 provider) › uploads to R2 and returns key when publicUrl not set
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      30 |    */
+      31 |   private async uploadToLocal(buffer: Buffer, filename: string, reportId: number): Promise<string> {
+    > 32 |     const uploadDir = path.join(
+         |                            ^
+      33 |       process.cwd(),
+      34 |       storageConfig.uploadDir,
+      35 |       storageConfig.reportsDir,
+
+      at StorageService.uploadToLocal (src/services/storageService.ts:32:28)
+      at StorageService.uploadPhoto (src/services/storageService.ts:24:23)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:144:41)
+
+  ● StorageService (R2 provider) › deleteReportPhotos warns for R2 provider
+
+    TypeError: The "path" argument must be of type string. Received undefined
+
+      55 |   async deleteReportPhotos(reportId: number): Promise<void> {
+      56 |     // Delete local directory
+    > 57 |     const reportDir = path.join(
+         |                            ^
+      58 |       process.cwd(),
+      59 |       storageConfig.uploadDir,
+      60 |       storageConfig.reportsDir,
+
+      at StorageService.deleteReportPhotos (src/services/storageService.ts:57:28)
+      at Object.<anonymous> (src/test/unit/services/storageService.unit.test.ts:169:26)
+
+
+Test Suites: 8 failed, 30 passed, 38 total
+Tests:       39 failed, 670 passed, 709 total
+Snapshots:   0 total
+Time:        53.362 s, estimated 60 s
+ERROR: "test:run" exited with 1.

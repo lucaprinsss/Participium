@@ -20,6 +20,28 @@ jest.mock('@controllers/reportController', () => ({
 jest.mock('@middleware/reportMiddleware', () => ({
   validateCreateReport: jest.fn((req, res, next) => next()),
 }));
+jest.mock('@middleware/validateId', () => ({
+  validateId: jest.fn(() => (req: any, res: any, next: any) => {
+    const { id } = req.params;
+    const numericId = Number(id);
+    if (
+      id.includes('.') ||
+      Number.isNaN(numericId) ||
+      numericId <= 0 ||
+      !Number.isInteger(numericId)
+    ) {
+      return res.status(400).json({ message: 'Invalid report ID. Must be a positive integer.' });
+    }
+    next();
+  }),
+}));
+jest.mock('@middleware/validateMapQuery', () => ({
+  validateMapQuery: jest.fn((req, res, next) => next()),
+}));
+jest.mock('@middleware/validateReportQueryParams', () => ({
+  validateReportStatus: jest.fn((req, res, next) => next()),
+  validateReportCategory: jest.fn((req, res, next) => next()),
+}));
 
 import request from 'supertest';
 import express, { Express } from 'express';
@@ -272,7 +294,7 @@ describe('Report Routes Integration Tests - Approve/Reject/GetAll', () => {
         .send({ category: ReportCategory.ROADS });
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Invalid report ID');
+      expect(res.body.message).toContain('Invalid report ID');
     });
   });
 
@@ -337,7 +359,7 @@ describe('Report Routes Integration Tests - Approve/Reject/GetAll', () => {
         .send({ rejectionReason: 'Invalid report' });
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Invalid report ID');
+      expect(res.body.message).toContain('Invalid report ID');
     });
 
     it('should handle different rejection reasons', async () => {

@@ -2,9 +2,9 @@ import express from 'express';
 import { reportController } from '@controllers/reportController';
 import { isLoggedIn, requireRole } from '@middleware/authMiddleware';
 import { validateCreateReport } from '@middleware/reportMiddleware';
-import { validateDepartmentId } from '@middleware/validateDepartmentId';
+import { validateId } from '@middleware/validateId';
 import { validateMapQuery } from '@middleware/validateMapQuery';
-import { validateReportStatus, validateReportCategory } from '@middleware/validateQueryParams';
+import { validateReportStatus, validateReportCategory } from '@middleware/validateReportQueryParams';
 import { UserRole } from '@dto/UserRole';
 
 const router = express.Router();
@@ -289,7 +289,7 @@ router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/:id/approve', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), validateDepartmentId, reportController.approveReport);
+router.put('/:id/approve', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), validateId('id', 'report'), reportController.approveReport);
 
 /**
  * @swagger
@@ -353,7 +353,7 @@ router.put('/:id/approve', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), valid
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/:id/reject', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), validateDepartmentId, reportController.rejectReport);
+router.put('/:id/reject', requireRole(UserRole.PUBLIC_RELATIONS_OFFICER), validateId('id', 'report'), reportController.rejectReport);
 
 /**
  * @swagger

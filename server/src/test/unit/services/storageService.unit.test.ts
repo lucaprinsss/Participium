@@ -15,11 +15,9 @@ describe('StorageService (local provider)', () => {
     jest.doMock('crypto', () => ({ randomBytes: () => Buffer.from('1234567890abcdef', 'utf8') }));
     jest.doMock('../../../config/storage', () => ({
       storageConfig: {
-        provider: 'local',
-        local: { uploadDir: 'uploads', reportsDir: 'reports' },
-        r2: { endpoint: '', accessKeyId: '', secretAccessKey: '', bucket: 'b', region: 'auto', publicUrl: '' },
+        uploadDir: 'uploads',
+        reportsDir: 'reports',
       },
-      validateStorageConfig: jest.fn(),
     }));
 
     const writeFile = jest.fn().mockResolvedValue(undefined);
@@ -41,17 +39,15 @@ describe('StorageService (local provider)', () => {
     expect(existsSync).toHaveBeenCalledWith(expectedDir);
     expect(mkdirSync).toHaveBeenCalledWith(expectedDir, { recursive: true });
     expect(writeFile).toHaveBeenCalledWith(path.join(expectedDir, expectedFilename), buffer);
-    expect(result).toBe(`reports/123/${expectedFilename}`);
+    expect(result).toBe(`/uploads/reports/123/${expectedFilename}`);
   });
 
   it('deletes local report photos directory if exists', async () => {
     jest.doMock('../../../config/storage', () => ({
       storageConfig: {
-        provider: 'local',
-        local: { uploadDir: 'uploads', reportsDir: 'reports' },
-        r2: { endpoint: '', accessKeyId: '', secretAccessKey: '', bucket: 'b', region: 'auto', publicUrl: '' },
+        uploadDir: 'uploads',
+        reportsDir: 'reports',
       },
-      validateStorageConfig: jest.fn(),
     }));
 
     const rm = jest.fn().mockResolvedValue(undefined);
@@ -68,106 +64,3 @@ describe('StorageService (local provider)', () => {
     expect(rm).toHaveBeenCalledWith(expectedDir, { recursive: true, force: true });
   });
 });
-
-describe('StorageService (R2 provider)', () => {
-  beforeEach(() => {
-    jest.resetModules();
-  });
-
-  it('uploads photo to R2 using publicUrl when configured', async () => {
-    jest.spyOn(Date, 'now').mockReturnValue(1717171717171);
-    jest.doMock('crypto', () => ({ randomBytes: () => Buffer.from('1234567890abcdef', 'utf8') }));
-
-    const send = jest.fn().mockResolvedValue(undefined);
-    const PutObjectCommand = jest.fn().mockImplementation((args) => args);
-    jest.doMock('@aws-sdk/client-s3', () => ({
-      S3Client: jest.fn().mockImplementation(() => ({ send })),
-      PutObjectCommand,
-      DeleteObjectCommand: jest.fn(),
-    }));
-
-    jest.doMock('../../../config/storage', () => ({
-      storageConfig: {
-        provider: 'r2',
-        local: { uploadDir: 'uploads', reportsDir: 'reports' },
-        r2: {
-          endpoint: 'https://r2.example',
-          accessKeyId: 'AK',
-          secretAccessKey: 'SK',
-          bucket: 'bucket',
-          region: 'auto',
-          publicUrl: 'https://cdn.example',
-        },
-      },
-      validateStorageConfig: jest.fn(),
-    }));
-
-    const { storageService } = await import('../../../services/storageService');
-    const buffer = Buffer.from('abc');
-    const result = await storageService.uploadPhoto(buffer, 'image/jpeg', 123);
-
-    const expectedKey = `reports/123/1717171717171-31323334353637383930616263646566.jpg`;
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({ Bucket: 'bucket', Key: expectedKey, Body: buffer, ContentType: 'image/jpeg' }));
-    expect(result).toBe(`https://cdn.example/${expectedKey}`);
-  });
-
-  it('uploads to R2 and returns key when publicUrl not set', async () => {
-    jest.spyOn(Date, 'now').mockReturnValue(1717171717171);
-    jest.doMock('crypto', () => ({ randomBytes: () => Buffer.from('1234567890abcdef', 'utf8') }));
-
-    const send = jest.fn().mockResolvedValue(undefined);
-    const PutObjectCommand = jest.fn().mockImplementation((args) => args);
-    jest.doMock('@aws-sdk/client-s3', () => ({
-      S3Client: jest.fn().mockImplementation(() => ({ send })),
-      PutObjectCommand,
-      DeleteObjectCommand: jest.fn(),
-    }));
-
-    jest.doMock('../../../config/storage', () => ({
-      storageConfig: {
-        provider: 'r2',
-        local: { uploadDir: 'uploads', reportsDir: 'reports' },
-        r2: {
-          endpoint: 'https://r2.example',
-          accessKeyId: 'AK',
-          secretAccessKey: 'SK',
-          bucket: 'bucket',
-          region: 'auto',
-          publicUrl: '',
-        },
-      },
-      validateStorageConfig: jest.fn(),
-    }));
-
-    const { storageService } = await import('../../../services/storageService');
-    const buffer = Buffer.from('abc');
-    const result = await storageService.uploadPhoto(buffer, 'image/webp', 123);
-
-    const expectedKey = `reports/123/1717171717171-31323334353637383930616263646566.webp`;
-    expect(result).toBe(expectedKey);
-  });
-
-  it('deleteReportPhotos warns for R2 provider', async () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    jest.doMock('../../../config/storage', () => ({
-      storageConfig: {
-        provider: 'r2',
-        local: { uploadDir: 'uploads', reportsDir: 'reports' },
-        r2: {
-          endpoint: 'https://r2.example',
-          accessKeyId: 'AK',
-          secretAccessKey: 'SK',
-          bucket: 'bucket',
-          region: 'auto',
-          publicUrl: 'https://cdn.example',
-        },
-      },
-      validateStorageConfig: jest.fn(),
-    }));
-
-    const { storageService } = await import('../../../services/storageService');
-    await storageService.deleteReportPhotos(123);
-    expect(warn).toHaveBeenCalled();
-  });
-});
-

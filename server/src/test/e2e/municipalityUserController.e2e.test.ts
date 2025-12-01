@@ -779,7 +779,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
       // Assert
       expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('Role name is required');
+      expect(response.body.message).toContain('Missing required field: role_name');
     });
 
     it('should return 400 for invalid user ID', async () => {
@@ -790,7 +790,7 @@ describe('MunicipalityUserController E2E Tests', () => {
       const response = await request(app)
         .put('/api/municipality/users/invalid/role')
         .set('Cookie', adminCookies)
-        .send({ role_name: 'Road Maintenance staff member', department_name: 'Public Infrastructure and Accessibility Department' })
+        .send({ role_name: 'Urban Planning Manager', department_name: 'Urban Planning Department' })
         .expect('Content-Type', /json/)
         .expect(400);
 

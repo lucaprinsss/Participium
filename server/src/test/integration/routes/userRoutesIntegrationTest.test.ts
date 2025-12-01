@@ -5,6 +5,15 @@ import userRouter from '../../../routes/userRoutes';
 import UserController from '@controllers/userController';
 
 jest.mock('@controllers/userController');
+jest.mock('@middleware/registerUserMiddleware', () => ({
+  validateRegisterInput: jest.fn((req: any, res: any, next: any) => {
+    const { first_name, last_name, password } = req.body;
+    if (!first_name || !last_name || !password) {
+      return res.status(400).json({ message: 'Please enter your first name' });
+    }
+    next();
+  }),
+}));
 
 const app: Express = express();
 

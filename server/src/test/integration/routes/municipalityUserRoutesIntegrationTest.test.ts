@@ -6,6 +6,12 @@ jest.mock('@middleware/authMiddleware', () => ({
   requireRole: jest.fn(() => (req: any, res: any, next: any) => next()),
 }));
 jest.mock('@controllers/municipalityUserController');
+jest.mock('@middleware/validateId', () => ({
+  validateId: jest.fn(() => (req: any, res: any, next: any) => next()),
+}));
+jest.mock('@middleware/validateBodyFields', () => ({
+  validateBodyFields: jest.fn(() => (req: any, res: any, next: any) => next()),
+}));
 
 import { requireRole } from '@middleware/authMiddleware';
 import municipalityUserController from '@controllers/municipalityUserController';
@@ -81,13 +87,13 @@ const mockCreateRequest = {
   password: 'PasswordSuperSicura123!',
   first_name: 'Mario',
   last_name: 'Rossi',
-  role_id: 2,
+  role_name: 'Infrastructure Manager',
 };
 
 const mockUpdateRequest = {
   first_name: 'Mario Aggiornato',
   last_name: 'Rossi Aggiornato',
-  role_id: 2,
+  role_name: 'Infrastructure Manager',
 };
 
 
@@ -111,8 +117,8 @@ describe('Municipality User Routes Integration Tests', () => {
     });
 
     mockCreateUser.mockImplementation((req, res) => {
-      const { username, email, password, role_id } = req.body;
-      if (!username || !email || !password || !role_id) {
+      const { username, email, password, role_name, first_name, last_name } = req.body;
+      if (!username || !email || !password || !role_name || !first_name || !last_name) {
         return res.status(400).json({ error: 'All fields are required' });
       }
       res.status(201).json(mockUserResponse);
@@ -148,7 +154,7 @@ describe('Municipality User Routes Integration Tests', () => {
 
     mockAssignRole.mockImplementation((req, res) => {
       if (req.params.id === '1') {
-        res.status(200).json({ ...mockUserResponse, role_id: req.body.role_id });
+        res.status(200).json({ ...mockUserResponse, role_name: req.body.role_name });
       } else {
         res.status(404).json({ error: 'Municipality user not found' });
       }
@@ -259,7 +265,7 @@ describe('Municipality User Routes Integration Tests', () => {
 
   // --- PUT /:id/role (Role assignment) ---
   describe('PUT /api/municipality/users/:id/role', () => {
-    const roleAssignRequest = { role_id: 3 };
+    const roleAssignRequest = { role_name: 'Technical Office Staff Member' };
 
     it('should return 200 and user with new role if admin', async () => {
       const res = await request(app)
@@ -268,7 +274,7 @@ describe('Municipality User Routes Integration Tests', () => {
         .send(roleAssignRequest);
 
       expect(res.status).toBe(200);
-      expect(res.body.role_id).toBe(3);
+      expect(res.body.role_name).toBe('Technical Office Staff Member');
       expect(mockAssignRole).toHaveBeenCalledTimes(1);
     });
 

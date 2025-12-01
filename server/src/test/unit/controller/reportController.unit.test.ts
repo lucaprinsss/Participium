@@ -65,25 +65,6 @@ describe('ReportController', () => {
     });
 
     describe('status filter validation', () => {
-      it('should throw BadRequestError for invalid status', async () => {
-        const mockUser = { id: 123 } as User;
-        mockRequest.user = mockUser;
-        mockRequest.query = { status: 'INVALID_STATUS' };
-
-        await reportController.getAllReports(
-          mockRequest as Request,
-          mockResponse as Response,
-          mockNext
-        );
-
-        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ 
-            message: expect.stringContaining('Invalid status') 
-          })
-        );
-      });
-
       it('should accept valid PENDING_APPROVAL status', async () => {
         const mockUser = { id: 123 } as User;
         mockRequest.user = mockUser;
@@ -149,25 +130,6 @@ describe('ReportController', () => {
     });
 
     describe('category filter validation', () => {
-      it('should throw BadRequestError for invalid category', async () => {
-        const mockUser = { id: 123 } as User;
-        mockRequest.user = mockUser;
-        mockRequest.query = { category: 'INVALID_CATEGORY' };
-
-        await reportController.getAllReports(
-          mockRequest as Request,
-          mockResponse as Response,
-          mockNext
-        );
-
-        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ 
-            message: expect.stringContaining('Invalid category') 
-          })
-        );
-      });
-
       it('should accept valid ROADS category', async () => {
         const mockUser = { id: 123 } as User;
         mockRequest.user = mockUser;
@@ -697,134 +659,7 @@ describe('ReportController', () => {
   });
 
   describe('getMapReports', () => {
-    describe('validation', () => {
-      it('should reject invalid zoom level (too low)', async () => {
-        mockRequest.query = { zoom: '0' };
-
-        await reportController.getMapReports(
-          mockRequest as Request,
-          mockResponse as Response,
-          mockNext
-        );
-
-        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'Zoom level must be between 1 and 20' })
-        );
-      });
-
-      it('should reject invalid zoom level (too high)', async () => {
-        mockRequest.query = { zoom: '21' };
-
-        await reportController.getMapReports(
-          mockRequest as Request,
-          mockResponse as Response,
-          mockNext
-        );
-
-        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'Zoom level must be between 1 and 20' })
-        );
-      });
-
-      it('should reject incomplete bounding box (only minLat)', async () => {
-        mockRequest.query = { minLat: '45.0' };
-
-        await reportController.getMapReports(
-          mockRequest as Request,
-          mockResponse as Response,
-          mockNext
-        );
-
-        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ 
-            message: 'Bounding box requires all parameters: minLat, maxLat, minLng, maxLng' 
-          })
-        );
-      });
-
-      it('should reject invalid latitude range', async () => {
-        mockRequest.query = { 
-          minLat: '-91',
-          maxLat: '45.0',
-          minLng: '7.0',
-          maxLng: '8.0'
-        };
-
-        await reportController.getMapReports(
-          mockRequest as Request,
-          mockResponse as Response,
-          mockNext
-        );
-
-        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'minLat must be between -90 and 90' })
-        );
-      });
-
-      it('should reject invalid longitude range', async () => {
-        mockRequest.query = { 
-          minLat: '45.0',
-          maxLat: '46.0',
-          minLng: '-181',
-          maxLng: '8.0'
-        };
-
-        await reportController.getMapReports(
-          mockRequest as Request,
-          mockResponse as Response,
-          mockNext
-        );
-
-        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'minLng must be between -180 and 180' })
-        );
-      });
-
-      it('should reject when minLat >= maxLat', async () => {
-        mockRequest.query = { 
-          minLat: '46.0',
-          maxLat: '45.0',
-          minLng: '7.0',
-          maxLng: '8.0'
-        };
-
-        await reportController.getMapReports(
-          mockRequest as Request,
-          mockResponse as Response,
-          mockNext
-        );
-
-        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'minLat must be less than maxLat' })
-        );
-      });
-
-      it('should reject when minLng >= maxLng', async () => {
-        mockRequest.query = { 
-          minLat: '45.0',
-          maxLat: '46.0',
-          minLng: '8.0',
-          maxLng: '7.0'
-        };
-
-        await reportController.getMapReports(
-          mockRequest as Request,
-          mockResponse as Response,
-          mockNext
-        );
-
-        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'minLng must be less than maxLng' })
-        );
-      });
-    });
+    // Validation tests removed - validation is now handled by validateMapQuery middleware
 
     describe('successful requests', () => {
       it('should return map reports without filters', async () => {
@@ -862,6 +697,8 @@ describe('ReportController', () => {
       });
 
       it('should return map reports with valid zoom level', async () => {
+        // Simulate middleware setting validated zoom
+        (mockRequest as any).validatedZoom = 15;
         mockRequest.query = { zoom: '15' };
 
         const mockReports = [
@@ -892,6 +729,13 @@ describe('ReportController', () => {
       });
 
       it('should return map reports with valid bounding box', async () => {
+        // Simulate middleware setting validated bounding box
+        (mockRequest as any).validatedBoundingBox = {
+          minLat: 45.0,
+          maxLat: 46.0,
+          minLng: 7.0,
+          maxLng: 8.0
+        };
         mockRequest.query = { 
           minLat: '45.0',
           maxLat: '46.0',
