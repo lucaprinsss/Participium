@@ -711,8 +711,8 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
     });
   });
 
-  // --- approveReport ---
-  describe('approveReport', () => {
+  // --- updateReportStatus ---
+  describe('updateReportStatus', () => {
     let proUser: userEntity;
     let proUserDeptRoleId: number;
     let pendingReportId: number;
@@ -791,7 +791,7 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
 
     it('should approve report and assign to technical staff', async () => {
       // Act
-      const approvedReport = await reportService.approveReport(pendingReportId, proUser.id);
+      const approvedReport = await reportService.updateReportStatus(pendingReportId, ReportStatus.ASSIGNED, undefined, proUser.id);
 
       // Assert
       expect(approvedReport).toBeDefined();
@@ -801,25 +801,10 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
       expect(approvedReport.rejection_reason).toBeUndefined();
     });
 
-    it('should approve report and change category if newCategory is provided', async () => {
-      // Act
-      const approvedReport = await reportService.approveReport(
-        pendingReportId, 
-        proUser.id, 
-        ReportCategory.PUBLIC_LIGHTING
-      );
-
-      // Assert
-      expect(approvedReport).toBeDefined();
-      expect(approvedReport.status).toBe(ReportStatus.ASSIGNED);
-      expect(approvedReport.category).toBe(ReportCategory.PUBLIC_LIGHTING);
-      expect(approvedReport.assignee_id).toBeDefined();
-    });
-
     it('should throw NotFoundError if report does not exist', async () => {
       // Act & Assert
       await expect(
-        reportService.approveReport(999999, proUser.id)
+        reportService.updateReportStatus(999999, ReportStatus.ASSIGNED, undefined, proUser.id)
       ).rejects.toThrow('Report not found');
     });
 
@@ -846,27 +831,20 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
 
       // Act & Assert
       await expect(
-        reportService.approveReport(assignedReportId, proUser.id)
+        reportService.updateReportStatus(assignedReportId, ReportStatus.ASSIGNED, undefined, proUser.id)
       ).rejects.toThrow('Cannot approve report with status');
-    });
-
-    it('should throw BadRequestError if newCategory is invalid', async () => {
-      // Act & Assert
-      await expect(
-        reportService.approveReport(pendingReportId, proUser.id, 'INVALID_CATEGORY' as ReportCategory)
-      ).rejects.toThrow('Invalid category');
     });
 
     it('should throw BadRequestError if reportId is not a number', async () => {
       // Act & Assert
       await expect(
-        reportService.approveReport(NaN, proUser.id)
+        reportService.updateReportStatus(NaN, ReportStatus.ASSIGNED, undefined, proUser.id)
       ).rejects.toThrow('Invalid report ID');
     });
   });
 
-  // --- rejectReport ---
-  describe('rejectReport', () => {
+  // --- updateReportStatus ---
+  describe('updateReportStatus', () => {
     let proUser: userEntity;
     let proUserDeptRoleId: number;
     let pendingReportId: number;
@@ -945,8 +923,9 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
 
     it('should reject report with valid rejection reason', async () => {
       // Act
-      const rejectedReport = await reportService.rejectReport(
+      const rejectedReport = await reportService.updateReportStatus(
         pendingReportId, 
+        ReportStatus.REJECTED,
         'Report does not meet our criteria',
         proUser.id
       );
@@ -961,7 +940,7 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
     it('should throw NotFoundError if report does not exist', async () => {
       // Act & Assert
       await expect(
-        reportService.rejectReport(999999, 'Invalid report', proUser.id)
+        reportService.updateReportStatus(999999, ReportStatus.REJECTED, 'Invalid report', proUser.id)
       ).rejects.toThrow('Report not found');
     });
 
@@ -988,28 +967,28 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
 
       // Act & Assert
       await expect(
-        reportService.rejectReport(assignedReportId, 'Cannot reject assigned report', proUser.id)
+        reportService.updateReportStatus(assignedReportId, ReportStatus.REJECTED, 'Cannot reject assigned report', proUser.id)
       ).rejects.toThrow('Cannot reject report with status');
     });
 
     it('should throw BadRequestError if rejection reason is empty', async () => {
       // Act & Assert
       await expect(
-        reportService.rejectReport(pendingReportId, '', proUser.id)
+        reportService.updateReportStatus(pendingReportId, ReportStatus.REJECTED, '', proUser.id)
       ).rejects.toThrow('Rejection reason is required');
     });
 
     it('should throw BadRequestError if rejection reason is only whitespace', async () => {
       // Act & Assert
       await expect(
-        reportService.rejectReport(pendingReportId, '   ', proUser.id)
+        reportService.updateReportStatus(pendingReportId, ReportStatus.REJECTED, '   ', proUser.id)
       ).rejects.toThrow('Rejection reason is required');
     });
 
     it('should throw BadRequestError if reportId is not a number', async () => {
       // Act & Assert
       await expect(
-        reportService.rejectReport(NaN, 'Invalid ID', proUser.id)
+        reportService.updateReportStatus(NaN, ReportStatus.REJECTED, 'Invalid ID', proUser.id)
       ).rejects.toThrow('Invalid report ID');
     });
   });
