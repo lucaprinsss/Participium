@@ -889,7 +889,6 @@ describe('MunicipalityUserController E2E Tests', () => {
     });
 
     it('should return 403 if authenticated as non-admin (e.g., Citizen)', async () => {
-      // --- Arrange: Esegui il login come citizen ---
       const loginResponse = await request(app)
         .post('/api/sessions')
         .send({
@@ -900,15 +899,12 @@ describe('MunicipalityUserController E2E Tests', () => {
 
       const cookies = loginResponse.headers['set-cookie'];
 
-      // --- Act: Chiama la rotta protetta ---
       const response = await request(app)
         .get('/api/roles')
-        .set('Cookie', cookies) // <-- Aggiungi i cookie di autenticazione
+        .set('Cookie', cookies)
         .expect('Content-Type', /json/)
-        .expect(403); // <-- CORREZIONE: Ci aspettiamo 403 Forbidden
+        .expect(403);
 
-      // Assert
-      // L'errore proviene dal middleware 'isAdmin'
       expect(response.body).toHaveProperty('message');
     });
   });
