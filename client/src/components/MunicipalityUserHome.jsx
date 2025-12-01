@@ -8,8 +8,7 @@ import '../css/MunicipalityUserHome.css';
 import {
   getReports,
   getAllCategories,
-  approveReport,
-  rejectReport,
+  updateReportStatus,
   getReportsAssignedToMe,
 } from "../api/reportApi";
 
@@ -219,7 +218,7 @@ const filteredReports = reports.filter((report) => {
     clearError();
 
     try {
-      await approveReport(selectedReport.id);
+      await updateReportStatus(selectedReport.id, 'Assigned');
       await fetchData();
       handleClose();
     } catch (error) {
@@ -249,7 +248,7 @@ const filteredReports = reports.filter((report) => {
     if (!selectedReport) return;
 
     try {
-      await rejectReport(selectedReport.id, rejectionReason);
+      await updateReportStatus(selectedReport.id, 'Rejected', rejectionReason);
       await fetchData();
       handleClose();
     } catch (error) {
