@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Container, Card, Table, Badge, Button, Modal, Form, Alert, Row, Col, Dropdown, Spinner } from 'react-bootstrap';
-import { BsEye, BsCheckCircle, BsXCircle, BsGeoAlt, BsPerson, BsCalendar3, BsExclamationTriangle } from 'react-icons/bs';
-import { FaFilter, FaList } from "react-icons/fa"; 
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Container, Card, Table, Badge, Button, Alert, Dropdown, Spinner } from 'react-bootstrap';
+import { BsEye } from 'react-icons/bs';
+import { FaFilter, FaList } from "react-icons/fa";
 import '../css/MunicipalityUserHome.css';
+
+// Componenti
+import ReportDetails from './ReportDetails';
 
 // IMPORT API
 import {
@@ -12,245 +15,150 @@ import {
   getReportsAssignedToMe,
 } from "../api/reportApi";
 
+// --- CONSTANTS & CONFIGURATION ---
 const ALL_STATUSES = ["Pending Approval", "Assigned", "In Progress", "Suspended", "Rejected", "Resolved"];
 
-export default function MunicipalityUserHome({user}) {
-  console.log("🔍 MunicipalityUserHome received user:", user);
-  const [reports, setReports] = useState([]);
-  const [allCategories, setAllCategories] = useState([]);
+const ROLE_DEPARTMENT_MAPPING = {
+  "water network staff member": "Water Supply - Drinking Water",
+  "sewer system staff member": "Sewer System",
+  "road maintenance staff member": "Road Signs and Traffic Lights",
+  "traffic management staff member": "Road Signs and Traffic Lights",
+  "electrical staff member": "Public Lighting",
+  "building maintenance staff member": "Architectural Barriers",
+  "accessibility staff member": "Architectural Barriers",
+  "recycling program staff member": "Waste",
+  "parks maintenance staff member": "Parks and Recreation",
+};
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Pending Approval");
-
-  const [showModal, setShowModal] = useState(false);
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState("");
-
-  const [isRejecting, setIsRejecting] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
-
-  // Gestione Errori Modale
-  const [errorMsg, setErrorMsg] = useState("");
-  const [shakeKey, setShakeKey] = useState(0);
-
-  const [apiError, setApiError] = useState(null);
-  // Department to Category Mapping
-  const getDepartmentCategory = (roleName) => {
-    if (!roleName) return null;
-    const normalizedRole = roleName.toLowerCase();
-    const mapping = {
-      "water network staff member": "Water Supply - Drinking Water",
-      "sewer system staff member": "Sewer System",
-
-      // Roads & Traffic
-      "road maintenance staff member": "Road Signs and Traffic Lights",
-      "traffic management staff member": "Road Signs and Traffic Lights",
-
-      // Public Infrastructure
-      "electrical staff member": "Public Lighting",
-      "building maintenance staff member": "Architectural Barriers",
-      "accessibility staff member": "Architectural Barriers",
-
-      // Waste & Recycling
-      "recycling program staff member": "Waste",
-
-      // Parks & Green Areas
-      "parks maintenance staff member": "Parks and Recreation",
-    };
-
-    return mapping[normalizedRole] || null;
-  };
-
-  // Check if user is staff (not admin)
-  const isStaffMember =
-    user &&
-    user.role_name &&
-    user.role_name.toLowerCase() !== "administrator" &&
-    user.role_name.toLowerCase() !== "municipal public relations officer";
-const userDepartmentCategory = isStaffMember
-  ? getDepartmentCategory(user.role_name)
-  : null;
-  // Auto-set filters for staff members
-  useEffect(() => {
-    if (isStaffMember && userDepartmentCategory) {
-      console.log("🔒 Staff member detected:", user.role_name);
-      console.log("📂 Auto-filtering category:", userDepartmentCategory);
-      setCategoryFilter(userDepartmentCategory);
-      setStatusFilter("Assigned");
-    } else if (
-      user &&
-      (user.role_name === "Administrator" ||
-        user.role_name.toLowerCase() === "municipal public relations officer")
-    ) {
-      console.log("Admin/PR Officer detected - showing Pending Approval");
-      setStatusFilter("Pending Approval");
-    }
-  }, [user, isStaffMember, userDepartmentCategory]);
-
-  // --- DATA FETCHING ---
-const fetchData = async () => {
-  setIsLoading(true);
-  try {
-    const categoriesData = await getAllCategories();
-    setAllCategories(categoriesData || []);
-
-    // Use different endpoint based on user role
-    let reportsData;
-    if (isStaffMember) {
-      // Staff members: get only their assigned reports
-      console.log("📋 Fetching reports assigned to:", user.username);
-      reportsData = await getReportsAssignedToMe();
-    } else {
-      // Admin/PR Officer: get all reports
-      console.log("👑 Fetching all reports (Admin/PR)");
-      reportsData = await getReports();
-    }
-
-    console.log("REPORT TROVATI:", reportsData);
-
-    const formattedReports = reportsData.map((report) => ({
-      ...report,
-      createdAt: new Date(report.createdAt),
-
-      images: report.photos
-        ? report.photos.map((p) => (typeof p === "string" ? p : p.storageUrl))
-        : [],
-    }));
-
-    // Ordina per data (più recente prima)
-    formattedReports.sort((a, b) => b.createdAt - a.createdAt);
-
-    setReports(formattedReports);
-    setApiError(null);
-  } catch (err) {
-    console.error("Error fetching data:", err);
-    setApiError("Unable to load data. Please try again later.");
-  } finally {
-    setIsLoading(false);
+const getStatusBadgeVariant = (status) => {
+  switch (status) {
+    case "Pending Approval": return "warning";
+    case "Assigned": return "primary";
+    case "In Progress": return "info";
+    case "Resolved": return "success";
+    case "Rejected": return "danger";
+    default: return "secondary";
   }
 };
 
+const getDepartmentCategory = (roleName) => {
+  if (!roleName) return null;
+  return ROLE_DEPARTMENT_MAPPING[roleName.toLowerCase()] || null;
+};
+
+export default function MunicipalityUserHome({ user }) {
+  // --- STATE ---
+  const [reports, setReports] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState(null);
+
+  // Filters
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("Pending Approval");
+
+  // Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+
+  // --- DERIVED STATE (MEMOIZED) ---
+  const userRole = user?.role_name?.toLowerCase();
+  
+  const isStaffMember = useMemo(() => {
+    return userRole && 
+           userRole !== "administrator" && 
+           userRole !== "municipal public relations officer";
+  }, [userRole]);
+
+  const userDepartmentCategory = useMemo(() => {
+    return isStaffMember ? getDepartmentCategory(user?.role_name) : null;
+  }, [isStaffMember, user?.role_name]);
+
+  // --- INITIALIZATION EFFECTS ---
+  
+  // 1. Set default filters based on role
   useEffect(() => {
-    fetchData();
+    if (isStaffMember && userDepartmentCategory) {
+      setCategoryFilter(userDepartmentCategory);
+      setStatusFilter("Assigned");
+    } else if (userRole === "administrator" || userRole === "municipal public relations officer") {
+      setStatusFilter("Pending Approval");
+    }
+  }, [isStaffMember, userDepartmentCategory, userRole]);
+
+  // 2. Fetch Data
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      // Parallel fetching for categories and reports
+      const [categoriesData, reportsData] = await Promise.all([
+        getAllCategories(),
+        isStaffMember ? getReportsAssignedToMe() : getReports()
+      ]);
+
+      setAllCategories(categoriesData || []);
+
+      const formattedReports = (reportsData || []).map((report) => ({
+        ...report,
+        createdAt: new Date(report.createdAt), // Ensure Date object
+        images: report.photos?.map((p) => (typeof p === "string" ? p : p.storageUrl)) || [],
+      }));
+
+      // Sort by date descending
+      formattedReports.sort((a, b) => b.createdAt - a.createdAt);
+      
+      setReports(formattedReports);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setApiError("Unable to load data. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
   }, [isStaffMember]);
 
-  // --- Helpers ---
-  const formatLocation = (loc) => {
-    if (!loc) return "Location not available";
-    if (
-      typeof loc === "object" &&
-      loc.type === "Point" &&
-      Array.isArray(loc.coordinates)
-    ) {
-      const [lng, lat] = loc.coordinates;
-      return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  useEffect(() => {
+    if (user) {
+      fetchData();
     }
-    if (typeof loc === "string") return loc;
-    return "Invalid location data";
-  };
+  }, [fetchData, user]);
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "Pending Approval":
-        return "warning";
-      case "Assigned":
-        return "primary";
-      case "In Progress":
-        return "info";
-      case "Resolved":
-        return "success";
-      case "Rejected":
-        return "danger";
-      default:
-        return "secondary";
-    }
-  };
+  // --- FILTERING LOGIC (MEMOIZED) ---
+  const filteredReports = useMemo(() => {
+    return reports.filter((report) => {
+      const matchesCategory = categoryFilter === "" || report.category === categoryFilter;
+      const matchesStatus = statusFilter === "" || report.status === statusFilter;
+      return matchesCategory && matchesStatus;
+    });
+  }, [reports, categoryFilter, statusFilter]);
 
-  const handleCategorySelect = (val) => setCategoryFilter(val);
-  const handleStatusSelect = (val) => setStatusFilter(val);
-
-const filteredReports = reports.filter((report) => {
-  const categoryMatch =
-    categoryFilter === "" || report.category === categoryFilter;
-  const statusMatch = statusFilter === "" || report.status === statusFilter;
-
-  // Backend already filters by assignee for staff members
-  // Just apply the UI filters (category and status)
-  return categoryMatch && statusMatch;
-});
-
-  // Error handling helpers
-  const triggerError = (msg) => {
-    setErrorMsg(msg);
-    setShakeKey((prev) => prev + 1);
-  };
-
-  const clearError = () => {
-    setErrorMsg("");
-  };
-
-  // --- Modal Actions ---
+  // --- HANDLERS ---
   const handleClose = () => {
     setShowModal(false);
-    setSelectedReport(null);
-    setIsRejecting(false);
-    setRejectionReason("");
-    clearError();
+    setTimeout(() => setSelectedReport(null), 200); // Clear after animation
   };
 
   const handleShow = (report) => {
     setSelectedReport(report);
-    clearError();
     setShowModal(true);
   };
 
-  const openImage = (imgUrl) => {
-    setSelectedImage(imgUrl);
-    setShowImageModal(true);
-  };
-
-  // --- API ACTIONS ---
-
-  const handleAccept = async () => {
-    if (!selectedReport) return;
-    clearError();
-
+  const handleAcceptReport = async (reportId) => {
     try {
       await updateReportStatus(selectedReport.id, 'Assigned');
       await fetchData();
       handleClose();
     } catch (error) {
       console.error("Error approving report:", error);
-      triggerError(
-        error.message || "Unknown error during approval."
-      );
+      throw error; // Propagate to modal for UI feedback
     }
   };
 
-  const handleRejectClick = () => {
-    clearError();
-    setIsRejecting(true);
-  };
-
-  const handleCancelReject = () => {
-    clearError();
-    setIsRejecting(false);
-  };
-
-  const confirmReject = async () => {
-    if (!rejectionReason.trim()) {
-      triggerError("Please provide a reason for rejection.");
-      return;
-    }
-
-    if (!selectedReport) return;
-
+  const handleRejectReport = async (reportId, reason) => {
     try {
       await updateReportStatus(selectedReport.id, 'Rejected', rejectionReason);
       await fetchData();
-      handleClose();
+      return true;
     } catch (error) {
       console.error("Error rejecting report:", error);
       triggerError(error.message || "Unknown error during rejection.");
@@ -273,59 +181,61 @@ const filteredReports = reports.filter((report) => {
 
   return (
     <Container className="mu-home-container">
+      {/* Header Section */}
       <div className="mu-header-wrapper">
         <div>
           <h2 className="mu-home-title">Officer Dashboard</h2>
-          <p className="mu-home-subtitle">
-            Manage and validate citizen reports.
-          </p>
+          <p className="mu-home-subtitle">Manage and validate citizen reports.</p>
         </div>
 
-       <div className="mu-filters">
-  {/* Only show dropdowns for Admin */}
-  {! isStaffMember ?  (
-    <>
-      <Dropdown onSelect={handleCategorySelect} className="mu-filter-dropdown">
-        <Dropdown.Toggle className="modern-dropdown-toggle" id="category-filter">
-          <FaList className="dropdown-icon" />
-          <span className="dropdown-toggle-text">
-            {categoryFilter || "All Categories"}
-          </span>
-        </Dropdown.Toggle>
-        <Dropdown.Menu className="modern-dropdown-menu">
-          <Dropdown.Item eventKey="" active={categoryFilter === ""}>All Categories</Dropdown.Item>
-          {allCategories.map((cat, idx) => (
-            <Dropdown.Item key={idx} eventKey={cat} active={categoryFilter === cat}>{cat}</Dropdown.Item>
-          ))}
-        </Dropdown.Menu>
-      </Dropdown>
+        <div className="mu-filters">
+          {!isStaffMember ? (
+            <>
+              {/* Category Dropdown */}
+              <Dropdown onSelect={setCategoryFilter} className="mu-filter-dropdown">
+                <Dropdown.Toggle className="modern-dropdown-toggle" id="category-filter">
+                  <FaList className="dropdown-icon" />
+                  <span className="dropdown-toggle-text">
+                    {categoryFilter || "All Categories"}
+                  </span>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="modern-dropdown-menu">
+                  <Dropdown.Item eventKey="" active={categoryFilter === ""}>All Categories</Dropdown.Item>
+                  {allCategories.map((cat, idx) => (
+                    <Dropdown.Item key={idx} eventKey={cat} active={categoryFilter === cat}>
+                      {cat}
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
 
-      <Dropdown onSelect={handleStatusSelect} className="mu-filter-dropdown">
-        <Dropdown.Toggle className="modern-dropdown-toggle" id="status-filter">
-          <FaFilter className="dropdown-icon" />
-          <span className="dropdown-toggle-text">
-            {statusFilter || "All Statuses"}
-          </span>
-        </Dropdown.Toggle>
-        <Dropdown.Menu className="modern-dropdown-menu">
-          <Dropdown.Item eventKey="" active={statusFilter === ""}>All Statuses</Dropdown.Item>
-          {ALL_STATUSES.map((st, idx) => {
-            return (
-              <Dropdown.Item key={idx} eventKey={st} active={statusFilter === st}>{st}</Dropdown.Item>
-            );
-          })}
-        </Dropdown.Menu>
-      </Dropdown>
-    </>
-  ) : (
-    /* Show locked filter info for Staff */
-    <div className="text-muted" style={{ fontSize: '0.9rem', padding: '8px 16px', background: '#f8f9fa', borderRadius: '8px' }}>
-      Viewing: <strong>{userDepartmentCategory}</strong>  Status: <strong>Assigned</strong>
-    </div>
-  )}
-</div>
-      </div>  
+              {/* Status Dropdown */}
+              <Dropdown onSelect={setStatusFilter} className="mu-filter-dropdown">
+                <Dropdown.Toggle className="modern-dropdown-toggle" id="status-filter">
+                  <FaFilter className="dropdown-icon" />
+                  <span className="dropdown-toggle-text">
+                    {statusFilter || "All Statuses"}
+                  </span>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="modern-dropdown-menu">
+                  <Dropdown.Item eventKey="" active={statusFilter === ""}>All Statuses</Dropdown.Item>
+                  {ALL_STATUSES.map((st, idx) => (
+                    <Dropdown.Item key={idx} eventKey={st} active={statusFilter === st}>
+                      {st}
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+            </>
+          ) : (
+            <div className="bg-light p-2 px-3 rounded text-muted small">
+               Viewing: <strong>{userDepartmentCategory || "My Department"}</strong> &nbsp;|&nbsp; Status: <strong>Assigned</strong>
+            </div>
+          )}
+        </div>
+      </div>
 
+      {/* Error Alert */}
       {apiError && (
         <Alert variant="danger" onClose={() => setApiError(null)} dismissible>
           {apiError}
@@ -405,8 +315,8 @@ const filteredReports = reports.filter((report) => {
         }
       })()}
 
-      {/* --- Detail Modal --- */}
-      <Modal
+      {/* Report Detail Modal */}
+      <ReportDetails
         show={showModal}
         onHide={handleClose}
         size="lg"
