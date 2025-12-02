@@ -1,3 +1,5 @@
+//reportRoutes.ts
+
 import express from 'express';
 import { reportController } from '@controllers/reportController';
 import { isLoggedIn, requireRole } from '@middleware/authMiddleware';
@@ -232,8 +234,7 @@ router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
  *       Supported status transitions:
  *       - Assigned: Approves the report and assigns it to the technical office.
  *       - Rejected: Rejects the report. A rejection reason is required.
- *       
- *       Allows a Technical Office Staff to update the status of a report.
+ *       * Allows a Technical Office Staff to update the status of a report.
  *       Supported status transitions:
  *       - Resolved: Marks the report as resolved.
  *     tags:
@@ -247,26 +248,26 @@ router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
  *         schema:
  *           type: integer
  *         description: ID of the report to update
-     requestBody:
-       required: true
-       content:
-         application/json:
-           schema:
-             $ref: '#/components/schemas/UpdateReportStatusRequest'
-           examples:
-             approve:
-               summary: Approve a report
-               value:
-                 status: Assigned
-             reject:
-               summary: Reject a report
-               value:
-                 status: Rejected
-                 reason: "Duplicate report"
-             resolve:
-               summary: Resolve a report
-               value:
-                 status: Resolved
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateReportStatusRequest'
+ *           examples:
+ *             approve:
+ *               summary: Approve a report
+ *               value:
+ *                 status: Assigned
+ *             reject:
+ *               summary: Reject a report
+ *               value:
+ *                 status: Rejected
+ *                 reason: "Duplicate report"
+ *             resolve:
+ *               summary: Resolve a report
+ *               value:
+ *                 status: Resolved
  *     responses:
  *       '200':
  *         description: Report status updated successfully
