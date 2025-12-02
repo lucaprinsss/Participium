@@ -19,7 +19,7 @@
 
 html {
   /* Sintassi: clamp(MINIMO, FLUIDO, MASSIMO) */
-  font-size: clamp(13.5px, 0.78125vw, 100px);
+  font-size: clamp(15px, 0.78125vw, 80px);
 }
 
 /* OPZIONALE MA CONSIGLIATO:
