@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Container, Card, Table, Badge, Button, Alert, Dropdown, Spinner } from 'react-bootstrap';
+import { Container, Card, Table, Badge, Button, Alert, Dropdown, Spinner, InputGroup } from 'react-bootstrap';
 import { BsEye } from 'react-icons/bs';
-import { FaFilter, FaList } from "react-icons/fa";
+import { FaFilter, FaList, FaChevronDown } from "react-icons/fa"; // Aggiunto FaChevronDown
 import '../css/MunicipalityUserHome.css';
 
 // Componenti
@@ -175,7 +175,6 @@ export default function MunicipalityUserHome({ user }) {
   };
 
   // --- RENDER CONTENT HELPER ---
-  // Estrazione della logica per evitare nested ternary operation
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -251,44 +250,54 @@ export default function MunicipalityUserHome({ user }) {
         <div className="mu-filters">
           {!isStaffMember ? (
             <>
-              {/* Category Dropdown */}
-              <Dropdown onSelect={setCategoryFilter} className="mu-filter-dropdown">
-                <Dropdown.Toggle className="modern-dropdown-toggle" id="category-filter">
-                  <FaList className="dropdown-icon" />
-                  <span className="dropdown-toggle-text">
-                    {categoryFilter || "All Categories"}
-                  </span>
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="modern-dropdown-menu">
-                  <Dropdown.Item eventKey="" active={categoryFilter === ""}>All Categories</Dropdown.Item>
-                  {allCategories.map((cat, idx) => (
-                    <Dropdown.Item key={idx} eventKey={cat} active={categoryFilter === cat}>
-                      {cat}
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
+              {/* Category Filter */}
+              <InputGroup className="mu-filter-group">
+                <InputGroup.Text className="mu-filter-icon"><FaList/></InputGroup.Text>
+                <Dropdown onSelect={setCategoryFilter} className="mu-custom-dropdown">
+                    <Dropdown.Toggle variant="light" className="mu-filter-toggle" id="category-filter">
+                        <div className="d-flex align-items-center justify-content-between w-100">
+                            <span className="text-truncate">
+                                {categoryFilter || "All Categories"}
+                            </span>
+                            <FaChevronDown className="mu-dropdown-arrow ms-2"/>
+                        </div>
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu className="modern-dropdown-menu">
+                        <Dropdown.Item eventKey="" active={categoryFilter === ""}>All Categories</Dropdown.Item>
+                        {allCategories.map((cat, idx) => (
+                            <Dropdown.Item key={idx} eventKey={cat} active={categoryFilter === cat}>
+                                {cat}
+                            </Dropdown.Item>
+                        ))}
+                    </Dropdown.Menu>
+                </Dropdown>
+              </InputGroup>
 
-              {/* Status Dropdown */}
-              <Dropdown onSelect={setStatusFilter} className="mu-filter-dropdown">
-                <Dropdown.Toggle className="modern-dropdown-toggle" id="status-filter">
-                  <FaFilter className="dropdown-icon" />
-                  <span className="dropdown-toggle-text">
-                    {statusFilter || "All Statuses"}
-                  </span>
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="modern-dropdown-menu">
-                  <Dropdown.Item eventKey="" active={statusFilter === ""}>All Statuses</Dropdown.Item>
-                  {ALL_STATUSES.map((st, idx) => (
-                    <Dropdown.Item key={idx} eventKey={st} active={statusFilter === st}>
-                      {st}
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
+              {/* Status Filter */}
+              <InputGroup className="mu-filter-group">
+                <InputGroup.Text className="mu-filter-icon"><FaFilter/></InputGroup.Text>
+                <Dropdown onSelect={setStatusFilter} className="mu-custom-dropdown">
+                    <Dropdown.Toggle variant="light" className="mu-filter-toggle" id="status-filter">
+                        <div className="d-flex align-items-center justify-content-between w-100">
+                            <span className="text-truncate">
+                                {statusFilter || "All Statuses"}
+                            </span>
+                            <FaChevronDown className="mu-dropdown-arrow ms-2"/>
+                        </div>
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu className="modern-dropdown-menu">
+                        <Dropdown.Item eventKey="" active={statusFilter === ""}>All Statuses</Dropdown.Item>
+                        {ALL_STATUSES.map((st, idx) => (
+                            <Dropdown.Item key={idx} eventKey={st} active={statusFilter === st}>
+                                {st}
+                            </Dropdown.Item>
+                        ))}
+                    </Dropdown.Menu>
+                </Dropdown>
+              </InputGroup>
             </>
           ) : (
-            <div className="bg-light p-2 px-3 rounded text-muted small">
+            <div className="bg-light p-2 px-3 rounded text-muted small border">
                Viewing: <strong>{userDepartmentCategory || "My Department"}</strong> &nbsp;|&nbsp; Status: <strong>Assigned</strong>
             </div>
           )}
