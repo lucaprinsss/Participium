@@ -15,7 +15,8 @@ export interface Report {
   is_anonymous: boolean;
   status: ReportStatus;
   rejection_reason?: string;  // Optional just if status is Rejected
-  assignee_id?: number;       // Optional just if assigned
+  assignee_id?: number;       // Optional - internal staff member assigned
+  external_assignee_id?: number;  // Optional - external maintainer assigned
   created_at: Date;
   updated_at: Date;
 }

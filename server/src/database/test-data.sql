@@ -20,6 +20,7 @@ INSERT INTO users (
   last_name, 
   department_role_id,
   email_notifications_enabled,
+  is_verified,
   created_at
 ) VALUES (
   'testcitizen',
@@ -31,6 +32,7 @@ INSERT INTO users (
    JOIN departments d ON dr.department_id = d.id
    JOIN roles r ON dr.role_id = r.id
    WHERE d.name = 'Organization' AND r.name = 'Citizen'),
+  true,
   true,
   CURRENT_TIMESTAMP
 );
@@ -72,6 +74,7 @@ INSERT INTO users (
   last_name, 
   department_role_id,
   email_notifications_enabled,
+  is_verified,
   created_at
 ) VALUES (
   'testadmin',
@@ -83,6 +86,7 @@ INSERT INTO users (
    JOIN departments d ON dr.department_id = d.id
    JOIN roles r ON dr.role_id = r.id
    WHERE d.name = 'Organization' AND r.name = 'Administrator'),
+  true,
   true,
   CURRENT_TIMESTAMP
 );
@@ -98,6 +102,7 @@ INSERT INTO users (
   last_name, 
   department_role_id,
   email_notifications_enabled,
+  is_verified,
   created_at
 ) VALUES (
   'testuser_nonotif',
@@ -110,6 +115,7 @@ INSERT INTO users (
    JOIN roles r ON dr.role_id = r.id
    WHERE d.name = 'Organization' AND r.name = 'Citizen'),
   false,
+  true,
   CURRENT_TIMESTAMP
 );
 
@@ -124,6 +130,7 @@ INSERT INTO users (
   last_name, 
   department_role_id,
   email_notifications_enabled,
+  is_verified,
   created_at
 ) VALUES (
   'teststaffmember',
@@ -135,6 +142,7 @@ INSERT INTO users (
    JOIN departments d ON dr.department_id = d.id
    JOIN roles r ON dr.role_id = r.id
    WHERE d.name = 'Water and Sewer Services Department' AND r.name = 'Water Network staff member'),
+  true,
   true,
   CURRENT_TIMESTAMP
 );
