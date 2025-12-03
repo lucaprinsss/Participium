@@ -673,6 +673,7 @@ describe('ReportService additional unit tests', () => {
       lastName: 'User',
       departmentRoleId: 1,
       emailNotificationsEnabled: true,
+      isVerified: true,
       createdAt: new Date(),
       departmentRole: {
         id: 1,

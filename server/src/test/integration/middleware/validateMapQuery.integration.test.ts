@@ -29,7 +29,8 @@ describe('ValidateMapQuery Middleware Integration Tests', () => {
       firstName: 'MapQuery',
       lastName: 'Test',
       departmentRoleId: citizenDeptRole.id,
-      emailNotificationsEnabled: true
+      emailNotificationsEnabled: true,
+      isVerified: true
     });
 
     agent = request.agent(app);

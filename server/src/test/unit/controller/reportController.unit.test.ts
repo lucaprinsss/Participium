@@ -315,7 +315,7 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.ASSIGNED, undefined, 123);
+        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.ASSIGNED, {}, 123);
       });
     });
 
@@ -335,7 +335,7 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(reportService.updateReportStatus).toHaveBeenCalledWith(42, ReportStatus.ASSIGNED, undefined, 123);
+        expect(reportService.updateReportStatus).toHaveBeenCalledWith(42, ReportStatus.ASSIGNED, {}, 123);
       });
 
       it('should parse status from body', async () => {
@@ -356,7 +356,7 @@ describe('ReportController', () => {
         expect(reportService.updateReportStatus).toHaveBeenCalledWith(
           1,
           ReportStatus.ASSIGNED,
-          undefined,
+          {},
           123
         );
       });
@@ -376,7 +376,7 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.ASSIGNED, undefined, 123);
+        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.ASSIGNED, {}, 123);
       });
     });
 
@@ -424,7 +424,7 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(reportService.updateReportStatus).toHaveBeenCalledWith(5, ReportStatus.ASSIGNED, undefined, 123);
+        expect(reportService.updateReportStatus).toHaveBeenCalledWith(5, ReportStatus.ASSIGNED, {}, 123);
         expect(mockResponse.status).toHaveBeenCalledWith(200);
         expect(mockResponse.json).toHaveBeenCalledWith(mockApprovedReport);
       });
@@ -504,7 +504,7 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.REJECTED, 'Test reason', 123);
+        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.REJECTED, { reason: 'Test reason' }, 123);
       });
     });
 
@@ -524,7 +524,7 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(reportService.updateReportStatus).toHaveBeenCalledWith(99, ReportStatus.REJECTED, 'Invalid report', 123);
+        expect(reportService.updateReportStatus).toHaveBeenCalledWith(99, ReportStatus.REJECTED, { reason: 'Invalid report' }, 123);
       });
 
       it('should parse rejection reason from body', async () => {
@@ -542,7 +542,7 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.REJECTED, 'Duplicate submission', 123);
+        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.REJECTED, { reason: 'Duplicate submission' }, 123);
       });
 
       it('should handle long rejection reasons', async () => {
@@ -561,7 +561,7 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.REJECTED, longReason, 123);
+        expect(reportService.updateReportStatus).toHaveBeenCalledWith(1, ReportStatus.REJECTED, { reason: longReason }, 123);
       });
     });
 
@@ -612,7 +612,7 @@ describe('ReportController', () => {
         expect(reportService.updateReportStatus).toHaveBeenCalledWith(
           7,
           ReportStatus.REJECTED,
-          'Location outside boundaries',
+          { reason: 'Location outside boundaries' },
           123
         );
         expect(mockResponse.status).toHaveBeenCalledWith(200);

@@ -107,7 +107,7 @@ describe('DepartmentController E2E Tests', () => {
       });
     });
 
-    it('should return exactly 7 municipality departments', async () => {
+    it('should return exactly 9 municipality departments', async () => {
       // Arrange
       const loginResponse = await request(app)
         .post('/api/sessions')
@@ -126,7 +126,7 @@ describe('DepartmentController E2E Tests', () => {
         .expect(200);
 
       // Assert - 8 total departments - Organization = 7
-      expect(response.body).toHaveLength(8);
+      expect(response.body).toHaveLength(9);
     });
 
     it('should maintain session across multiple requests', async () => {

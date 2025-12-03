@@ -19,6 +19,7 @@ const buildUserData = (overrides: Partial<CreateUserInput> = {}): CreateUserInpu
   password: "securePass123",
   departmentRoleId: defaultCitizenRoleId,
   emailNotificationsEnabled: true,
+  isVerified: false,
   ...overrides,
 });
 

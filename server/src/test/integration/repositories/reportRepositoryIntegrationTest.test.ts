@@ -55,7 +55,8 @@ describe('ReportRepository Integration Tests', () => {
             email: `user${r()}@test.com`,
             firstName: 'Test',
             lastName: 'User',
-            departmentRoleId: citizenRole!.id
+            departmentRoleId: citizenRole!.id,
+            isVerified: true
         });
         createdUserIds.push(testUser.id);
     });
