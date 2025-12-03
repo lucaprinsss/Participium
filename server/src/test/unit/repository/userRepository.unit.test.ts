@@ -50,6 +50,7 @@ describe('UserRepository Unit Tests', () => {
       firstName: 'Test',
       lastName: 'User',
       departmentRoleId: 1,
+      isVerified: true,
     };
 
     it('should create user with hashed password successfully', async () => {
