@@ -39,6 +39,18 @@ export class userEntity implements Express.User {
   @Column({ default: true })
   emailNotificationsEnabled!: boolean;
 
+  @Column({ length: 255, nullable: true })
+  companyName?: string;
+
+  @Column({ default: false })
+  isVerified!: boolean;
+
+  @Column({ length: 6, nullable: true })
+  verificationCode?: string;
+
+  @Column({ type: "timestamptz", nullable: true })
+  verificationCodeExpiresAt?: Date;
+
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;
 }

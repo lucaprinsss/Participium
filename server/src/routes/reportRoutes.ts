@@ -7,6 +7,7 @@ import { validateCreateReport, validateReportUpdate } from '@middleware/reportMi
 import { validateId } from '@middleware/validateId';
 import { validateMapQuery } from '@middleware/validateMapQuery';
 import { validateReportStatus, validateReportCategory } from '@middleware/validateReportQueryParams';
+import { validateStatusUpdate } from '@middleware/validateStatusUpdate';
 import { UserRole } from '@dto/UserRole';
 
 const router = express.Router();
@@ -30,7 +31,7 @@ const router = express.Router();
  *       
  *     tags: [Reports]
  *     security:
- *       - sessionAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -92,24 +93,40 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 400
+ *               name: "BadRequestError"
+ *               message: "Validation error or invalid input"
  *       401:
  *         description: User not authenticated
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       403:
  *         description: Insufficient permissions
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient permissions"
  *       500:
  *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  *   get:
  *     summary: Get all reports
  *     description: |
@@ -118,7 +135,7 @@ const router = express.Router();
  *       
  *     tags: [Reports]
  *     security:
- *       - sessionAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -147,12 +164,20 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "User not authenticated"
  *       500:
  *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "An unexpected error occurred"
  */
 router.post('/', requireRole(UserRole.CITIZEN), validateCreateReport, reportController.createReport);
 router.get('/', isLoggedIn, validateReportStatus, validateReportCategory, reportController.getAllReports);
@@ -192,7 +217,7 @@ router.get('/categories', reportController.getCategories);
  *       Returns all reports assigned to the authenticated technical office staff member.
  *     tags: [Reports]
  *     security:
- *       - sessionAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -215,12 +240,20 @@ router.get('/categories', reportController.getCategories);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "User not authenticated"
  *       500:
  *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "An unexpected error occurred"
  */
 router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
 
@@ -228,83 +261,214 @@ router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
  * @swagger
  * /api/reports/{id}/status:
  *   put:
- *     summary: Update the status of a report
+ *     summary: Update report status and/or assignment
  *     description: |
- *       Allows a Municipal Public Relations Officer to update the status of a report.
- *       Supported status transitions:
- *       - Assigned: Approves the report and assigns it to the technical office.
- *       - Rejected: Rejects the report. A rejection reason is required.
- *       * Allows a Technical Office Staff to update the status of a report.
- *       Supported status transitions:
- *       - Resolved: Marks the report as resolved.
- *     tags:
- *       - Reports
+ *       Update the status of a report with proper validation and role-based restrictions.
+ *       This unified endpoint handles status transitions and external maintainer assignments.
+ *       
+ *       **Allowed transitions and required roles:**
+ *       - `Pending Approval` → `Assigned` (approve): Only Public Relations Officers
+ *       - `Pending Approval` → `Rejected`: Only Public Relations Officers
+ *       - `Assigned`/`In Progress`/`Suspended` → `Resolved`: Technical Managers, Technical Assistants, or External Maintainers
+ *       - `Assigned` → `In Progress`: Technical Managers or Technical Assistants
+ *       - `In Progress` → `Suspended`: Technical Managers or Technical Assistants
+ *       
+ *       **External Maintainer Assignment:**
+ *       - When changing status to `Assigned`, you can optionally specify `externalAssigneeId`
+ *       - The external maintainer must belong to a department matching the report's category
+ *       - Only staff members (Technical Officers, Public Relations Officers) can assign to external maintainers
+ *       
+ *       **Required fields per status:**
+ *       - `Assigned`: Optional `category` to override/correct the category, optional `externalAssigneeId` to assign to external maintainer
+ *       - `Rejected`: Required `rejectionReason` explaining why the report is invalid
+ *       - `Resolved`: Optional `resolutionNotes` with details about the resolution
+ *       - `In Progress`: No additional fields required
+ *       - `Suspended`: No additional fields required
+ *     tags: [Reports]
  *     security:
- *       - sessionAuth: []
+ *       - cookieAuth: []
  *     parameters:
- *       - name: id
- *         in: path
+ *       - in: path
+ *         name: id
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID of the report to update
+ *         description: The ID of the report to update
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UpdateReportStatusRequest'
+ *             type: object
+ *             required:
+ *               - newStatus
+ *             properties:
+ *               newStatus:
+ *                 type: string
+ *                 enum: [Assigned, Rejected, Resolved, In Progress, Suspended]
+ *                 description: The new status to set for the report
+ *               category:
+ *                 type: string
+ *                 enum: 
+ *                   - Water Supply - Drinking Water
+ *                   - Architectural Barriers
+ *                   - Sewer System
+ *                   - Public Lighting
+ *                   - Waste
+ *                   - Road Signs and Traffic Lights
+ *                   - Roads and Urban Furnishings
+ *                   - Public Green Areas and Playgrounds
+ *                   - Other
+ *                 description: Optional category override when approving (status=Assigned). If not provided, uses existing category.
+ *               externalAssigneeId:
+ *                 type: integer
+ *                 description: |
+ *                   Optional ID of external maintainer to assign when status is "Assigned".
+ *                   The maintainer must have role "External Maintainer" and their department must match the report's category.
+ *                 example: 8
+ *               rejectionReason:
+ *                 type: string
+ *                 description: Required when newStatus is Rejected. Explanation for why the report is invalid.
+ *               resolutionNotes:
+ *                 type: string
+ *                 description: Optional notes when newStatus is Resolved. Details about how the issue was resolved.
  *           examples:
  *             approve:
- *               summary: Approve a report
+ *               summary: Approve report (change to Assigned)
  *               value:
- *                 status: Assigned
+ *                 newStatus: "Assigned"
+ *             approveWithCategoryChange:
+ *               summary: Approve report with category correction
+ *               value:
+ *                 newStatus: "Assigned"
+ *                 category: "Roads and Urban Furnishings"
+ *             approveAndAssignExternal:
+ *               summary: Approve and assign to external maintainer (PT24)
+ *               value:
+ *                 newStatus: "Assigned"
+ *                 externalAssigneeId: 8
  *             reject:
- *               summary: Reject a report
+ *               summary: Reject report
  *               value:
- *                 status: Rejected
- *                 reason: "Duplicate report"
+ *                 newStatus: "Rejected"
+ *                 rejectionReason: "The report does not contain sufficient details to identify the issue location"
  *             resolve:
- *               summary: Resolve a report
+ *               summary: Resolve report (mark as completed)
  *               value:
- *                 status: Resolved
+ *                 newStatus: "Resolved"
+ *                 resolutionNotes: "Pothole filled and road surface repaired on 2025-12-03"
+ *             inProgress:
+ *               summary: Mark report as in progress
+ *               value:
+ *                 newStatus: "In Progress"
+ *             suspend:
+ *               summary: Suspend report (temporary hold)
+ *               value:
+ *                 newStatus: "Suspended"
  *     responses:
- *       '200':
+ *       200:
  *         description: Report status updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ReportResponse'
- *       '400':
- *         description: Invalid request or missing fields
+ *               $ref: '#/components/schemas/Report'
+ *             examples:
+ *               statusUpdated:
+ *                 summary: Status updated
+ *                 value:
+ *                   id: 15
+ *                   title: "Pothole on Main Street"
+ *                   status: "In Progress"
+ *                   assigneeId: null
+ *                   externalAssigneeId: null
+ *               assignedToExternal:
+ *                 summary: Assigned to external maintainer
+ *                 value:
+ *                   id: 15
+ *                   title: "Broken streetlight"
+ *                   status: "Assigned"
+ *                   assigneeId: null
+ *                   externalAssigneeId: 8
+ *                   externalAssignee:
+ *                     id: 8
+ *                     username: "enel.external"
+ *                     first_name: "Enel"
+ *                     last_name: "X Services"
+ *                     company_name: "Enel X S.r.l."
+ *       400:
+ *         description: Invalid request (invalid status transition, missing required fields, or validation errors)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       '401':
+ *             examples:
+ *               invalidTransition:
+ *                 summary: Invalid status transition
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "Invalid status transition"
+ *               categoryMismatch:
+ *                 summary: External maintainer department doesn't match category
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "External maintainer's department does not match report category"
+ *               notExternalMaintainer:
+ *                 summary: Assignee is not an external maintainer
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "Assignee is not an external maintainer"
+ *       401:
  *         description: Not authenticated
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       '403':
- *         description: Insufficient permissions
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "User not authenticated"
+ *       403:
+ *         description: Insufficient permissions for requested status change
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       '404':
+ *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient permissions for requested status change"
+ *       404:
  *         description: Report not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       '500':
+ *             examples:
+ *               reportNotFound:
+ *                 summary: Report not found
+ *                 value:
+ *                   code: 404
+ *                   name: "NotFoundError"
+ *                   message: "Report not found"
+ *               assigneeNotFound:
+ *                 summary: External maintainer not found
+ *                 value:
+ *                   code: 404
+ *                   name: "NotFoundError"
+ *                   message: "External maintainer not found"
+ *       500:
  *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "An unexpected error occurred"
  */
 const allowedToUpdateRoles = [
   'Municipal Public Relations Officer',
@@ -323,6 +487,8 @@ const allowedToUpdateRoles = [
 ];
 
 router.put('/:id/status', requireRole(allowedToUpdateRoles), validateId(), validateReportUpdate, reportController.updateReportStatus);
+// TODO: Uncomment when reportController.updateReportStatus is implemented
+// router.put('/:id/status', isLoggedIn, validateId('id', 'report'), validateStatusUpdate, reportController.updateReportStatus);
 
 /**
  * @swagger
@@ -342,7 +508,7 @@ router.put('/:id/status', requireRole(allowedToUpdateRoles), validateId(), valid
  *       - Zoom level: Controls clustering behavior
  *     tags: [Reports]
  *     security:
- *       - sessionAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: zoom
@@ -460,12 +626,14 @@ router.put('/:id/status', requireRole(allowedToUpdateRoles), validateId(), valid
  *               invalidZoom:
  *                 summary: Invalid zoom level
  *                 value:
- *                   error: "Bad Request"
+ *                   code: 400
+ *                   name: "BadRequestError"
  *                   message: "Zoom level must be between 1 and 20"
  *               invalidBounds:
  *                 summary: Invalid bounding box
  *                 value:
- *                   error: "Bad Request"
+ *                   code: 400
+ *                   name: "BadRequestError"
  *                   message: "Invalid bounding box coordinates"
  *       401:
  *         description: User not authenticated
@@ -474,7 +642,8 @@ router.put('/:id/status', requireRole(allowedToUpdateRoles), validateId(), valid
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Unauthorized"
+ *               code: 401
+ *               name: "UnauthorizedError"
  *               message: "Not authenticated"
  *       500:
  *         description: Internal server error
@@ -483,10 +652,290 @@ router.put('/:id/status', requireRole(allowedToUpdateRoles), validateId(), valid
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Internal Server Error"
+ *               code: 500
+ *               name: "InternalServerError"
  *               message: "An unexpected error occurred while retrieving map reports"
  *  
  */
 router.get('/map', isLoggedIn, validateMapQuery, reportController.getMapReports);
 
+/**
+ * @swagger
+ * /api/reports/{id}/internal-comments:
+ *   get:
+ *     summary: Get internal comments for a report
+ *     description: |
+ *       Retrieve all internal comments for a specific report. Internal comments
+ *       are used for coordination between staff members and external maintainers
+ *       and are NOT visible to citizens.
+ *       
+ *       **Access Control:**
+ *       - Staff members (Technical Manager, Technical Assistant, Public Relations Officer)
+ *       - External Maintainers assigned to the report
+ *       - NOT accessible to Citizens or Administrators
+ *       
+ *       **Security:** This endpoint ensures internal communication remains private
+ *       and separate from citizen-facing information.
+ *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Report ID to get internal comments for
+ *         example: 15
+ *     responses:
+ *       200:
+ *         description: List of internal comments for the report
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 1
+ *                   content:
+ *                     type: string
+ *                     example: "Checked the site, pipe replacement needed. Will coordinate with external team."
+ *                   author:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 5
+ *                       username:
+ *                         type: string
+ *                         example: "m.rossi"
+ *                       first_name:
+ *                         type: string
+ *                         example: "Mario"
+ *                       last_name:
+ *                         type: string
+ *                         example: "Rossi"
+ *                       role:
+ *                         type: string
+ *                         example: "Water Network staff member"
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2024-01-15T14:30:00Z"
+ *             example:
+ *               - id: 1
+ *                 content: "Checked the site, pipe replacement needed. Will coordinate with external team."
+ *                 author:
+ *                   id: 5
+ *                   username: "m.rossi"
+ *                   first_name: "Mario"
+ *                   last_name: "Rossi"
+ *                   role: "Water Network staff member"
+ *                 created_at: "2024-01-15T14:30:00Z"
+ *               - id: 2
+ *                 content: "Team dispatched, ETA 2 hours"
+ *                 author:
+ *                   id: 8
+ *                   username: "acea"
+ *                   first_name: "Acea"
+ *                   last_name: "Water Services"
+ *                   role: "External Maintainer"
+ *                   company_name: "Acea S.p.A."
+ *                 created_at: "2024-01-15T15:00:00Z"
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "User not authenticated"
+ *       403:
+ *         description: User is not authorized to view internal comments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Access denied. Internal comments are only accessible to staff and external maintainers"
+ *       404:
+ *         description: Report not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Report not found"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   post:
+ *     summary: Add an internal comment to a report
+ *     description: |
+ *       Add a new internal comment to a report. Internal comments facilitate
+ *       coordination between staff members and external maintainers without
+ *       exposing notes to citizens.
+ *       
+ *       **Access Control:**
+ *       - Staff members (Technical Manager, Technical Assistant, Public Relations Officer)
+ *       - External Maintainers assigned to the report
+ *       - NOT accessible to Citizens or Administrators
+ *       
+ *       **Use Cases:**
+ *       - Coordination between technical staff
+ *       - Communication with external maintainers
+ *       - Internal status updates and notes
+ *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Report ID to add comment to
+ *         example: 15
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 description: The comment text
+ *                 minLength: 1
+ *                 maxLength: 1000
+ *                 example: "Checked the site, pipe replacement needed. Will coordinate with external team."
+ *     responses:
+ *       201:
+ *         description: Internal comment created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   example: 3
+ *                 content:
+ *                   type: string
+ *                   example: "Checked the site, pipe replacement needed. Will coordinate with external team."
+ *                 author:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 5
+ *                     username:
+ *                       type: string
+ *                       example: "m.rossi"
+ *                     first_name:
+ *                       type: string
+ *                       example: "Mario"
+ *                     last_name:
+ *                       type: string
+ *                       example: "Rossi"
+ *                 created_at:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2024-01-15T16:30:00Z"
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               missingContent:
+ *                 summary: Missing comment content
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "content is required"
+ *               contentTooLong:
+ *                 summary: Content exceeds maximum length
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "content must be between 1 and 1000 characters"
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "User not authenticated"
+ *       403:
+ *         description: User is not authorized to add internal comments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Access denied. Only staff and external maintainers can add internal comments"
+ *       404:
+ *         description: Report not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Report not found"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+// router.get('/:id/internal-comments',
+//   isLoggedIn,
+//   requireRole([
+//     UserRole.TECHNICAL_MANAGER,
+//     UserRole.TECHNICAL_ASSISTANT,
+//     UserRole.PUBLIC_RELATIONS_OFFICER,
+//     UserRole.EXTERNAL_MAINTAINER
+//   ]),
+//   validateId,
+//   reportController.getInternalComments
+// );
+//
+// router.post('/:id/internal-comments',
+//   isLoggedIn,
+//   requireRole([
+//     UserRole.TECHNICAL_MANAGER,
+//     UserRole.TECHNICAL_ASSISTANT,
+//     UserRole.PUBLIC_RELATIONS_OFFICER,
+//     UserRole.EXTERNAL_MAINTAINER
+//   ]),
+//   validateId,
+//   reportController.addInternalComment
+// );
+
 export default router;
+
+

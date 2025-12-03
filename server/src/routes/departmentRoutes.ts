@@ -45,22 +45,20 @@ const router = express.Router();
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
+ *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
  *               message: "Access denied. Admin role required."
  *       500:
  *         description: Internal Server Error
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
+ *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
+ *               code: 500
+ *               name: "InternalServerError"
  *               message: "Internal server error"
  */
 router.get('/', requireRole(UserRole.ADMINISTRATOR), departmentController.getMunicipalityDepartments);
@@ -102,57 +100,53 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), departmentController.getMun
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
+ *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
+ *               code: 400
+ *               name: "BadRequestError"
  *               message: "Invalid department ID. Must be a positive integer."
  *       401:
  *         description: Unauthorized - User not authenticated
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
+ *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
  *               message: "Not authenticated"
  *       403:
  *         description: Forbidden - User is not an administrator
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
+ *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
  *               message: "Access denied. Admin role required."
  *       404:
  *         description: Not Found - Department does not exist
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
+ *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
+ *               code: 404
+ *               name: "NotFoundError"
  *               message: "Department with ID 999 not found"
  *       500:
  *         description: Internal Server Error
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
+ *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
+ *               code: 500
+ *               name: "InternalServerError"
  *               message: "Internal server error"
  */
 router.get('/:id/roles', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'department'), departmentController.getRolesByDepartment);
 
 export default router;
+

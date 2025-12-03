@@ -1,6 +1,6 @@
-# Participium - Database Structure (v3)
+# Participium - Database Structure (v4.2)
 
-This document describes the database schema (Version 4.0) designed for the **Participium** application.
+This document describes the database schema (Version 4.2) designed for the **Participium** application.
 
 * **Database System:** PostgreSQL (v15+)
 * **Required Extensions:** `postgis` (for geolocation data)
@@ -42,7 +42,7 @@ Predefined categories for citizen reports.
 | `Other` |
 
 ### `report_status`
-Represents the 6 states of a report's lifecycle.
+Represents the lifecycle states of a report.
 
 | Value | Description |
 |-------|-------------|
@@ -52,6 +52,8 @@ Represents the 6 states of a report's lifecycle.
 | `Suspended` | Temporarily paused |
 | `Rejected` | Report rejected by organization staff |
 | `Resolved` | Issue has been fixed |
+
+**Note:** External maintenance is not a separate status. When a report is delegated to an external maintainer, the `external_assignee_id` field is populated while the status remains 'In Progress'.
 
 ---
 
@@ -72,6 +74,10 @@ Stores information for all system actors (citizens, operators, administrators).
 | `personal_photo_url` | `TEXT` | NULLABLE | URL to user's profile photo |
 | `telegram_username` | `VARCHAR(100)` | NULLABLE, UNIQUE | Telegram username for bot integration |
 | `email_notifications_enabled` | `BOOLEAN` | NOT NULL, DEFAULT true | Flag to enable/disable email notifications |
+| `company_name` | `VARCHAR(255)` | NULLABLE | Company name (only for External Maintainer role) |
+| `is_verified` | `BOOLEAN` | NOT NULL, DEFAULT false | Indicates if the user's email has been verified |
+| `verification_code` | `VARCHAR(6)` | NULLABLE | 6-digit verification code sent via email (null after verification) |
+| `verification_code_expires_at` | `TIMESTAMPTZ` | NULLABLE | Expiration timestamp for the verification code (30 minutes from generation) |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Registration date |
 
 **Indexes:**
@@ -85,6 +91,8 @@ Stores information for all system actors (citizens, operators, administrators).
 - In V3, user roles are no longer stored as an ENUM but are managed through the `department_role_id` foreign key
 - Each user is assigned to a specific "position" which is a combination of department and role
 - Citizens are assigned to the 'Organization' department with 'Citizen' role
+- **V4.1**: External maintainers are now regular users with the 'External Maintainer' role in the 'External Service Providers' department. The `company_name` field stores their company name (e.g., "Enel X S.p.A.", "Acea S.p.A.")
+- **V4.2**: Email verification system added. New users must verify their email within 30 minutes using a 6-digit code. Users cannot use the system until `is_verified` is true. Pre-existing users (admin, external maintainers) are automatically verified.
 
 ---
 
@@ -102,7 +110,8 @@ Central table containing all citizen-submitted reports.
 | `is_anonymous` | `BOOLEAN` | NOT NULL, DEFAULT false | Flag to hide reporter's name from public view |
 | `status` | `report_status` | NOT NULL, DEFAULT 'Pending Approval' | Current report status (see ENUM) |
 | `rejection_reason` | `TEXT` | NULLABLE | Required text if `status` is 'Rejected' |
-| `assignee_id` | `INT` | **FOREIGN KEY** → `users(id)`, NULLABLE | ID of technical staff member assigned to the case |
+| `assignee_id` | `INT` | **FOREIGN KEY** → `users(id)`, NULLABLE | ID of internal technical staff member assigned to manage the case |
+| `external_assignee_id` | `INT` | **FOREIGN KEY** → `users(id)`, NULLABLE | ID of external maintainer assigned to perform the intervention (if delegated externally) |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Report submission date |
 | `updated_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Date of last status change |
 
@@ -116,7 +125,14 @@ Central table containing all citizen-submitted reports.
 - Primary key on `id`
 - Foreign key index on `reporter_id`
 - Foreign key index on `assignee_id`
+- Foreign key index on `external_assignee_id`
 - Spatial index on `location` (automatically created by PostGIS)
+
+**Notes:**
+- The `assignee_id` field references the internal technical staff member responsible for managing the report
+- The `external_assignee_id` field references an external maintainer (user with 'External Maintainer' role) if the intervention is delegated externally
+- Both fields can coexist: internal staff can delegate to external maintainer while maintaining responsibility
+- When `external_assignee_id` is set, the report status should typically be 'In Progress' (the external assignment is tracked via the field, not the status)
 
 ---
 
@@ -217,6 +233,7 @@ Stores municipality departments that handle different types of reports.
 - `Mobility and Traffic Management Department`
 - `Parks, Green Areas and Recreation Department`
 - `General Services Department`
+- `External Service Providers` (for external maintainer companies)
 
 ---
 
@@ -251,6 +268,7 @@ Stores permission levels and job roles that can be assigned to users across depa
 - `Customer Service staff member` - Provides customer service
 - `Building Maintenance staff member` - Maintains building facilities
 - `Support Officer` - Provides general support services
+- `External Maintainer` - External company contractor specialized in specific report categories
 
 ---
 
@@ -278,7 +296,9 @@ Defines valid "positions" by linking departments to roles. This table represents
 - The Admin UI can use this table to show only valid roles when filtering by department
 
 
-### 10. `category_role_mapping`
+---
+
+## Entity Relationshipsmapping`
 **NEW in V4:** Maps report categories to specific technical roles for automatic assignment.
 
 | Column | Type | Constraints | Description |
@@ -292,13 +312,15 @@ Defines valid "positions" by linking departments to roles. This table represents
 - Primary key on `id`
 - Unique index on `category`
 - Foreign key index on `role_id`
+
 ---
 
 ## Entity Relationships
 
 ```
 users (1) ──────────────< (N) reports [reporter_id]
-users (1) ──────────────< (N) reports [assignee_id]
+users (1) ──────────────< (N) reports [assignee_id] (internal staff)
+users (1) ──────────────< (N) reports [external_assignee_id] (external maintainers)
 users (1) ──────────────< (N) comments [author_id]
 users (1) ──────────────< (N) notifications [user_id]
 users (1) ──────────────< (N) messages [sender_id]
@@ -308,8 +330,8 @@ reports (1) ────────────< (N) comments
 reports (1) ────────────< (N) notifications
 reports (1) ────────────< (N) messages
 
-departments (1) ────────< (N) department_roles [department_id]
-departments (1) ────────< (N) category_department_mapping [department_id]
+departments (1) ────────────< (N) department_roles [department_id]
+departments (1) ────────────< (N) category_department_mapping [department_id]
 
 roles (1) ──────────────< (N) department_roles [role_id]
 department_roles (1) ───< (N) users [department_role_id]
@@ -326,7 +348,7 @@ department_roles (1) ───< (N) users [department_role_id]
 
 The initialization script populates the following default data:
 
-### Departments (8 total)
+### Departments (9 total)
 1. **Organization** - For system-level roles (Admin, Citizen)
 2. **Water and Sewer Services Department**
 3. **Public Infrastructure and Accessibility Department**
@@ -335,6 +357,7 @@ The initialization script populates the following default data:
 6. **Mobility and Traffic Management Department**
 7. **Parks, Green Areas and Recreation Department**
 8. **General Services Department**
+9. **External Service Providers** - For external maintainer companies
 
 
 
@@ -388,6 +411,27 @@ The initialization script populates the following default data:
 - **Position:** Organization / Administrator
 - **Name:** System Administrator
 
+### Default External Maintainer Users (V4.3)
+Pre-populated external maintainer users in the 'External Service Providers' department:
+
+1. **Enel X S.p.A.** - Public Lighting specialist
+   - Username: `enelx` | Password: `maintainer123`
+   - Email: `interventions@enelx.com`
+
+2. **Acea S.p.A.** - Water and Sewer Services specialist
+   - Username: `acea` | Password: `maintainer123`
+   - Email: `water@acea.it`
+
+3. **Hera S.p.A.** - Waste Management specialist
+   - Username: `hera` | Password: `maintainer123`
+   - Email: `waste@hera.it`
+
+4. **ATM S.p.A.** - Traffic Management specialist
+   - Username: `atm` | Password: `maintainer123`
+   - Email: `traffic@atm.it`
+
+**Note:** All external maintainer passwords should be changed in production!
+
 ---
 
 ## Automatic Assignment Workflow
@@ -399,6 +443,12 @@ The initialization script populates the following default data:
 3. **Officer approves report** → System uses `category_role_mapping` to find responsible department
 4. **System assigns to technical staff** → Finds available staff member in that department
 5. **Status changes to "Assigned"** → Technical staff receives the task
+
+**V4.3 Enhancement - External Maintainer Assignment:**
+- Technical office staff can manually assign reports to external maintainers
+- External maintainers are users with the 'External Maintainer' role
+- They can log in, view assigned reports, update status, and add internal comments
+- The `assignee_id` field in `reports` can reference both internal staff and external maintainers
 
 ## Database Initialization
 
@@ -417,5 +467,7 @@ The [`docker-compose.yml`](server/docker-compose.yml ) file automatically runs [
 | 2.0 | 2025-01-12 | Added geolocation support with PostGIS for citizen reports |
 | 3.0 | 2025-11-17 | **Major refactoring:** Replaced ENUM-based roles with relational role system. Added `departments`, `roles`, and `department_roles` tables. Changed `users.role` to `users.department_role_id` for flexible role-department assignments. Pre-populated 8 departments and 24+ roles covering various municipal services. |
 | 4.0 | 2025-11-22 | **Added automatic assignment:** Added `category_role_mapping` table to map report categories to departments. Reduced role count from 24 to 15 (consolidated similar roles). |
+| 4.1 | 2025-12-02 | **Integrated external maintainers as users (PT24, PT25, PT26):** Removed separate `external_maintainers` table. External maintainers are now regular users with 'External Maintainer' role. Added `company_name` field to `users` table. Removed `external_maintainer_id` and `single_assignment` constraint from `reports` table. External maintainers can now authenticate, update report status, and exchange internal comments with technical staff. |
+| 4.4 | 2025-12-02 | **Added email verification system (PT27) and dual assignment tracking:** Added `is_verified`, `verification_code`, and `verification_code_expires_at` fields to `users` table. New citizens must verify their email with a 6-digit code valid for 30 minutes before accessing the system. Pre-existing users are automatically marked as verified. Added `external_assignee_id` to `reports` table to maintain both internal staff assignee and external maintainer references, preserving the full chain of responsibility. |
 
 

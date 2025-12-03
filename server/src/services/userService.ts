@@ -50,7 +50,8 @@ class UserService {
       firstName: first_name,
       lastName: last_name,
       departmentRoleId: citizenDepartmentRole.id,
-      emailNotificationsEnabled: true
+      emailNotificationsEnabled: true,
+      isVerified: false  // New citizens must verify their email
     });
 
     logInfo(`New citizen registered: ${username} (ID: ${newUser.id})`);

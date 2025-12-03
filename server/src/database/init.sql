@@ -1,6 +1,6 @@
 /*
  * ====================================
- * INITIALIZATION SCRIPT FOR THE DATABASE - V4
+ * INITIALIZATION SCRIPT FOR THE DATABASE - V4.2
  * ====================================
  */
 
@@ -39,7 +39,7 @@ CREATE TYPE report_status AS ENUM (
 
 /*
  * ====================================
- * NEW TABLES FOR ROLES & DEPARTMENTS (V3)
+ * NEW TABLES FOR ROLES & DEPARTMENTS
  * ====================================
  */
 
@@ -104,6 +104,14 @@ CREATE TABLE users (
     personal_photo_url TEXT,
     telegram_username VARCHAR(100) UNIQUE,
     email_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
+    
+    -- Campo per manutentori esterni (nome azienda)
+    company_name VARCHAR(255),
+    
+    -- Campi per verifica email 
+    is_verified BOOLEAN NOT NULL DEFAULT false,
+    verification_code VARCHAR(6),
+    verification_code_expires_at TIMESTAMPTZ,
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -111,7 +119,6 @@ CREATE TABLE users (
 
 /*
  * Reports table (reports)
- * (Nessuna modifica)
  */
 CREATE TABLE reports (
     id SERIAL PRIMARY KEY,
@@ -123,11 +130,12 @@ CREATE TABLE reports (
     is_anonymous BOOLEAN NOT NULL DEFAULT false,
     status report_status NOT NULL DEFAULT 'Pending Approval',
     rejection_reason TEXT,
-    assignee_id INT REFERENCES users(id), 
+    assignee_id INT REFERENCES users(id),
+    external_assignee_id INT REFERENCES users(id),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT check_rejection_reason 
+
+    CONSTRAINT check_rejection_reason
         CHECK ( (status <> 'Rejected') OR (rejection_reason IS NOT NULL) )
 );
 
@@ -209,10 +217,9 @@ CREATE TABLE category_role_mapping (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-
 /*
  * ====================================
- * DEFAULT DATA (MODIFICATO V3)
+ * DATA POPULATION
  * ====================================
  */
 
@@ -228,7 +235,8 @@ VALUES
     ('Waste Management Department'),
     ('Mobility and Traffic Management Department'),
     ('Parks, Green Areas and Recreation Department'),
-    ('General Services Department')
+    ('General Services Department'),
+    ('External Service Providers')                              -- Per manutentori esterni
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO roles (name, description)
@@ -247,7 +255,8 @@ VALUES
     ('Parks Maintenance staff member', 'Maintains parks and green areas'),
     ('Customer Service staff member', 'Provides customer service'),
     ('Building Maintenance staff member', 'Maintains building facilities'),
-    ('Support Officer', 'Provides general support services')
+    ('Support Officer', 'Provides general support services'),
+    ('External Maintainer', 'External company contractor specialized in specific report categories')
 ON CONFLICT (name) DO NOTHING;
 
 -- 2. Collega Dipartimenti e Ruoli per creare "Posizioni"
@@ -288,7 +297,10 @@ VALUES
     ((SELECT id FROM departments WHERE name = 'General Services Department'), (SELECT id FROM roles WHERE name = 'Department Director')),
     ((SELECT id FROM departments WHERE name = 'General Services Department'), (SELECT id FROM roles WHERE name = 'Customer Service staff member')),
     ((SELECT id FROM departments WHERE name = 'General Services Department'), (SELECT id FROM roles WHERE name = 'Building Maintenance staff member')),
-    ((SELECT id FROM departments WHERE name = 'General Services Department'), (SELECT id FROM roles WHERE name = 'Support Officer'))
+    ((SELECT id FROM departments WHERE name = 'General Services Department'), (SELECT id FROM roles WHERE name = 'Support Officer')),
+
+    -- External Service Providers Department
+    ((SELECT id FROM departments WHERE name = 'External Service Providers'), (SELECT id FROM roles WHERE name = 'External Maintainer'))
 ON CONFLICT (department_id, role_id) DO NOTHING;
 
 
@@ -334,7 +346,7 @@ ON CONFLICT (category) DO NOTHING;
  * Password: admin (hashed con bcrypt)
  * Note: Change this password in production!
  */
-INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled)
+INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'admin',
     'System',
@@ -348,6 +360,72 @@ VALUES (
      WHERE d.name = 'Organization' AND r.name = 'Administrator'),
      
     'admin@participium.local',
-    true
+    true,
+    true  -- Admin è già verificato
 )
+ON CONFLICT (username) DO NOTHING;
+
+/*
+ * 6. Crea utenti per i manutentori esterni
+ * I manutentori esterni sono ora utenti con ruolo 'External Maintainer'
+ * Password di default per tutti: 'maintainer123'
+ * Hash bcrypt: $2b$10$
+ */
+INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, company_name, email_notifications_enabled, is_verified)
+VALUES
+    -- Enel X - Specializzato in illuminazione pubblica
+    ('enelx',
+     'Enel X',
+     'Support Team',
+     '455eb328698d8cb5c8956fa51027dd4b:a93a35cebfb7f7b59c8ebe7720eac36c4ef76ec6d7d19d5e4e179555e57d2695fbbfc34ad8931d6c985fdcf2492f6fe3fc87dc4e7ddc20b9f4c66caa50c36e4d',
+     (SELECT dr.id FROM department_roles dr
+      JOIN departments d ON dr.department_id = d.id
+      JOIN roles r ON dr.role_id = r.id
+      WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
+     'interventions@enelx.com',
+     'Enel X S.p.A.',
+     true,
+     true),  -- Manutentori esterni sono già verificati
+    
+    -- Acea - Specializzato in acqua e fognature
+    ('acea',
+     'Acea',
+     'Water Services',
+     '455eb328698d8cb5c8956fa51027dd4b:a93a35cebfb7f7b59c8ebe7720eac36c4ef76ec6d7d19d5e4e179555e57d2695fbbfc34ad8931d6c985fdcf2492f6fe3fc87dc4e7ddc20b9f4c66caa50c36e4d',
+     (SELECT dr.id FROM department_roles dr
+      JOIN departments d ON dr.department_id = d.id
+      JOIN roles r ON dr.role_id = r.id
+      WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
+     'water@acea.it',
+     'Acea S.p.A.',
+     true,
+     true),
+    
+    -- Hera - Specializzato in gestione rifiuti
+    ('hera',
+     'Hera',
+     'Waste Management',
+     '455eb328698d8cb5c8956fa51027dd4b:a93a35cebfb7f7b59c8ebe7720eac36c4ef76ec6d7d19d5e4e179555e57d2695fbbfc34ad8931d6c985fdcf2492f6fe3fc87dc4e7ddc20b9f4c66caa50c36e4d',
+     (SELECT dr.id FROM department_roles dr
+      JOIN departments d ON dr.department_id = d.id
+      JOIN roles r ON dr.role_id = r.id
+      WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
+     'waste@hera.it',
+     'Hera S.p.A.',
+     true,
+     true),
+    
+    -- ATM - Specializzato in mobilità e traffico
+    ('atm',
+     'ATM',
+     'Traffic Management',
+     '455eb328698d8cb5c8956fa51027dd4b:a93a35cebfb7f7b59c8ebe7720eac36c4ef76ec6d7d19d5e4e179555e57d2695fbbfc34ad8931d6c985fdcf2492f6fe3fc87dc4e7ddc20b9f4c66caa50c36e4d',
+     (SELECT dr.id FROM department_roles dr
+      JOIN departments d ON dr.department_id = d.id
+      JOIN roles r ON dr.role_id = r.id
+      WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
+     'traffic@atm.it',
+     'ATM S.p.A.',
+     true,
+     true)
 ON CONFLICT (username) DO NOTHING;

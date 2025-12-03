@@ -66,7 +66,8 @@ class MunicipalityUserService {
       firstName: first_name,
       lastName: last_name,
       departmentRoleId: matchingDepartmentRole.id,
-      password
+      password,
+      isVerified: true  // Municipality users are pre-verified
     });
     logInfo(`Municipality user created: ${username} with role ${role_name}`);
 

@@ -68,7 +68,9 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "All fields are required"
+ *               code: 400
+ *               name: "BadRequestError"
+ *               message: "All fields are required"
  *       401:
  *         description: Unauthorized
  *         content:
@@ -76,7 +78,9 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Not authenticated"
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       403:
  *         description: Forbidden (requires admin role)
  *         content:
@@ -84,7 +88,9 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Insufficient rights"
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient rights"
  *       500:
  *         description: Internal Server Error
  *         content:
@@ -92,7 +98,9 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Internal server error"
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  *       409:
  *         description: Conflict error
  *         content:
@@ -100,7 +108,9 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Username or email already exists"
+ *               code: 409
+ *               name: "ConflictError"
+ *               message: "Username or email already exists"
  */
 router.post(
 	'/',
@@ -135,7 +145,9 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Not authenticated"
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       403:
  *         description: Forbidden
  *         content:
@@ -143,7 +155,9 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Insufficient rights"
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient rights"
  *       500:
  *         description: Internal Server Error
  *         content:
@@ -151,7 +165,9 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Internal server error"
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  */
 router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.getAllMunicipalityUsers);
 
@@ -186,7 +202,9 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Municipality user not found"
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Municipality user not found"
  *       401:
  *         description: Unauthorized
  *         content:
@@ -194,7 +212,9 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Not authenticated"
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       400:
  *         description: Validation error
  *         content:
@@ -202,7 +222,9 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "All fields are required"
+ *               code: 400
+ *               name: "BadRequestError"
+ *               message: "All fields are required"
  *       403:
  *         description: Forbidden (requires admin role)
  *         content:
@@ -210,7 +232,9 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Insufficient rights"
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient rights"
  *       500:
  *         description: Internal Server Error
  *         content:
@@ -218,7 +242,9 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Internal server error"
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  */
 router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.getMunicipalityUserById);
 
@@ -277,7 +303,9 @@ router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Municipality user not found"
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Municipality user not found"
  *       401:
  *         description: Unauthorized
  *         content:
@@ -285,7 +313,9 @@ router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Not authenticated"
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       400:
  *         description: Validation error
  *         content:
@@ -293,7 +323,9 @@ router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "All fields are required"
+ *               code: 400
+ *               name: "BadRequestError"
+ *               message: "All fields are required"
  *       403:
  *         description: Forbidden (requires admin role)
  *         content:
@@ -301,7 +333,9 @@ router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Insufficient rights"
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient rights"
  *       409:
  *         description: Conflict error
  *         content:
@@ -309,7 +343,9 @@ router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Username or email already exists"
+ *               code: 409
+ *               name: "ConflictError"
+ *               message: "Username or email already exists"
  *       500:
  *         description: Internal Server Error
  *         content:
@@ -317,7 +353,9 @@ router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Internal server error"
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  */
 router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.updateMunicipalityUser);
 
@@ -348,7 +386,9 @@ router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Municipality user not found"
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Municipality user not found"
  *       401:
  *         description: Unauthorized
  *         content:
@@ -356,7 +396,9 @@ router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Not authenticated"
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       403:
  *         description: Forbidden (requires admin role)
  *         content:
@@ -364,7 +406,9 @@ router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Insufficient rights"
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient rights"
  *       500:
  *         description: Internal Server Error
  *         content:
@@ -372,7 +416,9 @@ router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Internal server error"
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  */
 router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.deleteMunicipalityUser);
 
@@ -424,7 +470,9 @@ router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'use
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "All fields are required"
+ *               code: 400
+ *               name: "BadRequestError"
+ *               message: "All fields are required"
  *       404:
  *         description: User or role not found
  *         content:
@@ -432,7 +480,9 @@ router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'use
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Municipality user not found"
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Municipality user not found"
  *       401:
  *         description: Unauthorized
  *         content:
@@ -440,7 +490,9 @@ router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'use
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Not authenticated"
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       403:
  *         description: Forbidden (requires admin role)
  *         content:
@@ -448,7 +500,9 @@ router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'use
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Insufficient rights"
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient rights"
  *       500:
  *         description: Internal Server Error
  *         content:
@@ -456,7 +510,9 @@ router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'use
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Internal server error"
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  */
 router.put(
 	'/:id/role',
@@ -467,3 +523,5 @@ router.put(
 );
 
 export default router;
+
+

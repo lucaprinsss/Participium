@@ -75,6 +75,13 @@ export class reportEntity {
   @JoinColumn({ name: "assignee_id" })
   assignee?: userEntity;
 
+  @Column({ nullable: true })
+  externalAssigneeId?: number;
+
+  @ManyToOne(() => userEntity, { nullable: true })
+  @JoinColumn({ name: "external_assignee_id" })
+  externalAssignee?: userEntity;
+
   @OneToMany(() => photoEntity, (photo) => photo.report, {
     cascade: true,
     eager: true 

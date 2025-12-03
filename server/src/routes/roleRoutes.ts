@@ -37,7 +37,9 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *              error: "Not authenticated"
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       403:
  *         description: Forbidden (requires admin role)
  *         content:
@@ -45,7 +47,9 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Insufficient rights" 
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient rights"
  *       500:
  *         description: Internal Server Error
  *         content:
@@ -53,8 +57,11 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
- *               error: "Internal server error"   
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  */
 router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.getAllRoles);
 
 export default router;
+

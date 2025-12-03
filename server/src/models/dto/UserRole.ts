@@ -19,5 +19,6 @@ export enum UserRole {
   ADMINISTRATOR = 'Administrator',
   PUBLIC_RELATIONS_OFFICER = 'Municipal Public Relations Officer',
   TECHNICAL_MANAGER = 'Technical Manager',
-  TECHNICAL_ASSISTANT = 'Technical Assistant'
+  TECHNICAL_ASSISTANT = 'Technical Assistant',
+  EXTERNAL_MAINTAINER = 'External Maintainer'
 }
