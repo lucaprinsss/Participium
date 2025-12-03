@@ -34,8 +34,7 @@ CREATE TYPE report_status AS ENUM (
     'In Progress',
     'Suspended',
     'Rejected',
-    'Resolved',
-    'In External Maintenance'
+    'Resolved'
 );
 
 /*
@@ -132,6 +131,7 @@ CREATE TABLE reports (
     status report_status NOT NULL DEFAULT 'Pending Approval',
     rejection_reason TEXT,
     assignee_id INT REFERENCES users(id),
+    external_assignee_id INT REFERENCES users(id),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 

@@ -42,7 +42,7 @@ Predefined categories for citizen reports.
 | `Other` |
 
 ### `report_status`
-Represents the 6 states of a report's lifecycle.
+Represents the lifecycle states of a report.
 
 | Value | Description |
 |-------|-------------|
@@ -52,6 +52,8 @@ Represents the 6 states of a report's lifecycle.
 | `Suspended` | Temporarily paused |
 | `Rejected` | Report rejected by organization staff |
 | `Resolved` | Issue has been fixed |
+
+**Note:** External maintenance is not a separate status. When a report is delegated to an external maintainer, the `external_assignee_id` field is populated while the status remains 'In Progress'.
 
 ---
 
@@ -108,7 +110,8 @@ Central table containing all citizen-submitted reports.
 | `is_anonymous` | `BOOLEAN` | NOT NULL, DEFAULT false | Flag to hide reporter's name from public view |
 | `status` | `report_status` | NOT NULL, DEFAULT 'Pending Approval' | Current report status (see ENUM) |
 | `rejection_reason` | `TEXT` | NULLABLE | Required text if `status` is 'Rejected' |
-| `assignee_id` | `INT` | **FOREIGN KEY** → `users(id)`, NULLABLE | ID of technical staff or external maintainer assigned to the case |
+| `assignee_id` | `INT` | **FOREIGN KEY** → `users(id)`, NULLABLE | ID of internal technical staff member assigned to manage the case |
+| `external_assignee_id` | `INT` | **FOREIGN KEY** → `users(id)`, NULLABLE | ID of external maintainer assigned to perform the intervention (if delegated externally) |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Report submission date |
 | `updated_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Date of last status change |
 
@@ -122,11 +125,14 @@ Central table containing all citizen-submitted reports.
 - Primary key on `id`
 - Foreign key index on `reporter_id`
 - Foreign key index on `assignee_id`
+- Foreign key index on `external_assignee_id`
 - Spatial index on `location` (automatically created by PostGIS)
 
 **Notes:**
-- The `assignee_id` field can now reference both internal staff and external maintainers (who are stored in the `users` table with the 'External Maintainer' role)
-- The `single_assignment` constraint has been removed as it's no longer needed
+- The `assignee_id` field references the internal technical staff member responsible for managing the report
+- The `external_assignee_id` field references an external maintainer (user with 'External Maintainer' role) if the intervention is delegated externally
+- Both fields can coexist: internal staff can delegate to external maintainer while maintaining responsibility
+- When `external_assignee_id` is set, the report status should typically be 'In Progress' (the external assignment is tracked via the field, not the status)
 
 ---
 
@@ -313,7 +319,8 @@ Defines valid "positions" by linking departments to roles. This table represents
 
 ```
 users (1) ──────────────< (N) reports [reporter_id]
-users (1) ──────────────< (N) reports [assignee_id] (includes external maintainers)
+users (1) ──────────────< (N) reports [assignee_id] (internal staff)
+users (1) ──────────────< (N) reports [external_assignee_id] (external maintainers)
 users (1) ──────────────< (N) comments [author_id]
 users (1) ──────────────< (N) notifications [user_id]
 users (1) ──────────────< (N) messages [sender_id]
@@ -461,6 +468,6 @@ The [`docker-compose.yml`](server/docker-compose.yml ) file automatically runs [
 | 3.0 | 2025-11-17 | **Major refactoring:** Replaced ENUM-based roles with relational role system. Added `departments`, `roles`, and `department_roles` tables. Changed `users.role` to `users.department_role_id` for flexible role-department assignments. Pre-populated 8 departments and 24+ roles covering various municipal services. |
 | 4.0 | 2025-11-22 | **Added automatic assignment:** Added `category_role_mapping` table to map report categories to departments. Reduced role count from 24 to 15 (consolidated similar roles). |
 | 4.1 | 2025-12-02 | **Integrated external maintainers as users (PT24, PT25, PT26):** Removed separate `external_maintainers` table. External maintainers are now regular users with 'External Maintainer' role. Added `company_name` field to `users` table. Removed `external_maintainer_id` and `single_assignment` constraint from `reports` table. External maintainers can now authenticate, update report status, and exchange internal comments with technical staff. |
-| 4.4 | 2025-12-02 | **Added email verification system (PT27):** Added `is_verified`, `verification_code`, and `verification_code_expires_at` fields to `users` table. New citizens must verify their email with a 6-digit code valid for 30 minutes before accessing the system. Pre-existing users are automatically marked as verified. |
+| 4.4 | 2025-12-02 | **Added email verification system (PT27) and dual assignment tracking:** Added `is_verified`, `verification_code`, and `verification_code_expires_at` fields to `users` table. New citizens must verify their email with a 6-digit code valid for 30 minutes before accessing the system. Pre-existing users are automatically marked as verified. Added `external_assignee_id` to `reports` table to maintain both internal staff assignee and external maintainer references, preserving the full chain of responsibility. |
 
 

@@ -59,8 +59,7 @@ export class reportEntity {
       "In Progress", 
       "Suspended", 
       "Rejected", 
-      "Resolved",
-      "In External Maintenance"
+      "Resolved"
     ],
     default: "Pending Approval"
   })
@@ -75,6 +74,13 @@ export class reportEntity {
   @ManyToOne(() => userEntity, { nullable: true })
   @JoinColumn({ name: "assignee_id" })
   assignee?: userEntity;
+
+  @Column({ nullable: true })
+  externalAssigneeId?: number;
+
+  @ManyToOne(() => userEntity, { nullable: true })
+  @JoinColumn({ name: "external_assignee_id" })
+  externalAssignee?: userEntity;
 
   @OneToMany(() => photoEntity, (photo) => photo.report, {
     cascade: true,
