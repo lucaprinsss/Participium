@@ -265,6 +265,10 @@ class ReportService {
     body: { rejectionReason?: string; externalAssigneeId?: number; resolutionNotes?: string; category?: ReportCategory },
     userId: number
   ): Promise<Report> {
+    if (isNaN(reportId) || reportId <= 0) {
+      throw new BadRequestError('Invalid report ID.');
+    }
+
     const report = await reportRepository.findReportById(reportId);
     if (!report) {
       throw new NotFoundError('Report not found');
@@ -280,7 +284,10 @@ class ReportService {
 
     switch (newStatus) {
       case ReportStatus.ASSIGNED:
-        if (currentStatus !== ReportStatus.PENDING_APPROVAL || userRole !== UserRole.PUBLIC_RELATIONS_OFFICER) {
+        if (currentStatus !== ReportStatus.PENDING_APPROVAL) {
+          throw new BadRequestError(`Cannot approve report with status ${currentStatus}. Only reports with status Pending Approval can be approved.`);
+        }
+        if (userRole !== UserRole.PUBLIC_RELATIONS_OFFICER) {
           throw new InsufficientRightsError('Only Public Relations Officers can approve reports.');
         }
         if (body.externalAssigneeId) {
@@ -297,11 +304,11 @@ class ReportService {
           const categoryToAssign = body.category || report.category as ReportCategory;
           const roleId = await categoryRoleRepository.findRoleIdByCategory(categoryToAssign);
           if (!roleId) {
-            throw new BadRequestError(`No role mapping found for category: ${categoryToAssign}.`);
+            throw new BadRequestError(`No role mapping found for category: ${categoryToAssign}. Please contact system administrator.`);
           }
           const availableStaff = await userRepository.findAvailableStaffByRoleId(roleId);
           if (!availableStaff) {
-            throw new BadRequestError(`No available technical staff found for category: ${categoryToAssign}.`);
+            throw new BadRequestError(`No available technical staff found for category: ${categoryToAssign}. All staff members may be overloaded or the role has no assigned users.`);
           }
           report.assignee = availableStaff;
           report.assigneeId = availableStaff.id;
@@ -312,10 +319,13 @@ class ReportService {
         break;
       
       case ReportStatus.REJECTED:
-        if (currentStatus !== ReportStatus.PENDING_APPROVAL || userRole !== UserRole.PUBLIC_RELATIONS_OFFICER) {
-          throw new InsufficientRightsError('Only Public Relations Officers can reject reports.');
+        if (currentStatus !== ReportStatus.PENDING_APPROVAL) {
+            throw new BadRequestError(`Cannot reject report with status ${currentStatus}. Only reports with status Pending Approval can be rejected.`);
         }
-        if (!body.rejectionReason) {
+        if (userRole !== UserRole.PUBLIC_RELATIONS_OFFICER) {
+            throw new InsufficientRightsError('Only Public Relations Officers can reject reports.');
+        }
+        if (!body.rejectionReason || body.rejectionReason.trim() === '') {
           throw new BadRequestError('Rejection reason is required when rejecting a report.');
         }
         report.rejectionReason = body.rejectionReason;

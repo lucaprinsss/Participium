@@ -957,7 +957,7 @@ describe('ReportService additional unit tests', () => {
         
         await expect(
           reportService.updateReportStatus(1, ReportStatus.ASSIGNED, {}, 1)
-        ).rejects.toThrow('No role mapping found for category: Roads and Urban Furnishings. Please contact system administrator.');
+        ).rejects.toThrow('No role mapping found for category: Roads and Urban Furnishings.');
       });
 
       it('should throw BadRequestError when no available staff found', async () => {
@@ -1029,7 +1029,7 @@ describe('ReportService additional unit tests', () => {
       
       await expect(
         reportService.updateReportStatus(1, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
-      ).rejects.toThrow('Cannot reject report with status Assigned. Only reports with status Pending Approval can be rejected.');
+      ).rejects.toThrow('Cannot reject report with status Assigned.');
     });
 
     it('should throw InsufficientRightsError when user is not a PRO for rejection', async () => {

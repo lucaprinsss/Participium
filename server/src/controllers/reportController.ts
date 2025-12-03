@@ -143,11 +143,12 @@ class ReportController {
 
       const userId = (req.user as any).id;
       const reportId = parseAndValidateId(req.params.id, 'report');
-      const { newStatus, ...body } = req.body;
+      const { newStatus, status, ...body } = req.body;
+      const finalStatus = newStatus || status;
 
       const updatedReport = await reportService.updateReportStatus(
         reportId, 
-        newStatus as ReportStatus, 
+        finalStatus as ReportStatus, 
         body, 
         userId
       );

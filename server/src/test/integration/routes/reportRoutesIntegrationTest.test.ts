@@ -53,6 +53,8 @@ import { validateCreateReport } from '@middleware/reportMiddleware';
 import { ReportStatus } from '@dto/ReportStatus';
 import { ReportCategory } from '@dto/ReportCategory';
 
+import { UserRole } from '@dto/UserRole';
+
 const app: Express = express();
 
 app.use(express.json());
@@ -104,11 +106,23 @@ describe('Report Routes Integration Tests - Approve/Reject/GetAll', () => {
     // Mock isLoggedIn middleware
     mockIsLoggedIn.mockImplementation((req: any, res: any, next: any) => {
       const userType = req.headers['x-test-user-type'];
+
+      const roleMap: { [key: string]: UserRole } = {
+        PRO: UserRole.PUBLIC_RELATIONS_OFFICER,
+        TECHNICIAN: UserRole.TECHNICAL_ASSISTANT,
+        CITIZEN: UserRole.CITIZEN,
+      };
       
-      if (userType === 'PRO' || userType === 'CITIZEN' || userType === 'TECHNICIAN') {
-        req.user = { 
+      const role = roleMap[userType];
+
+      if (role) {
+        req.user = {
           id: userType === 'PRO' ? 1 : userType === 'CITIZEN' ? 2 : 3,
-          role: userType 
+          departmentRole: {
+            role: {
+              name: role,
+            },
+          },
         };
         next();
       } else {

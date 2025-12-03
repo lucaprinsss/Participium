@@ -928,7 +928,7 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
       const rejectedReport = await reportService.updateReportStatus(
         pendingReportId, 
         ReportStatus.REJECTED,
-        { reason: 'Report does not meet our criteria' },
+        { rejectionReason: 'Report does not meet our criteria' },
         proUser.id
       );
 
@@ -942,7 +942,7 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
     it('should throw NotFoundError if report does not exist', async () => {
       // Act & Assert
       await expect(
-        reportService.updateReportStatus(999999, ReportStatus.REJECTED, { reason: 'Invalid report' }, proUser.id)
+        reportService.updateReportStatus(999999, ReportStatus.REJECTED, { rejectionReason: 'Invalid report' }, proUser.id)
       ).rejects.toThrow('Report not found');
     });
 
@@ -969,28 +969,28 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
 
       // Act & Assert
       await expect(
-        reportService.updateReportStatus(assignedReportId, ReportStatus.REJECTED, { reason: 'Cannot reject assigned report' }, proUser.id)
+        reportService.updateReportStatus(assignedReportId, ReportStatus.REJECTED, { rejectionReason: 'Cannot reject assigned report' }, proUser.id)
       ).rejects.toThrow('Cannot reject report with status');
     });
 
     it('should throw BadRequestError if rejection reason is empty', async () => {
       // Act & Assert
       await expect(
-        reportService.updateReportStatus(pendingReportId, ReportStatus.REJECTED, { reason: '' }, proUser.id)
+        reportService.updateReportStatus(pendingReportId, ReportStatus.REJECTED, { rejectionReason: '' }, proUser.id)
       ).rejects.toThrow('Rejection reason is required');
     });
 
     it('should throw BadRequestError if rejection reason is only whitespace', async () => {
       // Act & Assert
       await expect(
-        reportService.updateReportStatus(pendingReportId, ReportStatus.REJECTED, { reason: '   ' }, proUser.id)
+        reportService.updateReportStatus(pendingReportId, ReportStatus.REJECTED, { rejectionReason: '   ' }, proUser.id)
       ).rejects.toThrow('Rejection reason is required');
     });
 
     it('should throw BadRequestError if reportId is not a number', async () => {
       // Act & Assert
       await expect(
-        reportService.updateReportStatus(NaN, ReportStatus.REJECTED, { reason: 'Invalid ID' }, proUser.id)
+        reportService.updateReportStatus(NaN, ReportStatus.REJECTED, { rejectionReason: 'Invalid ID' }, proUser.id)
       ).rejects.toThrow('Invalid report ID');
     });
   });
