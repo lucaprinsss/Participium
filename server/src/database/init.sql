@@ -127,6 +127,7 @@ CREATE TABLE reports (
     description TEXT NOT NULL,
     category report_category NOT NULL,
     location GEOGRAPHY(Point, 4326) NOT NULL,
+    address VARCHAR(500),
     is_anonymous BOOLEAN NOT NULL DEFAULT false,
     status report_status NOT NULL DEFAULT 'Pending Approval',
     rejection_reason TEXT,

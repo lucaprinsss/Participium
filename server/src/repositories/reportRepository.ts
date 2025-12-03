@@ -42,6 +42,7 @@ class ReportRepository {
                 'report.id',
                 'report.title',
                 'report.category',
+                'report.address',
                 'report.status',
                 'report.isAnonymous',
                 'report.createdAt',
@@ -86,6 +87,7 @@ class ReportRepository {
                 latitude: parseFloat(row.latitude),
                 longitude: parseFloat(row.longitude)
             },
+            address: row.report_address,
             status: row.report_status as ReportStatus,
             reporterName: row.report_isAnonymous
                 ? 'Anonymous'
@@ -210,8 +212,8 @@ class ReportRepository {
     // Create the report using a raw query to properly handle the geography type
     const result = await this.repository.query(
       `INSERT INTO reports 
-        (reporter_id, title, description, category, location, is_anonymous, status) 
-       VALUES ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7) 
+        (reporter_id, title, description, category, location, address, is_anonymous, status) 
+       VALUES ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8) 
        RETURNING id`,
       [
         otherData.reporterId,
@@ -219,6 +221,7 @@ class ReportRepository {
         otherData.description,
         otherData.category,
         location, // This is already in WKT format: 'POINT(longitude latitude)'
+        otherData.address || null,
         otherData.isAnonymous,
         ReportStatus.PENDING_APPROVAL
       ]

@@ -107,6 +107,7 @@ Central table containing all citizen-submitted reports.
 | `description` | `TEXT` | NOT NULL | Detailed description of the issue |
 | `category` | `report_category` | NOT NULL | Issue category (see ENUM) |
 | `location` | `GEOGRAPHY(Point, 4326)` | NOT NULL | GPS coordinates (longitude/latitude) of the issue |
+| `address` | `VARCHAR(500)` | NULLABLE | Human-readable address of the report location |
 | `is_anonymous` | `BOOLEAN` | NOT NULL, DEFAULT false | Flag to hide reporter's name from public view |
 | `status` | `report_status` | NOT NULL, DEFAULT 'Pending Approval' | Current report status (see ENUM) |
 | `rejection_reason` | `TEXT` | NULLABLE | Required text if `status` is 'Rejected' |

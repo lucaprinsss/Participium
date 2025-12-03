@@ -158,6 +158,7 @@ class ReportService {
         description: reportData.description.trim(),
         category: reportData.category,
         location: `POINT(${reportData.location.longitude} ${reportData.location.latitude})`,
+        address: reportData.address?.trim(),
         isAnonymous: reportData.isAnonymous || false,
         photos: []
       };
