@@ -217,7 +217,11 @@ CREATE TABLE category_role_mapping (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-
+/*
+ * ====================================
+ * DATA POPULATION
+ * ====================================
+ */
 
 -- 1. Popola le nuove tabelle Dipartimenti e Ruoli
 -- Questi dati sono necessari per creare l'utente admin di default.
