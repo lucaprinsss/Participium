@@ -218,8 +218,10 @@ CREATE TABLE category_role_mapping (
 );
 
 /*
-
-
+ * ====================================
+ * DATA POPULATION
+ * ====================================
+ */
 
 -- 1. Popola le nuove tabelle Dipartimenti e Ruoli
 -- Questi dati sono necessari per creare l'utente admin di default.
