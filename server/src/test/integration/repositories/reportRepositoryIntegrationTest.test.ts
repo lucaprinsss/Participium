@@ -55,7 +55,8 @@ describe('ReportRepository Integration Tests', () => {
             email: `user${r()}@test.com`,
             firstName: 'Test',
             lastName: 'User',
-            departmentRoleId: citizenRole!.id
+            departmentRoleId: citizenRole!.id,
+            isVerified: true
         });
         createdUserIds.push(testUser.id);
     });
@@ -119,8 +120,8 @@ describe('ReportRepository Integration Tests', () => {
             const reports = await reportRepository.findAllReports();
             
             // Filter to check only created ones (in case DB is not empty)
-            const createdIds = [r1.id, r2.id];
-            const foundReports = reports.filter(r => createdIds.includes(r.id));
+            const createdIds = new Set([r1.id, r2.id]);
+            const foundReports = reports.filter(r => createdIds.has(r.id));
             
             expect(foundReports).toHaveLength(2);
             // Verify order (DESC createdAt)

@@ -30,10 +30,10 @@ export const isLoggedIn: RequestHandler = (
 
 /**
  * Role-based authorization middleware factory
- * @param {string} requiredRole The role required to access the route
+ * @param {string | string[]} requiredRole The role or roles required to access the route
  * @returns {function} Middleware function
  */
-export const requireRole = (requiredRole: string): RequestHandler => {
+export const requireRole = (requiredRole: string | string[]): RequestHandler => {
   return (
     req: Request, 
     res: Response, 
@@ -44,8 +44,8 @@ export const requireRole = (requiredRole: string): RequestHandler => {
       if (err) return next(err);
 
       const roleName = getUserRoleName(req.user);
-      if (!roleName || roleName !== requiredRole) {
-        return next(new InsufficientRightsError(`Access denied. ${requiredRole} role required.`));
+      if (!roleName || (Array.isArray(requiredRole) ? !requiredRole.includes(roleName) : roleName !== requiredRole)) {
+        return next(new InsufficientRightsError(`Access denied. Required role: ${requiredRole}`));
       }
       
       next();

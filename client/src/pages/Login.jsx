@@ -81,6 +81,9 @@ export default function Login({ onLoginSuccess }) {
     try {
       const userData = await login(trimmedUsername, formData.password);
 
+      // --- AGGIUNTA: Salviamo l'indizio ---
+      localStorage.setItem("isLoggedIn", "true"); 
+
       if (onLoginSuccess) {
         onLoginSuccess(userData);
       }

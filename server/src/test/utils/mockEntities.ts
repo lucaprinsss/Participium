@@ -75,6 +75,7 @@ export function createMockUser(
   user.firstName = 'Test';
   user.lastName = 'User';
   user.passwordHash = 'salt:hash';
+  user.isVerified = true;
   user.departmentRoleId = 1;
   user.departmentRole = createMockDepartmentRole(roleName, departmentName);
   user.emailNotificationsEnabled = true;

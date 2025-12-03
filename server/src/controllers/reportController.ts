@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { reportService } from '../services/reportService';
 import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
+import { UpdateReportStatusRequest } from '../models/dto/input/UpdateReportStatusRequest';
 import { ReportStatus } from '@models/dto/ReportStatus';
 import { ReportCategory } from '@models/dto/ReportCategory';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
@@ -131,52 +132,27 @@ class ReportController {
   }
 
   /**
-   * Approve a report
-   * PUT /api/reports/:id/approve
+   * Update the status of a report
+   * PUT /api/reports/:id/status
    */
-  async approveReport(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateReportStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         throw new UnauthorizedError('Not authenticated');
       }
 
-      const userId = (req.user as User).id;
+      const userId = (req.user as any).id;
       const reportId = parseAndValidateId(req.params.id, 'report');
-      const { category } = req.body;
+      const { newStatus, ...body } = req.body;
 
-      const approvedReport = await reportService.approveReport(
+      const updatedReport = await reportService.updateReportStatus(
         reportId, 
-        userId,
-        category as ReportCategory | undefined
-      );
-      
-      res.status(200).json(approvedReport);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Reject a report
-   * PUT /api/reports/:id/reject
-   */
-  async rejectReport(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) {
-        throw new UnauthorizedError('Not authenticated');
-      }
-
-      const userId = (req.user as User).id;
-      const reportId = parseAndValidateId(req.params.id, 'report');
-      const { rejectionReason } = req.body;
-
-      const rejectedReport = await reportService.rejectReport(
-        reportId, 
-        rejectionReason, 
+        newStatus as ReportStatus, 
+        body, 
         userId
       );
       
-      res.status(200).json(rejectedReport);
+      res.status(200).json(updatedReport);
     } catch (error) {
       next(error);
     }

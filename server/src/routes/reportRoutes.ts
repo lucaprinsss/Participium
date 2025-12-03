@@ -1,3 +1,5 @@
+//reportRoutes.ts
+
 import express from 'express';
 import { reportController } from '@controllers/reportController';
 import { isLoggedIn, requireRole } from '@middleware/authMiddleware';
@@ -255,7 +257,6 @@ router.get('/categories', reportController.getCategories);
  */
 router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
 
-
 /**
  * @swagger
  * /api/reports/{id}/status:
@@ -469,8 +470,8 @@ router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-// TODO: Uncomment when reportController.updateReportStatus is implemented
-// router.put('/:id/status', isLoggedIn, validateId('id', 'report'), validateStatusUpdate, reportController.updateReportStatus);
+
+router.put('/:id/status', isLoggedIn, validateId('id', 'report'), validateStatusUpdate, reportController.updateReportStatus);
 
 /**
  * @swagger

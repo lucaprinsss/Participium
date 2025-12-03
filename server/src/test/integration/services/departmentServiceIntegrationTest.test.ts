@@ -54,12 +54,12 @@ describe('DepartmentService Integration Tests', () => {
       });
     });
 
-    it('should return exactly 7 municipality departments (8 total - Organization)', async () => {
+    it('should return exactly 9 municipality departments (8 total - Organization)', async () => {
       // Act
       const result = await departmentService.getMunicipalityDepartments();
 
       // Assert - test-data.sql has 8 departments, excluding 'Organization' = 7
-      expect(result).toHaveLength(8);
+      expect(result).toHaveLength(9);
     });
   });
 

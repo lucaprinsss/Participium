@@ -13,12 +13,12 @@ jest.mock('@controllers/reportController', () => ({
     getCategories: jest.fn((req, res) => res.status(200).json([])),
     getMapReports: jest.fn((req, res) => res.status(200).json([])),
     getMyAssignedReports: jest.fn((req, res) => res.status(200).json([])),
-    approveReport: jest.fn((req, res) => res.status(200).json({})),
-    rejectReport: jest.fn((req, res) => res.status(200).json({})),
+    updateReportStatus: jest.fn((req, res) => res.status(200).json({})),
   },
 }));
 jest.mock('@middleware/reportMiddleware', () => ({
   validateCreateReport: jest.fn((req, res, next) => next()),
+  validateReportUpdate: jest.fn((req, res, next) => next()),
 }));
 jest.mock('@middleware/validateId', () => ({
   validateId: jest.fn(() => (req: any, res: any, next: any) => {
@@ -63,8 +63,7 @@ const mockRequireRole = requireRole as jest.Mock;
 const mockValidateCreateReport = validateCreateReport as jest.Mock;
 
 const mockGetAllReports = reportController.getAllReports as jest.Mock;
-const mockApproveReport = reportController.approveReport as jest.Mock;
-const mockRejectReport = reportController.rejectReport as jest.Mock;
+const mockUpdateReportStatus = reportController.updateReportStatus as jest.Mock;
 const mockCreateReport = reportController.createReport as jest.Mock;
 const mockGetCategories = reportController.getCategories as jest.Mock;
 
@@ -152,53 +151,34 @@ describe('Report Routes Integration Tests - Approve/Reject/GetAll', () => {
       res.status(200).json(filteredReports);
     });
 
-    // Mock approveReport controller
-    mockApproveReport.mockImplementation((req, res) => {
-      const id = parseInt(req.params.id, 10);
-      const { category } = req.body;
-      
-      if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid report ID' });
-      }
-      
-      if (id === 999) {
-        return res.status(404).json({ error: 'Report not found' });
-      }
-      
-      res.status(200).json({
-        id,
-        title: 'Approved Report',
-        status: ReportStatus.ASSIGNED,
-        category: category || ReportCategory.ROADS,
-        assignee_id: 10,
-        message: 'Report approved successfully',
-      });
-    });
+    // Mock updateReportStatus controller
+    mockUpdateReportStatus.mockImplementation((req, res) => {
+        const id = parseInt(req.params.id, 10);
+        const { newStatus, ...body } = req.body;
 
-    // Mock rejectReport controller
-    mockRejectReport.mockImplementation((req, res) => {
-      const id = parseInt(req.params.id, 10);
-      const { rejectionReason } = req.body;
-      
-      if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid report ID' });
-      }
-      
-      if (!rejectionReason || rejectionReason.trim().length === 0) {
-        return res.status(400).json({ error: 'Rejection reason is required' });
-      }
-      
-      if (id === 999) {
-        return res.status(404).json({ error: 'Report not found' });
-      }
-      
-      res.status(200).json({
-        id,
-        title: 'Rejected Report',
-        status: ReportStatus.REJECTED,
-        rejection_reason: rejectionReason,
-        message: 'Report rejected successfully',
-      });
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'Invalid report ID' });
+        }
+
+        if (id === 999) {
+            return res.status(404).json({ error: 'Report not found' });
+        }
+
+        if (!newStatus) {
+            return res.status(400).json({ error: 'Status is required' });
+        }
+
+        if (newStatus === ReportStatus.REJECTED && (!body.reason || body.reason.trim().length === 0)) {
+            return res.status(400).json({ error: 'Rejection reason is required' });
+        }
+
+        res.status(200).json({
+            id,
+            title: 'Updated Report',
+            status: newStatus,
+            rejection_reason: body.reason,
+            message: 'Report status updated successfully',
+        });
     });
   });
 
@@ -251,135 +231,72 @@ describe('Report Routes Integration Tests - Approve/Reject/GetAll', () => {
     });
   });
 
-  // --- PUT /api/reports/:id/approve ---
-  describe('PUT /api/reports/:id/approve', () => {
+  // --- PUT /api/reports/:id/status ---
+  describe('PUT /api/reports/:id/status', () => {
     it('should approve report successfully when PRO provides valid data', async () => {
       const res = await request(app)
-        .put('/api/reports/1/approve')
+        .put('/api/reports/1/status')
         .set('x-test-user-type', 'PRO')
-        .send({ category: ReportCategory.ROADS });
+        .send({ newStatus: ReportStatus.ASSIGNED });
 
       expect(res.status).toBe(200);
-      expect(res.body.status).toBe(ReportStatus.ASSIGNED);
-      expect(res.body.category).toBe(ReportCategory.ROADS);
-      expect(res.body.assignee_id).toBeDefined();
-      expect(mockApproveReport).toHaveBeenCalledTimes(1);
+      expect(mockUpdateReportStatus).toHaveBeenCalledTimes(1);
     });
 
-    it('should approve report without changing category', async () => {
-      const res = await request(app)
-        .put('/api/reports/1/approve')
-        .set('x-test-user-type', 'PRO')
-        .send({});
-
-      expect(res.status).toBe(200);
-      expect(res.body.status).toBe(ReportStatus.ASSIGNED);
-      expect(mockApproveReport).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return 404 if report does not exist', async () => {
-      const res = await request(app)
-        .put('/api/reports/999/approve')
-        .set('x-test-user-type', 'PRO')
-        .send({ category: ReportCategory.ROADS });
-
-      expect(res.status).toBe(404);
-      expect(res.body.error).toBe('Report not found');
-    });
-
-    it('should return 400 for invalid report ID', async () => {
-      const res = await request(app)
-        .put('/api/reports/invalid/approve')
-        .set('x-test-user-type', 'PRO')
-        .send({ category: ReportCategory.ROADS });
-
-      expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Invalid report ID');
-    });
-  });
-
-  // --- PUT /api/reports/:id/reject ---
-  describe('PUT /api/reports/:id/reject', () => {
     it('should reject report successfully when PRO provides rejection reason', async () => {
       const res = await request(app)
-        .put('/api/reports/1/reject')
+        .put('/api/reports/1/status')
         .set('x-test-user-type', 'PRO')
-        .send({ rejectionReason: 'Report does not meet criteria' });
+        .send({ newStatus: ReportStatus.REJECTED, reason: 'Report does not meet criteria' });
 
       expect(res.status).toBe(200);
-      expect(res.body.status).toBe(ReportStatus.REJECTED);
-      expect(res.body.rejection_reason).toBe('Report does not meet criteria');
-      expect(mockRejectReport).toHaveBeenCalledTimes(1);
+      expect(mockUpdateReportStatus).toHaveBeenCalledTimes(1);
     });
 
-    it('should return 400 if rejection reason is missing', async () => {
-      const res = await request(app)
-        .put('/api/reports/1/reject')
-        .set('x-test-user-type', 'PRO')
-        .send({});
+    it('should resolve report successfully when Technician provides valid data', async () => {
+        const res = await request(app)
+            .put('/api/reports/1/status')
+            .set('x-test-user-type', 'TECHNICIAN')
+            .send({ newStatus: ReportStatus.RESOLVED });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Rejection reason is required');
+        expect(res.status).toBe(200);
+        expect(mockUpdateReportStatus).toHaveBeenCalledTimes(1);
     });
 
-    it('should return 400 if rejection reason is empty string', async () => {
+    it('should return 400 if status is missing', async () => {
       const res = await request(app)
-        .put('/api/reports/1/reject')
+        .put('/api/reports/1/status')
         .set('x-test-user-type', 'PRO')
-        .send({ rejectionReason: '' });
+        .send({ reason: 'Report does not meet criteria' });
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Rejection reason is required');
     });
 
-    it('should return 400 if rejection reason is only whitespace', async () => {
-      const res = await request(app)
-        .put('/api/reports/1/reject')
-        .set('x-test-user-type', 'PRO')
-        .send({ rejectionReason: '   ' });
+    it('should return 400 if reason is missing for rejected status', async () => {
+        const res = await request(app)
+            .put('/api/reports/1/status')
+            .set('x-test-user-type', 'PRO')
+            .send({ newStatus: ReportStatus.REJECTED });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Rejection reason is required');
+        expect(res.status).toBe(400);
     });
 
     it('should return 404 if report does not exist', async () => {
-      const res = await request(app)
-        .put('/api/reports/999/reject')
-        .set('x-test-user-type', 'PRO')
-        .send({ rejectionReason: 'Invalid report' });
-
-      expect(res.status).toBe(404);
-      expect(res.body.error).toBe('Report not found');
-    });
-
-    it('should return 400 for invalid report ID', async () => {
-      const res = await request(app)
-        .put('/api/reports/invalid/reject')
-        .set('x-test-user-type', 'PRO')
-        .send({ rejectionReason: 'Invalid report' });
-
-      expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Invalid report ID');
-    });
-
-    it('should handle different rejection reasons', async () => {
-      const reasons = [
-        'Duplicate report',
-        'Insufficient information',
-        'Out of jurisdiction',
-      ];
-
-      for (const reason of reasons) {
         const res = await request(app)
-          .put('/api/reports/1/reject')
-          .set('x-test-user-type', 'PRO')
-          .send({ rejectionReason: reason });
+            .put('/api/reports/999/status')
+            .set('x-test-user-type', 'PRO')
+            .send({ newStatus: ReportStatus.ASSIGNED });
 
-        expect(res.status).toBe(200);
-        expect(res.body.rejection_reason).toBe(reason);
-      }
+        expect(res.status).toBe(404);
+    });
+    
+    it('should return 400 for invalid report ID', async () => {
+        const res = await request(app)
+            .put('/api/reports/invalid/status')
+            .set('x-test-user-type', 'PRO')
+            .send({ newStatus: ReportStatus.ASSIGNED });
 
-      expect(mockRejectReport).toHaveBeenCalledTimes(3);
+        expect(res.status).toBe(400);
     });
   });
 });

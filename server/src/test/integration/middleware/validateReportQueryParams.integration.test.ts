@@ -29,7 +29,8 @@ describe('ValidateReportQueryParams Middleware Integration Tests', () => {
       firstName: 'QueryParams',
       lastName: 'Test',
       departmentRoleId: citizenDeptRole.id,
-      emailNotificationsEnabled: true
+      emailNotificationsEnabled: true,
+      isVerified: true
     });
 
     agent = request.agent(app);

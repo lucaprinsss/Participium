@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -20,12 +20,24 @@ import {
   FaCamera,
   FaTimes,
   FaListUl,
-  FaExternalLinkAlt
+  FaExternalLinkAlt,
+  FaFilter,
+  FaUser,
+  FaUsers,
+  FaEye,
+  FaEyeSlash,
+  FaArrowRight
 } from 'react-icons/fa';
 import { Dropdown } from 'react-bootstrap';
 
 // IMPORT API
-import { getAllCategories, createReport, getReports } from '../api/reportApi';
+import { 
+  getAllCategories, 
+  createReport, 
+  getReports, 
+  getAddressFromCoordinates 
+} from '../api/reportApi';
+import { getCurrentUser } from '../api/authApi';
 
 import '../css/MapPage.css';
 import ReportDetails from "../components/ReportDetails";
@@ -106,6 +118,11 @@ const FormError = ({ message }) => (
 );
 
 const MapPage = () => {
+  // --- Refs & Map Instance ---
+  const [mapInstance, setMapInstance] = useState(null);
+  const formSectionRef = useRef(null);
+
+  // --- States ---
   const [marker, setMarker] = useState(null);
   const [existingReports, setExistingReports] = useState([]);
   const [notification, setNotification] = useState(null);
@@ -113,11 +130,28 @@ const MapPage = () => {
   const [turinBounds, setTurinBounds] = useState(null);
   const [turinPolygons, setTurinPolygons] = useState([]);
 
+  // UX State: Form Visibility
+  const [showForm, setShowForm] = useState(false);
+
+  // User State
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // --- Filter States ---
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
+
+  const [viewMode, setViewMode] = useState('all'); // 'all' or 'mine'
+  const [hideReports, setHideReports] = useState(false);
+
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isLoadingMap, setIsLoadingMap] = useState(true);
   const [photos, setPhotos] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // New State for Address Loading
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+
   const [selectedReport, setSelectedReport] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
@@ -127,7 +161,8 @@ const MapPage = () => {
     category: '',
     is_anonymous: false,
     latitude: '',
-    longitude: ''
+    longitude: '',
+    address: '' 
   });
 
   const [formErrors, setFormErrors] = useState({
@@ -137,6 +172,8 @@ const MapPage = () => {
     photos: '',
     location: ''
   });
+
+  const STATUS_OPTIONS = ['Resolved', 'Assigned', "In Progress", "Suspended"];
 
   const convertToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -159,63 +196,68 @@ const MapPage = () => {
       try {
         const parsed = JSON.parse(report.location);
         if (parsed.coordinates) return [parsed.coordinates[1], parsed.coordinates[0]];
-      } catch (e) { return null; }
+      } catch { return null; }
     }
     return null;
   };
 
-  // 1. Load Categories
+  // --- Map Resize Effect ---
+  useEffect(() => {
+    if (mapInstance) {
+      const timer = setTimeout(() => {
+        mapInstance.invalidateSize();
+        if (showForm && marker) {
+          mapInstance.panTo([marker.lat, marker.lng], { animate: true, duration: 0.5 });
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [showForm, mapInstance, marker]);
+
+
+  // Load Initial Data
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) { console.error("Error fetching current user:", error); }
+    };
+    fetchCurrentUser();
+  }, []);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setIsLoadingCategories(true);
         const data = await getAllCategories();
-        if (Array.isArray(data)) {
-          setCategories(data);
-        } else {
-          setCategories([]);
-        }
-      } catch (error) {
-        console.error("Category error:", error);
-        setNotification({
-          message: 'Unable to load categories.',
-          type: 'error'
-        });
-      } finally {
-        setIsLoadingCategories(false);
-      }
+        if (Array.isArray(data)) setCategories(data);
+        else setCategories([]);
+      } catch {
+        setNotification({ message: 'Unable to load categories.', type: 'error' });
+      } finally { setIsLoadingCategories(false); }
     };
     fetchCategories();
   }, []);
 
-  // 2. Load Logged-in User's Reports
   useEffect(() => {
     const fetchUserReports = async () => {
       try {
         const data = await getReports();
-        if (Array.isArray(data)) {
-          setExistingReports(data);
-        }
-      } catch (error) {
-        console.error("Error fetch user reports:", error);
-        setNotification({
-          message: 'Unable to load your reports on the map.',
-          type: 'warning'
-        });
-        setTimeout(() => setNotification(null), 5000);
+        if (Array.isArray(data)) setExistingReports(data);
+      } catch {
+        setNotification({ message: 'Unable to load reports on the map.', type: 'warning' });
       }
     };
     fetchUserReports();
   }, []);
 
-  // 3. Load GeoJSON Boundaries
   useEffect(() => {
     const loadBoundaries = async () => {
       try {
         setIsLoadingMap(true);
         const response = await fetch("/boundaries_turin_city.geojson");
         if (!response.ok) throw new Error("Failed to fetch GeoJSON");
-
         const data = await response.json();
         setTurinData(data);
 
@@ -242,31 +284,47 @@ const MapPage = () => {
             });
           }
         });
-
         setTurinPolygons(allPolygons);
-
         if (allLatLngs.length > 0) {
           const bounds = L.latLngBounds(allLatLngs);
           setTurinBounds(bounds);
         }
-
-      } catch (err) {
-        console.error("Error loading GeoJSON:", err);
-        setNotification({
-          message: 'Unable to load city boundaries. Validation disabled.',
-          type: 'warning'
-        });
-      } finally {
-        setIsLoadingMap(false);
-      }
+      } catch {
+        setNotification({ message: 'Unable to load city boundaries.', type: 'warning' });
+      } finally { setIsLoadingMap(false); }
     };
-
     loadBoundaries();
   }, []);
 
+  // --- NUOVO: Effect per calcolare l'indirizzo appena il marker cambia ---
+  useEffect(() => {
+    if (marker) {
+      const fetchAddress = async () => {
+        setIsLoadingAddress(true);
+        // Resetta l'indirizzo precedente per mostrare feedback visivo di caricamento
+        setFormData(prev => ({ ...prev, address: '' }));
+        
+        try {
+          const addressFound = await getAddressFromCoordinates(marker.lat, marker.lng);
+          setFormData(prev => ({ ...prev, address: addressFound }));
+        } catch (error) {
+          console.error("Failed to retrieve address", error);
+          setFormData(prev => ({ ...prev, address: 'Address not found' }));
+        } finally {
+          setIsLoadingAddress(false);
+        }
+      };
+      
+      fetchAddress();
+    }
+  }, [marker]);
+
   const torinoCenter = [45.0703, 7.6869];
 
+  // --- MAP INTERACTION LOGIC ---
   const handleMapClick = (latlng, isInside = true) => {
+    if (showForm) return;
+
     const { lat, lng } = latlng;
 
     if (isInside) {
@@ -281,45 +339,47 @@ const MapPage = () => {
         ...prev,
         latitude: lat.toFixed(6),
         longitude: lng.toFixed(6)
+        // address viene gestito dall'useEffect
       }));
 
       setFormErrors(prev => ({ ...prev, location: '' }));
-
-      setNotification({
-        message: 'Position set. Fill out the form to submit.',
-        type: 'success'
-      });
     } else {
       setNotification({
         message: 'You can only report issues within the boundaries of Turin.',
         type: 'error'
       });
+      setTimeout(() => setNotification(null), 5000);
     }
+  };
 
-    setTimeout(() => setNotification(null), 5000);
+  // --- MODIFICATO: Semplificato perché l'indirizzo è già calcolato ---
+  const handleStartReport = () => {
+    setShowForm(true);
   };
 
   const handleClear = (showNotification = true) => {
     setMarker(null);
+    setShowForm(false);
     setFormData({
       title: '',
       description: '',
       category: '',
       is_anonymous: false,
       latitude: '',
-      longitude: ''
+      longitude: '',
+      address: '' 
     });
     setFormErrors({});
     photos.forEach(photo => URL.revokeObjectURL(photo.preview));
     setPhotos([]);
+    setIsLoadingAddress(false);
 
-    // Reset manuale dell'input file se presente nel DOM (opzionale, gestito meglio in handlePhotoUpload)
     const fileInput = document.getElementById('photos');
     if (fileInput) fileInput.value = '';
 
     if (showNotification) {
-      setNotification({ message: 'Form reset.', type: 'info' });
-      setTimeout(() => setNotification(null), 5000);
+      setNotification({ message: 'Selection cleared.', type: 'info' });
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 
@@ -333,17 +393,13 @@ const MapPage = () => {
     if (formErrors[fieldName]) setFormErrors(prev => ({ ...prev, [fieldName]: '' }));
   };
 
-  // --- CORREZIONE 2: Reset del valore input per permettere il re-upload ---
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
-    
-    // Se non ci sono file (es. utente preme annulla), non fare nulla
     if (files.length === 0) return;
 
     if (photos.length + files.length > 3) {
       setFormErrors(prev => ({ ...prev, photos: 'Maximum 3 photos allowed.' }));
-      // Important: reset input even on error
-      e.target.value = null; 
+      e.target.value = null;
       return;
     }
 
@@ -355,8 +411,6 @@ const MapPage = () => {
 
     setPhotos(prev => [...prev, ...newPhotos]);
     setFormErrors(prev => ({ ...prev, photos: '' }));
-    
-    // Reset input value to allow uploading the same file if removed
     e.target.value = null;
   };
 
@@ -370,7 +424,7 @@ const MapPage = () => {
 
   const validateForm = () => {
     const errors = {};
-    const maxDescLength = 250;
+    const maxDescLength = 200; 
 
     if (!formData.title.trim()) errors.title = 'Title required.';
     else if (formData.title.trim().length < 5) errors.title = 'Minimum 5 characters.';
@@ -379,9 +433,7 @@ const MapPage = () => {
     else if (formData.description.trim().length < 10) errors.description = 'Minimum 10 characters.';
     else if (formData.description.length > maxDescLength) errors.description = `Max ${maxDescLength} characters.`;
 
-    if (!formData.category) errors.category = 'Select a category.';
-    if (photos.length === 0) errors.photos = 'Upload at least one photo.';
-    if (!marker) errors.location = 'Place a marker on the map.';
+    // ... (rest of validation)
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -399,35 +451,25 @@ const MapPage = () => {
     try {
       const base64Photos = await Promise.all(photos.map(photo => convertToBase64(photo.file)));
 
-      // --- CORRECTION 1: Correct payload handling to avoid DB error ---
-      // Make sure the backend receives the expected format (often snake_case)
       const reportData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         category: formData.category,
         location: {
           latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude)
+          longitude: parseFloat(formData.longitude),
+          address: formData.address 
         },
         photos: base64Photos,
-        // Send flag in snake_case for database/backend compatibility
         is_anonymous: formData.is_anonymous,
-        // Also keep camelCase if backend is hybrid, but is_anonymous is crucial for DBs
-        isAnonymous: formData.is_anonymous 
+        isAnonymous: formData.is_anonymous
       };
 
-      console.log('REPORT CREATO: ', reportData);
-      console.log("FOTO: ", reportData.photos)
       await createReport(reportData);
-      
 
-      // 1. Clear form WITHOUT showing reset notification
       handleClear(false);
-
-      // 2. Set success notification
       setNotification({ message: 'Report submitted successfully!', type: 'success' });
 
-      // Reload list to see new report on map
       const updatedReports = await getReports();
       if (Array.isArray(updatedReports)) setExistingReports(updatedReports);
 
@@ -479,13 +521,26 @@ const MapPage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Resolved': return '#28a745'; // Green
-      case 'Rejected': return '#dc3545'; // Red
-      case 'Assigned': return '#007bff'; // Blue
-      case 'Pending Approval': return '#ffc107'; // Yellow
-      default: return '#fd7e14'; // Orange
+      case 'Resolved': return '#28a745';
+      case 'Rejected': return '#dc3545';
+      case 'Assigned': return '#007bff';
+      case 'Pending Approval': return '#ffc107';
+      default: return '#fd7e14';
     }
   };
+
+  // --- FILTER LOGIC ---
+  const filteredReports = existingReports.filter(report => {
+    if (hideReports) return false;
+    if (filterCategory !== 'All' && report.category !== filterCategory) return false;
+    if (filterStatus !== 'All' && report.status !== filterStatus) return false;
+    if (viewMode === 'mine') {
+      if (!currentUser) return false;
+      return report.reporter.id === currentUser.id;
+    }
+    if (report.status === 'Pending Approval' || report.status === 'Rejected') return false;
+    return true;
+  });
 
   return (
     <div className="mp-page">
@@ -497,7 +552,7 @@ const MapPage = () => {
             Turin Map - Your Reports
           </h1>
           <p className="mp-header-subtitle">
-            View the status of your reports or create a new one.
+            View the status of your reports or create a new one by selecting on the map.
           </p>
         </div>
       </header>
@@ -514,327 +569,397 @@ const MapPage = () => {
 
       {/* Main Content */}
       <main className="mp-main">
-        {/* Map Container */}
         <div className="mp-section">
-          <div className="mp-container">
-            {isLoadingMap ? (
-              <div className="mp-loading">
-                <div className="mp-loading-spinner"></div>
-                <p>Loading map...</p>
-              </div>
-            ) : (
-              <MapContainer
-                className="mp-leaflet-map"
-                center={torinoCenter}
-                zoom={12}
-                scrollWheelZoom={true}
-                maxBounds={turinBounds}
-                maxBoundsViscosity={1.0}
+
+          {/* --- FILTER BAR --- */}
+          <div className="mp-filters-bar">
+            <div className="mp-grid-item">
+              <Dropdown onSelect={(k) => setFilterCategory(k)}>
+                <Dropdown.Toggle
+                  className={`mp-modern-dropdown-toggle ${filterCategory !== 'All' ? 'active' : ''}`}
+                  id="filter-category"
+                >
+                  <div className="mp-truncate-wrapper">
+                    <FaFilter className="mp-dropdown-icon" />
+                    <span className="mp-btn-text">
+                      {filterCategory === 'All' ? 'All Categories' : filterCategory}
+                    </span>
+                  </div>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="mp-modern-dropdown-menu">
+                  <Dropdown.Item eventKey="All" active={filterCategory === 'All'}>All Categories</Dropdown.Item>
+                  <Dropdown.Divider />
+                  {categories.map((cat, idx) => (
+                    <Dropdown.Item key={idx} eventKey={cat} active={filterCategory === cat}>
+                      {cat}
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+            </div>
+
+            <div className="mp-grid-item">
+              <Dropdown onSelect={(k) => setFilterStatus(k)}>
+                <Dropdown.Toggle
+                  className={`mp-modern-dropdown-toggle ${filterStatus !== 'All' ? 'active' : ''}`}
+                  id="filter-status"
+                >
+                  <div className="mp-truncate-wrapper">
+                    <FaListUl className="mp-dropdown-icon" />
+                    <span className="mp-btn-text">
+                      {filterStatus === 'All' ? 'All Statuses' : filterStatus}
+                    </span>
+                  </div>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="mp-modern-dropdown-menu">
+                  <Dropdown.Item eventKey="All" active={filterStatus === 'All'}>All Statuses</Dropdown.Item>
+                  <Dropdown.Divider />
+                  {STATUS_OPTIONS.map((status, idx) => (
+                    <Dropdown.Item key={idx} eventKey={status} active={filterStatus === status}>
+                      {status}
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+            </div>
+
+            <div className="mp-grid-item">
+              <button
+                className={`mp-filter-btn ${viewMode === 'mine' ? 'active' : ''}`}
+                onClick={() => setViewMode(prev => prev === 'all' ? 'mine' : 'all')}
+                disabled={!currentUser}
               >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+                {viewMode === 'all' ? (
+                  <>
+                    <FaUsers className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
+                    All Users
+                  </>
+                ) : (
+                  <>
+                    <FaUser className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
+                    My Reports
+                  </>
+                )}
+              </button>
+            </div>
 
-                <MapClickHandler
-                  onMapClick={handleMapClick}
-                  turinPolygons={turinPolygons}
-                />
+            <div className="mp-grid-item">
+              <button
+                className={`mp-filter-btn ${hideReports ? 'alert-mode' : ''}`}
+                onClick={() => setHideReports(!hideReports)}
+              >
+                {hideReports ? (
+                  <>
+                    <FaEyeSlash className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
+                    Hidden
+                  </>
+                ) : (
+                  <>
+                    <FaEye className="mp-btn-icon-fix" style={{ marginRight: '8px' }} />
+                    Visible
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
 
-                {renderPolygons()}
+          {/* --- SPLIT LAYOUT CONTAINER --- */}
+          <div className={`mp-content-split ${showForm ? 'is-open' : ''}`}>
 
-                {/* --- CLUSTERING OF EXISTING REPORTS --- */}
-                <MarkerClusterGroup
-                  chunkedLoading
-                  spiderfyOnMaxZoom={true}
-                  maxClusterRadius={40}
-                  iconCreateFunction={(cluster) => {
-                    const count = cluster.getChildCount();
-                    return L.divIcon({
-                      html: `<div class="mp-cluster-icon">${count}</div>`,
-                       className: 'mp-cluster-marker', 
-                       iconSize: L.point(50, 50)});
-                  }}>
-                  {existingReports.filter((report) => 
-                  report.status !== 'Pending Approval' && report.status !== 'Rejected').map((report) => {
-                    const position = getLatLngFromReport(report);
-                    if (!position) return null;
+            {/* LEFT COLUMN: MAP */}
+            <div className="mp-map-column">
+              <div className="mp-container">
+                {isLoadingMap ? (
+                  <div className="mp-loading">
+                    <div className="mp-loading-spinner"></div>
+                    <p>Loading map...</p>
+                  </div>
+                ) : (
+                  <MapContainer
+                    // MODIFICA CSS: Aggiunta classe is-locked per cambiare il cursore
+                    className={`mp-leaflet-map ${showForm ? 'is-locked' : ''}`}
+                    center={torinoCenter}
+                    zoom={12}
+                    scrollWheelZoom={true}
+                    maxBounds={turinBounds}
+                    maxBoundsViscosity={1.0}
+                    ref={setMapInstance}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
 
-                    return (
+                    <MapClickHandler
+                      onMapClick={handleMapClick}
+                      turinPolygons={turinPolygons}
+                    />
+
+                    {renderPolygons()}
+
+                    <MarkerClusterGroup
+                      chunkedLoading
+                      spiderfyOnMaxZoom={true}
+                      maxClusterRadius={40}
+                      iconCreateFunction={(cluster) => {
+                        const count = cluster.getChildCount();
+                        return L.divIcon({
+                          html: `<div class="mp-cluster-icon">${count}</div>`,
+                          className: 'mp-cluster-marker',
+                          iconSize: L.point(50, 50)
+                        });
+                      }}>
+                      {filteredReports.map((report) => {
+                        const position = getLatLngFromReport(report);
+                        if (!position) return null;
+
+                        return (
+                          <Marker
+                            key={report.id}
+                            position={position}
+                            icon={DefaultIcon}
+                            eventHandlers={{
+                              click: () => {
+                                setSelectedReport(report);
+                                setShowDetailModal(true);
+                              }
+                            }}
+                          >
+                            <Tooltip direction="top" offset={[0, -28]} opacity={1}>
+                              <div className="mp-tooltip-content" style={{ textAlign: 'center', minWidth: '120px' }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '2px' }}>
+                                  {report.title}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
+                                  {report.category}
+                                </div>
+                                <div style={{
+                                  fontSize: '11px',
+                                  fontWeight: '600',
+                                  color: getStatusColor(report.status),
+                                  border: `1px solid ${getStatusColor(report.status)}`,
+                                  borderRadius: '4px',
+                                  padding: '2px 6px',
+                                  display: 'inline-block'
+                                }}>
+                                  {report.status}
+                                </div>
+                                <div style={{
+                                  marginTop: '6px',
+                                  fontSize: '10px',
+                                  color: 'var(--brand-red)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '4px'
+                                }}>
+                                  <FaExternalLinkAlt size={10} /> Click for details
+                                </div>
+                              </div>
+                            </Tooltip>
+                          </Marker>
+                        );
+                      })}
+                    </MarkerClusterGroup>
+
+                    {marker && (
                       <Marker
-                        key={report.id}
-                        position={position}
-                        icon={DefaultIcon}
+                        key={`new-${marker.id}`}
+                        position={[marker.lat, marker.lng]}
+                        icon={RedIcon}
+                        zIndexOffset={1000}
                         eventHandlers={{
                           click: () => {
-                            setSelectedReport(report);
-                            setShowDetailModal(true);
+                            // Rimuove il marker se cliccato
+                            handleClear(false);
                           }
                         }}
                       >
-                        <Tooltip direction="top" offset={[0, -28]} opacity={1}>
-                          <div className="mp-tooltip-content" style={{ textAlign: 'center', minWidth: '120px' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '2px' }}>
-                              {report.title}
-                            </div>
-                            <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
-                              {report.category}
-                            </div>
-                            <div style={{
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              color: getStatusColor(report.status),
-                              border: `1px solid ${getStatusColor(report.status)}`,
-                              borderRadius: '4px',
-                              padding: '2px 6px',
-                              display: 'inline-block'
-                            }}>
-                              {report.status}
-                            </div>
-                            <div style={{
-                              marginTop: '6px',
-                              fontSize: '10px',
-                              color: 'var(--brand-red)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}>
-                              <FaExternalLinkAlt size={10} /> Click for details
-                            </div>
-                          </div>
+                        <Tooltip permanent direction="top" offset={[0, -28]}>
+                          {/* MODIFICA: Visualizzazione Address nel Tooltip */}
+                          <b>
+                            {isLoadingAddress 
+                              ? "Locating..." 
+                              : (formData.address || "Location Selected")}
+                          </b>
+                          <br />
+                          {!showForm ? (
+                            <span style={{ fontSize: '0.8em', color: '#666' }}>Click marker to remove</span>
+                          ) : (
+                            <span style={{ fontSize: '0.8em', color: 'var(--brand-red)' }}>Position Locked</span>
+                          )}
                         </Tooltip>
                       </Marker>
-                    );
-                  })}
-                </MarkerClusterGroup>
-
-                {/* --- CREATION MARKER (Red) --- */}
-                {marker && (
-                  <Marker
-                    key={`new-${marker.id}`}
-                    position={[marker.lat, marker.lng]}
-                    icon={RedIcon}
-                    zIndexOffset={1000}
-                    eventHandlers={{
-                      click: () => handleClear()
-                    }}
-                  >
-                    <Tooltip permanent direction="top" offset={[0, -28]}>
-                      <b>New Report</b><br />
-                      <span style={{ fontSize: '0.8em' }}>Fill out the form below</span>
-                    </Tooltip>
-                  </Marker>
-                )}
-              </MapContainer>
-            )}
-          </div>
-          {formErrors.location && (
-            <div className="mp-map-error">
-              <FormError message={formErrors.location} />
-            </div>
-          )}
-        </div>
-
-        {/* Form Section */}
-        <div className="mp-form-section">
-          <div className="mp-form-card">
-            <h2 className="mp-form-title">
-              <FaMapMarkerAlt className="mp-form-title-icon" />
-              Report Details
-            </h2>
-
-            <form onSubmit={handleSubmit} className="mp-location-form">
-              {/* Coordinates Section */}
-              <div className="mp-coords-section">
-                <h3 className="mp-coords-title">Coordinate Location</h3>
-                <div className="mp-coords-group">
-                  <div className="mp-form-group">
-                    <label htmlFor="latitude" className="mp-form-label">Latitude</label>
-                    <input
-                      type="text"
-                      id="latitude"
-                      className="mp-input"
-                      value={formData.latitude}
-                      readOnly
-                      placeholder="Click on the map"
-                    />
-                  </div>
-                  <div className="mp-form-group">
-                    <label htmlFor="longitude" className="mp-form-label">Longitude</label>
-                    <input
-                      type="text"
-                      id="longitude"
-                      className="mp-input"
-                      value={formData.longitude}
-                      readOnly
-                      placeholder="Click on the map"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Title */}
-              <div className="mp-form-group">
-                <label htmlFor="title" className="mp-form-label">
-                  Title <span className="mp-required-asterisk">*</span>
-                </label>
-                {formErrors.title && <FormError message={formErrors.title} />}
-                <input
-                  type="text"
-                  id="title"
-                  className={`mp-input ${formErrors.title ? 'is-invalid' : ''}`}
-                  value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  placeholder="Enter a descriptive title..."
-                />
-              </div>
-
-              {/* Description */}
-              <div className="mp-form-group">
-                <label htmlFor="description" className="mp-form-label">
-                  Description <span className="mp-required-asterisk">*</span>
-                </label>
-                {formErrors.description && <FormError message={formErrors.description} />}
-                <div className="mp-textarea-wrapper">
-                  <textarea
-                    id="description"
-                    className={`mp-input mp-textarea ${formErrors.description ? 'is-invalid' : ''}`}
-                    value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    placeholder="Describe the problem in detail..."
-                    rows="4"
-                    maxLength={250}
-                  />
-                  <span className={`mp-char-counter ${formData.description.length >= 250 ? 'is-limit' : ''}`}>
-                    {formData.description.length} / 250
-                  </span>
-                </div>
-              </div>
-
-              {/* CATEGORY DROPDOWN */}
-              <div className="mp-form-group">
-                <label htmlFor="category-dropdown" className="mp-form-label">
-                  Category <span className="mp-required-asterisk">*</span>
-                </label>
-                {formErrors.category && <FormError message={formErrors.category} />}
-                <Dropdown onSelect={(value) => handleSelect('category', value)}>
-                  <Dropdown.Toggle
-                    className={`mp-modern-dropdown-toggle ${formErrors.category ? 'is-invalid' : ''}`}
-                    disabled={isSubmitting || isLoadingCategories}
-                    id="category-dropdown"
-                  >
-                    <FaListUl className="mp-dropdown-icon" />
-                    <span className="mp-dropdown-toggle-text">
-                      {isLoadingCategories ? "Loading..." : getSelectedCategoryName()}
-                    </span>
-                  </Dropdown.Toggle>
-
-                  <Dropdown.Menu className="mp-modern-dropdown-menu">
-                    {!isLoadingCategories && categories.length > 0 ? (
-                      categories.map((cat, index) => (
-                        <Dropdown.Item
-                          key={index}
-                          eventKey={cat}
-                          active={formData.category === cat}
-                          title={cat}
-                        >
-                          {cat}
-                        </Dropdown.Item>
-                      ))
-                    ) : (
-                      <Dropdown.Item disabled>No categories</Dropdown.Item>
                     )}
-                  </Dropdown.Menu>
-                </Dropdown>
-              </div>
+                  </MapContainer>
+                )}
 
-              {/* Photo Upload */}
-              <div className="mp-form-group">
-                <label className="mp-form-label">
-                  Photos <span className="mp-required-asterisk">*</span> ({photos.length}/3)
-                </label>
-                {formErrors.photos && <FormError message={formErrors.photos} />}
-                <div className="mp-photo-upload-area">
-                  <input
-                    type="file"
-                    id="photos"
-                    multiple
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="mp-photo-input"
-                    disabled={photos.length >= 3}
-                  />
-                  <label htmlFor="photos" className={`mp-photo-upload-label ${photos.length >= 3 ? 'is-disabled' : ''}`}>
-                    <FaCamera className="mp-photo-upload-icon" />
-                    <span>{photos.length >= 3 ? 'Max 3 photos reached' : 'Add Photo'}</span>
-                  </label>
-                </div>
-
-                {photos.length > 0 && (
-                  <div className="mp-photo-previews">
-                    {photos.map(photo => (
-                      <div key={photo.id} className="mp-photo-preview">
-                        <img src={photo.preview} alt="Preview" />
+                {/* Floating Action Bar stays inside Map Container */}
+                {marker && !showForm && (
+                  <div className="mp-map-floating-action">
+                    <div className="mp-floating-content">
+                      <div className="mp-floating-text">
+                        <strong>Location Selected</strong>
+                        <span>Do you want to report an issue here?</span>
+                      </div>
+                      <div className="mp-floating-buttons">
                         <button
-                          type="button"
-                          className="mp-photo-remove-btn"
-                          onClick={() => removePhoto(photo.id)}
+                          className="mp-btn-floating cancel"
+                          onClick={() => handleClear(false)}
                         >
-                          <FaTimes />
+                          Cancel
+                        </button>
+                        <button
+                          className="mp-btn-floating confirm"
+                          onClick={handleStartReport}
+                        >
+                          Create Report <FaArrowRight />
                         </button>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 )}
-                <small className="mp-help-text">
-                  At least 1 photo required, maximum 3.
-                </small>
               </div>
+              {formErrors.location && (
+                <div className="mp-map-error">
+                  <FormError message={formErrors.location} />
+                </div>
+              )}
+            </div>
 
-              {/* TODO: Anonymous Checkbox */}
-              {/* <div className="mp-form-group">
-                <label className="mp-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_anonymous}
-                    onChange={(e) => handleInputChange('is_anonymous', e.target.checked)}
-                    className="mp-checkbox-input"
-                  />
-                  <span className="mp-checkbox-icon">
-                    {formData.is_anonymous ? <FaUserSecret /> : <FaUser />}
-                  </span>
-                  <span className="mp-checkbox-text">Submit anonymously</span>
-                </label>
-              </div> */}
+            {/* RIGHT COLUMN: FORM (Conditionally visible via CSS) */}
+            <div className="mp-form-column" ref={formSectionRef}>
+              <div className="mp-form-card side-panel">
+                <div className="mp-form-header-row">
+                  <h2 className="mp-form-title compact">
+                    <FaMapMarkerAlt className="mp-form-title-icon" />
+                    New Report
+                  </h2>
+                  <button type="button" className="mp-close-panel-btn" onClick={() => handleClear()}>
+                    <FaTimes />
+                  </button>
+                </div>
 
-              {/* Form Actions */}
-              <div className="mp-form-actions">
-                <button
-                  type="button"
-                  className="mp-btn secondary"
-                  onClick={() => handleClear()}
-                  disabled={isSubmitting}
-                >
-                  <FaTrash className="mp-btn-icon" />
-                  Clear
-                </button>
+                <form onSubmit={handleSubmit} className="mp-location-form compact">
 
-                <button
-                  type="submit"
-                  className="mp-btn primary"
-                  disabled={!marker || isSubmitting}
-                >
-                  <FaSave className="mp-btn-icon" />
-                  {isSubmitting ? 'Submitting...' : 'Submit Report'}
-                </button>
+                  {/* Coordinates Row (Compact) */}
+                  <div className="mp-coords-group compact-coords">
+                    <div className="mp-form-group">
+                      <label className="mp-form-label-sm">Lat</label>
+                      <input type="text" className="mp-input-sm" value={formData.latitude} readOnly />
+                    </div>
+                    <div className="mp-form-group">
+                      <label className="mp-form-label-sm">Lng</label>
+                      <input type="text" className="mp-input-sm" value={formData.longitude} readOnly />
+                    </div>
+                  </div>
+
+                  {/* Address Field (UNIFICATO) */}
+                  <div className="mp-form-group">
+                    <label className="mp-form-label">Address</label>
+                    <input 
+                      type="text" 
+                      className="mp-input" 
+                      value={isLoadingAddress ? "Calculating address..." : formData.address} 
+                      readOnly 
+                      style={{ backgroundColor: 'var(--bg-lighter)', color: 'var(--text-muted)' }}
+                    />
+                  </div>
+
+                  {/* Title */}
+                  <div className="mp-form-group">
+                    <label htmlFor="title" className="mp-form-label">Title <span className="mp-required-asterisk">*</span></label>
+                    {formErrors.title && <FormError message={formErrors.title} />}
+                    <input
+                      type="text"
+                      id="title"
+                      className={`mp-input ${formErrors.title ? 'is-invalid' : ''}`}
+                      value={formData.title}
+                      onChange={(e) => handleInputChange('title', e.target.value)}
+                      placeholder="Title..."
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div className="mp-form-group">
+                    <label htmlFor="category" className="mp-form-label">Category <span className="mp-required-asterisk">*</span></label>
+                    {formErrors.category && <FormError message={formErrors.category} />}
+                    <Dropdown onSelect={(value) => handleSelect('category', value)}>
+                      <Dropdown.Toggle className={`mp-modern-dropdown-toggle ${formErrors.category ? 'is-invalid' : ''}`} id="cat-drop">
+                        {isLoadingCategories ? "Loading..." : getSelectedCategoryName()}
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu className="mp-modern-dropdown-menu">
+                        {categories.map((cat, i) => (
+                          <Dropdown.Item key={i} eventKey={cat} active={formData.category === cat}>{cat}</Dropdown.Item>
+                        ))}
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  </div>
+
+                  {/* Description */}
+                  <div className="mp-form-group">
+                    <label htmlFor="description" className="mp-form-label">
+                      Description <span className="mp-required-asterisk">*</span>
+                    </label>
+                    {formErrors.description && <FormError message={formErrors.description} />}
+
+                    {/* WRAPPER PER POSIZIONAMENTO */}
+                    <div className="mp-textarea-wrapper">
+                      <textarea
+                        id="description"
+                        className={`mp-input mp-textarea compact ${formErrors.description ? 'is-invalid' : ''}`}
+                        value={formData.description}
+                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        placeholder="Describe the problem in detail..."
+                        rows="3"
+                        maxLength={200}
+                      />
+                      {/* CONTATORE POSIZIONATO */}
+                      <span className={`mp-char-counter ${formData.description.length >= 200 ? 'is-limit' : ''}`}>
+                        {formData.description.length} / 200
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Photos (Compact) */}
+                  <div className="mp-form-group">
+                    <label className="mp-form-label">Photos ({photos.length}/3)</label>
+                    {formErrors.photos && <FormError message={formErrors.photos} />}
+
+                    <div className="mp-photo-row">
+                      <label htmlFor="photos" className={`mp-photo-upload-mini ${photos.length >= 3 ? 'disabled' : ''}`}>
+                        <FaCamera />
+                      </label>
+                      <input type="file" id="photos" multiple accept="image/*" onChange={handlePhotoUpload} className="mp-photo-input" disabled={photos.length >= 3} />
+
+                      {photos.map(photo => (
+                        <div key={photo.id} className="mp-photo-mini-preview">
+                          <img src={photo.preview} alt="Preview" />
+                          <button type="button" onClick={() => removePhoto(photo.id)}><FaTimes /></button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="mp-form-actions compact">
+                    <button type="button" className="mp-btn secondary sm" onClick={() => handleClear()} disabled={isSubmitting}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="mp-btn primary sm" disabled={!marker || isSubmitting}>
+                      {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
+            </div>
+
           </div>
         </div>
       </main>
-       {/* Report Detail Modal */}
-      <ReportDetails 
+
+      {/* Report Detail Modal */}
+      <ReportDetails
         show={showDetailModal}
         onHide={() => setShowDetailModal(false)}
         report={selectedReport}

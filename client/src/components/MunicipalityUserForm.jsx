@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Alert, Dropdown } from "react-bootstrap";
+import { Row, Col, Form, Button, Alert, InputGroup, Dropdown } from "react-bootstrap";
 import { createMunicipalityUser, getAllRoles } from "../api/municipalityUserApi";
 import { getRolesByDepartment, getAllDepartments } from "../api/departmentAPI";
-import "../css/MunicipalityUserForm.css";
-import { FaEye, FaEyeSlash, FaUserPlus, FaTimes, FaCheck, FaShieldAlt, FaBuilding } from "react-icons/fa";
+import "../css/MunicipalityUserForm.css"; 
+import { 
+    FaEye, FaEyeSlash, FaSave, FaTimes, 
+    FaUser, FaIdCard, FaEnvelope, FaBuilding, FaUserShield, FaLock, FaChevronDown 
+} from "react-icons/fa";
 
 // --- Utility Functions ---
 const cleanInput = (value, isEmail = false) => {
@@ -23,121 +26,78 @@ const calculateStrength = (password) => {
   return strength;
 };
 
-const getStrengthColor = (strength) => {
-  const colors = ["#dc3545", "#ff6b35", "#ffa726", "#9ccc65", "#4caf50"];
-  return colors[strength] || "#dc3545";
-};
+const getStrengthColor = (s) => ["#e9ecef", "#dc3545", "#ffc107", "#198754", "#198754"][s];
 
-// --- Sub-Components ---
+// --- Custom Dropdown Component ---
+const CustomSelect = ({ value, options, onChange, placeholder, disabled, loading, hasError, onFocus }) => {
+    const selectedItem = options.find(opt => String(opt.id) === String(value));
+    const isPlaceholder = !selectedItem;
 
-const FormInput = ({ label, name, type = "text", value, placeholder, onChange, disabled, required = true }) => {
-  const handleKeyDown = (e) => {
-    if (e.key === " ") e.preventDefault();
-  };
-
-  const handleChange = (e) => {
-    const cleaned = cleanInput(e.target.value, type === "email");
-    onChange(name, cleaned);
-  };
-
-  return (
-    <div className="form-group" style={{ width: '100%' }}>
-      <label className="muf-form-label">
-        <span>{label}</span>
-        {required && <span className="muf-required-asterisk">*</span>}
-      </label>
-      <input
-        type={type}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        disabled={disabled}
-        className="muf-modern-input"
-        autoComplete="off"
-        style={{ width: '100%' }}
-      />
-    </div>
-  );
-};
-
-const FormSelect = ({ label, icon: Icon, value, options, onChange, disabled, placeholder, loading }) => {
-  const selectedName = options.find(opt => String(opt.id) === String(value))?.name;
-
-  return (
-    <div className="form-group" style={{ width: '100%' }}>
-      <label className="muf-form-label">
-        <span>{label}</span>
-        <span className="muf-required-asterisk">*</span>
-      </label>
-      <Dropdown onSelect={(val) => onChange(val)}>
-        <Dropdown.Toggle
-          className="muf-modern-dropdown-toggle"
-          disabled={disabled}
-          id={`dropdown-${label}`}
-          style={{ width: '100%' }}
-        >
-          <Icon className="muf-dropdown-icon" />
-          <span className="muf-dropdown-toggle-text">
-            {loading ? "Loading..." : (selectedName || placeholder)}
-          </span>
-        </Dropdown.Toggle>
-        <Dropdown.Menu className="muf-modern-dropdown-menu" style={{ width: '100%' }}>
-          {options.map(opt => (
-            <Dropdown.Item
-              key={opt.id}
-              eventKey={opt.id}
-              active={String(value) === String(opt.id)}
+    return (
+        <Dropdown onSelect={onChange} className="muf-custom-dropdown">
+            <Dropdown.Toggle 
+                variant="light" 
+                className={`muf-input muf-dropdown-toggle ${hasError ? 'muf-input-error' : ''}`}
+                disabled={disabled}
+                onFocus={onFocus}
             >
-              {opt.name}
-            </Dropdown.Item>
-          ))}
-        </Dropdown.Menu>
-      </Dropdown>
-    </div>
-  );
-};
+                <div className="d-flex align-items-center justify-content-between w-100">
+                    <span 
+                        className={`text-truncate ${isPlaceholder ? 'muf-placeholder-text' : ''}`} 
+                        style={{ flex: 1, textAlign: 'left' }}
+                    >
+                        {loading ? "Loading..." : (selectedItem ? selectedItem.name : placeholder)}
+                    </span>
+                    <FaChevronDown className={`muf-dropdown-arrow ms-2 ${isPlaceholder ? 'muf-placeholder-arrow' : ''}`} />
+                </div>
+            </Dropdown.Toggle>
 
-// --- Main Component ---
+            <Dropdown.Menu className="muf-dropdown-menu">
+                {options.length > 0 ? (
+                    options.map(opt => (
+                        <Dropdown.Item 
+                            key={opt.id} 
+                            eventKey={opt.id} 
+                            active={String(value) === String(opt.id)}
+                            className="muf-dropdown-item"
+                            title={opt.name}
+                        >
+                            <div className="text-truncate">{opt.name}</div>
+                        </Dropdown.Item>
+                    ))
+                ) : (
+                    <div className="p-2 text-muted text-center small">No options available</div>
+                )}
+            </Dropdown.Menu>
+        </Dropdown>
+    );
+};
 
 export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     username: "", email: "", password: "", confirmPassword: "",
-    firstName: "", lastName: "", department: "", role: "",
-  });
-  
+    first_name: "", last_name: "", department: "", role: "",
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
   const [data, setData] = useState({ departments: [], roles: [] });
-  const [status, setStatus] = useState({ loading: false, error: "", success: "", loadingDepts: true, loadingRoles: false });
+  const [status, setStatus] = useState({ loading: false, globalError: "", success: "", loadingDepts: true, loadingRoles: false });
   const [showPwd, setShowPwd] = useState({ main: false, confirm: false });
 
-  // Derived state for password strength
   const passwordStrength = useMemo(() => calculateStrength(formData.password), [formData.password]);
 
-  // Initial Data Load
+  // --- Data Fetching ---
   useEffect(() => {
     let isMounted = true;
-    getAllDepartments()
-      .then(depts => {
-        if (isMounted) {
-          setData(prev => ({ ...prev, departments: depts }));
-          setStatus(prev => ({ ...prev, loadingDepts: false }));
-        }
-      })
-      .catch(err => {
-        console.error("Failed to load departments", err);
-        if (isMounted) setStatus(prev => ({ ...prev, loadingDepts: false }));
-      });
+    getAllDepartments().then(depts => {
+        if (isMounted) { setData(prev => ({ ...prev, departments: depts })); setStatus(prev => ({ ...prev, loadingDepts: false })); }
+      }).catch(err => { if (isMounted) setStatus(prev => ({ ...prev, loadingDepts: false })); });
     return () => { isMounted = false; };
   }, []);
 
-  // Fetch Roles when Department changes
   useEffect(() => {
-    if (!formData.department) {
-      setData(prev => ({ ...prev, roles: [] }));
-      return;
-    }
-
+    if (!formData.department) { setData(prev => ({ ...prev, roles: [] })); return; }
     const fetchRoles = async () => {
       setStatus(prev => ({ ...prev, loadingRoles: true }));
       try {
@@ -145,249 +105,291 @@ export default function MunicipalityUserForm({ onUserCreated, onCancel }) {
         let rolesList = await getRolesByDepartment(deptId);
         setData(prev => ({ ...prev, roles: rolesList }));
       } catch (err) {
-        console.error("Role fetch error, fallback to all", err);
-        try {
-          const allRoles = await getAllRoles();
-          setData(prev => ({ ...prev, roles: allRoles }));
-        } catch (e) {
-          setStatus(prev => ({ ...prev, error: "Failed to load roles." }));
-        }
-      } finally {
-        setStatus(prev => ({ ...prev, loadingRoles: false }));
-      }
+        try { const allRoles = await getAllRoles(); setData(prev => ({ ...prev, roles: allRoles })); } catch (e) {}
+      } finally { setStatus(prev => ({ ...prev, loadingRoles: false })); }
     };
-
     fetchRoles();
   }, [formData.department]);
 
-  // Handlers
+  // --- Auto-Hide Success Message ---
+  useEffect(() => {
+    if (status.success) {
+        const timer = setTimeout(() => {
+            setStatus(prev => ({ ...prev, success: "" }));
+        }, 3000); 
+        return () => clearTimeout(timer);
+    }
+  }, [status.success]);
+
+  // --- Reset & Cancel Handler ---
+  const handleResetAndCancel = () => {
+      setFormData(initialFormState);
+      setErrors({});
+      setStatus(prev => ({ ...prev, globalError: "", success: "" }));
+      setShowPwd({ main: false, confirm: false });
+      if (onCancel) onCancel();
+  };
+
+  const clearError = (name) => {
+      if (errors[name]) {
+          setErrors(prev => ({ ...prev, [name]: null }));
+      }
+  };
+
   const updateField = useCallback((name, value) => {
     setFormData(prev => {
-      // Se stiamo cambiando il dipartimento, resettiamo il ruolo
-      if (name === 'department') {
-        return { ...prev, department: value, role: "" };
-      }
-      
-      // Per tutti gli altri campi (incluso 'role'), aggiorniamo normalmente
+      if (name === 'department') return { ...prev, department: value, role: "" };
       return { ...prev, [name]: value };
     });
-    
-    if (status.error) setStatus(prev => ({ ...prev, error: "" }));
-  }, [status.error]);
+    clearError(name);
+    if (status.globalError) setStatus(prev => ({ ...prev, globalError: "" }));
+  }, [status.globalError, errors]);
 
-  const togglePwd = (field) => setShowPwd(prev => ({ ...prev, [field]: !prev[field] }));
-
+  // --- Validation Logic ---
   const validate = () => {
-    if (!formData.firstName.trim()) return "Enter first name";
-    if (!formData.lastName.trim()) return "Enter last name";
-    if (!formData.username.trim()) return "Enter username";
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) return "Invalid email format";
-    if (formData.password.length < 6) return "Password min 6 chars";
-    if (formData.password !== formData.confirmPassword) return "Passwords do not match";
-    if (!formData.department) return "Select a department";
-    if (!formData.role) return "Select a role";
-    return null;
+      const newErrors = {};
+      
+      if (!formData.first_name.trim()) newErrors.first_name = "First name is required";
+      if (!formData.last_name.trim()) newErrors.last_name = "Last name is required";
+      
+      if (!formData.username.trim()) newErrors.username = "Username is required";
+      else if (formData.username.length < 3) newErrors.username = "Username must be at least 3 chars";
+
+      if (!formData.email.trim()) newErrors.email = "Email is required";
+      else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Invalid email address";
+
+      if (!formData.department) newErrors.department = "Please select a department";
+      if (!formData.role) newErrors.role = "Please select a role";
+
+      if (!formData.password) newErrors.password = "Password is required";
+      else if (formData.password.length < 6) newErrors.password = "Password too short (min 6 chars)";
+
+      if (formData.password !== formData.confirmPassword) {
+          newErrors.confirmPassword = "Passwords do not match";
+      }
+
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus(prev => ({ ...prev, error: "", success: "" }));
-
-    const errorMsg = validate();
-    if (errorMsg) {
-      setStatus(prev => ({ ...prev, error: errorMsg }));
-      return;
+    setStatus(prev => ({ ...prev, globalError: "", success: "" }));
+    
+    if (!validate()) {
+        return;
     }
-
+    
     setStatus(prev => ({ ...prev, loading: true }));
-
     try {
       const selectedDept = data.departments.find(d => String(d.id) === String(formData.department));
       const selectedRole = data.roles.find(r => String(r.id) === String(formData.role));
-
       const payload = {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        department_name: selectedDept?.name || "",
-        role_name: selectedRole?.name || "",
+        username: formData.username, email: formData.email, password: formData.password,
+        first_name: formData.first_name, last_name: formData.last_name,
+        department_name: selectedDept?.name || "", role_name: selectedRole?.name || "",
       };
-
       const newUser = await createMunicipalityUser(payload);
+      setStatus(prev => ({ ...prev, success: `Officer "${newUser.username}" created!`, loading: false }));
       
-      setStatus(prev => ({ ...prev, success: `User "${newUser.username}" created!`, loading: false }));
-      setFormData({ username: "", email: "", password: "", confirmPassword: "", firstName: "", lastName: "", department: "", role: "" });
+      setFormData(initialFormState);
       
       if (onUserCreated) onUserCreated(newUser);
-      setTimeout(() => setStatus(prev => ({ ...prev, success: "" })), 5000);
-
     } catch (err) {
-      console.error(err);
-      setFormData(prev => ({ ...prev, password: "", confirmPassword: "" }));
-      let errMsg = "Failed to create user.";
-      if (err.status === 409) errMsg = "Username/Email already exists.";
-      else if (err.status === 403) errMsg = "Permission denied.";
-      
-      setStatus(prev => ({ ...prev, error: errMsg, loading: false }));
+      setStatus(prev => ({ ...prev, globalError: "Creation failed. Username/Email might exist.", loading: false }));
     }
   };
 
+  // Helper per stilizzare la label in caso di errore
+  const getLabelClass = (hasError) => hasError ? "muf-label text-danger" : "muf-label";
+
   return (
-    <div className="muf-user-form" style={{ width: '100%' }}>
-      <div className="muf-form-glass-container">
-        {/* Header */}
-        <div className="muf-form-header">
-          <div className="muf-header-icon"><FaUserPlus /></div>
-          <h2 className="muf-form-title">Create new Municipality User</h2>
-          <p className="muf-form-subtitle">Add a new user to the municipality management system</p>
+    <div className="muf-container-styled fade-in">
+      <div className="muf-header-styled">
+        <h4 className="muf-title"><FaUserShield className="me-2"/>New Officer</h4>
+        <div className="muf-header-actions">
+             <button type="button" className="muf-btn-text" onClick={handleResetAndCancel} disabled={status.loading}>
+                <FaTimes/> Cancel
+             </button>
         </div>
-
-        {/* Alerts */}
-        <div className="muf-alert-container">
-          {status.error && (
-            <Alert variant="danger" onClose={() => setStatus(p => ({...p, error: ""}))} dismissible className="muf-modern-alert">
-              <div className="muf-alert-content"><FaTimes className="alert-icon" />{status.error}</div>
-            </Alert>
-          )}
-          {status.success && (
-            <Alert variant="success" onClose={() => setStatus(p => ({...p, success: ""}))} dismissible className="muf-modern-alert">
-              <div className="muf-alert-content"><FaCheck className="alert-icon" />{status.success}</div>
-            </Alert>
-          )}
-        </div>
-
-        <form className="muf-modern-form" onSubmit={handleSubmit} noValidate>
-          <div className="muf-form-cards-container">
-            
-            {/* Personal Info Card */}
-            <div className="muf-form-card">
-              <div className="muf-card-header">
-                <div className="muf-card-icon"><FaUserPlus /></div>
-                <div>
-                  <h3 className="muf-card-title">Personal Information</h3>
-                  <p className="muf-card-subtitle">Basic user details</p>
-                </div>
-              </div>
-              <div className="muf-form-grid">
-                <FormInput label="First Name" name="firstName" value={formData.firstName} onChange={updateField} placeholder="Enter first name" disabled={status.loading} />
-                <FormInput label="Last Name" name="lastName" value={formData.lastName} onChange={updateField} placeholder="Enter last name" disabled={status.loading} />
-                <FormInput label="Username" name="username" value={formData.username} onChange={updateField} placeholder="Enter username" disabled={status.loading} />
-                <FormInput label="Email Address" name="email" type="email" value={formData.email} onChange={updateField} placeholder="user@municipality.com" disabled={status.loading} />
-              </div>
-            </div>
-
-            {/* Access & Role Card */}
-            <div className="muf-form-card">
-              <div className="muf-card-header">
-                <div className="muf-card-icon"><FaShieldAlt /></div>
-                <div>
-                  <h3 className="muf-card-title">Access & Role</h3>
-                  <p className="muf-card-subtitle">Security and permissions</p>
-                </div>
-              </div>
-              <div className="muf-form-grid">
-                <FormSelect 
-                  label="Department" 
-                  icon={FaBuilding} 
-                  value={formData.department} 
-                  options={data.departments} 
-                  onChange={(val) => updateField('department', val)}
-                  disabled={status.loading || status.loadingDepts}
-                  loading={status.loadingDepts}
-                  placeholder="Select department"
-                />
-                
-                <FormSelect 
-                  label="User Role" 
-                  icon={FaShieldAlt} 
-                  value={formData.role} 
-                  options={data.roles} 
-                  onChange={(val) => updateField('role', val)}
-                  disabled={status.loading || status.loadingRoles || !formData.department}
-                  loading={status.loadingRoles}
-                  placeholder={!formData.department ? "Select department first" : "Select user role"}
-                />
-
-                {/* Password Field */}
-                <div className="form-group" style={{ width: '100%' }}>
-                  <label className="muf-form-label"><span>Password</span><span className="muf-required-asterisk">*</span></label>
-                  <div className="muf-password-container">
-                    <div className="muf-password-input-wrapper">
-                      <input
-                        type={showPwd.main ? "text" : "password"}
-                        className="muf-modern-input muf-password-input"
-                        placeholder="Create password (min. 6 chars)"
-                        value={formData.password}
-                        onChange={(e) => updateField('password', e.target.value)}
-                        disabled={status.loading}
-                        style={{ width: '100%' }}
-                      />
-                      <button type="button" className="muf-password-toggle-btn" onClick={() => togglePwd('main')} disabled={status.loading}>
-                        {showPwd.main ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                    {formData.password && (
-                      <div className="muf-password-strength">
-                        <div className="muf-strength-bar" style={{width: '100%'}}>
-                          <div className="muf-strength-fill" style={{ width: `${(passwordStrength / 5) * 100}%`, backgroundColor: getStrengthColor(passwordStrength) }} />
-                        </div>
-                        <div className="muf-strength-labels"><span>Weak</span><span>Strong</span></div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Confirm Password Field */}
-                <div className="form-group" style={{ width: '100%' }}>
-                  <label className="muf-form-label"><span>Confirm Password</span><span className="muf-required-asterisk">*</span></label>
-                  <div className="muf-password-input-wrapper">
-                    <input
-                      type={showPwd.confirm ? "text" : "password"}
-                      className="muf-modern-input muf-password-input"
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => updateField('confirmPassword', e.target.value)}
-                      disabled={status.loading}
-                      style={{ width: '100%' }}
-                    />
-                    <button type="button" className="muf-password-toggle-btn" onClick={() => togglePwd('confirm')} disabled={status.loading}>
-                      {showPwd.confirm ? <FaEyeSlash /> : <FaEye />}
-                    </button>
-                  </div>
-                  {formData.password && formData.confirmPassword && (
-                    <div className="muf-password-match">
-                      {formData.password === formData.confirmPassword 
-                        ? <span className="muf-match-success">✓ Passwords match</span>
-                        : <span className="muf-match-error">✗ Passwords don't match</span>}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="muf-form-actions">
-            <button
-              type="button"
-              className="muf-modern-btn secondary"
-              onClick={() => {
-                setFormData({ username: "", email: "", password: "", confirmPassword: "", firstName: "", lastName: "", department: "", role: "" });
-                setStatus(p => ({...p, error: "", success: ""}));
-                if (onCancel) onCancel();
-              }}
-              disabled={status.loading}
-            >
-              <FaTimes /> Cancel
-            </button>
-            <button type="submit" className="muf-modern-btn primary" disabled={status.loading || status.loadingDepts || status.loadingRoles}>
-              {status.loading ? <><div className="muf-loading-spinner"></div> Creating...</> : <><FaUserPlus /> Create User</>}
-            </button>
-          </div>
-        </form>
       </div>
+
+      <Form noValidate onSubmit={handleSubmit} className="muf-body-styled">
+        {(status.globalError || status.success) && (
+            <Alert variant={status.globalError ? "danger" : "success"} className="muf-alert mb-4">
+                {status.globalError || status.success}
+            </Alert>
+        )}
+
+        <Row className="g-4">
+            {/* Left Column */}
+            <Col lg={6} className="muf-col-left">
+                <h6 className="muf-section-header">Personal Information</h6>
+                
+                <Row className="g-3 mb-3">
+                    <Col md={6}>
+                        <Form.Group>
+                            <Form.Label className={getLabelClass(errors.first_name)}>First Name <span className="req">*</span></Form.Label>
+                            <InputGroup className={`muf-input-group ${errors.first_name ? 'has-error' : ''}`}>
+                                <InputGroup.Text className="muf-icon"><FaUser/></InputGroup.Text>
+                                <Form.Control 
+                                    placeholder="Enter name" 
+                                    value={formData.first_name} 
+                                    onChange={e => updateField('first_name', e.target.value)} 
+                                    onFocus={() => clearError('first_name')}
+                                    className={`muf-input ${errors.first_name ? 'muf-input-error' : ''}`}
+                                />
+                            </InputGroup>
+                            {errors.first_name && <div className="muf-field-error">{errors.first_name}</div>}
+                        </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                        <Form.Group>
+                            <Form.Label className={getLabelClass(errors.last_name)}>Last Name <span className="req">*</span></Form.Label>
+                            <InputGroup className={`muf-input-group ${errors.last_name ? 'has-error' : ''}`}>
+                                <InputGroup.Text className="muf-icon"><FaUser/></InputGroup.Text>
+                                <Form.Control 
+                                    placeholder="Enter surname" 
+                                    value={formData.last_name} 
+                                    onChange={e => updateField('last_name', e.target.value)} 
+                                    onFocus={() => clearError('last_name')}
+                                    className={`muf-input ${errors.last_name ? 'muf-input-error' : ''}`}
+                                />
+                            </InputGroup>
+                            {errors.last_name && <div className="muf-field-error">{errors.last_name}</div>}
+                        </Form.Group>
+                    </Col>
+                </Row>
+
+                <Form.Group className="mb-3">
+                    <Form.Label className={getLabelClass(errors.username)}>Username <span className="req">*</span></Form.Label>
+                    <InputGroup className={`muf-input-group ${errors.username ? 'has-error' : ''}`}>
+                        <InputGroup.Text className="muf-icon"><FaIdCard/></InputGroup.Text>
+                        <Form.Control 
+                            placeholder="Unique system username" 
+                            value={formData.username} 
+                            onChange={e => updateField('username', cleanInput(e.target.value))} 
+                            onFocus={() => clearError('username')}
+                            className={`muf-input ${errors.username ? 'muf-input-error' : ''}`}
+                        />
+                    </InputGroup>
+                    {errors.username && <div className="muf-field-error">{errors.username}</div>}
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                    <Form.Label className={getLabelClass(errors.email)}>Email Address <span className="req">*</span></Form.Label>
+                    <InputGroup className={`muf-input-group ${errors.email ? 'has-error' : ''}`}>
+                        <InputGroup.Text className="muf-icon"><FaEnvelope/></InputGroup.Text>
+                        <Form.Control 
+                            type="email" 
+                            placeholder="officer@municipality.com" 
+                            value={formData.email} 
+                            onChange={e => updateField('email', cleanInput(e.target.value, true))} 
+                            onFocus={() => clearError('email')}
+                            className={`muf-input ${errors.email ? 'muf-input-error' : ''}`}
+                        />
+                    </InputGroup>
+                    {errors.email && <div className="muf-field-error">{errors.email}</div>}
+                </Form.Group>
+            </Col>
+
+            {/* Right Column */}
+            <Col lg={6}>
+                <h6 className="muf-section-header">Access & Security</h6>
+
+                <Form.Group className="mb-3">
+                    <Form.Label className={getLabelClass(errors.department)}>Department <span className="req">*</span></Form.Label>
+                    {/* Applicata classe has-error condizionale anche qui */}
+                    <InputGroup className={`muf-input-group ${errors.department ? 'has-error' : ''}`}>
+                        <InputGroup.Text className="muf-icon"><FaBuilding/></InputGroup.Text>
+                        <CustomSelect 
+                            value={formData.department} 
+                            options={data.departments} 
+                            onChange={(val) => updateField('department', val)} 
+                            onFocus={() => clearError('department')}
+                            placeholder="Select Department"
+                            loading={status.loadingDepts}
+                            disabled={status.loadingDepts}
+                            hasError={!!errors.department}
+                        />
+                    </InputGroup>
+                    {errors.department && <div className="muf-field-error">{errors.department}</div>}
+                </Form.Group>
+                
+                <Form.Group className="mb-3">
+                    <Form.Label className={getLabelClass(errors.role)}>Role <span className="req">*</span></Form.Label>
+                    <InputGroup className={`muf-input-group ${errors.role ? 'has-error' : ''}`}>
+                        <InputGroup.Text className="muf-icon"><FaUserShield/></InputGroup.Text>
+                        <CustomSelect 
+                            value={formData.role} 
+                            options={data.roles} 
+                            onChange={(val) => updateField('role', val)} 
+                            onFocus={() => clearError('role')}
+                            placeholder={!formData.department ? "Waiting Department" : "Select Role"}
+                            loading={status.loadingRoles}
+                            disabled={!formData.department || status.loadingRoles}
+                            hasError={!!errors.role}
+                        />
+                    </InputGroup>
+                    {errors.role && <div className="muf-field-error">{errors.role}</div>}
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                    <div className="d-flex justify-content-between">
+                        <Form.Label className={getLabelClass(errors.password)}>Password <span className="req">*</span></Form.Label>
+                        {formData.password && (
+                             <span className="muf-strength-text" style={{color: getStrengthColor(passwordStrength)}}>
+                                Strength: {["Weak", "Weak", "Fair", "Good", "Strong"][passwordStrength]}
+                             </span>
+                        )}
+                    </div>
+                    <InputGroup className={`muf-input-group muf-pwd-group ${errors.password ? 'has-error' : ''}`}>
+                        <InputGroup.Text className="muf-icon"><FaLock/></InputGroup.Text>
+                        <Form.Control 
+                            type={showPwd.main ? "text" : "password"} 
+                            placeholder="Min. 6 characters" 
+                            value={formData.password} 
+                            onChange={e => updateField('password', e.target.value)} 
+                            onFocus={() => clearError('password')}
+                            className={`muf-input ${errors.password ? 'muf-input-error' : ''}`}
+                        />
+                        <button type="button" className="muf-pwd-toggle" onClick={() => setShowPwd(p => ({...p, main: !p.main}))}>
+                            {showPwd.main ? <FaEyeSlash/> : <FaEye/>}
+                        </button>
+                    </InputGroup>
+                    {errors.password && <div className="muf-field-error">{errors.password}</div>}
+                    <div className="muf-strength-line">
+                         <div className="fill" style={{width: `${(passwordStrength/5)*100}%`, backgroundColor: getStrengthColor(passwordStrength)}}></div>
+                    </div>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                    <Form.Label className={getLabelClass(errors.confirmPassword)}>Confirm Password <span className="req">*</span></Form.Label>
+                    <InputGroup className={`muf-input-group muf-pwd-group ${errors.confirmPassword ? 'has-error' : ''}`}>
+                        <InputGroup.Text className="muf-icon"><FaLock/></InputGroup.Text>
+                        <Form.Control 
+                            type={showPwd.confirm ? "text" : "password"} 
+                            placeholder="Re-enter password" 
+                            value={formData.confirmPassword} 
+                            onChange={e => updateField('confirmPassword', e.target.value)} 
+                            onFocus={() => clearError('confirmPassword')}
+                            className={`muf-input ${errors.confirmPassword ? 'muf-input-error' : ''}`}
+                        />
+                        <button type="button" className="muf-pwd-toggle" onClick={() => setShowPwd(p => ({...p, confirm: !p.confirm}))}>
+                            {showPwd.confirm ? <FaEyeSlash/> : <FaEye/>}
+                        </button>
+                    </InputGroup>
+                    {errors.confirmPassword && <div className="muf-field-error">{errors.confirmPassword}</div>}
+                </Form.Group>
+            </Col>
+        </Row>
+
+        <div className="muf-footer-actions">
+            <Button type="submit" className="muf-btn-primary" disabled={status.loading}>
+                {status.loading ? "Creating..." : <><FaSave className="me-2"/> Create Officer</>}
+            </Button>
+        </div>
+      </Form>
     </div>
   );
 }
