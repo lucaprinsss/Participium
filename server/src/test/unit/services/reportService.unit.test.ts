@@ -9,6 +9,7 @@ import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
 import { reportRepository } from '@repositories/reportRepository';
 import { categoryRoleRepository } from '@repositories/categoryRoleRepository';
+import { companyRepository } from '@repositories/companyRepository';
 import { NotFoundError } from '@models/errors/NotFoundError';
 import { photoRepository } from '@repositories/photoRepository';
 import { storageService } from '@services/storageService';
@@ -1407,5 +1408,227 @@ describe('ReportService additional unit tests', () => {
 
     });
 
+  });
+  
+  describe('assignToExternalMaintainer', () => {
+    const reportId = 1;
+    const technicalStaffId = 10;
+    const externalMaintainerId = 20;
+    const nonTechnicalUserId = 30;
+  
+    const mockTechnicalStaff = createMockUser('Technical Staff', undefined, { id: technicalStaffId });
+    const mockExternalMaintainer = createMockUser('External Maintainer', 'External Service Providers', {
+      id: externalMaintainerId,
+      companyId: 5,
+    });
+    const mockNonTechnicalUser = createMockUser('Citizen', undefined, { id: nonTechnicalUserId });
+  
+    const mockReport = createMockReport({
+      id: reportId,
+      status: ReportStatus.ASSIGNED,
+      category: ReportCategory.ROADS,
+    });
+  
+    const mockCompany = {
+      id: 5,
+      name: 'Roads Inc.',
+      category: ReportCategory.ROADS,
+    };
+  
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Restore mock report to its original state before each test
+      mockReport.status = ReportStatus.ASSIGNED;
+    });
+  
+    it('should successfully assign a report to an external maintainer', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff) // for authorizer
+        .mockResolvedValueOnce(mockExternalMaintainer); // for assignee
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(mockCompany as any);
+      jest.spyOn(reportRepository, 'save').mockImplementation(async (report) => report);
+      (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => ({
+        assignee_id: report.assigneeId,
+      }));
+  
+      // Act
+      const result = await reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId);
+  
+      // Assert
+      expect(reportRepository.findReportById).toHaveBeenCalledWith(reportId);
+      expect(userRepository.findUserById).toHaveBeenCalledWith(technicalStaffId);
+      expect(userRepository.findUserById).toHaveBeenCalledWith(externalMaintainerId);
+      expect(companyRepository.findById).toHaveBeenCalledWith(mockExternalMaintainer.companyId);
+      expect(reportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+        id: reportId,
+        assigneeId: externalMaintainerId,
+      }));
+      expect(result.assignee_id).toBe(externalMaintainerId);
+    });
+  
+    it('should throw NotFoundError if report is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(null);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(999, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(NotFoundError);
+    });
+  
+    it('should throw UnauthorizedError if user is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(null);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, 999)
+      ).rejects.toThrow(UnauthorizedError);
+    });
+  
+    it('should throw InsufficientRightsError if user is not technical staff', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockNonTechnicalUser);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, nonTechnicalUserId)
+      ).rejects.toThrow(InsufficientRightsError);
+    });
+  
+    it('should throw BadRequestError if report is not in ASSIGNED status', async () => {
+      // Arrange
+      mockReport.status = ReportStatus.IN_PROGRESS;
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockTechnicalStaff);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+  
+    it('should throw NotFoundError if assignee is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(null);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, 999, technicalStaffId)
+      ).rejects.toThrow(NotFoundError);
+    });
+  
+    it('should throw BadRequestError if assignee is not an External Maintainer', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockTechnicalStaff); // Assigning to another technical staff
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, technicalStaffId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+  
+    it('should throw BadRequestError if external maintainer has no company', async () => {
+      // Arrange
+      const maintainerWithoutCompany = { ...mockExternalMaintainer, companyId: null };
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(maintainerWithoutCompany as any);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+  
+    it('should throw BadRequestError if maintainer company is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockExternalMaintainer);
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(null as any);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+  
+    it("should throw BadRequestError if maintainer's company does not handle the report category", async () => {
+      // Arrange
+      const wrongCategoryCompany = { ...mockCompany, category: ReportCategory.WASTE };
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockExternalMaintainer);
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(wrongCategoryCompany as any);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should update the updatedAt field of the report', async () => {
+      // Arrange
+      const originalUpdatedAt = mockReport.updatedAt;
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockExternalMaintainer);
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(mockCompany as any);
+      jest.spyOn(reportRepository, 'save').mockImplementation(async (report) => {
+        report.updatedAt = new Date();
+        return report;
+      });
+      (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => report);
+
+      // Act
+      const result = await reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId);
+
+      // Assert
+      expect(result.updated_at).not.toBe(originalUpdatedAt);
+    });
+
+    it('should update the assignee field of the report', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockExternalMaintainer);
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(mockCompany as any);
+      (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => ({
+        assignee_id: report.assigneeId,
+      }));
+
+      // Act
+      const result = await reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId);
+
+      // Assert
+      expect(result.assignee_id).toBe(mockExternalMaintainer.id);
+    });
+
+    it('should throw UnauthorizedError if the user making the assignment is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, 999)
+      ).rejects.toThrow(UnauthorizedError);
+    });
   });
 });
