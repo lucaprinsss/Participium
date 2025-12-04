@@ -119,6 +119,22 @@ class ReportController {
   }
 
   /**
+   * Get reports assigned to a specific external maintainer
+   * GET /api/reports/assigned/external/:externalMaintainerId
+   */
+  async getAssignedReportsToExternalMaintainer(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const externalMaintainerId = parseAndValidateId(req.params.externalMaintainerId, 'external maintainer');
+      const status = req.query.status as ReportStatus | undefined;
+
+      const reports = await reportService.getAssignedReportsToExternalMaintainer(externalMaintainerId, status);
+      res.status(200).json(reports);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get a specific report by ID
    * GET /api/reports/:id
    */
