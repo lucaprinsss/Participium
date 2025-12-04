@@ -22,13 +22,8 @@ jest.mock('@repositories/reportRepository');
 jest.mock('@repositories/photoRepository');
 jest.mock('@services/storageService');
 jest.mock('@services/mapperService');
-jest.mock('@repositories/userRepository');
-jest.mock('@repositories/reportRepository');
 jest.mock('@repositories/categoryRoleRepository');
-jest.mock('@repositories/photoRepository');
-jest.mock('@services/storageService');
 jest.mock('@utils/photoValidationUtils');
-jest.mock('@services/mapperService');
 
 
 // Helper function to create mock report entities
@@ -237,6 +232,7 @@ describe('ReportService', () => {
       it('should return all reports assigned to the user', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, status: ReportStatus.ASSIGNED }),
           createMockReport({ id: 2, assigneeId: userId, status: ReportStatus.IN_PROGRESS }),
@@ -249,6 +245,7 @@ describe('ReportService', () => {
           status: r.status,
         }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -258,6 +255,7 @@ describe('ReportService', () => {
         const result = await reportService.getMyAssignedReports(userId);
 
         // Assert
+        expect(userRepository.findUserById).toHaveBeenCalledWith(userId);
         expect(reportRepository.findByAssigneeId).toHaveBeenCalledWith(userId, undefined);
         expect(reportRepository.findByAssigneeId).toHaveBeenCalledTimes(1);
         expect(result).toHaveLength(3);
@@ -267,12 +265,15 @@ describe('ReportService', () => {
       it('should return empty array when user has no assigned reports', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue([]);
 
         // Act
         const result = await reportService.getMyAssignedReports(userId);
 
         // Assert
+        expect(userRepository.findUserById).toHaveBeenCalledWith(userId);
         expect(reportRepository.findByAssigneeId).toHaveBeenCalledWith(userId, undefined);
         expect(result).toHaveLength(0);
         expect(mapReportEntityToReportResponse).not.toHaveBeenCalled();
@@ -281,6 +282,8 @@ describe('ReportService', () => {
       it('should call repository with correct userId parameter', async () => {
         // Arrange
         const userId = 123;
+        const mockUser = createMockUser('Water Network staff member');
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue([]);
 
         // Act
@@ -297,6 +300,7 @@ describe('ReportService', () => {
       it('should return only ASSIGNED reports when status filter is ASSIGNED', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const status = ReportStatus.ASSIGNED;
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, status: ReportStatus.ASSIGNED }),
@@ -305,6 +309,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = mockReports.map(r => ({ id: r.id, status: r.status }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -322,6 +327,7 @@ describe('ReportService', () => {
       it('should return only IN_PROGRESS reports when status filter is IN_PROGRESS', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const status = ReportStatus.IN_PROGRESS;
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, status: ReportStatus.IN_PROGRESS }),
@@ -330,6 +336,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = mockReports.map(r => ({ id: r.id, status: r.status }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -347,6 +354,7 @@ describe('ReportService', () => {
       it('should return only RESOLVED reports when status filter is RESOLVED', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const status = ReportStatus.RESOLVED;
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, status: ReportStatus.RESOLVED }),
@@ -355,6 +363,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = mockReports.map(r => ({ id: r.id, status: r.status }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -372,7 +381,9 @@ describe('ReportService', () => {
       it('should return empty array when no reports match the status filter', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const status = ReportStatus.ASSIGNED;
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue([]);
 
         // Act
@@ -389,6 +400,7 @@ describe('ReportService', () => {
       it('should return reports for a specific category', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, category: ReportCategory.ROADS }),
           createMockReport({ id: 2, assigneeId: userId, category: ReportCategory.ROADS }),
@@ -396,6 +408,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = mockReports.map(r => ({ id: r.id, category: r.category }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -414,12 +427,14 @@ describe('ReportService', () => {
       it('should call mapper for each report entity', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId }),
           createMockReport({ id: 2, assigneeId: userId }),
           createMockReport({ id: 3, assigneeId: userId }),
         ];
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockReturnValue({});
 
@@ -436,6 +451,7 @@ describe('ReportService', () => {
       it('should return mapped responses', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, title: 'Report 1' }),
         ];
@@ -447,6 +463,7 @@ describe('ReportService', () => {
           category: ReportCategory.ROADS,
         };
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockReturnValue(mockMappedResponse);
 
@@ -462,7 +479,9 @@ describe('ReportService', () => {
       it('should propagate repository errors', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const error = new Error('Database connection error');
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockRejectedValue(error);
 
         // Act & Assert
@@ -474,8 +493,10 @@ describe('ReportService', () => {
       it('should propagate mapper errors', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [createMockReport({ id: 1, assigneeId: userId })];
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation(() => {
           throw new Error('Mapping error');
@@ -503,6 +524,7 @@ describe('ReportService', () => {
       it('should handle reports with anonymous reporters', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({
             id: 1,
@@ -515,6 +537,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = [{ id: 1, isAnonymous: true }];
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockReturnValue(mockMappedReports[0]);
 
@@ -529,6 +552,7 @@ describe('ReportService', () => {
       it('should handle reports with different user IDs correctly', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const anotherUserId = 99;
 
         // Mock should only return reports for the requested user
@@ -537,6 +561,7 @@ describe('ReportService', () => {
           createMockReport({ id: 2, assigneeId: userId }),
         ];
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) => ({
           id: report.id,
@@ -554,10 +579,12 @@ describe('ReportService', () => {
       it('should handle large number of assigned reports', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = Array.from({ length: 100 }, (_, i) =>
           createMockReport({ id: i + 1, assigneeId: userId })
         );
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) => ({
           id: report.id
@@ -569,6 +596,40 @@ describe('ReportService', () => {
         // Assert
         expect(result).toHaveLength(100);
         expect(mapReportEntityToReportResponse).toHaveBeenCalledTimes(100);
+      });
+    });
+
+    describe('when user is an External Service Provider', () => {
+      it('should call findByExternalAssigneeId', async () => {
+        // Arrange
+        const userId = 77;
+        const mockUser = createMockUser('External Maintainer', 'External Service Providers', {
+          id: userId
+        });
+
+        const mockReports: reportEntity[] = [
+          createMockReport({ id: 1, assigneeId: userId }),
+          createMockReport({ id: 2, assigneeId: userId })
+        ];
+
+        const mockMappedReports = mockReports.map(r => ({ id: r.id }));
+
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
+        jest.spyOn(reportRepository, 'findByExternalAssigneeId').mockResolvedValue(mockReports);
+        jest.spyOn(reportRepository, 'findByAssigneeId');
+        (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
+          mockMappedReports.find(m => m.id === report.id)
+        );
+
+        // Act
+        const result = await reportService.getMyAssignedReports(userId);
+
+        // Assert
+        expect(userRepository.findUserById).toHaveBeenCalledWith(userId);
+        expect(reportRepository.findByExternalAssigneeId).toHaveBeenCalledWith(userId, undefined);
+        expect(reportRepository.findByAssigneeId).not.toHaveBeenCalled();
+        expect(result).toHaveLength(2);
+        expect(mapReportEntityToReportResponse).toHaveBeenCalledTimes(2);
       });
     });
   });
@@ -676,6 +737,7 @@ describe('ReportService', () => {
     });
   });
 });
+
 
 describe('ReportService additional unit tests', () => {
   beforeEach(() => {
@@ -1347,4 +1409,3 @@ describe('ReportService additional unit tests', () => {
 
   });
 });
-

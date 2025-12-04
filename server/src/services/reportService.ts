@@ -240,7 +240,20 @@ class ReportService {
    * @returns Array of reports assigned to the user
    */
   async getMyAssignedReports(userId: number, status?: ReportStatus): Promise<ReportResponse[]> {
-    const reports = await reportRepository.findByAssigneeId(userId, status);
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      throw new UnauthorizedError('User not found');
+    }
+
+    const departmentName = user.departmentRole?.department?.name;
+
+    let reports;
+    if (departmentName === 'External Service Providers') {
+      reports = await reportRepository.findByExternalAssigneeId(userId, status);
+    } else {
+      reports = await reportRepository.findByAssigneeId(userId, status);
+    }
+
     return reports.map(report => mapReportEntityToReportResponse(report));
   }
 
