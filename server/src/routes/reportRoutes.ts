@@ -255,7 +255,7 @@ router.get('/categories', reportController.getCategories);
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-router.get('/assigned/me', isLoggedIn, reportController.getMyAssignedReports);
+router.get('/assigned/me', isLoggedIn, validateReportStatus, reportController.getMyAssignedReports);
 
 /**
  * @swagger
@@ -551,7 +551,6 @@ router.put('/:id/status', isLoggedIn, validateId('id', 'report'), validateStatus
 router.get(
   '/assigned/external/:externalMaintainerId',
   isLoggedIn,
-  requireRole([UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT, UserRole.PUBLIC_RELATIONS_OFFICER]),
   validateId('externalMaintainerId', 'external maintainer'),
   reportController.getAssignedReportsToExternalMaintainer
 );

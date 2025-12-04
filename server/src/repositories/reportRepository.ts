@@ -302,13 +302,16 @@ class ReportRepository {
    * @param status - Optional status filter
    * @returns Array of report entities
    */
-  public async findByExternalAssigneeId(externalAssigneeId: number, status?: ReportStatus): Promise<reportEntity[]> {
+  public async findByExternalAssigneeId(externalMaintainerId: number, status?: ReportStatus): Promise<reportEntity[]> {
     const queryBuilder = this.repository
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.reporter', 'reporter')
       .leftJoinAndSelect('report.assignee', 'assignee')
+      .leftJoinAndSelect('assignee.departmentRole', 'departmentRole') // Join departmentRole
+      .leftJoinAndSelect('departmentRole.role', 'role') // Join role
       .leftJoinAndSelect('report.photos', 'photos')
-      .where('report.externalAssigneeId = :externalAssigneeId', { externalAssigneeId });
+      .where('report.assigneeId = :assigneeId', { assigneeId: externalMaintainerId }) // Filter by assigneeId
+      .andWhere('role.name = :roleName', { roleName: 'External Maintainer' }); // Filter by role name
 
     if (status) {
       queryBuilder.andWhere('report.status = :status', { status });
