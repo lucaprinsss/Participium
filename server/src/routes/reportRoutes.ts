@@ -8,7 +8,7 @@ import { validateId } from '@middleware/validateId';
 import { validateMapQuery } from '@middleware/validateMapQuery';
 import { validateReportStatus, validateReportCategory } from '@middleware/validateReportQueryParams';
 import { validateStatusUpdate } from '@middleware/validateStatusUpdate';
-import { UserRole } from '@dto/UserRole';
+import { SystemRoles } from '@dto/UserRole';
 
 const router = express.Router();
 
@@ -179,7 +179,7 @@ const router = express.Router();
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-router.post('/', requireRole(UserRole.CITIZEN), validateCreateReport, reportController.createReport);
+router.post('/', requireRole(SystemRoles.CITIZEN), validateCreateReport, reportController.createReport);
 router.get('/', isLoggedIn, validateReportStatus, validateReportCategory, reportController.getAllReports);
 
 /**
@@ -261,29 +261,24 @@ router.get('/assigned/me', isLoggedIn, validateReportStatus, reportController.ge
  * @swagger
  * /api/reports/{id}/status:
  *   put:
- *     summary: Update report status and/or assignment
+ *     summary: Update report status
  *     description: |
  *       Update the status of a report with proper validation and role-based restrictions.
- *       This unified endpoint handles status transitions and external maintainer assignments.
  *       
  *       **Allowed transitions and required roles:**
  *       - `Pending Approval` → `Assigned` (approve): Only Public Relations Officers
  *       - `Pending Approval` → `Rejected`: Only Public Relations Officers
  *       - `Assigned`/`In Progress`/`Suspended` → `Resolved`: Technical Managers, Technical Assistants, or External Maintainers
- *       - `Assigned` → `In Progress`: Technical Managers or Technical Assistants
- *       - `In Progress` → `Suspended`: Technical Managers or Technical Assistants
- *       
- *       **External Maintainer Assignment:**
- *       - When changing status to `Assigned`, you can optionally specify `externalAssigneeId`
- *       - The external maintainer must belong to a department matching the report's category
- *       - Only staff members (Technical Officers, Public Relations Officers) can assign to external maintainers
+ *       - `Assigned` → `In Progress`: Technical Managers or Technical Assistants, or External Maintainers
+ *       - `In Progress` → `Suspended`: Technical Managers or Technical Assistants, or External Maintainers
  *       
  *       **Required fields per status:**
- *       - `Assigned`: Optional `category` to override/correct the category, optional `externalAssigneeId` to assign to external maintainer
+ *       - `Assigned`: Optional `category` to override/correct the category
  *       - `Rejected`: Required `rejectionReason` explaining why the report is invalid
  *       - `Resolved`: Optional `resolutionNotes` with details about the resolution
  *       - `In Progress`: No additional fields required
  *       - `Suspended`: No additional fields required
+ *       
  *     tags: [Reports]
  *     security:
  *       - cookieAuth: []
@@ -320,12 +315,6 @@ router.get('/assigned/me', isLoggedIn, validateReportStatus, reportController.ge
  *                   - Public Green Areas and Playgrounds
  *                   - Other
  *                 description: Optional category override when approving (status=Assigned). If not provided, uses existing category.
- *               externalAssigneeId:
- *                 type: integer
- *                 description: |
- *                   Optional ID of external maintainer to assign when status is "Assigned".
- *                   The maintainer must have role "External Maintainer" and their department must match the report's category.
- *                 example: 8
  *               rejectionReason:
  *                 type: string
  *                 description: Required when newStatus is Rejected. Explanation for why the report is invalid.
@@ -342,11 +331,6 @@ router.get('/assigned/me', isLoggedIn, validateReportStatus, reportController.ge
  *               value:
  *                 newStatus: "Assigned"
  *                 category: "Roads and Urban Furnishings"
- *             approveAndAssignExternal:
- *               summary: Approve and assign to external maintainer (PT24)
- *               value:
- *                 newStatus: "Assigned"
- *                 externalAssigneeId: 8
  *             reject:
  *               summary: Reject report
  *               value:
@@ -372,29 +356,11 @@ router.get('/assigned/me', isLoggedIn, validateReportStatus, reportController.ge
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Report'
- *             examples:
- *               statusUpdated:
- *                 summary: Status updated
- *                 value:
- *                   id: 15
- *                   title: "Pothole on Main Street"
- *                   status: "In Progress"
- *                   assigneeId: null
- *                   externalAssigneeId: null
- *               assignedToExternal:
- *                 summary: Assigned to external maintainer
- *                 value:
- *                   id: 15
- *                   title: "Broken streetlight"
- *                   status: "Assigned"
- *                   assigneeId: null
- *                   externalAssigneeId: 8
- *                   externalAssignee:
- *                     id: 8
- *                     username: "enel.external"
- *                     first_name: "Enel"
- *                     last_name: "X Services"
- *                     company_name: "Enel X S.r.l."
+ *             example:
+ *               id: 15
+ *               title: "Pothole on Main Street"
+ *               status: "In Progress"
+ *               assigneeId: 5
  *       400:
  *         description: Invalid request (invalid status transition, missing required fields, or validation errors)
  *         content:
@@ -408,18 +374,7 @@ router.get('/assigned/me', isLoggedIn, validateReportStatus, reportController.ge
  *                   code: 400
  *                   name: "BadRequestError"
  *                   message: "Invalid status transition"
- *               categoryMismatch:
- *                 summary: External maintainer department doesn't match category
- *                 value:
- *                   code: 400
- *                   name: "BadRequestError"
- *                   message: "External maintainer's department does not match report category"
- *               notExternalMaintainer:
- *                 summary: Assignee is not an external maintainer
- *                 value:
- *                   code: 400
- *                   name: "BadRequestError"
- *                   message: "Assignee is not an external maintainer"
+
  *       401:
  *         description: Not authenticated
  *         content:
@@ -442,6 +397,136 @@ router.get('/assigned/me', isLoggedIn, validateReportStatus, reportController.ge
  *               message: "Insufficient permissions for requested status change"
  *       404:
  *         description: Report not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Report not found"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "An unexpected error occurred"
+ */
+
+router.put('/:id/status', isLoggedIn, validateId('id', 'report'), validateStatusUpdate, reportController.updateReportStatus);
+
+/**
+ * @swagger
+ * /api/reports/{id}/assign-external:
+ *   patch:
+ *     summary: Assign report to external maintainer
+ *     description: |
+ *       Assigns a report to an external maintainer. The report must be in "Assigned" status.
+ *       Only technical staff (Department Directors and technical staff members) can perform this action.
+ *       
+ *       **Requirements:**
+ *       - Report must be in `Assigned` status
+ *       - External maintainer must have role "External Maintainer"
+ *       - External maintainer's company must handle the report's category
+ *       
+ *       **Use Case:**
+ *       After a report is approved and assigned internally, technical staff can reassign it to an external contractor
+ *       whose company specializes in that category (e.g., Enel X for public lighting).
+ *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The ID of the report to assign
+ *         example: 15
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - externalAssigneeId
+ *             properties:
+ *               externalAssigneeId:
+ *                 type: integer
+ *                 description: ID of the external maintainer to assign the report to
+ *                 example: 8
+ *           example:
+ *             externalAssigneeId: 8
+ *     responses:
+ *       200:
+ *         description: Report successfully assigned to external maintainer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Report'
+ *             example:
+ *               id: 15
+ *               title: "Broken streetlight"
+ *               status: "Assigned"
+ *               assigneeId: 8
+ *               assignee:
+ *                 id: 8
+ *                 username: "enelx"
+ *                 firstName: "Enel X"
+ *                 lastName: "Support Team"
+ *                 companyName: "Enel X S.p.A."
+ *       400:
+ *         description: Invalid request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               invalidStatus:
+ *                 summary: Report not in Assigned status
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "Report must be in Assigned status to be assigned to an external maintainer"
+ *               notExternalMaintainer:
+ *                 summary: Assignee is not an external maintainer
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "Assignee is not an external maintainer"
+ *               categoryMismatch:
+ *                 summary: Company doesn't handle category
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "External maintainer's company does not handle Public Lighting category"
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "User not authenticated"
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Only technical staff can assign reports to external maintainers"
+ *       404:
+ *         description: Report or external maintainer not found
  *         content:
  *           application/json:
  *             schema:
@@ -470,8 +555,7 @@ router.get('/assigned/me', isLoggedIn, validateReportStatus, reportController.ge
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-
-router.put('/:id/status', isLoggedIn, validateId('id', 'report'), validateStatusUpdate, reportController.updateReportStatus);
+router.patch('/:id/assign-external', isLoggedIn, validateId('id', 'report'), reportController.assignToExternalMaintainer);
 
 /**
  * @swagger

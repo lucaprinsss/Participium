@@ -1,4 +1,4 @@
-# Participium - Database Structure (v4.2)
+# Participium - Database Structure (v4.3)
 
 This document describes the database schema (Version 4.2) designed for the **Participium** application.
 
@@ -54,8 +54,6 @@ Represents the lifecycle states of a report.
 | `Resolved` | Issue has been fixed |
 
 **Note:** External maintenance is not a separate status. When a report is delegated to an external maintainer, the `external_assignee_id` field is populated while the status remains 'In Progress'.
-
----
 
 ## Tables
 
@@ -295,10 +293,9 @@ Defines valid "positions" by linking departments to roles. This table represents
 - Users are assigned to positions via the `users.department_role_id` foreign key
 - The Admin UI can use this table to show only valid roles when filtering by department
 
-
 ---
 
-## Entity Relationshipsmapping`
+### 10. `category_role_mapping`
 **NEW in V4:** Maps report categories to specific technical roles for automatic assignment.
 
 | Column | Type | Constraints | Description |
@@ -312,6 +309,32 @@ Defines valid "positions" by linking departments to roles. This table represents
 - Primary key on `id`
 - Unique index on `category`
 - Foreign key index on `role_id`
+
+---
+
+### 11. `company_categories`
+**NEW in V4.3:** Maps external maintainer companies to the report categories they can handle.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique mapping identifier |
+| `user_id` | `INT` | **FOREIGN KEY** → `users(id)` ON DELETE CASCADE, NOT NULL | External maintainer user ID |
+| `category` | `report_category` | NOT NULL | Report category the company can handle |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Mapping creation date |
+
+**Constraints:**
+- **UNIQUE** constraint `uq_company_category` on `(user_id, category)` to prevent duplicate mappings
+
+**Indexes:**
+- Primary key on `id`
+- Index on `user_id`
+- Index on `category`
+- Unique index on `(user_id, category)`
+
+**Notes:**
+- This table enables filtering external maintainers by category
+- A company can be associated with multiple categories
+- Used by the `/api/users/external-maintainers?categoryId=X` endpoint to return only qualified external maintainers
 
 ---
 
@@ -334,7 +357,11 @@ departments (1) ────────────< (N) department_roles [depa
 departments (1) ────────────< (N) category_department_mapping [department_id]
 
 roles (1) ──────────────< (N) department_roles [role_id]
+roles (1) ──────────────< (N) category_role_mapping [role_id]
+
 department_roles (1) ───< (N) users [department_role_id]
+
+users (1) ──────────────< (N) company_categories [user_id] (for External Maintainers)
 ```
 
 **Key Relationship:**
@@ -412,23 +439,27 @@ The initialization script populates the following default data:
 - **Name:** System Administrator
 
 ### Default External Maintainer Users (V4.3)
-Pre-populated external maintainer users in the 'External Service Providers' department:
+Pre-populated external maintainer users in the 'External Service Providers' department with their specialized categories:
 
 1. **Enel X S.p.A.** - Public Lighting specialist
    - Username: `enelx` | Password: `maintainer123`
    - Email: `interventions@enelx.com`
+   - Categories: `Public Lighting`
 
 2. **Acea S.p.A.** - Water and Sewer Services specialist
    - Username: `acea` | Password: `maintainer123`
    - Email: `water@acea.it`
+   - Categories: `Water Supply - Drinking Water`, `Sewer System`
 
 3. **Hera S.p.A.** - Waste Management specialist
    - Username: `hera` | Password: `maintainer123`
    - Email: `waste@hera.it`
+   - Categories: `Waste`
 
 4. **ATM S.p.A.** - Traffic Management specialist
    - Username: `atm` | Password: `maintainer123`
    - Email: `traffic@atm.it`
+   - Categories: `Road Signs and Traffic Lights`, `Roads and Urban Furnishings`
 
 **Note:** All external maintainer passwords should be changed in production!
 
@@ -447,8 +478,10 @@ Pre-populated external maintainer users in the 'External Service Providers' depa
 **V4.3 Enhancement - External Maintainer Assignment:**
 - Technical office staff can manually assign reports to external maintainers
 - External maintainers are users with the 'External Maintainer' role
-- They can log in, view assigned reports, update status, and add internal comments
-- The `assignee_id` field in `reports` can reference both internal staff and external maintainers
+- The `company_categories` table maps each external maintainer to specific report categories
+- The `/api/users/external-maintainers?categoryId=X` endpoint filters external maintainers by category
+- Only qualified external maintainers (those with matching category in `company_categories`) are shown for assignment
+- External maintainers can log in, view assigned reports, update status, and add internal comments
 
 ## Database Initialization
 

@@ -1,6 +1,6 @@
 import express from 'express';
 import { requireRole } from '@middleware/authMiddleware';
-import { UserRole } from '@dto/UserRole';
+import { SystemRoles } from '@dto/UserRole';
 import municipalityUserController from '../controllers/municipalityUserController';
 import { validateId } from '@middleware/validateId';
 import { validateBodyFields } from '@middleware/validateBodyFields';
@@ -54,6 +54,10 @@ const router = express.Router();
  *                 type: string
  *                 description: Department name (optional, defaults to "Organization")
  *                 example: "Administration"
+ *               company_name:
+ *                 type: string
+ *                 description: Company name (optional, required for External Maintainers)
+ *                 example: "Enel X S.p.A."
  *     responses:
  *       201:
  *         description: Municipality user created successfully
@@ -114,7 +118,7 @@ const router = express.Router();
  */
 router.post(
 	'/',
-	requireRole(UserRole.ADMINISTRATOR),
+	requireRole(SystemRoles.ADMINISTRATOR),
 	validateBodyFields(['username', 'email', 'password', 'first_name', 'last_name', 'role_name']),
 	municipalityUserController.createMunicipalityUser
 );
@@ -169,7 +173,7 @@ router.post(
  *               name: "InternalServerError"
  *               message: "Internal server error"
  */
-router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.getAllMunicipalityUsers);
+router.get('/', requireRole(SystemRoles.ADMINISTRATOR), municipalityUserController.getAllMunicipalityUsers);
 
 
 /**
@@ -246,7 +250,7 @@ router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.
  *               name: "InternalServerError"
  *               message: "Internal server error"
  */
-router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.getMunicipalityUserById);
+router.get('/:id', requireRole(SystemRoles.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.getMunicipalityUserById);
 
 /**
  * @swagger
@@ -357,7 +361,7 @@ router.get('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *               name: "InternalServerError"
  *               message: "Internal server error"
  */
-router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.updateMunicipalityUser);
+router.put('/:id', requireRole(SystemRoles.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.updateMunicipalityUser);
 
 
 /**
@@ -420,7 +424,7 @@ router.put('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user')
  *               name: "InternalServerError"
  *               message: "Internal server error"
  */
-router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.deleteMunicipalityUser);
+router.delete('/:id', requireRole(SystemRoles.ADMINISTRATOR), validateId('id', 'user'), municipalityUserController.deleteMunicipalityUser);
 
 
 /**
@@ -516,7 +520,7 @@ router.delete('/:id', requireRole(UserRole.ADMINISTRATOR), validateId('id', 'use
  */
 router.put(
 	'/:id/role',
-	requireRole(UserRole.ADMINISTRATOR),
+	requireRole(SystemRoles.ADMINISTRATOR),
 	validateId('id', 'user'),
 	validateBodyFields(['role_name']),
 	municipalityUserController.assignRole
