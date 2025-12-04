@@ -2,7 +2,7 @@
 
 import express from 'express';
 import { reportController } from '@controllers/reportController';
-import { isLoggedIn, requireRole } from '@middleware/authMiddleware';
+import { isLoggedIn, requireRole, requireTechnicalStaffOrRole } from '@middleware/authMiddleware';
 import { validateCreateReport } from '@middleware/reportMiddleware';
 import { validateId } from '@middleware/validateId';
 import { validateMapQuery } from '@middleware/validateMapQuery';
@@ -634,7 +634,7 @@ router.patch('/:id/assign-external', isLoggedIn, validateId('id', 'report'), rep
  */
 router.get(
   '/assigned/external/:externalMaintainerId',
-  requireRole(['Technical Manager', 'Technical Assistant', SystemRoles.PUBLIC_RELATIONS_OFFICER]),
+  requireTechnicalStaffOrRole([SystemRoles.PUBLIC_RELATIONS_OFFICER]),
   validateId('externalMaintainerId', 'external maintainer'),
   reportController.getAssignedReportsToExternalMaintainer
 );

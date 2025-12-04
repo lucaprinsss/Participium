@@ -43,8 +43,8 @@ export async function cleanDatabase(): Promise<void> {
         'testadmin',
         'testuser_nonotif',
         'teststaffmember',
-        'testtechmanager',
-        'testtechasst',
+        'testroadstaff',
+        'testsewerstaff',
         'testpro',
         'testexternal'
       ]

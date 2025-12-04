@@ -4,6 +4,7 @@ jest.mock('@middleware/authMiddleware', () => {
     ...original,
     isLoggedIn: jest.fn((req, res, next) => next()),
     requireRole: jest.fn(() => (req: any, res: any, next: any) => next()),
+    requireTechnicalStaffOrRole: jest.fn(() => (req: any, res: any, next: any) => next()),
   };
 });
 
@@ -52,13 +53,13 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import reportRouter from '@routes/reportRoutes';
 
-import { isLoggedIn, requireRole } from '@middleware/authMiddleware';
+import { isLoggedIn, requireRole, requireTechnicalStaffOrRole } from '@middleware/authMiddleware';
 import { reportController } from '@controllers/reportController';
 import { validateCreateReport } from '@middleware/reportMiddleware';
 import { ReportStatus } from '@dto/ReportStatus';
 import { ReportCategory } from '@dto/ReportCategory';
 
-import { SystemRoles } from '@dto/UserRole';
+import { SystemRoles, isTechnicalStaff } from '@dto/UserRole';
 
 const app: Express = express();
 
@@ -67,6 +68,7 @@ app.use('/api/reports', reportRouter);
 
 const mockIsLoggedIn = isLoggedIn as jest.Mock;
 const mockRequireRole = requireRole as jest.Mock;
+const mockRequireTechnicalStaffOrRole = requireTechnicalStaffOrRole as jest.Mock;
 const mockValidateCreateReport = validateCreateReport as jest.Mock;
 
 const mockGetAllReports = reportController.getAllReports as jest.Mock;
@@ -115,8 +117,8 @@ describe('Report Routes Integration Tests', () => {
 
       const roleMap: { [key: string]: string } = {
         PRO: SystemRoles.PUBLIC_RELATIONS_OFFICER,
-        TECHNICIAN: 'Technical Assistant',
-        TECHNICAL_MANAGER: 'Technical Manager',
+        TECHNICIAN: 'Sewer System staff member',
+        TECHNICAL_MANAGER: 'Road Maintenance staff member',
         EXTERNAL_MAINTAINER: SystemRoles.EXTERNAL_MAINTAINER,
         CITIZEN: SystemRoles.CITIZEN,
       };
@@ -153,8 +155,8 @@ describe('Report Routes Integration Tests', () => {
         const rolesArray = Array.isArray(roles) ? roles : [roles];
         const roleMap: { [key: string]: string[] } = {
           PRO: [SystemRoles.PUBLIC_RELATIONS_OFFICER],
-          TECHNICIAN: ['Technical Assistant'],
-          TECHNICAL_MANAGER: ['Technical Manager'],
+          TECHNICIAN: ['Sewer System staff member'],
+          TECHNICAL_MANAGER: ['Road Maintenance staff member'],
           EXTERNAL_MAINTAINER: [SystemRoles.EXTERNAL_MAINTAINER],
           CITIZEN: [SystemRoles.CITIZEN],
         };
@@ -163,6 +165,36 @@ describe('Report Routes Integration Tests', () => {
           req.user = { id: 1, role: userType };
           return next();
         }
+        return res.status(403).json({ error: 'Insufficient rights' });
+      };
+    });
+
+    // Mock requireTechnicalStaffOrRole middleware - returns a middleware function
+    mockRequireTechnicalStaffOrRole.mockImplementation((additionalRoles: string[] = []) => {
+      return (req: any, res: any, next: any) => {
+        const userType = req.headers['x-test-user-type'];
+        if (!userType) return res.status(401).json({ error: 'Not authenticated' });
+        
+        const roleMap: { [key: string]: string } = {
+          PRO: SystemRoles.PUBLIC_RELATIONS_OFFICER,
+          TECHNICIAN: 'Sewer System staff member',
+          TECHNICAL_MANAGER: 'Road Maintenance staff member',
+          EXTERNAL_MAINTAINER: SystemRoles.EXTERNAL_MAINTAINER,
+          CITIZEN: SystemRoles.CITIZEN,
+        };
+        
+        const userRole = roleMap[userType];
+        if (!userRole) {
+          return res.status(403).json({ error: 'Insufficient rights' });
+        }
+        
+        // Check if user is technical staff OR has one of the additional roles
+        const hasAccess = isTechnicalStaff(userRole) || additionalRoles.includes(userRole);
+        if (hasAccess) {
+          req.user = { id: 1, departmentRole: { role: { name: userRole } } };
+          return next();
+        }
+        
         return res.status(403).json({ error: 'Insufficient rights' });
       };
     });

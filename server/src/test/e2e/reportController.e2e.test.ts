@@ -23,9 +23,9 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
   // Usa utenti di test già presenti in test-data.sql
   const TECHNICIAN_USERNAME = 'teststaffmember';
   const TECHNICIAN_PASSWORD = 'StaffPass123!';
-  const TECH_MANAGER_USERNAME = 'testtechmanager';
+  const TECH_MANAGER_USERNAME = 'testroadstaff'; // Road Maintenance staff member (technical staff)
   const TECH_MANAGER_PASSWORD = 'StaffPass123!';
-  const TECH_ASST_USERNAME = 'testtechasst';
+  const TECH_ASST_USERNAME = 'testsewerstaff'; // Sewer System staff member (technical staff)
   const TECH_ASST_PASSWORD = 'StaffPass123!';
   const PRO_USERNAME = 'testpro';
   const PRO_PASSWORD = 'StaffPass123!';
@@ -65,7 +65,7 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     );
     citizenId = citizenResult[0].id;
 
-    // Get an external maintainer ID (testexternal from test-data.sql)
+    // Get an external maintainer ID (testexternal from test-data.sql - External Maintainer role)
     const externalResult = await AppDataSource.query(
       `SELECT id FROM users WHERE username = 'testexternal'`
     );

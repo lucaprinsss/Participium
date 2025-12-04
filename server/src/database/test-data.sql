@@ -149,8 +149,7 @@ INSERT INTO users (
   CURRENT_TIMESTAMP
 );
 
--- Test User 6: Technical Manager
--- Username: testtechmanager
+-- Username: testroadstaff
 -- Password: StaffPass123!
 INSERT INTO users (
   username, 
@@ -163,22 +162,21 @@ INSERT INTO users (
   is_verified,
   created_at
 ) VALUES (
-  'testtechmanager',
-  'testtechmanager@example.com',
+  'testroadstaff',
+  'testroadstaff@example.com',
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
-  'Tech',
-  'Manager',
+  'Test',
+  'RoadStaff',
   (SELECT dr.id FROM department_roles dr
    JOIN departments d ON dr.department_id = d.id
    JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Public Infrastructure and Accessibility Department' AND r.name = 'Technical Manager'),
+   WHERE d.name = 'Public Infrastructure and Accessibility Department' AND r.name = 'Road Maintenance staff member'),
   true,
   true,
   CURRENT_TIMESTAMP
 );
 
--- Test User 7: Technical Assistant
--- Username: testtechasst
+-- Username: testsewerstaff
 -- Password: StaffPass123!
 INSERT INTO users (
   username, 
@@ -191,21 +189,20 @@ INSERT INTO users (
   is_verified,
   created_at
 ) VALUES (
-  'testtechasst',
-  'testtechasst@example.com',
+  'testsewerstaff',
+  'testsewerstaff@example.com',
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
-  'Tech',
-  'Assistant',
+  'Test',
+  'SewerStaff',
   (SELECT dr.id FROM department_roles dr
    JOIN departments d ON dr.department_id = d.id
    JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Public Infrastructure and Accessibility Department' AND r.name = 'Technical Assistant'),
+   WHERE d.name = 'Water and Sewer Services Department' AND r.name = 'Sewer System staff member'),
   true,
   true,
   CURRENT_TIMESTAMP
 );
 
--- Test User 8: Public Relations Officer
 -- Username: testpro
 -- Password: StaffPass123!
 INSERT INTO users (
@@ -222,8 +219,8 @@ INSERT INTO users (
   'testpro',
   'testpro@example.com',
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
-  'Public',
-  'Relations',
+  'Test',
+  'PRO',
   (SELECT dr.id FROM department_roles dr
    JOIN departments d ON dr.department_id = d.id
    JOIN roles r ON dr.role_id = r.id
@@ -233,7 +230,6 @@ INSERT INTO users (
   CURRENT_TIMESTAMP
 );
 
--- Test User 9: External Maintainer
 -- Username: testexternal
 -- Password: StaffPass123!
 INSERT INTO users (
@@ -250,8 +246,8 @@ INSERT INTO users (
   'testexternal',
   'testexternal@example.com',
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
+  'Test',
   'External',
-  'Maintainer',
   (SELECT dr.id FROM department_roles dr
    JOIN departments d ON dr.department_id = d.id
    JOIN roles r ON dr.role_id = r.id
