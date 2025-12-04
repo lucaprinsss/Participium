@@ -475,6 +475,89 @@ router.put('/:id/status', isLoggedIn, validateId('id', 'report'), validateStatus
 
 /**
  * @swagger
+ * /api/reports/assigned/external/{externalMaintainerId}:
+ *   get:
+ *     summary: Get reports assigned to a specific external maintainer
+ *     description: |
+ *       Returns all reports assigned to a specific external maintainer, identified by their ID.
+ *       Accessible by Technical Managers, Technical Assistants, and Public Relations Officers.
+ *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: externalMaintainerId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The ID of the external maintainer
+ *         example: 8
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           $ref: '#/components/schemas/ReportStatus'
+ *         description: Filter assigned reports by status
+ *         required: false
+ *     responses:
+ *       200:
+ *         description: List of reports assigned to the specified external maintainer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ReportResponse'
+ *       400:
+ *         description: Invalid external maintainer ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 400
+ *               name: "BadRequestError"
+ *               message: "Invalid external maintainer ID"
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "User not authenticated"
+ *       403:
+ *         description: Insufficient permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Insufficient permissions"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "An unexpected error occurred"
+ */
+router.get(
+  '/assigned/external/:externalMaintainerId',
+  isLoggedIn,
+  requireRole([UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT, UserRole.PUBLIC_RELATIONS_OFFICER]),
+  validateId('externalMaintainerId', 'external maintainer'),
+  reportController.getAssignedReportsToExternalMaintainer
+);
+
+/**
+ * @swagger
 * /api/reports/map:
  *   get:
  *     summary: Get reports for interactive map visualization
