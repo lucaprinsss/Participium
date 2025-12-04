@@ -550,7 +550,7 @@ router.put('/:id/status', isLoggedIn, validateId('id', 'report'), validateStatus
  */
 router.get(
   '/assigned/external/:externalMaintainerId',
-  isLoggedIn,
+  requireRole([UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT, UserRole.PUBLIC_RELATIONS_OFFICER]),
   validateId('externalMaintainerId', 'external maintainer'),
   reportController.getAssignedReportsToExternalMaintainer
 );
