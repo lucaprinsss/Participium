@@ -258,6 +258,8 @@ VALUES
     ('Citizen', 'Standard citizen user'),
     ('Administrator', 'System Administrator with full access'),
     ('Municipal Public Relations Officer', 'Reviews and approves/rejects citizen reports'),
+    ('Technical Manager', 'Manages technical operations and staff'),
+    ('Technical Assistant', 'Assists with technical operations'),
     ('Department Director', 'Director of a department'),
     ('Water Network staff member', 'Manages water network maintenance'),
     ('Sewer System staff member', 'Manages sewer system maintenance'),
@@ -288,6 +290,8 @@ VALUES
 
     -- Public Infrastructure and Accessibility Department
     ((SELECT id FROM departments WHERE name = 'Public Infrastructure and Accessibility Department'), (SELECT id FROM roles WHERE name = 'Department Director')),
+    ((SELECT id FROM departments WHERE name = 'Public Infrastructure and Accessibility Department'), (SELECT id FROM roles WHERE name = 'Technical Manager')),
+    ((SELECT id FROM departments WHERE name = 'Public Infrastructure and Accessibility Department'), (SELECT id FROM roles WHERE name = 'Technical Assistant')),
     ((SELECT id FROM departments WHERE name = 'Public Infrastructure and Accessibility Department'), (SELECT id FROM roles WHERE name = 'Road Maintenance staff member')),
     ((SELECT id FROM departments WHERE name = 'Public Infrastructure and Accessibility Department'), (SELECT id FROM roles WHERE name = 'Accessibility staff member')),
 

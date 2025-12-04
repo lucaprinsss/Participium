@@ -149,6 +149,118 @@ INSERT INTO users (
   CURRENT_TIMESTAMP
 );
 
+-- Test User 6: Technical Manager
+-- Username: testtechmanager
+-- Password: StaffPass123!
+INSERT INTO users (
+  username, 
+  email, 
+  password_hash, 
+  first_name, 
+  last_name, 
+  department_role_id,
+  email_notifications_enabled,
+  is_verified,
+  created_at
+) VALUES (
+  'testtechmanager',
+  'testtechmanager@example.com',
+  'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
+  'Tech',
+  'Manager',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'Public Infrastructure and Accessibility Department' AND r.name = 'Technical Manager'),
+  true,
+  true,
+  CURRENT_TIMESTAMP
+);
+
+-- Test User 7: Technical Assistant
+-- Username: testtechasst
+-- Password: StaffPass123!
+INSERT INTO users (
+  username, 
+  email, 
+  password_hash, 
+  first_name, 
+  last_name, 
+  department_role_id,
+  email_notifications_enabled,
+  is_verified,
+  created_at
+) VALUES (
+  'testtechasst',
+  'testtechasst@example.com',
+  'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
+  'Tech',
+  'Assistant',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'Public Infrastructure and Accessibility Department' AND r.name = 'Technical Assistant'),
+  true,
+  true,
+  CURRENT_TIMESTAMP
+);
+
+-- Test User 8: Public Relations Officer
+-- Username: testpro
+-- Password: StaffPass123!
+INSERT INTO users (
+  username, 
+  email, 
+  password_hash, 
+  first_name, 
+  last_name, 
+  department_role_id,
+  email_notifications_enabled,
+  is_verified,
+  created_at
+) VALUES (
+  'testpro',
+  'testpro@example.com',
+  'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
+  'Public',
+  'Relations',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'Organization' AND r.name = 'Municipal Public Relations Officer'),
+  true,
+  true,
+  CURRENT_TIMESTAMP
+);
+
+-- Test User 9: External Maintainer
+-- Username: testexternal
+-- Password: StaffPass123!
+INSERT INTO users (
+  username, 
+  email, 
+  password_hash, 
+  first_name, 
+  last_name, 
+  department_role_id,
+  email_notifications_enabled,
+  is_verified,
+  created_at
+) VALUES (
+  'testexternal',
+  'testexternal@example.com',
+  'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
+  'External',
+  'Maintainer',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
+  true,
+  true,
+  CURRENT_TIMESTAMP
+);
+
 
 -- ============================================
 -- VERIFY DATA

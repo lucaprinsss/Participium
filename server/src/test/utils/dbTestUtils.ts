@@ -36,8 +36,18 @@ export async function cleanDatabase(): Promise<void> {
     
     // Pulisci solo utenti creati durante i test (non quelli di test-data.sql)
     await queryRunner.query(
-      'DELETE FROM users WHERE username NOT IN ($1, $2, $3, $4, $5);',
-      ['testcitizen', 'testmunicipality', 'testadmin', 'testuser_nonotif', 'teststaffmember']
+      'DELETE FROM users WHERE username NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+      [
+        'testcitizen',
+        'testmunicipality',
+        'testadmin',
+        'testuser_nonotif',
+        'teststaffmember',
+        'testtechmanager',
+        'testtechasst',
+        'testpro',
+        'testexternal'
+      ]
     );
 
     // Riabilita constraints

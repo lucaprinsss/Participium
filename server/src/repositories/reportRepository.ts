@@ -306,11 +306,11 @@ class ReportRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.reporter', 'reporter')
-      .leftJoinAndSelect('report.assignee', 'assignee')
-      .leftJoinAndSelect('assignee.departmentRole', 'departmentRole') // Join departmentRole
+      .leftJoinAndSelect('report.externalAssignee', 'externalAssignee') // Join externalAssignee
+      .leftJoinAndSelect('externalAssignee.departmentRole', 'departmentRole') // Join departmentRole
       .leftJoinAndSelect('departmentRole.role', 'role') // Join role
       .leftJoinAndSelect('report.photos', 'photos')
-      .where('report.assigneeId = :assigneeId', { assigneeId: externalMaintainerId }) // Filter by assigneeId
+      .where('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId }) // Filter by externalAssigneeId
       .andWhere('role.name = :roleName', { roleName: 'External Maintainer' }); // Filter by role name
 
     if (status) {
