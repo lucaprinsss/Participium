@@ -14,7 +14,7 @@ class MunicipalityUserController {
    */
   async createMunicipalityUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { username, email, password, first_name, last_name, role_name, department_name } = req.body;
+      const { username, email, password, first_name, last_name, role_name, department_name, company_name } = req.body;
 
       const registerData: RegisterRequest = {
         username,
@@ -23,7 +23,8 @@ class MunicipalityUserController {
         first_name,
         last_name,
         role_name,
-        department_name
+        department_name,
+        company_name
       };
 
       const userResponse = await municipalityUserService.createMunicipalityUser(registerData);
@@ -68,14 +69,15 @@ class MunicipalityUserController {
   async updateMunicipalityUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const id = parseAndValidateId(req.params.id, 'user');
-      const { first_name, last_name, email, role_name, department_name } = req.body;
+      const { first_name, last_name, email, role_name, department_name, company_name } = req.body;
       
       const updatedUser = await municipalityUserService.updateMunicipalityUser(id, {
         first_name,
         last_name,
         email,
         role_name,
-        department_name
+        department_name,
+        company_name
       });
       res.status(200).json(updatedUser);
     } catch (error) {

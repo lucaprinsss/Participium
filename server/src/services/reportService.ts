@@ -14,9 +14,10 @@ import { storageService } from './storageService';
 import { photoRepository } from '../repositories/photoRepository';
 import { categoryRoleRepository } from '../repositories/categoryRoleRepository';
 import { userRepository } from '../repositories/userRepository';
+import { companyRepository } from '../repositories/companyRepository';
 import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
 import { ReportResponse } from '../models/dto/output/ReportResponse';
-import { UserRole } from '@models/dto/UserRole';
+import { SystemRoles, isTechnicalStaff } from '@models/dto/UserRole';
 import { reportEntity } from '../models/entity/reportEntity';
 import { Report } from '@models/dto/Report'; 
 import { mapReportEntityToResponse, mapReportEntityToDTO, mapReportEntityToReportResponse } from './mapperService';
@@ -255,14 +256,14 @@ class ReportService {
    * Update the status of a report
    * @param reportId - The ID of the report to update
    * @param newStatus - The new status of the report
-   * @param body - The request body, containing additional data like reason or assignee
+   * @param body - The request body, containing additional data like reason or category
    * @param userId - The ID of the user updating the report
    * @returns The updated report
    */
   async updateReportStatus(
     reportId: number,
     newStatus: ReportStatus,
-    body: { rejectionReason?: string; externalAssigneeId?: number; resolutionNotes?: string; category?: ReportCategory },
+    body: { rejectionReason?: string; resolutionNotes?: string; category?: ReportCategory },
     userId: number
   ): Promise<Report> {
     const report = await reportRepository.findReportById(reportId);
@@ -280,39 +281,27 @@ class ReportService {
 
     switch (newStatus) {
       case ReportStatus.ASSIGNED:
-        if (currentStatus !== ReportStatus.PENDING_APPROVAL || userRole !== UserRole.PUBLIC_RELATIONS_OFFICER) {
+        if (currentStatus !== ReportStatus.PENDING_APPROVAL || userRole !== SystemRoles.PUBLIC_RELATIONS_OFFICER) {
           throw new InsufficientRightsError('Only Public Relations Officers can approve reports.');
         }
-        if (body.externalAssigneeId) {
-          const assignee = await userRepository.findUserById(body.externalAssigneeId);
-          if (!assignee) {
-            throw new NotFoundError('External assignee not found');
-          }
-          if (assignee.departmentRole?.role?.name !== UserRole.EXTERNAL_MAINTAINER) {
-            throw new BadRequestError('User is not an external maintainer');
-          }
-          report.assignee = assignee;
-          report.assigneeId = assignee.id;
-        } else {
-          const categoryToAssign = body.category || report.category as ReportCategory;
-          const roleId = await categoryRoleRepository.findRoleIdByCategory(categoryToAssign);
-          if (!roleId) {
-            throw new BadRequestError(`No role mapping found for category: ${categoryToAssign}.`);
-          }
-          const availableStaff = await userRepository.findAvailableStaffByRoleId(roleId);
-          if (!availableStaff) {
-            throw new BadRequestError(`No available technical staff found for category: ${categoryToAssign}.`);
-          }
-          report.assignee = availableStaff;
-          report.assigneeId = availableStaff.id;
-          if (body.category) {
-            report.category = body.category;
-          }
+        const categoryToAssign = body.category || report.category as ReportCategory;
+        const roleId = await categoryRoleRepository.findRoleIdByCategory(categoryToAssign);
+        if (!roleId) {
+          throw new BadRequestError(`No role mapping found for category: ${categoryToAssign}.`);
+        }
+        const availableStaff = await userRepository.findAvailableStaffByRoleId(roleId);
+        if (!availableStaff) {
+          throw new BadRequestError(`No available technical staff found for category: ${categoryToAssign}.`);
+        }
+        report.assignee = availableStaff;
+        report.assigneeId = availableStaff.id;
+        if (body.category) {
+          report.category = body.category;
         }
         break;
       
       case ReportStatus.REJECTED:
-        if (currentStatus !== ReportStatus.PENDING_APPROVAL || userRole !== UserRole.PUBLIC_RELATIONS_OFFICER) {
+        if (currentStatus !== ReportStatus.PENDING_APPROVAL || userRole !== SystemRoles.PUBLIC_RELATIONS_OFFICER) {
           throw new InsufficientRightsError('Only Public Relations Officers can reject reports.');
         }
         if (!body.rejectionReason) {
@@ -325,11 +314,11 @@ class ReportService {
         if (![ReportStatus.ASSIGNED, ReportStatus.IN_PROGRESS, ReportStatus.SUSPENDED].includes(currentStatus as ReportStatus)) {
           throw new BadRequestError(`Cannot resolve a report with status ${currentStatus}.`);
         }
-        if (userRole === UserRole.EXTERNAL_MAINTAINER) {
+        if (userRole === SystemRoles.EXTERNAL_MAINTAINER) {
           if (report.assigneeId !== userId) {
             throw new InsufficientRightsError('You can only resolve reports assigned to you.');
           }
-        } else if (![UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT].includes(userRole as UserRole)) {
+        } else if (!isTechnicalStaff(userRole)) {
           throw new InsufficientRightsError('You are not authorized to resolve reports.');
         }
         if (body.resolutionNotes) {
@@ -338,14 +327,14 @@ class ReportService {
         break;
 
       case ReportStatus.IN_PROGRESS:
-        if (currentStatus !== ReportStatus.ASSIGNED || ![UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT].includes(userRole as UserRole)) {
-          throw new InsufficientRightsError('Only Technical Managers or Assistants can mark reports as in progress.');
+        if (currentStatus !== ReportStatus.ASSIGNED || !isTechnicalStaff(userRole)) {
+          throw new InsufficientRightsError('Only technical staff can mark reports as in progress.');
         }
         break;
 
       case ReportStatus.SUSPENDED:
-        if (currentStatus !== ReportStatus.IN_PROGRESS || ![UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT].includes(userRole as UserRole)) {
-          throw new InsufficientRightsError('Only Technical Managers or Assistants can suspend reports.');
+        if (currentStatus !== ReportStatus.IN_PROGRESS || !isTechnicalStaff(userRole)) {
+          throw new InsufficientRightsError('Only technical staff can suspend reports.');
         }
         break;
 
@@ -355,6 +344,74 @@ class ReportService {
 
     report.status = newStatus;
     report.updatedAt = new Date();
+    const updatedReport = await reportRepository.save(report);
+    return mapReportEntityToDTO(updatedReport);
+  }
+
+  /**
+   * Assign a report to an external maintainer
+   * @param reportId - The ID of the report to assign
+   * @param externalAssigneeId - The ID of the external maintainer to assign
+   * @param userId - The ID of the user making the assignment
+   * @returns The updated report
+   */
+  async assignToExternalMaintainer(
+    reportId: number,
+    externalAssigneeId: number,
+    userId: number
+  ): Promise<Report> {
+    const report = await reportRepository.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundError('Report not found');
+    }
+
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      throw new UnauthorizedError('User not found');
+    }
+    const userRole = user.departmentRole?.role?.name;
+
+    // Only technical staff can assign to external maintainers
+    if (!isTechnicalStaff(userRole)) {
+      throw new InsufficientRightsError('Only technical staff can assign reports to external maintainers');
+    }
+
+    // Report must be in Assigned status to be reassigned to external maintainer
+    if (report.status !== ReportStatus.ASSIGNED) {
+      throw new BadRequestError('Report must be in Assigned status to be assigned to an external maintainer');
+    }
+
+    // Validate external assignee
+    const assignee = await userRepository.findUserById(externalAssigneeId);
+    if (!assignee) {
+      throw new NotFoundError('External maintainer not found');
+    }
+
+    if (assignee.departmentRole?.role?.name !== SystemRoles.EXTERNAL_MAINTAINER) {
+      throw new BadRequestError('Assignee is not an external maintainer');
+    }
+
+    // Verify external maintainer's company handles this report category
+    if (!assignee.companyId) {
+      throw new BadRequestError('External maintainer has no assigned company');
+    }
+
+    // Get company to check category
+    const company = await companyRepository.findById(assignee.companyId);
+
+    if (!company) {
+      throw new BadRequestError('External maintainer company not found');
+    }
+
+    // Compare company category with report category
+    if (company.category !== report.category) {
+      throw new BadRequestError(`External maintainer's company does not handle ${report.category} category`);
+    }
+
+    report.assignee = assignee;
+    report.assigneeId = assignee.id;
+    report.updatedAt = new Date();
+
     const updatedReport = await reportRepository.save(report);
     return mapReportEntityToDTO(updatedReport);
   }
