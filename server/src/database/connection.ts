@@ -3,6 +3,7 @@ import { DataSource, DefaultNamingStrategy, NamingStrategyInterface } from "type
 import { snakeCase } from "typeorm/util/StringUtils";
 import * as dotenv from 'dotenv';
 import { logger } from "@services/loggingService";
+import { CategoryRoleEntity } from "../models/entity/CategoryRoleEntity";
 
 dotenv.config({ debug: false });
 
@@ -28,7 +29,9 @@ export const AppDataSource = new DataSource({
     database: process.env.DB_NAME,
     synchronize: false,
     logging: false,
-    entities: [__dirname + '/../models/entity/**/*.{ts,js}'],
+    entities: [
+      CategoryRoleEntity,
+      __dirname + '/../models/entity/**/*.{ts,js}'],
     migrations: [],
     subscribers: [],
     namingStrategy: new SnakeCaseNamingStrategy(),

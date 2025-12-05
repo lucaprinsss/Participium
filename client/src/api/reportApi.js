@@ -111,3 +111,21 @@ export const getAddressFromCoordinates = async (latitude, longitude) => {
     // gestisce già il try/catch e restituisce una stringa pulita.
     return await calculateAddress(latitude, longitude);
 };
+
+/**
+ * Assign a report to an external maintainer
+ * @param {string} externalMaintainerId - ID of the external maintainer
+ * @param {Object} externalUserData - Data for the external maintainer assignment
+ */
+export const assignToExternalUser = async (externalMaintainerId, externalUserData) => {
+  const response = await fetch(`/api/reports/assigned/external/${externalMaintainerId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(externalUserData),
+  });
+
+  return handleResponse(response);
+};

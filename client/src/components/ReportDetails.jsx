@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Modal, Button, Form, Dropdown } from "react-bootstrap"; // Aggiunto Dropdown
+import { Modal, Button, Form, Dropdown } from "react-bootstrap";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -11,10 +11,8 @@ import iconShadow from "leaflet/dist/images/marker-shadow.png";
 
 // --- IMPORT API ---
 import { getCurrentUser } from "../api/authApi";
-// Ipotetiche funzioni API aggiunte qui
-import { updateReportStatus } from "../api/reportApi";
-//assignToExternalUser - forse è la updateReportStatus ???
-//getAllExternals
+import { updateReportStatus, assignToExternalUser } from "../api/reportApi";
+import { getAllExternals } from "../api/municipalityUserApi";
 
 import {
   FaTimes,
@@ -34,8 +32,9 @@ import {
   FaPlay,
   FaPause,
   FaCheck,
-  FaUserPlus, // Nuova icona
-  FaBuilding, // Nuova icona
+  FaUserPlus,
+  FaBuilding,
+  FaChevronDown, // Aggiunta icona chevron
 } from "react-icons/fa";
 import "../css/ReportDetails.css";
 
@@ -67,6 +66,8 @@ const ReportDetails = ({
   // --- STATI PER EXTERNAL ASSIGNMENT ---
   const [externalUsers, setExternalUsers] = useState([]);
   const [loadingExternal, setLoadingExternal] = useState(false);
+  // Nuovo stato per gestire l'animazione della freccina
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Stati per la gestione azioni
   const [isRejecting, setIsRejecting] = useState(false);
@@ -82,7 +83,8 @@ const ReportDetails = ({
       setErrorMsg("");
       setAssignmentWarning("");
       setShowMap(false);
-      setExternalUsers([]); // Reset external users list on open
+      setExternalUsers([]);
+      setIsDropdownOpen(false); // Reset dropdown state
 
       const fetchCurrentUser = async () => {
         try {
@@ -121,8 +123,6 @@ const ReportDetails = ({
     report.externalAssigneeId &&
     Number(currentUserId) === Number(report.externalAssigneeId);
 
-  // LOGICA: L'utente corrente è l'Assignee interno del report?
-  // Gestiamo sia il caso in cui assignee sia un oggetto {id: ...} sia solo id
   const isCurrentInternalAssignee =
     currentUserId &&
     report.assignee &&
@@ -190,16 +190,17 @@ const ReportDetails = ({
     ? report.photos.map((p) => (typeof p === "string" ? p : p.storageUrl))
     : report.images || [];
 
-  // --- FETCH EXTERNAL USERS (Lazy Load) ---
+  // --- FETCH EXTERNAL USERS ---
   const handleDropdownToggle = async (isOpen) => {
+    setIsDropdownOpen(isOpen); // Aggiorna lo stato per l'animazione della freccia
+
     if (isOpen && externalUsers.length === 0) {
       setLoadingExternal(true);
       try {
-        const users = await getAllExternals();
+        const users = await getAllExternals(report.category);
         setExternalUsers(users || []);
       } catch (err) {
         console.error("Failed to load external users", err);
-        // Fallback for demo if API fails or doesn't exist yet
         setExternalUsers([]);
       } finally {
         setLoadingExternal(false);
@@ -207,20 +208,16 @@ const ReportDetails = ({
     }
   };
 
-  // --- ASSIGN TO EXTERNAL HANDLER ---
   const handleAssignToExternal = async (externalUser) => {
     try {
-      // Ipotetica chiamata API: (reportId, externalUserId)
       await assignToExternalUser(report.id, externalUser.id);
-
-      if (onStatusUpdate) await onStatusUpdate(); // Refresh parent
-      onHide(); // Close modal
+      if (onStatusUpdate) await onStatusUpdate();
+      onHide();
     } catch (err) {
       setErrorMsg(err.message || "Failed to assign to external user.");
     }
   };
 
-  // --- Action Handlers ---
   const handleRejectClick = () => {
     setIsRejecting(true);
     setErrorMsg("");
@@ -305,7 +302,7 @@ const ReportDetails = ({
             {/* LEFT COLUMN */}
             <div className="rdm-main-content d-flex flex-column">
               <div className="flex-grow-1">
-                {/* REJECTION REASON */}
+                {/* REJECTION DISPLAY */}
                 {report.status === "Rejected" &&
                   (report.rejectionReason || report.rejection_reason) && (
                     <div className="rdm-section mt-0 mb-4">
@@ -331,7 +328,7 @@ const ReportDetails = ({
                   </div>
                 </div>
 
-                {/* EVIDENCE (PHOTOS) */}
+                {/* EVIDENCE */}
                 <div className="rdm-section">
                   <h3 className="rdm-section-title">
                     <FaCamera /> Evidence ({photos.length})
@@ -362,7 +359,7 @@ const ReportDetails = ({
                   )}
                 </div>
 
-                {/* MAP SECTION */}
+                {/* MAP */}
                 <div className={`rdm-map-wrapper ${showMap ? "open" : ""}`}>
                   <h3 className="rdm-section-title mt-4">
                     <FaMapMarkedAlt /> Map Location
@@ -406,15 +403,14 @@ const ReportDetails = ({
                     )}
                     {showMap && !mapCoordinates && (
                       <div className="d-flex align-items-center justify-content-center h-100 text-muted bg-light">
-                        <FaExclamationCircle className="me-2" /> Location data
-                        unavailable
+                        <FaExclamationCircle className="me-2" /> Location data unavailable
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* MESSAGES & FOOTER */}
+              {/* ACTION BUTTONS & FOOTER */}
               <div className="mt-3">
                 {assignmentWarning && (
                   <div className="rdm-alert rdm-alert-warning mb-2 py-2 px-3">
@@ -442,7 +438,6 @@ const ReportDetails = ({
                     </div>
 
                     <div className="d-flex gap-2">
-                      {/* --- 1. PR OFFICER/ADMIN ACTIONS (Approve/Reject) --- */}
                       {canManage && report.status === "Pending Approval" && (
                         <>
                           <Button
@@ -462,7 +457,6 @@ const ReportDetails = ({
                         </>
                       )}
 
-                      {/* --- 2. EXTERNAL ASSIGNEE ACTIONS (Workflow) --- */}
                       {isExternalAssignee && (
                         <>
                           {report.status === "Assigned" && (
@@ -504,15 +498,12 @@ const ReportDetails = ({
                 ) : (
                   <div className="rdm-rejection-inline-container w-100 animate-fadeIn">
                     <div className="d-flex align-items-center mb-2 text-danger fw-bold small">
-                      <FaExclamationTriangle className="me-2" /> Rejecting
-                      Report
+                      <FaExclamationTriangle className="me-2" /> Rejecting Report
                     </div>
                     <Form.Group className="mb-2">
                       <Form.Control
                         as="textarea"
-                        className={`rdm-reject-textarea ${
-                          errorMsg ? "is-invalid" : ""
-                        }`}
+                        className={`rdm-reject-textarea ${errorMsg ? "is-invalid" : ""}`}
                         rows={2}
                         placeholder="Enter reason for rejection..."
                         value={rejectionReason}
@@ -568,7 +559,7 @@ const ReportDetails = ({
               <div className="rdm-info-card">
                 <h4 className="rdm-card-label">Involved Parties</h4>
 
-                {/* Reporter Info */}
+                {/* Reporter */}
                 <div className="rdm-info-row">
                   <div className="rdm-icon-box">
                     <FaUser />
@@ -581,7 +572,7 @@ const ReportDetails = ({
                   </div>
                 </div>
 
-                {/* Technician Info */}
+                {/* Assignee */}
                 <div className="rdm-info-row">
                   <div className="rdm-icon-box assignee">
                     <FaHardHat />
@@ -600,61 +591,69 @@ const ReportDetails = ({
                   </div>
                 </div>
 
-                {/* === NEW: ASSIGN TO EXTERNAL DROPDOWN === */}
+                {/* === MODERN ASSIGN TO EXTERNAL DROPDOWN === */}
                 {isCurrentInternalAssignee && (
-                  <div className="mt-3 pt-3 border-top d-grid animate-fadeIn">
+                  <div className="mt-3 pt-3 border-top animate-fadeIn">
                     <span className="rdm-label mb-2">Delegate Task</span>
-                    <Dropdown onToggle={handleDropdownToggle}>
+
+                    <Dropdown
+                      onToggle={handleDropdownToggle}
+                      className="rdm-dropdown-container"
+                    >
+                      {/* NOTA LE CLASSI QUI: d-flex justify-content-between align-items-center */}
                       <Dropdown.Toggle
-                        className="rdm-btn-external-assign w-100 justify-content-between"
-                        variant="outline-dark" // Base bootstrap style, overridden by CSS
+                        className={`rdm-btn-external-assign w-100 d-flex justify-content-between align-items-center ${isDropdownOpen ? 'active' : ''}`}
+                        variant="outline-dark"
+                        id="external-assign-dropdown"
                       >
                         <span className="d-flex align-items-center gap-2">
-                          <FaUserPlus /> Assign to External
+                          <FaUserPlus /> Assign to Contractor
                         </span>
+                        {/* La chevron è l'ultimo elemento, quindi andrà a destra */}
+                        <FaChevronDown className={`rdm-chevron ${isDropdownOpen ? 'rotate' : ''}`} />
                       </Dropdown.Toggle>
 
-                      <Dropdown.Menu className="rdm-dropdown-menu w-100 shadow-lg border-0">
+                      <Dropdown.Menu className="rdm-dropdown-menu shadow-lg border-0">
                         {loadingExternal ? (
-                          <div className="px-3 py-2 text-muted text-center small">
+                          <div className="rdm-loading-state">
+                            <div className="spinner-border spinner-border-sm text-primary me-2" role="status" />
                             Loading users...
                           </div>
                         ) : externalUsers.length > 0 ? (
                           <>
-                            <div className="rdm-dropdown-header px-3 py-1 text-muted small fw-bold text-uppercase">
+                            <div className="rdm-dropdown-header">
                               Select Contractor
                             </div>
-                            {externalUsers.map((extUser) => (
-                              <Dropdown.Item
-                                key={extUser.id}
-                                onClick={() => handleAssignToExternal(extUser)}
-                                className="rdm-dropdown-item py-2"
-                              >
-                                <div className="d-flex align-items-center">
-                                  <div className="rdm-avatar-circle me-2">
-                                    {extUser.first_name.charAt(0)}
-                                    {extUser.last_name.charAt(0)}
-                                  </div>
-                                  <div>
-                                    <div className="fw-bold">
-                                      {extUser.first_name} {extUser.last_name}
+                            <div className="rdm-dropdown-scroll-area">
+                              {externalUsers.map((extUser) => (
+                                <Dropdown.Item
+                                  key={extUser.id}
+                                  onClick={() => handleAssignToExternal(extUser)}
+                                  className="rdm-dropdown-item"
+                                >
+                                  <div className="d-flex align-items-center">
+                                    <div className="rdm-avatar-circle me-3">
+                                      {extUser.first_name.charAt(0)}
+                                      {extUser.last_name.charAt(0)}
                                     </div>
-                                    {extUser.company_name && (
-                                      <div className="small text-muted">
-                                        <FaBuilding
-                                          className="me-1"
-                                          size={10}
-                                        />
-                                        {extUser.company_name}
+                                    <div className="flex-grow-1 overflow-hidden">
+                                      <div className="rdm-user-name text-truncate">
+                                        {extUser.first_name} {extUser.last_name}
                                       </div>
-                                    )}
+                                      {extUser.company_name && (
+                                        <div className="rdm-company-name text-truncate">
+                                          <FaBuilding className="me-1" size={10} />
+                                          {extUser.company_name}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              </Dropdown.Item>
-                            ))}
+                                </Dropdown.Item>
+                              ))}
+                            </div>
                           </>
                         ) : (
-                          <div className="px-3 py-2 text-muted text-center small">
+                          <div className="rdm-empty-state">
                             No external users found.
                           </div>
                         )}

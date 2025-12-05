@@ -165,11 +165,11 @@ router.post('/', validateRegisterInput, UserController.register);
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-
 router.get(
   '/external-maintainers',
   isLoggedIn,
   (req, res, next) => {
+
     const user = req.user as any;
     const roleName = user?.departmentRole?.role?.name;
     

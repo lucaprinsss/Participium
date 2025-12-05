@@ -137,4 +137,18 @@ export const getAllRoles = async () => {
   return handleResponse(response);
 };
 
+/**
+ * 
+ * @returns {Promise<Array>} List of external maintainers
+ */
+export const getAllExternals = async (categoryId) => {
+  const response = await fetch(`/api/users/external-maintainers?categoryId=${categoryId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },  
+    credentials: "include",
+  });
 
+  return handleResponse(response);
+};
