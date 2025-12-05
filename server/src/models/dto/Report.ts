@@ -12,6 +12,7 @@ export interface Report {
   description: string;
   category: ReportCategory;
   location: any;              // PostGIS Geography type (complex to type strictly here)
+  address?: string;           // Optional human-readable address
   is_anonymous: boolean;
   status: ReportStatus;
   rejection_reason?: string;  // Optional just if status is Rejected

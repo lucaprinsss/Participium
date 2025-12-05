@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, Unique } from "typeorm";
 import { DepartmentEntity } from "./departmentEntity";
 import { RoleEntity } from "./roleEntity";
-import { userEntity } from "./userEntity";
+import { UserEntity } from "./userEntity";
 
 /**
  * DepartmentRole entity - represents the join table between departments and roles
@@ -31,6 +31,6 @@ export class DepartmentRoleEntity {
   @JoinColumn({ name: "role_id" })
   role!: RoleEntity;
 
-  @OneToMany(() => userEntity, (user) => user.departmentRole)
-  users!: userEntity[];
+  @OneToMany(() => UserEntity, (user) => user.departmentRole)
+  users!: UserEntity[];
 }

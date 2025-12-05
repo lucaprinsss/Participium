@@ -30,6 +30,54 @@ describe('ReportController', () => {
     jest.clearAllMocks();
   });
 
+  describe('getCategories', () => {
+    it('should get all categories and return 200 status', async () => {
+      const categories = [{ id: 1, name: 'Test Category' }];
+      (reportService.getAllCategories as jest.Mock).mockResolvedValue(categories);
+
+      await reportController.getCategories(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.getAllCategories).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(categories);
+    });
+
+    it('should call next with an error if fetching categories fails', async () => {
+      const error = new Error('Fetch failed');
+      (reportService.getAllCategories as jest.Mock).mockRejectedValue(error);
+
+      await reportController.getCategories(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('createReport', () => {
+    it('should throw UnauthorizedError if user is not authenticated', async () => {
+      mockRequest.user = undefined;
+
+      await reportController.createReport(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+
+    it('should create a report and return 201 status', async () => {
+      const mockUser = { id: 1 } as User;
+      const reportData = { title: 'Test Report', description: 'Test Description' };
+      const newReport = { id: 1, ...reportData };
+      mockRequest.user = mockUser;
+      mockRequest.body = reportData;
+
+      (reportService.createReport as jest.Mock).mockResolvedValue(newReport);
+
+      await reportController.createReport(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.createReport).toHaveBeenCalledWith(reportData, mockUser.id);
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith(newReport);
+    });
+  });
+
   describe('getAllReports', () => {
     describe('authentication checks', () => {
       it('should throw UnauthorizedError when user is not authenticated', async () => {
@@ -278,6 +326,74 @@ describe('ReportController', () => {
         expect(mockResponse.status).not.toHaveBeenCalled();
         expect(mockResponse.json).not.toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('getMyAssignedReports', () => {
+    it('should throw UnauthorizedError if user is not authenticated', async () => {
+      mockRequest.user = undefined;
+
+      await reportController.getMyAssignedReports(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+
+    it('should get my assigned reports and return 200 status', async () => {
+      const mockUser = { id: 1 } as User;
+      const reports = [{ id: 1, title: 'Test Report' }];
+      mockRequest.user = mockUser;
+
+      (reportService.getMyAssignedReports as jest.Mock).mockResolvedValue(reports);
+
+      await reportController.getMyAssignedReports(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.getMyAssignedReports).toHaveBeenCalledWith(mockUser.id, undefined);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(reports);
+    });
+
+    it('should call next with an error if fetching reports fails', async () => {
+      const mockUser = { id: 1 } as User;
+      mockRequest.user = mockUser;
+      const error = new Error('Fetch failed');
+      (reportService.getMyAssignedReports as jest.Mock).mockRejectedValue(error);
+
+      await reportController.getMyAssignedReports(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('getAssignedReportsToExternalMaintainer', () => {
+    it('should get assigned reports for an external maintainer and return 200 status', async () => {
+      const reports = [{ id: 1, title: 'Test Report' }];
+      mockRequest.params = { externalMaintainerId: '1' };
+
+      (reportService.getAssignedReportsToExternalMaintainer as jest.Mock).mockResolvedValue(reports);
+
+      await reportController.getAssignedReportsToExternalMaintainer(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.getAssignedReportsToExternalMaintainer).toHaveBeenCalledWith(1, undefined);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(reports);
+    });
+
+    it('should call next with an error if fetching reports fails', async () => {
+      const error = new Error('Fetch failed');
+      mockRequest.params = { externalMaintainerId: '1' };
+      (reportService.getAssignedReportsToExternalMaintainer as jest.Mock).mockRejectedValue(error);
+
+      await reportController.getAssignedReportsToExternalMaintainer(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+
+    it('should throw BadRequestError for invalid id', async () => {
+      mockRequest.params = { externalMaintainerId: 'invalid' };
+
+      await reportController.getAssignedReportsToExternalMaintainer(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
     });
   });
 
@@ -660,6 +776,55 @@ describe('ReportController', () => {
     });
   });
 
+  describe('assignToExternalMaintainer', () => {
+    it('should throw UnauthorizedError if user is not authenticated', async () => {
+      mockRequest.user = undefined;
+
+      await reportController.assignToExternalMaintainer(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    });
+
+    it('should assign a report to an external maintainer and return 200 status', async () => {
+      const mockUser = { id: 1 } as User;
+      const updatedReport = { id: 1, title: 'Test Report', assigneeId: 2 };
+      mockRequest.user = mockUser;
+      mockRequest.params = { id: '1' };
+      mockRequest.body = { externalAssigneeId: 2 };
+
+      (reportService.assignToExternalMaintainer as jest.Mock).mockResolvedValue(updatedReport);
+
+      await reportController.assignToExternalMaintainer(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.assignToExternalMaintainer).toHaveBeenCalledWith(1, 2, 1);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(updatedReport);
+    });
+
+    it('should call next with an error if assigning fails', async () => {
+      const mockUser = { id: 1 } as User;
+      const error = new Error('Assign failed');
+      mockRequest.user = mockUser;
+      mockRequest.params = { id: '1' };
+      mockRequest.body = { externalAssigneeId: 2 };
+      (reportService.assignToExternalMaintainer as jest.Mock).mockRejectedValue(error);
+
+      await reportController.assignToExternalMaintainer(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+
+    it('should throw BadRequestError for invalid id', async () => {
+      const mockUser = { id: 1 } as User;
+      mockRequest.user = mockUser;
+      mockRequest.params = { id: 'invalid' };
+
+      await reportController.assignToExternalMaintainer(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+    });
+  });
+  
   describe('getMapReports', () => {
     // Validation tests removed - validation is now handled by validateMapQuery middleware
 

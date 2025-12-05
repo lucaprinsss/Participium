@@ -3,8 +3,8 @@ import swaggerJSDoc, { Options } from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import dotenv from 'dotenv';
 import { Application } from 'express';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 
 dotenv.config({ debug: false });

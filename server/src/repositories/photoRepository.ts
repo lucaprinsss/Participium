@@ -1,5 +1,5 @@
 import { Repository } from "typeorm";
-import { photoEntity } from "@models/entity/photoEntity";
+import { PhotoEntity } from "@models/entity/photoEntity";
 import { AppDataSource } from "@database/connection";
 
 /**
@@ -8,10 +8,10 @@ import { AppDataSource } from "@database/connection";
  */
 class PhotoRepository {
 
-    private photoRepository: Repository<photoEntity>;
+    private readonly photoRepository: Repository<PhotoEntity>;
 
     constructor() {
-        this.photoRepository = AppDataSource.getRepository(photoEntity);
+        this.photoRepository = AppDataSource.getRepository(PhotoEntity);
     }
 
     /**
@@ -20,9 +20,9 @@ class PhotoRepository {
      * @param filePaths Array of relative file paths where photos are stored.
      * @returns Array of saved photo entities.
      */
-    public async savePhotosForReport(reportId: number, filePaths: string[]): Promise<photoEntity[]> {
-        const photos: photoEntity[] = filePaths.map((relativePath) => {
-            const photo = new photoEntity();
+    public async savePhotosForReport(reportId: number, filePaths: string[]): Promise<PhotoEntity[]> {
+        const photos: PhotoEntity[] = filePaths.map((relativePath) => {
+            const photo = new PhotoEntity();
             photo.reportId = reportId;
             photo.storageUrl = relativePath;
             return photo;

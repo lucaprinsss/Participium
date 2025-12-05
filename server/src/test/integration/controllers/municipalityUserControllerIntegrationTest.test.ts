@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, afterEach, jest 
 import request from 'supertest';
 import { AppDataSource } from "@database/connection";
 import app from "../../../app";
-import { userEntity } from "@models/entity/userEntity";
+import { UserEntity } from "@models/entity/userEntity";
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { RoleUtils } from '@utils/roleUtils';
@@ -13,9 +13,9 @@ const r = () => `_${Math.floor(Math.random() * 1000000)}`;
 let ADMIN_CREDENTIALS: any;
 let CITIZEN_CREDENTIALS: any;
 let EMPLOYEE_PAYLOAD: any;
-let createdEmployee: userEntity;
-let createdAdmin: userEntity; 
-let createdCitizen: userEntity; 
+let createdEmployee: UserEntity;
+let createdAdmin: UserEntity; 
+let createdCitizen: UserEntity; 
 let createdUserIds: number[] = [];
 
 
@@ -32,7 +32,7 @@ describe('MunicipalityUserController Integration Tests', () => {
 
     afterAll(async () => {
         if (createdUserIds.length > 0) {
-            await AppDataSource.getRepository(userEntity).delete({ id: In(createdUserIds) });
+            await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
         }
         if (AppDataSource.isInitialized) {
             await AppDataSource.destroy();
@@ -114,7 +114,7 @@ describe('MunicipalityUserController Integration Tests', () => {
         });
     afterEach(async () => {
         if (createdUserIds.length > 0) {
-            const repository = AppDataSource.getRepository(userEntity);
+            const repository = AppDataSource.getRepository(UserEntity);
             await repository.delete({ id: In(createdUserIds) });
             createdUserIds = [];
         }

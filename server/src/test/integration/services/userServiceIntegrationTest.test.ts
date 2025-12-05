@@ -4,7 +4,7 @@ import { departmentRoleRepository } from '@repositories/departmentRoleRepository
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { RegisterRequest } from '@models/dto/input/RegisterRequest';
-import { userEntity } from '@models/entity/userEntity';
+import { UserEntity } from '@models/entity/userEntity';
 import { UserResponse } from '@models/dto/output/UserResponse';
 import { ConflictError } from '@models/errors/ConflictError';
 import { AppError } from '@models/errors/AppError';
@@ -20,7 +20,7 @@ const mockedDepartmentRoleRepository = departmentRoleRepository as jest.Mocked<t
 const mockedLogInfo = logInfo as jest.Mock;
 const mockedMapper = mapUserEntityToUserResponse as jest.Mock;
 
-const mockCitizenEntity: userEntity = createMockCitizen({
+const mockCitizenEntity: UserEntity = createMockCitizen({
   id: 1,
   username: 'test.citizen',
   email: 'citizen@test.com',
@@ -51,7 +51,7 @@ describe('UserService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    mockedMapper.mockImplementation((entity: userEntity) => {
+    mockedMapper.mockImplementation((entity: UserEntity) => {
       if (entity && entity.id === mockCitizenEntity.id) {
         return mockCitizenResponse;
       }

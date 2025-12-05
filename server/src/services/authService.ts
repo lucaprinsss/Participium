@@ -1,5 +1,5 @@
 import { UserResponse } from '../models/dto/output/UserResponse';
-import { userEntity } from '../models/entity/userEntity';
+import { UserEntity } from '../models/entity/userEntity';
 import { mapUserEntityToUserResponse } from './mapperService';
 
 /**
@@ -19,7 +19,7 @@ class AuthService {
       return null;
     }
 
-    const userEntityData = user as userEntity;
+    const userEntityData = user as UserEntity;
     return mapUserEntityToUserResponse(userEntityData);
   }
 }

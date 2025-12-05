@@ -18,21 +18,6 @@ export function validateReportStatus(req: Request, res: Response, next: NextFunc
   next();
 }
 
-/** 
- * Middleware to validate resolved report parameters
- */
-export function validateresolvedReport(req: Request, res: Response, next: NextFunction) {
-  const {status, reason} = req.query;
-
-  if (status === ReportStatus.RESOLVED && (!reason || typeof reason !== 'string' || reason.trim() === '')) {
-    return next(new BadRequestError(
-      'A valid reason must be provided when resolving a report.'
-    ));
-  }
-
-  next();
-}
-
 /**
  * Middleware to validate report category query parameter
  */

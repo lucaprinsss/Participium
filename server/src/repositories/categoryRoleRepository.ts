@@ -1,9 +1,9 @@
 import { AppDataSource } from '../database/connection';
-import { categoryRoleEntity } from '../models/entity/categoryRoleEntity';
+import { CategoryRoleEntity } from '../models/entity/CategoryRoleEntity';
 import { ReportCategory } from '../models/dto/ReportCategory';
 
 class CategoryRoleRepository {
-  private repository = AppDataSource.getRepository(categoryRoleEntity);
+  private readonly repository = AppDataSource.getRepository(CategoryRoleEntity);
 
   /**
    * Find the technical role ID responsible for a given report category
@@ -23,7 +23,7 @@ class CategoryRoleRepository {
    * Get all category-role mappings with role details
    * @returns Array of all mappings
    */
-  async findAllMappings(): Promise<categoryRoleEntity[]> {
+  async findAllMappings(): Promise<CategoryRoleEntity[]> {
     return await this.repository.find({
       relations: ['role'],
       order: { category: 'ASC' }
@@ -37,7 +37,7 @@ class CategoryRoleRepository {
    */
   async findMappingByCategory(
     category: ReportCategory
-  ): Promise<categoryRoleEntity | null> {
+  ): Promise<CategoryRoleEntity | null> {
     return await this.repository.findOne({
       where: { category },
       relations: ['role']

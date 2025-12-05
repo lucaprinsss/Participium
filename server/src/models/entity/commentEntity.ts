@@ -1,25 +1,25 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
-import { reportEntity } from "./reportEntity";
-import { userEntity } from "./userEntity";
+import { ReportEntity } from "./reportEntity";
+import { UserEntity } from "./userEntity";
 
 @Entity("comments")
-export class commentEntity {
+export class CommentEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
   reportId!: number;
 
-  @ManyToOne(() => reportEntity, { onDelete: "CASCADE" })
+  @ManyToOne(() => ReportEntity, { onDelete: "CASCADE" })
   @JoinColumn({ name: "report_id" })
-  report!: reportEntity;
+  report!: ReportEntity;
 
   @Column()
   authorId!: number;
 
-  @ManyToOne(() => userEntity)
+  @ManyToOne(() => UserEntity)
   @JoinColumn({ name: "author_id" })
-  author!: userEntity;
+  author!: UserEntity;
 
   @Column({ type: "text" })
   content!: string;

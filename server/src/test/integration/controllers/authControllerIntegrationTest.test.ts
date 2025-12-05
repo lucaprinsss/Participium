@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import request from 'supertest';
 import { AppDataSource } from "@database/connection";
 import app from "../../../app";
-import { userEntity } from "@models/entity/userEntity";
+import { UserEntity } from "@models/entity/userEntity";
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { In } from 'typeorm';
@@ -26,7 +26,7 @@ describe('AuthController Integration Tests', () => {
   // Final cleanup: Delete all created users
   afterAll(async () => {
     if (createdUserIds.length > 0) {
-      await AppDataSource.getRepository(userEntity).delete({ id: In(createdUserIds) });
+      await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
       createdUserIds = [];
     }
     if (AppDataSource.isInitialized) {
@@ -37,7 +37,7 @@ describe('AuthController Integration Tests', () => {
   // Cleanup after each test: Delete the user created in beforeEach
   afterEach(async () => {
     if (createdUserIds.length > 0) {
-      const repository = AppDataSource.getRepository(userEntity);
+      const repository = AppDataSource.getRepository(UserEntity);
       await repository.delete({ id: In(createdUserIds) });
       createdUserIds = [];
     }

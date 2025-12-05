@@ -9,7 +9,7 @@ import { userRepository } from '@repositories/userRepository';
 import { departmentRepository } from '@repositories/departmentRepository';
 import { ReportStatus } from '@models/dto/ReportStatus';
 import { ReportCategory } from '@models/dto/ReportCategory';
-import { userEntity } from '@models/entity/userEntity';
+import { UserEntity } from '@models/entity/userEntity';
 import { DepartmentEntity } from '@models/entity/departmentEntity';
 
 // Mock storage service to avoid actual file I/O
@@ -26,8 +26,8 @@ describe('ReportService Integration Tests', () => {
     let createdUserIds: number[] = [];
     let createdReportIds: number[] = [];
 
-    let citizenUser: userEntity;
-    let officerUser: userEntity;
+    let citizenUser: UserEntity;
+    let officerUser: UserEntity;
 
     beforeAll(async () => {
         if (!AppDataSource.isInitialized) {
@@ -229,9 +229,9 @@ describe('ReportService Integration Tests', () => {
 });
 
 describe('ReportService Integration Tests - getMyAssignedReports', () => {
-  let testTechnician: userEntity;
-  let testCitizen: userEntity;
-  let testRoadStaff: userEntity;
+  let testTechnician: UserEntity;
+  let testCitizen: UserEntity;
+  let testRoadStaff: UserEntity;
   let publicLightingDepartment: DepartmentEntity;
   let electricalStaffDeptRoleId: number;
   let citizenDeptRoleId: number;
@@ -518,8 +518,8 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
 
   // --- getAllReports ---
   describe('getAllReports', () => {
-    let proUser: userEntity;
-    let citizenUser: userEntity;
+    let proUser: UserEntity;
+    let citizenUser: UserEntity;
     let proUserDeptRoleId: number;
 
     beforeAll(async () => {
@@ -715,7 +715,7 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
 
   // --- updateReportStatus ---
   describe('updateReportStatus', () => {
-    let proUser: userEntity;
+    let proUser: UserEntity;
     let proUserDeptRoleId: number;
     let pendingReportId: number;
 
@@ -840,14 +840,14 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
     it('should throw BadRequestError if reportId is not a number', async () => {
       // Act & Assert
       await expect(
-        reportService.updateReportStatus(NaN, ReportStatus.ASSIGNED, {}, proUser.id)
+        reportService.updateReportStatus(Number.NaN, ReportStatus.ASSIGNED, {}, proUser.id)
       ).rejects.toThrow('Invalid report ID');
     });
   });
 
   // --- updateReportStatus ---
   describe('updateReportStatus', () => {
-    let proUser: userEntity;
+    let proUser: UserEntity;
     let proUserDeptRoleId: number;
     let pendingReportId: number;
 
@@ -990,7 +990,7 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
     it('should throw BadRequestError if reportId is not a number', async () => {
       // Act & Assert
       await expect(
-        reportService.updateReportStatus(NaN, ReportStatus.REJECTED, { rejectionReason: 'Invalid ID' }, proUser.id)
+        reportService.updateReportStatus(Number.NaN, ReportStatus.REJECTED, { rejectionReason: 'Invalid ID' }, proUser.id)
       ).rejects.toThrow('Invalid report ID');
     });
   });

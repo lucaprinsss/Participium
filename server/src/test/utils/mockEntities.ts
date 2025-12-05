@@ -3,7 +3,7 @@
  * Provides complete mock entities with all required fields and relations
  */
 
-import { userEntity } from "@models/entity/userEntity";
+import { UserEntity } from "@models/entity/userEntity";
 import { DepartmentRoleEntity } from "@models/entity/departmentRoleEntity";
 import { RoleEntity } from "@models/entity/roleEntity";
 import { DepartmentEntity } from "@models/entity/departmentEntity";
@@ -66,9 +66,9 @@ export function createMockDepartmentRole(
 export function createMockUser(
   roleName: string,
   departmentName?: string,
-  overrides?: Partial<userEntity>
-): userEntity {
-  const user = new userEntity();
+  overrides?: Partial<UserEntity>
+): UserEntity {
+  const user = new UserEntity();
   user.id = 1;
   user.username = 'testuser';
   user.email = 'test@example.com';
@@ -90,7 +90,7 @@ export function createMockUser(
 /**
  * Creates a mock citizen user entity
  */
-export function createMockCitizen(overrides?: Partial<userEntity>): userEntity {
+export function createMockCitizen(overrides?: Partial<UserEntity>): UserEntity {
   return createMockUser('Citizen', undefined, overrides);
 }
 
@@ -100,7 +100,7 @@ export function createMockCitizen(overrides?: Partial<userEntity>): userEntity {
 export function createMockMunicipalityUser(
   roleName: string,
   departmentName: string,
-  overrides?: Partial<userEntity>
-): userEntity {
+  overrides?: Partial<UserEntity>
+): UserEntity {
   return createMockUser(roleName, departmentName, overrides);
 }

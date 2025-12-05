@@ -1,7 +1,7 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { userRepository } from '@repositories/userRepository';
-import { userEntity } from '@models/entity/userEntity';
+import { UserEntity } from '@models/entity/userEntity';
 
 // Tipo per i dati dell'utente serializzati in sessione
 interface SessionUser {
@@ -39,7 +39,7 @@ export const configurePassport = (): void => {
   // Serializza l'utente in sessione (salva solo i dati essenziali)
   passport.serializeUser((user: Express.User, done) => {
     // Esegui un cast al tuo tipo specifico userEntity
-    const u = user as userEntity;
+    const u = user as UserEntity;
     const sessionUser: SessionUser = {
       id: u.id,
       username: u.username,
@@ -63,4 +63,4 @@ export const configurePassport = (): void => {
   });
 };
 
-export default passport;
+export {default} from 'passport';

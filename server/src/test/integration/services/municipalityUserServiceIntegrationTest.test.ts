@@ -4,7 +4,7 @@ import { departmentRoleRepository } from '@repositories/departmentRoleRepository
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { RegisterRequest } from '@models/dto/input/RegisterRequest';
-import { userEntity } from '@models/entity/userEntity';
+import { UserEntity } from '@models/entity/userEntity';
 import { UserResponse } from '@models/dto/output/UserResponse';
 import { createMockMunicipalityUser, createMockCitizen, createMockDepartmentRole } from '@test/utils/mockEntities';
 
@@ -12,8 +12,6 @@ import { NotFoundError } from '@models/errors/NotFoundError';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { ConflictError } from '@models/errors/ConflictError';
 import { AppError } from '@models/errors/AppError';
-
-import { Not, In } from 'typeorm';
 
 jest.mock('@repositories/userRepository');
 jest.mock('@repositories/departmentRoleRepository');
@@ -25,7 +23,7 @@ const mockedDepartmentRoleRepository = departmentRoleRepository as jest.Mocked<t
 const mockedLogInfo = logInfo as jest.Mock;
 const mockedMapper = mapUserEntityToUserResponse as jest.Mock;
 
-const mockStaffEntity: userEntity = createMockMunicipalityUser('Municipal Administrator', 'Public Relations', {
+const mockStaffEntity: UserEntity = createMockMunicipalityUser('Municipal Administrator', 'Public Relations', {
   id: 1,
   username: 'staff.user',
   email: 'staff@test.com',
@@ -43,7 +41,7 @@ const mockStaffResponse: UserResponse = {
   department_name: 'Public Relations',
 };
 
-const mockCitizenEntity: userEntity = createMockCitizen({
+const mockCitizenEntity: UserEntity = createMockCitizen({
   id: 2,
   username: 'citizen.user',
   email: 'citizen@test.com',
@@ -51,7 +49,7 @@ const mockCitizenEntity: userEntity = createMockCitizen({
   lastName: 'User',
 });
 
-const mockAdminEntity: userEntity = createMockMunicipalityUser('Administrator', 'Administration', {
+const mockAdminEntity: UserEntity = createMockMunicipalityUser('Administrator', 'Administration', {
   id: 3,
   username: 'admin.user',
   email: 'admin@test.com',
@@ -71,7 +69,7 @@ describe('MunicipalityUserService', () => {
     // Mock userRepository.findUsersExcludingRoles() to return empty array by default
     mockedUserRepository.findUsersExcludingRoles.mockResolvedValue([]);
 
-    mockedMapper.mockImplementation((entity: userEntity) => {
+    mockedMapper.mockImplementation((entity: UserEntity) => {
       if (!entity) return null;
       return {
         id: entity.id,

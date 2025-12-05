@@ -3,9 +3,8 @@ import {
   logWarn,
   logError,
   logDebug,
+  logger
 } from '../../../services/loggingService';
-
-import { logger } from '../../../services/loggingService';
 
 describe('Logging Service Integration Tests', () => {
   let infoSpy: jest.SpyInstance;

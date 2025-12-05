@@ -21,6 +21,11 @@ import { ReportStatus } from '../ReportStatus';
  *           $ref: '#/components/schemas/ReportCategory'
  *         location:
  *           $ref: '#/components/schemas/Location'
+ *         address:
+ *           type: string
+ *           nullable: true
+ *           description: Human-readable address of the report location
+ *           example: "Via Roma 15, 10121 Turin, Italy"
  *         status:
  *           $ref: '#/components/schemas/ReportStatus'
  *         reporterName:
@@ -44,6 +49,7 @@ export interface MapReportResponse {
   title: string;
   category: ReportCategory;
   location: Location;
+  address?: string;
   status: ReportStatus;
   reporterName: string; // "Anonymous" if is_anonymous = true
   isAnonymous: boolean;

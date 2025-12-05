@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { ReportStatus } from '@dto/ReportStatus';
-import { UserRole } from '@dto/UserRole';
+import { SystemRoles, isTechnicalStaff } from '@dto/UserRole';
 import { InsufficientRightsError } from '@errors/InsufficientRightsError';
 import { BadRequestError } from '@errors/BadRequestError';
-import { userEntity } from '@models/entity/userEntity';
+import { UserEntity } from '@models/entity/userEntity';
 
 /**
  * Helper function to get the role name from a user entity
  */
 function getUserRoleName(user: any): string | undefined {
   if (!user) return undefined;
-  const userEntityData = user as userEntity;
+  const userEntityData = user as UserEntity;
   return userEntityData.departmentRole?.role?.name;
 }
 
@@ -32,22 +32,30 @@ export const validateStatusUpdate = (req: Request, res: Response, next: NextFunc
 
   // Map of status transitions to allowed roles
   const statusRoleMap: Record<string, string[]> = {
-    [ReportStatus.ASSIGNED]: [UserRole.PUBLIC_RELATIONS_OFFICER],
-    [ReportStatus.REJECTED]: [UserRole.PUBLIC_RELATIONS_OFFICER],
-    [ReportStatus.RESOLVED]: [
-      UserRole.TECHNICAL_MANAGER,
-      UserRole.TECHNICAL_ASSISTANT,
-      UserRole.EXTERNAL_MAINTAINER
-    ],
-    [ReportStatus.IN_PROGRESS]: [
-      UserRole.TECHNICAL_MANAGER,
-      UserRole.TECHNICAL_ASSISTANT
-    ],
-    [ReportStatus.SUSPENDED]: [
-      UserRole.TECHNICAL_MANAGER,
-      UserRole.TECHNICAL_ASSISTANT
-    ]
+    [ReportStatus.ASSIGNED]: [SystemRoles.PUBLIC_RELATIONS_OFFICER],
+    [ReportStatus.REJECTED]: [SystemRoles.PUBLIC_RELATIONS_OFFICER],
+    [ReportStatus.RESOLVED]: [] // Checked separately below
   };
+
+  // Special handling for RESOLVED status - allow technical staff and external maintainers
+  if (newStatus === ReportStatus.RESOLVED) {
+    if (roleName !== SystemRoles.EXTERNAL_MAINTAINER && !isTechnicalStaff(roleName)) {
+      return next(new InsufficientRightsError(
+        'Only technical staff and external maintainers can resolve reports'
+      ));
+    }
+    return next();
+  }
+
+  // Special handling for IN_PROGRESS and SUSPENDED - allow only technical staff
+  if ([ReportStatus.IN_PROGRESS, ReportStatus.SUSPENDED].includes(newStatus as ReportStatus)) {
+    if (!isTechnicalStaff(roleName)) {
+      return next(new InsufficientRightsError(
+        `Only technical staff can set status to ${newStatus}`
+      ));
+    }
+    return next();
+  }
 
   const allowedRoles = statusRoleMap[newStatus];
 

@@ -1,8 +1,8 @@
 import { ErrorDTO } from "@models/errors/ErrorDTO";
 import { UserResponse } from "@models/dto/output/UserResponse";
 import { ReportResponse, PhotoResponse } from "@models/dto/output/ReportResponse";
-import { userEntity } from "@models/entity/userEntity";
-import { reportEntity } from "@models/entity/reportEntity";
+import { UserEntity } from "@models/entity/userEntity";
+import { ReportEntity } from "@models/entity/reportEntity";
 import { Photo } from "@models/dto/Photo";
 import { Department } from "@dto/Department";
 import { Role } from "@dto/Role";
@@ -12,7 +12,7 @@ import { Location } from "@models/dto/Location";
 import { ReportCategory } from "@models/dto/ReportCategory";
 import { Report } from "@dto/Report";
 import { CategoryRoleMapping } from '../models/dto/CategoryRoleMapping';
-import { categoryRoleEntity } from '../models/entity/categoryRoleEntity';
+import { CategoryRoleEntity } from '../models/entity/CategoryRoleEntity';
 import { ReportStatus } from "@models/dto/ReportStatus";
 
 
@@ -39,7 +39,7 @@ function getPhotoUrl(storageUrl: string): string {
  * Maps a reportEntity to Report DTO
  * Converts from camelCase entity to snake_case DTO
  */
-export function mapReportEntityToDTO(entity: reportEntity): Report {
+export function mapReportEntityToDTO(entity: ReportEntity): Report {
   return removeNullAttributes({
     id: entity.id,
     reporter_id: entity.reporterId,
@@ -47,6 +47,7 @@ export function mapReportEntityToDTO(entity: reportEntity): Report {
     description: entity.description,
     category: entity.category,
     location: entity.location,
+    address: entity.address,
     is_anonymous: entity.isAnonymous,
     status: entity.status,
     rejection_reason: entity.rejectionReason,
@@ -81,7 +82,7 @@ export function mapRoleEntityToDTO(entity: RoleEntity): Role {
  * Maps a userEntity to UserResponse DTO
  * Excludes sensitive information like password hash
  */
-export function mapUserEntityToUserResponse(entity: userEntity | null | undefined): UserResponse | null {
+export function mapUserEntityToUserResponse(entity: UserEntity | null | undefined): UserResponse | null {
   
   if (!entity) {
     return null;
@@ -123,7 +124,7 @@ export function mapPhotoToResponse(photo: Photo): PhotoResponse {
  * @param location - The parsed location object
  * @returns ReportResponse DTO
  */
-export function mapReportEntityToResponse(report: reportEntity, photos: any[], location: Location): ReportResponse {
+export function mapReportEntityToResponse(report: ReportEntity, photos: any[], location: Location): ReportResponse {
   return {
     id: report.id,
     reporterId: report.isAnonymous ? null : report.reporterId,
@@ -131,6 +132,7 @@ export function mapReportEntityToResponse(report: reportEntity, photos: any[], l
     description: report.description,
     category: report.category as ReportCategory,
     location: location,
+    address: report.address,
     photos: photos.map(mapPhotoToResponse),
     isAnonymous: report.isAnonymous,
     status: report.status as any,
@@ -145,7 +147,7 @@ export function mapReportEntityToResponse(report: reportEntity, photos: any[], l
  * Maps a reportEntity to ReportResponse DTO
  * Handles location parsing from PostGIS automatically
  */
-export function mapReportEntityToReportResponse(entity: reportEntity): ReportResponse {
+export function mapReportEntityToReportResponse(entity: ReportEntity): ReportResponse {
   // Parse PostGIS geography point to lat/lng
   // Format: "POINT(longitude latitude)" or JSON format depending on query
   let location = { latitude: 0, longitude: 0 };
@@ -196,6 +198,7 @@ export function mapReportEntityToReportResponse(entity: reportEntity): ReportRes
     description: entity.description,
     category: entity.category as ReportCategory,
     location,
+    address: entity.address,
     photos,
     isAnonymous: entity.isAnonymous,
     status: entity.status as ReportStatus,
@@ -211,7 +214,7 @@ export function mapReportEntityToReportResponse(entity: reportEntity): ReportRes
  * Map CategoryRoleMappingEntity to CategoryRoleMapping DTO
  */
 export function mapCategoryRoleMappingToDTO(
-  entity: categoryRoleEntity
+  entity: CategoryRoleEntity
 ): CategoryRoleMapping {
   return {
     id: entity.id,
@@ -226,7 +229,7 @@ export function mapCategoryRoleMappingToDTO(
  * Map array of entities to DTOs
  */
 export function mapCategoryRoleMappingsToDTOs(
-  entities: categoryRoleEntity[]
+  entities: CategoryRoleEntity[]
 ): CategoryRoleMapping[] {
   return entities.map(mapCategoryRoleMappingToDTO);
 }

@@ -1,25 +1,25 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
-import { userEntity } from "./userEntity";
-import { reportEntity } from "./reportEntity";
+import { UserEntity } from "./userEntity";
+import { ReportEntity } from "./reportEntity";
 
 @Entity("notifications")
-export class notificationEntity {
+export class NotificationEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
   userId!: number;
 
-  @ManyToOne(() => userEntity, { onDelete: "CASCADE" })
+  @ManyToOne(() => UserEntity, { onDelete: "CASCADE" })
   @JoinColumn({ name: "user_id" })
-  user!: userEntity;
+  user!: UserEntity;
 
   @Column({ nullable: true })
   reportId?: number;
 
-  @ManyToOne(() => reportEntity, { onDelete: "CASCADE", nullable: true })
+  @ManyToOne(() => ReportEntity, { onDelete: "CASCADE", nullable: true })
   @JoinColumn({ name: "report_id" })
-  report?: reportEntity;
+  report?: ReportEntity;
 
   @Column({ type: "text" })
   content!: string;

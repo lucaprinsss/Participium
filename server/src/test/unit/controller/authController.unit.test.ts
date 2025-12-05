@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import authController from '@controllers/authController';
 import { authService } from '@services/authService';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
-import { userEntity } from '@models/entity/userEntity';
+import { UserEntity } from '@models/entity/userEntity';
 import passport from 'passport';
 
 // Mock delle dipendenze
@@ -17,7 +17,7 @@ describe('AuthController Unit Tests', () => {
   let statusMock: jest.Mock;
   let clearCookieMock: jest.Mock;
 
-  const mockUser: userEntity = {
+  const mockUser: UserEntity = {
     id: 1,
     username: 'testuser',
     email: 'test@example.com',

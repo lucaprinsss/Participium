@@ -1,5 +1,5 @@
 import { AppDataSource } from "@database/connection";
-import { userEntity } from "@models/entity/userEntity";
+import { UserEntity } from "@models/entity/userEntity";
 import { Repository } from "typeorm";
 import { verifyPassword, generatePasswordData } from "@utils/passwordUtils";
 import { ReportStatus } from "@models/dto/ReportStatus";
@@ -9,10 +9,10 @@ import { ReportStatus } from "@models/dto/ReportStatus";
  * Handles all database operations for the User entity.
  */
 class UserRepository {
-  private repository: Repository<userEntity>;
+  private readonly repository: Repository<UserEntity>;
 
   constructor() {
-    this.repository = AppDataSource.getRepository(userEntity);
+    this.repository = AppDataSource.getRepository(UserEntity);
   }
 
   /**
@@ -21,7 +21,7 @@ class UserRepository {
    * @param user The user entity to save.
    * @returns The saved user entity.
    */
-  public async save(user: userEntity): Promise<userEntity> {
+  public async save(user: UserEntity): Promise<UserEntity> {
     return this.repository.save(user);
   }
 
@@ -31,8 +31,8 @@ class UserRepository {
    * @returns The created user entity.
    */
   public async createUserWithPassword(
-    userData: Omit<userEntity, 'id' | 'createdAt' | 'passwordHash' | 'emailNotificationsEnabled' | 'departmentRole'> & { password: string; emailNotificationsEnabled?: boolean }
-  ): Promise<userEntity> {
+    userData: Omit<UserEntity, 'id' | 'createdAt' | 'passwordHash' | 'emailNotificationsEnabled' | 'departmentRole'> & { password: string; emailNotificationsEnabled?: boolean }
+  ): Promise<UserEntity> {
     const { password, ...userFields } = userData;
     const { salt, hash } = await generatePasswordData(password);
 
@@ -65,7 +65,7 @@ class UserRepository {
    * @param id The ID of the user.
    * @returns The user entity or null if not found.
    */
-  public async findUserById(id: number): Promise<userEntity | null> {
+  public async findUserById(id: number): Promise<UserEntity | null> {
     return this.repository.findOne({
       where: { id },
       relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
@@ -78,7 +78,7 @@ class UserRepository {
    * @param username The username of the user.
    * @returns The user entity or null if not found.
    */
-  public async findUserByUsername(username: string): Promise<userEntity | null> {
+  public async findUserByUsername(username: string): Promise<UserEntity | null> {
     // 'addSelect' is used to explicitly include fields that might be excluded by default
     return this.repository
       .createQueryBuilder("user")
@@ -95,7 +95,7 @@ class UserRepository {
    * @param email The email of the user.
    * @returns The user entity or null if not found.
    */
-  public async findUserByEmail(email: string): Promise<userEntity | null> {
+  public async findUserByEmail(email: string): Promise<UserEntity | null> {
     return this.repository.findOne({
       where: { email },
       relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
@@ -127,9 +127,9 @@ class UserRepository {
    * @param password The plain text password to verify.
    * @returns The user entity if credentials are valid, null otherwise.
    */
-  public async verifyCredentials(username: string, password: string): Promise<userEntity | null> {
+  public async verifyCredentials(username: string, password: string): Promise<UserEntity | null> {
     const user = await this.findUserByUsername(username);
-    if (!user || !user.passwordHash) {
+    if (!user?.passwordHash) {
       return null;
     }
 
@@ -156,8 +156,8 @@ class UserRepository {
    */
   public async updateUser(
     id: number,
-    updateData: Partial<Omit<userEntity, 'id' | 'createdAt' | 'passwordHash' | 'departmentRole'>>
-  ): Promise<userEntity> {
+    updateData: Partial<Omit<UserEntity, 'id' | 'createdAt' | 'passwordHash' | 'departmentRole'>>
+  ): Promise<UserEntity> {
     await this.repository.update(id, updateData);
 
     const updatedUser = await this.findUserById(id);
@@ -190,7 +190,7 @@ class UserRepository {
   public async findAllUsers(options?: {
     where?: any;
     order?: any;
-  }): Promise<userEntity[]> {
+  }): Promise<UserEntity[]> {
     return this.repository.find({
       ...options,
       relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
@@ -202,7 +202,7 @@ class UserRepository {
    * @param departmentRoleIds Array of department role IDs to filter by.
    * @returns Array of user entities.
    */
-  public async findUsersByDepartmentRoleIds(departmentRoleIds: number[]): Promise<userEntity[]> {
+  public async findUsersByDepartmentRoleIds(departmentRoleIds: number[]): Promise<UserEntity[]> {
     return this.repository
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.departmentRole", "departmentRole")
@@ -218,7 +218,7 @@ class UserRepository {
    * @param roleName The name of the role to filter by.
    * @returns Array of user entities.
    */
-  public async findUsersByRoleName(roleName: string): Promise<userEntity[]> {
+  public async findUsersByRoleName(roleName: string): Promise<UserEntity[]> {
     return this.repository
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.departmentRole", "departmentRole")
@@ -234,7 +234,7 @@ class UserRepository {
    * @param excludedRoleNames Array of role names to exclude.
    * @returns Array of user entities.
    */
-  public async findUsersExcludingRoles(excludedRoleNames: string[]): Promise<userEntity[]> {
+  public async findUsersExcludingRoles(excludedRoleNames: string[]): Promise<UserEntity[]> {
     return this.repository
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.departmentRole", "departmentRole")
@@ -251,7 +251,7 @@ class UserRepository {
    * @param roleId - Role ID from category_role_mapping
    * @returns Available staff member or null
    */
-  async findAvailableStaffByRoleId(roleId: number): Promise<userEntity | null> {
+  async findAvailableStaffByRoleId(roleId: number): Promise<UserEntity | null> {
     return this.repository
       .createQueryBuilder("user")
       .innerJoinAndSelect("user.departmentRole", "dr")
@@ -267,6 +267,29 @@ class UserRepository {
       .orderBy("report_count", "ASC")
       .addOrderBy("user.id", "ASC")
       .getOne();
+  }
+
+  /**
+   * Finds external maintainers by category.
+   * Returns users with "External Maintainer" role whose company handles the specified category.
+   * @param categoryId - The category ID to filter by
+   * @returns Array of user entities
+   */
+  public async findExternalMaintainersByCategory(categoryId: number): Promise<UserEntity[]> {
+    return await this.repository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.departmentRole', 'departmentRole')
+      .leftJoinAndSelect('departmentRole.department', 'department')
+      .leftJoinAndSelect('departmentRole.role', 'role')
+      .innerJoin(
+        'companies', 
+        'c', 
+        'c.id = user.company_id AND c.category = (SELECT category FROM report_categories WHERE id = :categoryId)', 
+        { categoryId }
+      )
+      .where('role.name = :roleName', { roleName: 'External Maintainer' })
+      .andWhere('user.company_id IS NOT NULL')
+      .getMany();
   }
 
 }

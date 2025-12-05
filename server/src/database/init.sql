@@ -1,6 +1,6 @@
 /*
  * ====================================
- * INITIALIZATION SCRIPT FOR THE DATABASE - V4.2
+ * INITIALIZATION SCRIPT FOR THE DATABASE - V4.3
  * ====================================
  */
 
@@ -84,6 +84,20 @@ CREATE TABLE department_roles (
  */
 
 /*
+ * Companies table (companies)
+ * Stores information about external maintenance companies
+ * NEW in V4.3: Separates company entities from user accounts
+ * Each company specializes in one report category, but multiple companies can handle the same category
+ * MUST be created BEFORE users table because users.company_id references this table
+ */
+CREATE TABLE companies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    category report_category NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+/*
  * User tables (users)
  * MODIFICATA: Sostituito ENUM 'role' con 'department_role_id' FK
  */
@@ -94,8 +108,6 @@ CREATE TABLE users (
     last_name VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     
-    -- RIMOSSO: role user_role NOT NULL DEFAULT 'Citizen',
-    
     -- AGGIUNTO: Collega alla "posizione" (Dipartimento + Ruolo) dell'utente.
     -- La logica applicativa assegnerà il ruolo 'Citizen' ai nuovi utenti.
     department_role_id INT NOT NULL REFERENCES department_roles(id),
@@ -105,8 +117,8 @@ CREATE TABLE users (
     telegram_username VARCHAR(100) UNIQUE,
     email_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
     
-    -- Campo per manutentori esterni (nome azienda)
-    company_name VARCHAR(255),
+    -- Campo per manutentori esterni (riferimento all'azienda)
+    company_id INT REFERENCES companies(id) ON DELETE SET NULL,
     
     -- Campi per verifica email 
     is_verified BOOLEAN NOT NULL DEFAULT false,
@@ -127,6 +139,7 @@ CREATE TABLE reports (
     description TEXT NOT NULL,
     category report_category NOT NULL,
     location GEOGRAPHY(Point, 4326) NOT NULL,
+    address VARCHAR(500),
     is_anonymous BOOLEAN NOT NULL DEFAULT false,
     status report_status NOT NULL DEFAULT 'Pending Approval',
     rejection_reason TEXT,
@@ -142,7 +155,6 @@ CREATE TABLE reports (
 
 /*
  * Images table (photos)
- * (Nessuna modifica)
  */
 CREATE TABLE photos (
     id SERIAL PRIMARY KEY,
@@ -154,7 +166,6 @@ CREATE TABLE photos (
 
 /*
  * Comments table (comments)
- * (Nessuna modifica)
  */
 CREATE TABLE comments (
     id SERIAL PRIMARY KEY,
@@ -167,7 +178,6 @@ CREATE TABLE comments (
 
 /*
  * Notifications tables (notifications)
- * (Nessuna modifica)
  */
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
@@ -181,7 +191,6 @@ CREATE TABLE notifications (
 
 /*
  * Messages table (messages)
- * (Nessuna modifica)
  */
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
@@ -190,20 +199,6 @@ CREATE TABLE messages (
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
-
-
-/*
- * Category Department Mapping table (category_department_mapping)
- * Maps report categories to responsible departments for automatic assignment
- 
-CREATE TABLE category_department_mapping (
-    id SERIAL PRIMARY KEY,
-    category report_category NOT NULL UNIQUE,
-    department_id INT NOT NULL REFERENCES departments(id),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);*/
-
-
 
 /*
  * Category Role Mapping table (category_role_mapping)
@@ -366,12 +361,26 @@ VALUES (
 ON CONFLICT (username) DO NOTHING;
 
 /*
+ * 5. Populate companies table BEFORE creating external maintainer users
+ * External maintenance companies that handle specific report categories
+ * Each company specializes in one category
+ */
+INSERT INTO companies (name, category)
+VALUES
+    ('Enel X', 'Public Lighting'),
+    ('Acea', 'Water Supply - Drinking Water'),
+    ('Hera', 'Waste'),
+    ('ATM', 'Road Signs and Traffic Lights')
+ON CONFLICT (name) DO NOTHING;
+
+/*
  * 6. Crea utenti per i manutentori esterni
  * I manutentori esterni sono ora utenti con ruolo 'External Maintainer'
  * Password di default per tutti: 'maintainer123'
  * Hash bcrypt: $2b$10$
+ * company_id is assigned directly during user creation
  */
-INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, company_name, email_notifications_enabled, is_verified)
+INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, company_id, email_notifications_enabled, is_verified)
 VALUES
     -- Enel X - Specializzato in illuminazione pubblica
     ('enelx',
@@ -383,7 +392,7 @@ VALUES
       JOIN roles r ON dr.role_id = r.id
       WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
      'interventions@enelx.com',
-     'Enel X S.p.A.',
+     (SELECT id FROM companies WHERE name = 'Enel X'),
      true,
      true),  -- Manutentori esterni sono già verificati
     
@@ -397,7 +406,7 @@ VALUES
       JOIN roles r ON dr.role_id = r.id
       WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
      'water@acea.it',
-     'Acea S.p.A.',
+     (SELECT id FROM companies WHERE name = 'Acea'),
      true,
      true),
     
@@ -411,7 +420,7 @@ VALUES
       JOIN roles r ON dr.role_id = r.id
       WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
      'waste@hera.it',
-     'Hera S.p.A.',
+     (SELECT id FROM companies WHERE name = 'Hera'),
      true,
      true),
     
@@ -425,7 +434,7 @@ VALUES
       JOIN roles r ON dr.role_id = r.id
       WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
      'traffic@atm.it',
-     'ATM S.p.A.',
+     (SELECT id FROM companies WHERE name = 'ATM'),
      true,
      true)
 ON CONFLICT (username) DO NOTHING;

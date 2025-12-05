@@ -1,17 +1,17 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
-import { reportEntity } from "./reportEntity";
+import { ReportEntity } from "./reportEntity";
 
 @Entity("photos")
-export class photoEntity {
+export class PhotoEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
   reportId!: number;
 
-  @ManyToOne(() => reportEntity, (report) => report.photos, { onDelete: "CASCADE" })
+  @ManyToOne(() => ReportEntity, (report) => report.photos, { onDelete: "CASCADE" })
   @JoinColumn({ name: "report_id" })
-  report!: reportEntity;
+  report!: ReportEntity;
 
   @Column({ type: "text" })
   storageUrl!: string;

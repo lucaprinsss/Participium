@@ -79,6 +79,27 @@ class UserService {
 
     return mapUserEntityToUserResponse(user);
   }
+
+  /**
+   * Gets external maintainers filtered by category
+   * @param categoryId Category ID to filter by
+   * @returns Array of UserResponse DTOs
+   */
+  async getExternalMaintainersByCategory(categoryId: number | undefined): Promise<UserResponse[]> {
+    if (categoryId === undefined || categoryId === null) {
+      throw new AppError('categoryId query parameter is required', 400);
+    }
+
+    if (Number.isNaN(categoryId) || categoryId <= 0) {
+      throw new AppError('categoryId must be a valid positive integer', 400);
+    }
+
+    const externalMaintainers = await userRepository.findExternalMaintainersByCategory(categoryId);
+    
+    return externalMaintainers
+      .map(user => mapUserEntityToUserResponse(user))
+      .filter((user): user is UserResponse => user !== null);
+  }
 }
 
 export const userService = new UserService();

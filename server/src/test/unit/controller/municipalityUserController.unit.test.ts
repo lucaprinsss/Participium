@@ -282,6 +282,29 @@ describe('MunicipalityUserController Unit Tests', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith(expectedResponse);
     });
+
+    it('should handle not found error when updating', async () => {
+      // Arrange
+      const updateData = {
+        email: 'newemail@test.com',
+      };
+
+      mockRequest.params = { id: '999' }; // Non-existent user ID
+      mockRequest.body = updateData;
+      const error = new NotFoundError('User not found');
+      (municipalityUserService.updateMunicipalityUser as jest.Mock).mockRejectedValue(error);
+
+      // Act
+      await municipalityUserController.updateMunicipalityUser(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(municipalityUserService.updateMunicipalityUser).toHaveBeenCalledWith(999, updateData);
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
   });
 
   describe('deleteMunicipalityUser', () => {

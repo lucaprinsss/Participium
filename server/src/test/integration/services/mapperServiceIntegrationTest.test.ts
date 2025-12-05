@@ -3,7 +3,6 @@ import {
   createErrorDTO,
 } from '../../../services/mapperService';
 
-import { userEntity } from '@models/entity/userEntity';
 import { UserResponse } from '@models/dto/output/UserResponse';
 import { ErrorDTO } from '@models/errors/ErrorDTO';
 import { createMockMunicipalityUser } from '@test/utils/mockEntities';

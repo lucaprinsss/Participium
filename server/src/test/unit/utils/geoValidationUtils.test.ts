@@ -14,8 +14,8 @@ describe('geoValidationUtils', () => {
       expect(isValidCoordinate(-91, 0)).toBe(false);  // latitude < -90
       expect(isValidCoordinate(0, 181)).toBe(false);  // longitude > 180
       expect(isValidCoordinate(0, -181)).toBe(false); // longitude < -180
-      expect(isValidCoordinate(NaN, 0)).toBe(false);
-      expect(isValidCoordinate(0, NaN)).toBe(false);
+      expect(isValidCoordinate(Number.NaN, 0)).toBe(false);
+      expect(isValidCoordinate(0, Number.NaN)).toBe(false);
     });
     it('should return false for non-number types', () => {
       expect(isValidCoordinate('45' as any, 7.6869005 as any)).toBe(false);
@@ -56,7 +56,7 @@ describe('geoValidationUtils', () => {
     it('should return false for invalid coordinates', () => {
       expect(isWithinTurinBoundaries(91, 0)).toBe(false);
       expect(isWithinTurinBoundaries(0, 181)).toBe(false);
-      expect(isWithinTurinBoundaries(NaN, NaN)).toBe(false);
+      expect(isWithinTurinBoundaries(Number.NaN, Number.NaN)).toBe(false);
     });
     it('should return false for non-number types', () => {
       expect(isWithinTurinBoundaries('45' as any, 7.6869005 as any)).toBe(false);

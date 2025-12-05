@@ -3,7 +3,7 @@ import { ReportCategory } from '../dto/ReportCategory';
 import { RoleEntity } from './roleEntity';
 
 @Entity('category_role_mapping')
-export class categoryRoleEntity {
+export class CategoryRoleEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 

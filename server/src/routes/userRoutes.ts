@@ -2,8 +2,8 @@
 import express from 'express';
 import UserController from '@controllers/userController';
 import { validateRegisterInput } from '../middleware/registerUserMiddleware';
-import { isLoggedIn, requireRole } from '@middleware/authMiddleware';
-import { UserRole } from '@dto/UserRole';
+import { isLoggedIn } from '@middleware/authMiddleware';
+import { isTechnicalStaff } from '@dto/UserRole';
 
 const router = express.Router();
 
@@ -74,9 +74,9 @@ router.post('/', validateRegisterInput, UserController.register);
  *     summary: Get external maintainers by category
  *     description: |
  *       Retrieve a list of external maintainers filtered by report category.
- *       Only staff members can access this endpoint to assign reports to external maintainers.
- *       External maintainers are users with role "External Maintainer" whose department
- *       corresponds to the requested category.
+ *       Only technical staff can access this endpoint to assign reports to external maintainers.
+ *       External maintainers are users with role "External Maintainer" whose company
+ *       handles the requested category.
  *     tags: [Users]
  *     security:
  *       - cookieAuth: []
@@ -115,7 +115,8 @@ router.post('/', validateRegisterInput, UserController.register);
  *                     example: "john.doe@external.com"
  *                   company_name:
  *                     type: string
- *                     example: "Test External Services Ltd."
+ *                     example: "Enel X"
+ *                     description: Name of the external maintenance company
  *                   department:
  *                     type: object
  *                     properties:
@@ -165,12 +166,24 @@ router.post('/', validateRegisterInput, UserController.register);
  *               message: "An unexpected error occurred"
  */
 
-// router.get(
-//   '/external-maintainers',
-//   isLoggedIn,
-//   requireRole([UserRole.TECHNICAL_OFFICER, UserRole.MUNICIPAL_PUBLIC_RELATIONS_OFFICER]),
-//   UserController.getExternalMaintainersByCategory
-// );
+router.get(
+  '/external-maintainers',
+  isLoggedIn,
+  (req, res, next) => {
+    const user = req.user as any;
+    const roleName = user?.departmentRole?.role?.name;
+    
+    if (!roleName || !isTechnicalStaff(roleName)) {
+      return res.status(403).json({
+        code: 403,
+        name: 'ForbiddenError',
+        message: 'Only technical staff can access this endpoint'
+      });
+    }
+    next();
+  },
+  UserController.getExternalMaintainersByCategory
+);
 
 export default router;
 

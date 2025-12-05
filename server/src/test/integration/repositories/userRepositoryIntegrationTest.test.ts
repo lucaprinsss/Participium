@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, jest } from '@jes
 import { AppDataSource } from "@database/connection";
 import { userRepository } from "@repositories/userRepository";
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
-import { userEntity } from "@models/entity/userEntity";
+import { UserEntity } from "@models/entity/userEntity";
 import { In } from 'typeorm'; 
 
 type CreateUserInput = Parameters<typeof userRepository.createUserWithPassword>[0];
@@ -43,7 +43,7 @@ describe('UserRepository Integration Tests', () => {
   // Final cleanup of all created users
   afterAll(async () => {
     if (createdUserIds.length > 0) {
-      const repository = AppDataSource.getRepository(userEntity);
+      const repository = AppDataSource.getRepository(UserEntity);
       await repository.delete({ id: In(createdUserIds) });
       createdUserIds = [];
     }
@@ -55,7 +55,7 @@ describe('UserRepository Integration Tests', () => {
   // Cleanup after each test
   afterEach(async () => {
     if (createdUserIds.length > 0) {
-      const repository = AppDataSource.getRepository(userEntity);
+      const repository = AppDataSource.getRepository(UserEntity);
       await repository.delete({ id: In(createdUserIds) });
       createdUserIds = [];
     }

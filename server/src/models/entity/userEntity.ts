@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, Jo
 import { DepartmentRoleEntity } from "./departmentRoleEntity";
 
 @Entity("users")
-export class userEntity implements Express.User {
+export class UserEntity implements Express.User {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -39,8 +39,8 @@ export class userEntity implements Express.User {
   @Column({ default: true })
   emailNotificationsEnabled!: boolean;
 
-  @Column({ length: 255, nullable: true })
-  companyName?: string;
+  @Column({ name: "company_id", nullable: true })
+  companyId?: number;
 
   @Column({ default: false })
   isVerified!: boolean;

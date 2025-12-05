@@ -1,5 +1,5 @@
 import { userRepository } from '@repositories/userRepository';
-import { userEntity } from '@models/entity/userEntity';
+import { UserEntity } from '@models/entity/userEntity';
 import * as passwordUtils from '@utils/passwordUtils';
 import { createMockCitizen } from '@test/utils/mockEntities';
 
@@ -21,6 +21,9 @@ describe('UserRepository Unit Tests', () => {
       addSelect: jest.fn().mockReturnThis(),
       getOne: jest.fn(),
       leftJoinAndSelect: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn(),
     };
 
     // Setup mock del repository TypeORM
@@ -314,7 +317,7 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('findUserByUsername', () => {
-    const mockUser: userEntity = createMockCitizen({
+    const mockUser: UserEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -407,7 +410,7 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('findUserById', () => {
-    const mockUser: userEntity = createMockCitizen({
+    const mockUser: UserEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -464,7 +467,7 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('findUserByEmail', () => {
-    const mockUser: userEntity = createMockCitizen({
+    const mockUser: UserEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -521,7 +524,7 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('findAllUsers', () => {
-    const mockUsers: userEntity[] = [
+    const mockUsers: UserEntity[] = [
       createMockCitizen({
         id: 1,
         username: 'user1',
@@ -622,7 +625,7 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('updateUser', () => {
-    const mockUser: userEntity = createMockCitizen({
+    const mockUser: UserEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -755,7 +758,7 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('verifyCredentials', () => {
-    const mockUser: userEntity = createMockCitizen({
+    const mockUser: UserEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -851,7 +854,7 @@ describe('UserRepository Unit Tests', () => {
   });
 
   describe('save', () => {
-    const mockUser: userEntity = createMockCitizen({
+    const mockUser: UserEntity = createMockCitizen({
       id: 1,
       username: 'testuser',
       email: 'test@example.com',
@@ -948,6 +951,41 @@ describe('UserRepository Unit Tests', () => {
 
     it('should have save method', () => {
       expect(typeof userRepository.save).toBe('function');
+    });
+  });
+
+  describe('findExternalMaintainersByCategory', () => {
+    it('should find and return external maintainers for a given category', async () => {
+        const categoryId = 1;
+        const expectedUsers: UserEntity[] = [new UserEntity(), new UserEntity()];
+
+        mockQueryBuilder.getMany.mockResolvedValue(expectedUsers);
+
+        const result = await userRepository.findExternalMaintainersByCategory(categoryId);
+
+        expect(result).toEqual(expectedUsers);
+        expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+        expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('user.departmentRole', 'departmentRole');
+        expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.department', 'department');
+        expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
+        expect(mockQueryBuilder.innerJoin).toHaveBeenCalledWith(
+            'companies',
+            'c',
+            'c.id = user.company_id AND c.category = (SELECT category FROM report_categories WHERE id = :categoryId)',
+            { categoryId }
+        );
+        expect(mockQueryBuilder.where).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('user.company_id IS NOT NULL');
+        expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+    });
+
+    it('should return an empty array if no maintainers are found', async () => {
+        const categoryId = 2;
+        mockQueryBuilder.getMany.mockResolvedValue([]);
+
+        const result = await userRepository.findExternalMaintainersByCategory(categoryId);
+
+        expect(result).toEqual([]);
     });
   });
 });

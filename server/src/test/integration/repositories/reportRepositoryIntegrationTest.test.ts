@@ -7,16 +7,16 @@ import { reportRepository } from '@repositories/reportRepository';
 import { departmentRepository } from '@repositories/departmentRepository';
 import { ReportStatus } from '@models/dto/ReportStatus';
 import { ReportCategory } from '@models/dto/ReportCategory';
-import { userEntity } from '@models/entity/userEntity';
+import { UserEntity } from '@models/entity/userEntity';
 import { DepartmentEntity } from '@models/entity/departmentEntity';
-import { reportEntity } from '@models/entity/reportEntity';
+import { ReportEntity } from '@models/entity/reportEntity';
 
 const r = () => `_${Math.floor(Math.random() * 1000000)}`;
 
 describe('ReportRepository Integration Tests', () => {
     let createdUserIds: number[] = [];
     let createdReportIds: number[] = [];
-    let testUser: userEntity;
+    let testUser: UserEntity;
 
     beforeAll(async () => {
         if (!AppDataSource.isInitialized) {
@@ -409,9 +409,9 @@ describe('ReportRepository Integration Tests', () => {
 });
 
 describe('ReportRepository Integration Tests - getMyAssignedReports', () => {
-  let testTechnician1: userEntity;
-  let testTechnician2: userEntity;
-  let testCitizen: userEntity;
+  let testTechnician1: UserEntity;
+  let testTechnician2: UserEntity;
+  let testCitizen: UserEntity;
   let publicLightingDepartment: DepartmentEntity;
   let electricalStaffDeptRoleId: number;
   let citizenDeptRoleId: number;
@@ -1085,7 +1085,7 @@ describe('ReportRepository Integration Tests - getMyAssignedReports', () => {
   // --- save (for approve/reject operations) ---
   describe('save', () => {
     let testReportId: number;
-    let testReport: reportEntity;
+    let testReport: ReportEntity;
 
     beforeEach(async () => {
       const reportResult = await AppDataSource.query(
