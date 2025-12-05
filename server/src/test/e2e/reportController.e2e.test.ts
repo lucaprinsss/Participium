@@ -634,7 +634,7 @@ afterAll(async () => {
     });
 
     it('should return 403 for unauthorized role (CITIZEN)', async () => {
-      const response = await request(app)
+      await request(app)
         .get(`/api/reports/assigned/external/${externalMaintainerId}`)
         .set('Cookie', citizenCookies)
         .expect(403);

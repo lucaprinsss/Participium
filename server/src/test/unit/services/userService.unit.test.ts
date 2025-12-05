@@ -469,7 +469,7 @@ describe('UserService', () => {
 
       it('should throw AppError if categoryId is NaN', async () => {
         // Act & Assert
-        await expect(userService.getExternalMaintainersByCategory(NaN)).rejects.toThrow(
+        await expect(userService.getExternalMaintainersByCategory(Number.NaN)).rejects.toThrow(
           'categoryId must be a valid positive integer'
         );
       });

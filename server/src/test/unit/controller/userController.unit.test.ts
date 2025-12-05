@@ -590,7 +590,7 @@ describe('UserController Unit Tests', () => {
       );
 
       // Assert
-      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(NaN);
+      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(Number.NaN);
       expect(statusMock).toHaveBeenCalledWith(200);
     });
 

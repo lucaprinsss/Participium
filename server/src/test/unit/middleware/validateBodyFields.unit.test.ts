@@ -1,6 +1,6 @@
 import { validateBodyFields } from '@middleware/validateBodyFields';
 import { BadRequestError } from '@errors/BadRequestError';
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response } from 'express';
 
 describe('validateBodyFields Middleware Unit Tests', () => {
   let mockRequest: Partial<Request>;

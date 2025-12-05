@@ -43,7 +43,7 @@ class UserController {
   async getExternalMaintainersByCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { categoryId } = req.query;
-      const categoryIdNum = categoryId ? parseInt(categoryId as string, 10) : undefined;
+      const categoryIdNum = categoryId ? Number.parseInt(categoryId as string, 10) : undefined;
 
       const externalMaintainers = await userService.getExternalMaintainersByCategory(categoryIdNum);
       res.status(200).json(externalMaintainers);

@@ -1,6 +1,6 @@
 import { AppDataSource } from '@database/connection';
 import * as dotenv from 'dotenv';
-import * as path from 'path';
+import * as path from 'node:path';
 
 /**
  * Carica configurazione ambiente di test

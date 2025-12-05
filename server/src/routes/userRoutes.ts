@@ -2,8 +2,8 @@
 import express from 'express';
 import UserController from '@controllers/userController';
 import { validateRegisterInput } from '../middleware/registerUserMiddleware';
-import { isLoggedIn, requireRole } from '@middleware/authMiddleware';
-import { SystemRoles, isTechnicalStaff } from '@dto/UserRole';
+import { isLoggedIn } from '@middleware/authMiddleware';
+import { isTechnicalStaff } from '@dto/UserRole';
 
 const router = express.Router();
 

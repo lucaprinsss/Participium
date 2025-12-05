@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { reportService } from '../services/reportService';
 import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
-import { UpdateReportStatusRequest } from '../models/dto/input/UpdateReportStatusRequest';
 import { ReportStatus } from '@models/dto/ReportStatus';
 import { ReportCategory } from '@models/dto/ReportCategory';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
@@ -140,14 +139,14 @@ class ReportController {
    * Get a specific report by ID
    * GET /api/reports/:id
    */
-  async getReportById(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      // TODO: Implement get report by ID logic
-      res.status(501).json({ error: 'Not implemented yet' });
-    } catch (error) {
-      next(error);
-    }
-  }
+  // async getReportById(req: Request, res: Response, next: NextFunction): Promise<void> {
+  //   try {
+  //     // Implement get report by ID logic
+  //     res.status(501).json({ error: 'Not implemented yet' });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
 
   /**
    * Update the status of a report

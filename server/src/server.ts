@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import app from './app';
-import http from 'http';
+import http from 'node:http';
 import { logger } from "@services/loggingService";
 import { AppDataSource, closeDatabase } from "@database/connection";
 import * as dotenv from 'dotenv';

@@ -3,7 +3,7 @@
  * Loads environment variables from .env.test before running tests
  */
 import * as dotenv from 'dotenv';
-import * as path from 'path';
+import * as path from 'node:path';
 
 // Silenzia completamente i log di dotenv
 process.env.DOTENV_CONFIG_DEBUG = 'false';

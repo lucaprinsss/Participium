@@ -165,13 +165,13 @@ describe('ReportService', () => {
         }).toThrow('Invalid coordinates');
       });
 
-      it('should throw BadRequestError when coordinates are NaN', () => {
+      it('should throw BadRequestError when coordinates are Number.NaN', () => {
         expect(() => {
-          reportService.validateLocation({ latitude: NaN, longitude: 7.6869005 });
+          reportService.validateLocation({ latitude: Number.NaN, longitude: 7.6869005 });
         }).toThrow(BadRequestError);
 
         expect(() => {
-          reportService.validateLocation({ latitude: 45.0703393, longitude: NaN });
+          reportService.validateLocation({ latitude: 45.0703393, longitude: Number.NaN });
         }).toThrow(BadRequestError);
       });
     });
@@ -1049,16 +1049,16 @@ describe('ReportService additional unit tests', () => {
     });
 
     describe('approval workflow', () => {
-      it('should throw BadRequestError for invalid report ID (NaN) when approving', async () => {
+      it('should throw BadRequestError for invalid report ID (Number.NaN) when approving', async () => {
         const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
         jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
         
         await expect(
-          reportService.updateReportStatus(NaN, ReportStatus.ASSIGNED, {}, 1)
+          reportService.updateReportStatus(Number.NaN, ReportStatus.ASSIGNED, {}, 1)
         ).rejects.toThrow(BadRequestError);
         
         await expect(
-          reportService.updateReportStatus(NaN, ReportStatus.ASSIGNED, {}, 1)
+          reportService.updateReportStatus(Number.NaN, ReportStatus.ASSIGNED, {}, 1)
         ).rejects.toThrow('Invalid report ID');
       });
 
@@ -1153,15 +1153,15 @@ describe('ReportService additional unit tests', () => {
 
   describe('rejection workflow', () => {
 
-    it('should throw BadRequestError for invalid report ID (NaN) when rejecting', async () => {
+    it('should throw BadRequestError for invalid report ID (Number.NaN) when rejecting', async () => {
       const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
       jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
 
       await expect(
-        reportService.updateReportStatus(NaN, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
+        reportService.updateReportStatus(Number.NaN, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
       ).rejects.toThrow(BadRequestError);
       await expect(
-        reportService.updateReportStatus(NaN, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
+        reportService.updateReportStatus(Number.NaN, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
       ).rejects.toThrow('Invalid report ID');
     });
 
@@ -1380,12 +1380,12 @@ describe('ReportService additional unit tests', () => {
 
     });
 
-    it('should throw BadRequestError for invalid report ID (NaN)', async () => {
+    it('should throw BadRequestError for invalid report ID (Number.NaN)', async () => {
 
       jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockTechnicalManager);
 
       await expect(
-        reportService.updateReportStatus(NaN, ReportStatus.RESOLVED, {}, technicalManagerId)
+        reportService.updateReportStatus(Number.NaN, ReportStatus.RESOLVED, {}, technicalManagerId)
       ).rejects.toThrow(BadRequestError);
       expect(reportRepository.save).not.toHaveBeenCalled();
 

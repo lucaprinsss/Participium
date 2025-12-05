@@ -354,15 +354,6 @@ describe('ReportRepository', () => {
     });
 
     it('should return empty array when assigned user is not an External Maintainer', async () => {
-      const mockNonExternalMaintainerReport: ReportEntity = {
-        ...mockReportAssigned,
-        assignee: {
-          id: externalMaintainerId,
-          username: 'tech_staff',
-          departmentRole: { role: { id: 2, name: 'Technical Staff' } } as any
-        } as any,
-      };
-      const mockReports = [mockNonExternalMaintainerReport];
 
       const queryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -600,7 +591,7 @@ describe('ReportRepository', () => {
       jest.spyOn(reportRepository['repository'], 'createQueryBuilder').mockReturnValue(queryBuilder as any);
 
       await reportRepository.getApprovedReportsForMap({
-        minLat: 45.0,
+        minLat: 45,
         maxLat: 45.1,
         minLng: 7.6,
         maxLng: 7.7
@@ -609,7 +600,7 @@ describe('ReportRepository', () => {
       expect(queryBuilder.andWhere).toHaveBeenCalledWith(
         expect.stringContaining('ST_Intersects'),
         expect.objectContaining({
-          minLat: 45.0,
+          minLat: 45,
           maxLat: 45.1,
           minLng: 7.6,
           maxLng: 7.7
@@ -711,7 +702,7 @@ describe('ReportRepository', () => {
       jest.spyOn(reportRepository['repository'], 'createQueryBuilder').mockReturnValue(queryBuilder as any);
 
       await reportRepository.getClusteredReports(8, {
-        minLat: 45.0,
+        minLat: 45,
         maxLat: 45.1,
         minLng: 7.6,
         maxLng: 7.7,

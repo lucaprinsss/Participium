@@ -90,7 +90,7 @@ class UserService {
       throw new AppError('categoryId query parameter is required', 400);
     }
 
-    if (isNaN(categoryId) || categoryId <= 0) {
+    if (Number.isNaN(categoryId) || categoryId <= 0) {
       throw new AppError('categoryId must be a valid positive integer', 400);
     }
 
