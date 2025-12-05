@@ -259,6 +259,197 @@ INSERT INTO users (
 
 
 -- ============================================
+-- INSERT TEST REPORTS
+-- ============================================
+
+-- Report 1: Pending Approval - Public Lighting
+INSERT INTO reports (
+  reporter_id,
+  title,
+  description,
+  category,
+  location,
+  address,
+  is_anonymous,
+  status,
+  created_at
+)
+SELECT 
+  u.id,
+  'Street light broken',
+  'The street light on Via Roma is not working properly and needs maintenance',
+  'Public Lighting',
+  ST_GeogFromText('POINT(7.6869005 45.0703393)'),
+  'Via Roma 15, 10121 Torino',
+  false,
+  'Pending Approval',
+  CURRENT_TIMESTAMP - INTERVAL '2 days'
+FROM users u WHERE u.username = 'testcitizen';
+
+-- Report 2: Assigned - Roads and Urban Furnishings
+INSERT INTO reports (
+  reporter_id,
+  title,
+  description,
+  category,
+  location,
+  address,
+  is_anonymous,
+  status,
+  assignee_id,
+  created_at
+)
+SELECT 
+  citizen.id,
+  'Broken sidewalk',
+  'The sidewalk near the central park has a large crack and poses a safety hazard',
+  'Roads and Urban Furnishings',
+  ST_GeogFromText('POINT(7.6932941 45.0692403)'),
+  'Corso Vittorio Emanuele II 45, 10125 Torino',
+  false,
+  'Assigned',
+  staff.id,
+  CURRENT_TIMESTAMP - INTERVAL '3 days'
+FROM users citizen, users staff 
+WHERE citizen.username = 'testcitizen' 
+  AND staff.username = 'teststaffmember';
+
+-- Report 3: In Progress - Water Supply
+INSERT INTO reports (
+  reporter_id,
+  title,
+  description,
+  category,
+  location,
+  address,
+  is_anonymous,
+  status,
+  assignee_id,
+  created_at
+)
+SELECT 
+  citizen.id,
+  'Water leak on street',
+  'There is a significant water leak from the main pipe causing flooding',
+  'Water Supply - Drinking Water',
+  ST_GeogFromText('POINT(7.6782069 45.0625748)'),
+  'Via Po 25, 10124 Torino',
+  false,
+  'In Progress',
+  staff.id,
+  CURRENT_TIMESTAMP - INTERVAL '5 days'
+FROM users citizen, users staff 
+WHERE citizen.username = 'testcitizen' 
+  AND staff.username = 'teststaffmember';
+
+-- Report 4: Resolved - Waste
+INSERT INTO reports (
+  reporter_id,
+  title,
+  description,
+  category,
+  location,
+  address,
+  is_anonymous,
+  status,
+  assignee_id,
+  created_at
+)
+SELECT 
+  citizen.id,
+  'Trash overflow',
+  'The trash bin is completely full and garbage is overflowing onto the street',
+  'Waste',
+  ST_GeogFromText('POINT(7.6950000 45.0700000)'),
+  'Piazza Castello 1, 10121 Torino',
+  false,
+  'Resolved',
+  staff.id,
+  CURRENT_TIMESTAMP - INTERVAL '7 days'
+FROM users citizen, users staff 
+WHERE citizen.username = 'testcitizen' 
+  AND staff.username = 'teststaffmember';
+
+-- Report 5: Rejected - Other
+INSERT INTO reports (
+  reporter_id,
+  title,
+  description,
+  category,
+  location,
+  address,
+  is_anonymous,
+  status,
+  rejection_reason,
+  created_at
+)
+SELECT 
+  u.id,
+  'Test rejected report',
+  'This is a test report that was rejected',
+  'Other',
+  ST_GeogFromText('POINT(7.6800000 45.0650000)'),
+  'Via Garibaldi 10, 10122 Torino',
+  false,
+  'Rejected',
+  'Duplicate report - already exists',
+  CURRENT_TIMESTAMP - INTERVAL '10 days'
+FROM users u WHERE u.username = 'testcitizen';
+
+-- Report 6: Anonymous Pending - Architectural Barriers
+INSERT INTO reports (
+  reporter_id,
+  title,
+  description,
+  category,
+  location,
+  address,
+  is_anonymous,
+  status,
+  created_at
+)
+SELECT 
+  u.id,
+  'Wheelchair access blocked',
+  'The entrance ramp for wheelchair access is blocked by parked bicycles',
+  'Architectural Barriers',
+  ST_GeogFromText('POINT(7.6850000 45.0680000)'),
+  'Via Milano 8, 10123 Torino',
+  true,
+  'Pending Approval',
+  CURRENT_TIMESTAMP - INTERVAL '1 day'
+FROM users u WHERE u.username = 'testcitizen';
+
+-- Report 7: Suspended - Sewer System
+INSERT INTO reports (
+  reporter_id,
+  title,
+  description,
+  category,
+  location,
+  address,
+  is_anonymous,
+  status,
+  assignee_id,
+  created_at
+)
+SELECT 
+  citizen.id,
+  'Sewer blockage',
+  'The sewer is blocked causing bad smell and potential overflow',
+  'Sewer System',
+  ST_GeogFromText('POINT(7.6900000 45.0710000)'),
+  'Via Nizza 30, 10126 Torino',
+  false,
+  'Suspended',
+  staff.id,
+  CURRENT_TIMESTAMP - INTERVAL '4 days'
+FROM users citizen, users staff 
+WHERE citizen.username = 'testcitizen' 
+  AND staff.username = 'teststaffmember';
+
+
+-- ============================================
 -- VERIFY DATA
 -- ============================================
 
@@ -292,3 +483,20 @@ JOIN department_roles dr ON u.department_role_id = dr.id
 JOIN roles r ON dr.role_id = r.id
 JOIN departments d ON dr.department_id = d.id
 ORDER BY u.id;
+
+-- Display inserted test reports
+SELECT 
+  r.id,
+  r.title,
+  r.category,
+  r.status,
+  r.address,
+  ST_AsText(r.location::geometry) AS location_text,
+  r.is_anonymous,
+  u.username AS reporter,
+  a.username AS assignee,
+  r.created_at
+FROM reports r
+JOIN users u ON r.reporter_id = u.id
+LEFT JOIN users a ON r.assignee_id = a.id
+ORDER BY r.created_at DESC;

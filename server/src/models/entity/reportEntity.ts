@@ -48,6 +48,9 @@ export class reportEntity {
   @Column({ type: "geography", spatialFeatureType: "Point", srid: 4326 })
   location!: string;
 
+  @Column({ type: "varchar", length: 500, nullable: true })
+  address?: string;
+
   @Column({ default: false })
   isAnonymous!: boolean;
 

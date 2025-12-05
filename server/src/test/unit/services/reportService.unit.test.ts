@@ -36,6 +36,7 @@ const createMockReport = (overrides?: Partial<reportEntity>): reportEntity => {
     description: 'Test Description',
     category: ReportCategory.ROADS,
     location: 'POINT(7.6869005 45.0703393)',
+    address: undefined,
     status: ReportStatus.ASSIGNED,
     isAnonymous: false,
     assigneeId: 50,

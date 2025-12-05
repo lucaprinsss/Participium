@@ -102,17 +102,18 @@ afterAll(async () => {
       // Inserisci report assegnati al tecnico
       await AppDataSource.query(
         `INSERT INTO reports 
-          (reporter_id, title, description, category, location, status, assignee_id, is_anonymous, created_at)
+          (reporter_id, title, description, category, location, address, status, assignee_id, is_anonymous, created_at)
          VALUES
-          ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8, $9),
-          ($1, $10, $11, $4, ST_GeogFromText($12), $13, $7, $8, $14),
-          ($1, $15, $16, $4, ST_GeogFromText($17), $18, $7, $8, $19)`,
+          ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8, $9, $10),
+          ($1, $11, $12, $4, ST_GeogFromText($13), $14, $15, $8, $9, $16),
+          ($1, $17, $18, $4, ST_GeogFromText($19), $20, $21, $8, $9, $22)`,
         [
           citizenId,
           'Street light broken',
           'Lamp not working',
           ReportCategory.PUBLIC_LIGHTING,
           'POINT(7.6869005 45.0703393)',
+          'Via Roma 15, 10121 Torino',
           ReportStatus.ASSIGNED,
           technicianId,
           false,
@@ -120,11 +121,13 @@ afterAll(async () => {
           'Light maintenance needed',
           'Routine check',
           'POINT(7.6932941 45.0692403)',
+          'Corso Vittorio Emanuele II 45, 10125 Torino',
           ReportStatus.IN_PROGRESS,
           new Date('2024-01-02'),
           'Resolved light issue',
           'Resolved successfully',
           'POINT(7.6782069 45.0625748)',
+          'Via Po 25, 10124 Torino',
           ReportStatus.RESOLVED,
           new Date('2024-01-03')
         ]
@@ -218,9 +221,9 @@ afterAll(async () => {
         category: ReportCategory.ROADS,
         location: {
             latitude: 45.0703393,
-            longitude: 7.6869005,
-            address: 'Via Roma 1, Torino'
+            longitude: 7.6869005
           },
+          address: 'Via Roma 1, Torino',
           isAnonymous: false,
           photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD86P8Ag5t/4Lpftzf8E4v+CwnxO+DPwH+P3/Cvfht4e8N/D2+0vQf+FZeBNc+zz6j4C0PUL2T7XrPhu+vJvMvLu4l2vcuqbyqKqKqqP6PP+CL3/BVD4+f8FMP2DPDnxp+P3wz+Gfwy8U69r2uaReeG/h1qniG/0q1i026WCKZJvEum6ddmR1BLAwBQRwSea/zsP+D3X/lM98Z/+xJ+F/8A6qfRK/0Gf+Dbf/lBF+zJ/wBhzx1/6l7ygD/9k=']
       };
@@ -235,6 +238,7 @@ afterAll(async () => {
       expect(response.body.title).toBe(newReport.title);
       expect(response.body.reporterId).toBe(citizenId);
       expect(response.body.status).toBe(ReportStatus.PENDING_APPROVAL);
+      expect(response.body.address).toBe(newReport.address);
     });
 
     it('should return 401 if user is not authenticated', async () => {
@@ -244,9 +248,9 @@ afterAll(async () => {
         category: ReportCategory.ROADS,
         location: {
           latitude: 45.0703393,
-          longitude: 7.6869005,
-          address: 'Via Roma 1, Torino'
+          longitude: 7.6869005
         },
+        address: 'Via Roma 1, Torino',
         isAnonymous: false
       };
 
@@ -263,9 +267,9 @@ afterAll(async () => {
         category: ReportCategory.ROADS,
         location: {
           latitude: 45.0703393,
-          longitude: 7.6869005,
-          address: 'Via Roma 1, Torino'
+          longitude: 7.6869005
         },
+        address: 'Via Roma 1, Torino',
         isAnonymous: false
       };
 
@@ -283,16 +287,17 @@ afterAll(async () => {
       // Insert some reports for testing
       await AppDataSource.query(
         `INSERT INTO reports 
-          (reporter_id, title, description, category, location, status, is_anonymous, created_at)
+          (reporter_id, title, description, category, location, address, status, is_anonymous, created_at)
          VALUES
-          ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8),
-          ($1, $9, $10, $11, ST_GeogFromText($12), $13, $7, $14)`,
+          ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8, $9),
+          ($1, $10, $11, $12, ST_GeogFromText($13), $14, $15, $8, $16)`,
         [
           citizenId,
           'Report 1 Title',
           'Valid description for report 1',
           ReportCategory.PUBLIC_LIGHTING,
           'POINT(7.68 45.07)',
+          'Via Garibaldi 10, 10122 Torino',
           ReportStatus.PENDING_APPROVAL,
           false,
           new Date(),
@@ -300,6 +305,7 @@ afterAll(async () => {
           'Valid description for report 2',
           ReportCategory.ROADS,
           'POINT(7.69 45.06)',
+          'Piazza Castello 1, 10121 Torino',
           ReportStatus.ASSIGNED,
           new Date(),
         ]
@@ -361,12 +367,12 @@ afterAll(async () => {
       // Inserisci report con diverse categorie e stati per la mappa
       await AppDataSource.query(
         `INSERT INTO reports 
-          (reporter_id, title, description, category, location, status, assignee_id, is_anonymous, created_at)
+          (reporter_id, title, description, category, location, address, status, assignee_id, is_anonymous, created_at)
          VALUES
-          ($1, $2, $3, $4, ST_GeogFromText($5), $6, NULL, $7, $8),
-          ($1, $9, $10, $11, ST_GeogFromText($12), $13, $14, $7, $15),
-          ($1, $16, $17, $18, ST_GeogFromText($19), $20, $14, $7, $21),
-          ($1, $22, $23, $24, ST_GeogFromText($25), $26, $14, $7, $27)`,
+          ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, NULL, $8, $9),
+          ($1, $10, $11, $12, ST_GeogFromText($13), $14, $15, $16, $8, $17),
+          ($1, $18, $19, $20, ST_GeogFromText($21), $22, $23, $16, $8, $24),
+          ($1, $25, $26, $27, ST_GeogFromText($28), $29, $30, $16, $8, $31)`,
         [
           citizenId,
           // Report 1 - PENDING_APPROVAL
@@ -374,6 +380,7 @@ afterAll(async () => {
           'Sidewalk needs repair',
           ReportCategory.ROADS,
           'POINT(7.6869005 45.0703393)',
+          'Corso Vittorio Emanuele II 45, 10125 Torino',
           ReportStatus.PENDING_APPROVAL,
           false,
           new Date('2024-01-01'),
@@ -382,6 +389,7 @@ afterAll(async () => {
           'Lamp not working',
           ReportCategory.PUBLIC_LIGHTING,
           'POINT(7.6932941 45.0692403)',
+          'Via Roma 15, 10121 Torino',
           ReportStatus.ASSIGNED,
           technicianId,
           new Date('2024-01-02'),
@@ -390,6 +398,7 @@ afterAll(async () => {
           'Graffiti removal needed',
           ReportCategory.OTHER,
           'POINT(7.6782069 45.0625748)',
+          'Via Milano 8, 10123 Torino',
           ReportStatus.IN_PROGRESS,
           new Date('2024-01-03'),
           // Report 4 - RESOLVED
@@ -397,6 +406,7 @@ afterAll(async () => {
           'Trash bin is full',
           ReportCategory.WASTE,
           'POINT(7.6950000 45.0700000)',
+          'Piazza Castello 1, 10121 Torino',
           ReportStatus.RESOLVED,
           new Date('2024-01-04')
         ]
@@ -479,14 +489,15 @@ afterAll(async () => {
       // Aggiungi un report rifiutato
       await AppDataSource.query(
         `INSERT INTO reports 
-          (reporter_id, title, description, category, location, status, is_anonymous, rejection_reason, created_at)
-         VALUES ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8, $9)`,
+          (reporter_id, title, description, category, location, address, status, is_anonymous, rejection_reason, created_at)
+         VALUES ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8, $9, $10)`,
         [
           citizenId,
           'Rejected report',
           'This was rejected',
           ReportCategory.OTHER,
           'POINT(7.6800000 45.0650000)',
+          'Via Garibaldi 10, 10122 Torino',
           ReportStatus.REJECTED,
           false,
           'Invalid report',

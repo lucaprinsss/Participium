@@ -30,6 +30,11 @@ import { ReportCategory } from '../ReportCategory';
  *           $ref: '#/components/schemas/ReportCategory'
  *         location:
  *           $ref: '#/components/schemas/Location'
+ *         address:
+ *           type: string
+ *           maxLength: 500
+ *           description: Human-readable address of the report location
+ *           example: "Via Roma 15, 10121 Turin, Italy"
  *         photos:
  *           type: array
  *           minItems: 1
@@ -50,6 +55,7 @@ export interface CreateReportRequest {
   description: string;
   category: ReportCategory;
   location: Location;
+  address?: string;
   photos: string[];
   isAnonymous?: boolean;
 }

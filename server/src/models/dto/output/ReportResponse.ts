@@ -71,6 +71,11 @@ export interface PhotoResponse {
  *           $ref: '#/components/schemas/ReportCategory'
  *         location:
  *           $ref: '#/components/schemas/Location'
+ *         address:
+ *           type: string
+ *           nullable: true
+ *           description: Human-readable address of the report location
+ *           example: "Via Roma 15, 10121 Turin, Italy"
  *         photos:
  *           type: array
  *           items:
@@ -111,6 +116,7 @@ export interface ReportResponse {
   description: string;
   category: ReportCategory;
   location: Location;
+  address?: string;
   photos: PhotoResponse[];
   isAnonymous: boolean;
   status: ReportStatus;
