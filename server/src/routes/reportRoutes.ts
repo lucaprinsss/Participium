@@ -763,6 +763,17 @@ router.get('/map', isLoggedIn, validateMapQuery, reportController.getMapReports)
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get('/:id/internal-comments',
+  isLoggedIn,
+  requireRole([UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT, UserRole.PUBLIC_RELATIONS_OFFICER, UserRole.EXTERNAL_MAINTAINER]),
+  validateId('id', 'report'),
+  reportController.getInternalComments
+);
+
+ /**
+ * @swagger
+ * /api/reports/{id}/internal-comments:
  *   post:
  *     summary: Add an internal comment to a report
  *     description: |
@@ -894,29 +905,78 @@ router.get('/map', isLoggedIn, validateMapQuery, reportController.getMapReports)
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-// router.get('/:id/internal-comments',
-//   isLoggedIn,
-//   requireRole([
-//     UserRole.TECHNICAL_MANAGER,
-//     UserRole.TECHNICAL_ASSISTANT,
-//     UserRole.PUBLIC_RELATIONS_OFFICER,
-//     UserRole.EXTERNAL_MAINTAINER
-//   ]),
-//   validateId,
-//   reportController.getInternalComments
-// );
-//
-// router.post('/:id/internal-comments',
-//   isLoggedIn,
-//   requireRole([
-//     UserRole.TECHNICAL_MANAGER,
-//     UserRole.TECHNICAL_ASSISTANT,
-//     UserRole.PUBLIC_RELATIONS_OFFICER,
-//     UserRole.EXTERNAL_MAINTAINER
-//   ]),
-//   validateId,
-//   reportController.addInternalComment
-// );
+router.post('/:id/internal-comments',
+  isLoggedIn,
+  requireRole([UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT, UserRole.PUBLIC_RELATIONS_OFFICER, UserRole.EXTERNAL_MAINTAINER]),
+  validateId('id', 'report'),
+  reportController.addInternalComment
+);
+
+/**
+ * @swagger
+ * /api/reports/{reportId}/internal-comments/{commentId}:
+ *   delete:
+ *     summary: Delete an internal comment from a report
+ *     description: |
+ *       Delete a specific internal comment from a report. Only the author of the
+ *       comment can delete it.
+ *     tags: [Reports]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reportId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Report ID
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Comment ID to delete
+ *     responses:
+ *       204:
+ *         description: Comment deleted successfully
+ *       400:
+ *         description: Bad request - Invalid IDs or comment doesn't belong to report
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Insufficient rights - Can only delete own comments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Report or comment not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.delete('/:reportId/internal-comments/:commentId',
+  isLoggedIn,
+  requireRole([UserRole.TECHNICAL_MANAGER, UserRole.TECHNICAL_ASSISTANT, UserRole.PUBLIC_RELATIONS_OFFICER, UserRole.EXTERNAL_MAINTAINER]),
+  validateId('reportId', 'report'),
+  validateId('commentId', 'comment'),
+  reportController.deleteInternalComment
+);
 
 export default router;
 

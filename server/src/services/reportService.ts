@@ -19,6 +19,9 @@ import { ReportResponse } from '../models/dto/output/ReportResponse';
 import { reportEntity } from '../models/entity/reportEntity';
 import { Report } from '@models/dto/Report'; 
 import { mapReportEntityToResponse, mapReportEntityToDTO, mapReportEntityToReportResponse } from './mapperService';
+import { commentRepository } from '../repositories/commentRepository';
+import { CommentResponse } from '../models/dto/output/CommentResponse';
+import { commentEntity } from '../models/entity/commentEntity';
 
 /**
  * Report Service
@@ -350,6 +353,103 @@ class ReportService {
     const updatedReport = await reportRepository.save(report);
 
     return mapReportEntityToDTO(updatedReport);
+  }
+
+  /**
+   * Get all internal comments for a report
+   * @param reportId - The ID of the report
+   * @returns Array of comments
+   */
+  async getInternalComments(reportId: number): Promise<CommentResponse[]> {
+    // Verify the report exists
+    const report = await reportRepository.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundError('Report not found');
+    }
+
+    const comments = await commentRepository.getCommentsByReportId(reportId);
+
+    return comments.map(comment => this.mapCommentToResponse(comment));
+  }
+
+  /**
+   * Add an internal comment to a report
+   * @param reportId - The ID of the report
+   * @param userId - The ID of the user adding the comment
+   * @param content - The comment content
+   * @returns The created comment
+   */
+  async addInternalComment(reportId: number, userId: number, content: string): Promise<CommentResponse> {
+    // Verify the report exists
+    const report = await reportRepository.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundError('Report not found');
+    }
+
+    // Validate content
+    if (!content || content.trim().length === 0) {
+      throw new BadRequestError('Comment content cannot be empty');
+    }
+
+    if (content.length > 2000) {
+      throw new BadRequestError('Comment content cannot exceed 2000 characters');
+    }
+
+    const comment = await commentRepository.createComment(reportId, userId, content.trim());
+
+    return this.mapCommentToResponse(comment);
+  }
+
+  /**
+   * Delete an internal comment from a report
+   * @param reportId - The ID of the report
+   * @param commentId - The ID of the comment to delete
+   * @param userId - The ID of the user deleting the comment
+   */
+  async deleteInternalComment(reportId: number, commentId: number, userId: number): Promise<void> {
+    // Verify the report exists
+    const report = await reportRepository.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundError('Report not found');
+    }
+
+    // Verify the comment exists and belongs to the report
+    const comment = await commentRepository.getCommentById(commentId);
+    if (!comment) {
+      throw new NotFoundError('Comment not found');
+    }
+
+    if (comment.reportId !== reportId) {
+      throw new BadRequestError('Comment does not belong to this report');
+    }
+
+    // Only the author of the comment can delete it
+    if (comment.authorId !== userId) {
+      throw new InsufficientRightsError('You can only delete your own comments');
+    }
+
+    await commentRepository.deleteComment(commentId);
+  }
+
+  /**
+   * Map comment entity to response DTO
+   * @param comment - The comment entity
+   * @returns Comment response DTO
+   */
+  private mapCommentToResponse(comment: commentEntity): CommentResponse {
+    return {
+      id: comment.id,
+      reportId: comment.reportId,
+      author: {
+        id: comment.author.id,
+        username: comment.author.username,
+        firstName: comment.author.firstName,
+        lastName: comment.author.lastName,
+        role: comment.author.departmentRole?.role?.name || 'Unknown'
+      },
+      content: comment.content,
+      createdAt: comment.createdAt
+    };
   }
 }
 

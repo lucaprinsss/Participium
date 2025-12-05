@@ -6,6 +6,8 @@ import { ReportCategory } from '@models/dto/ReportCategory';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { User } from '@models/dto/User';
 import { parseAndValidateId } from '@utils/idValidationUtils';
+import { BadRequestError } from '@models/errors/BadRequestError';
+import { CreateCommentRequest } from '../models/dto/input/CreateCommentRequest';
 
 /**
  * Report Controller
@@ -177,6 +179,70 @@ class ReportController {
       );
       
       res.status(200).json(rejectedReport);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get internal comments for a report
+   * GET /api/reports/:id/internal-comments
+   */
+  async getInternalComments(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const reportId = parseAndValidateId(req.params.id, 'report');
+      
+      const comments = await reportService.getInternalComments(reportId);
+      
+      res.status(200).json(comments);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Add an internal comment to a report
+   * POST /api/reports/:id/internal-comments
+   */
+  async addInternalComment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+
+      const userId = (req.user as User).id;
+      const reportId = parseAndValidateId(req.params.id, 'report');
+      const { content } = req.body as CreateCommentRequest;
+
+      if (!content) {
+        throw new BadRequestError('Comment content is required');
+      }
+
+      const comment = await reportService.addInternalComment(reportId, userId, content);
+      
+      res.status(201).json(comment);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Delete an internal comment from a report
+   * DELETE /api/reports/:reportId/internal-comments/:commentId
+   */
+  async deleteInternalComment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+
+      const userId = (req.user as User).id;
+      const reportId = parseAndValidateId(req.params.reportId, 'report');
+      const commentId = parseAndValidateId(req.params.commentId, 'comment');
+
+      await reportService.deleteInternalComment(reportId, commentId, userId);
+      
+      res.status(204).send();
     } catch (error) {
       next(error);
     }
