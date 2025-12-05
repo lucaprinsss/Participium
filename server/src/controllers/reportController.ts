@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { reportService } from '../services/reportService';
 import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
+import { UpdateReportStatusRequest } from '../models/dto/input/UpdateReportStatusRequest';
 import { ReportStatus } from '@models/dto/ReportStatus';
 import { ReportCategory } from '@models/dto/ReportCategory';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
@@ -120,6 +121,22 @@ class ReportController {
   }
 
   /**
+   * Get reports assigned to a specific external maintainer
+   * GET /api/reports/assigned/external/:externalMaintainerId
+   */
+  async getAssignedReportsToExternalMaintainer(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const externalMaintainerId = parseAndValidateId(req.params.externalMaintainerId, 'external maintainer');
+      const status = req.query.status as ReportStatus | undefined;
+
+      const reports = await reportService.getAssignedReportsToExternalMaintainer(externalMaintainerId, status);
+      res.status(200).json(reports);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get a specific report by ID
    * GET /api/reports/:id
    */
@@ -133,52 +150,54 @@ class ReportController {
   }
 
   /**
-   * Approve a report
-   * PUT /api/reports/:id/approve
+   * Update the status of a report
+   * PUT /api/reports/:id/status
    */
-  async approveReport(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async updateReportStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         throw new UnauthorizedError('Not authenticated');
       }
 
-      const userId = (req.user as User).id;
+      const userId = (req.user as any).id;
       const reportId = parseAndValidateId(req.params.id, 'report');
-      const { category } = req.body;
+      const { newStatus, status, ...body } = req.body;
+      const finalStatus = newStatus || status;
 
-      const approvedReport = await reportService.approveReport(
+      const updatedReport = await reportService.updateReportStatus(
         reportId, 
-        userId,
-        category as ReportCategory | undefined
+        finalStatus as ReportStatus, 
+        body, 
+        userId
       );
       
-      res.status(200).json(approvedReport);
+      res.status(200).json(updatedReport);
     } catch (error) {
       next(error);
     }
   }
 
   /**
-   * Reject a report
-   * PUT /api/reports/:id/reject
+   * Assign report to external maintainer
+   * PATCH /api/reports/:id/assign-external
    */
-  async rejectReport(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async assignToExternalMaintainer(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         throw new UnauthorizedError('Not authenticated');
       }
 
-      const userId = (req.user as User).id;
+      const userId = (req.user as any).id;
       const reportId = parseAndValidateId(req.params.id, 'report');
-      const { rejectionReason } = req.body;
+      const { externalAssigneeId } = req.body;
 
-      const rejectedReport = await reportService.rejectReport(
-        reportId, 
-        rejectionReason, 
+      const updatedReport = await reportService.assignToExternalMaintainer(
+        reportId,
+        externalAssigneeId,
         userId
       );
       
-      res.status(200).json(rejectedReport);
+      res.status(200).json(updatedReport);
     } catch (error) {
       next(error);
     }

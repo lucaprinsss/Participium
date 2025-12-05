@@ -46,23 +46,49 @@ function App() {
       
       setIsAuthLoading(true);
       setAuthError(null);
+
+      // --- NUOVA LOGICA: Controllo "Indizio" ---
+      // Se non c'è l'indizio che l'utente si era loggato in passato,
+      // non disturbiamo il server (evitando il 401).
+      const hasLoginHint = localStorage.getItem("isLoggedIn");
+
+      if (!hasLoginHint) {
+        // Non siamo loggati (o abbiamo fatto logout), saltiamo la chiamata API
+        if (isMounted) {
+          setUser(null);
+          setIsAuthLoading(false);
+          // Se siamo su una rotta protetta, il redirect avverrà nel blocco catch/finally o qui sotto
+          if (!noNavbarRoutes.includes(location.pathname)) {
+             navigate("/login", { replace: true });
+          }
+        }
+        return; 
+      }
       
+      // Se l'indizio c'è, facciamo la chiamata al server per confermare che il cookie sia ancora valido
       try {
         const userData = await getCurrentUser();
         if (isMounted) {
-          setUser(userData);
-          
-          // Automatic redirect if user is logged in and is on login/register
-          if (userData && (location.pathname === "/login" || location.pathname === "/register")) {
-            navigate("/home", { replace: true });
+          if (userData) {
+             setUser(userData);
+             // Redirect automatico se siamo su login/register ma siamo loggati
+             if (location.pathname === "/login" || location.pathname === "/register") {
+               navigate("/home", { replace: true });
+             }
+          } else {
+             // Caso raro: avevamo il flag in localStorage ma il cookie è scaduto -> 401 gestito
+             // Puliamo il flag per il futuro
+             localStorage.removeItem("isLoggedIn");
+             setUser(null);
           }
         }
       } catch (error) {
         if (isMounted) {
+          // Se c'è un errore reale, puliamo l'indizio per sicurezza
+          localStorage.removeItem("isLoggedIn");
           setUser(null);
           setAuthError(error.message || "Error during authentication check");
           
-          // If user is not authenticated, redirect to login unless on public routes
           if (!noNavbarRoutes.includes(location.pathname)) {
             navigate("/login", { replace: true });
           }

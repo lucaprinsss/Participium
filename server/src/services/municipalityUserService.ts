@@ -2,6 +2,7 @@ import { UserResponse } from '@models/dto/output/UserResponse';
 import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
+import { companyRepository } from '@repositories/companyRepository';
 import { NotFoundError } from '@models/errors/NotFoundError';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { logInfo } from '@services/loggingService';
@@ -22,7 +23,7 @@ class MunicipalityUserService {
    * @throws ConflictError if username or email already exists
    */
   async createMunicipalityUser(registerData: RegisterRequest): Promise<UserResponse> {
-    const { role_name, password, first_name, last_name, username, email, department_name } = registerData;
+    const { role_name, password, first_name, last_name, username, email, department_name, company_name } = registerData;
 
     if (role_name === 'Citizen') {
       throw new BadRequestError('Cannot create a municipality user with Citizen role');
@@ -41,6 +42,26 @@ class MunicipalityUserService {
     const existingUserByEmail = await userRepository.existsUserByEmail(email);
     if (existingUserByEmail) {
       throw new ConflictError('Email already exists');
+    }
+
+    // Validate company assignment - only External Maintainer can have a company
+    if (company_name && role_name !== 'External Maintainer') {
+      throw new BadRequestError('Only External Maintainer role can be assigned to a company');
+    }
+
+    // Require company for External Maintainer
+    if (role_name === 'External Maintainer' && !company_name) {
+      throw new BadRequestError('External Maintainer role requires a company assignment');
+    }
+
+    // Resolve company_name to company_id if provided
+    let companyId: number | undefined;
+    if (company_name) {
+      const company = await companyRepository.findByName(company_name);
+      if (!company) {
+        throw new BadRequestError(`Company "${company_name}" not found`);
+      }
+      companyId = company.id;
     }
 
     // Find department role by department and role name
@@ -67,6 +88,7 @@ class MunicipalityUserService {
       lastName: last_name,
       departmentRoleId: matchingDepartmentRole.id,
       password,
+      companyId: companyId,
       isVerified: true  // Municipality users are pre-verified
     });
     logInfo(`Municipality user created: ${username} with role ${role_name}`);
@@ -118,9 +140,9 @@ class MunicipalityUserService {
   /**
    * Validate update data has at least one field
    */
-  private validateUpdateData(updateData: Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string }>): void {
-    const { first_name, last_name, email, role_name, department_name } = updateData;
-    if (!first_name && !last_name && !email && !role_name && !department_name) {
+  private validateUpdateData(updateData: Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string; company_name?: string }>): void {
+    const { first_name, last_name, email, role_name, department_name, company_name } = updateData;
+    if (!first_name && !last_name && !email && !role_name && !department_name && !company_name) {
       throw new BadRequestError('At least one field must be provided for update');
     }
   }
@@ -174,7 +196,7 @@ class MunicipalityUserService {
    */
   async updateMunicipalityUser(
     id: number,
-    updateData: Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string }>
+    updateData: Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string; company_name?: string }>
   ): Promise<UserResponse> {
     this.validateUpdateData(updateData);
 
@@ -192,11 +214,34 @@ class MunicipalityUserService {
     
     const departmentRoleId = await this.resolveDepartmentRoleId(updateData.role_name, updateData.department_name);
 
+    // Determine the final role name (either new role or existing)
+    const finalRoleName = updateData.role_name || existingRoleName;
+
+    // Validate company assignment - only External Maintainer can have a company
+    if (updateData.company_name && finalRoleName !== 'External Maintainer') {
+      throw new BadRequestError('Only External Maintainer role can be assigned to a company');
+    }
+
+    // Resolve company_name to company_id if provided
+    let companyId: number | null | undefined;
+    if (updateData.company_name !== undefined) {
+      if (updateData.company_name === null || updateData.company_name === '') {
+        companyId = null; // Allow removing company assignment
+      } else {
+        const company = await companyRepository.findByName(updateData.company_name);
+        if (!company) {
+          throw new BadRequestError(`Company "${updateData.company_name}" not found`);
+        }
+        companyId = company.id;
+      }
+    }
+
     const updatedUser = await userRepository.updateUser(id, {
       firstName: updateData.first_name,
       lastName: updateData.last_name,
       email: updateData.email,
-      ...(departmentRoleId && { departmentRoleId })
+      ...(departmentRoleId && { departmentRoleId }),
+      ...(companyId !== undefined && { companyId: companyId ?? undefined })
     });
 
     logInfo(`Municipality user updated: ${updatedUser.username} (ID: ${id})`);

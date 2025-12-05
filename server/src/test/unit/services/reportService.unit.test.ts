@@ -9,25 +9,22 @@ import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
 import { reportRepository } from '@repositories/reportRepository';
 import { categoryRoleRepository } from '@repositories/categoryRoleRepository';
+import { companyRepository } from '@repositories/companyRepository';
 import { NotFoundError } from '@models/errors/NotFoundError';
 import { photoRepository } from '@repositories/photoRepository';
 import { storageService } from '@services/storageService';
 import * as photoValidationUtils from '@utils/photoValidationUtils';
 import * as mapperService from '@services/mapperService';
-import { mapReportEntityToReportResponse, mapReportEntityToDTO } from '../../../services/mapperService';
+import { mapReportEntityToReportResponse } from '../../../services/mapperService';
+import { createMockUser } from '@test/utils/mockEntities';
 
 jest.mock('@repositories/userRepository');
 jest.mock('@repositories/reportRepository');
 jest.mock('@repositories/photoRepository');
 jest.mock('@services/storageService');
 jest.mock('@services/mapperService');
-jest.mock('@repositories/userRepository');
-jest.mock('@repositories/reportRepository');
 jest.mock('@repositories/categoryRoleRepository');
-jest.mock('@repositories/photoRepository');
-jest.mock('@services/storageService');
 jest.mock('@utils/photoValidationUtils');
-jest.mock('@services/mapperService');
 
 
 // Helper function to create mock report entities
@@ -236,6 +233,7 @@ describe('ReportService', () => {
       it('should return all reports assigned to the user', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, status: ReportStatus.ASSIGNED }),
           createMockReport({ id: 2, assigneeId: userId, status: ReportStatus.IN_PROGRESS }),
@@ -248,6 +246,7 @@ describe('ReportService', () => {
           status: r.status,
         }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -257,6 +256,7 @@ describe('ReportService', () => {
         const result = await reportService.getMyAssignedReports(userId);
 
         // Assert
+        expect(userRepository.findUserById).toHaveBeenCalledWith(userId);
         expect(reportRepository.findByAssigneeId).toHaveBeenCalledWith(userId, undefined);
         expect(reportRepository.findByAssigneeId).toHaveBeenCalledTimes(1);
         expect(result).toHaveLength(3);
@@ -266,12 +266,15 @@ describe('ReportService', () => {
       it('should return empty array when user has no assigned reports', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue([]);
 
         // Act
         const result = await reportService.getMyAssignedReports(userId);
 
         // Assert
+        expect(userRepository.findUserById).toHaveBeenCalledWith(userId);
         expect(reportRepository.findByAssigneeId).toHaveBeenCalledWith(userId, undefined);
         expect(result).toHaveLength(0);
         expect(mapReportEntityToReportResponse).not.toHaveBeenCalled();
@@ -280,6 +283,8 @@ describe('ReportService', () => {
       it('should call repository with correct userId parameter', async () => {
         // Arrange
         const userId = 123;
+        const mockUser = createMockUser('Water Network staff member');
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue([]);
 
         // Act
@@ -296,6 +301,7 @@ describe('ReportService', () => {
       it('should return only ASSIGNED reports when status filter is ASSIGNED', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const status = ReportStatus.ASSIGNED;
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, status: ReportStatus.ASSIGNED }),
@@ -304,6 +310,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = mockReports.map(r => ({ id: r.id, status: r.status }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -321,6 +328,7 @@ describe('ReportService', () => {
       it('should return only IN_PROGRESS reports when status filter is IN_PROGRESS', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const status = ReportStatus.IN_PROGRESS;
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, status: ReportStatus.IN_PROGRESS }),
@@ -329,6 +337,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = mockReports.map(r => ({ id: r.id, status: r.status }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -346,6 +355,7 @@ describe('ReportService', () => {
       it('should return only RESOLVED reports when status filter is RESOLVED', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const status = ReportStatus.RESOLVED;
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, status: ReportStatus.RESOLVED }),
@@ -354,6 +364,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = mockReports.map(r => ({ id: r.id, status: r.status }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -371,7 +382,9 @@ describe('ReportService', () => {
       it('should return empty array when no reports match the status filter', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const status = ReportStatus.ASSIGNED;
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue([]);
 
         // Act
@@ -388,6 +401,7 @@ describe('ReportService', () => {
       it('should return reports for a specific category', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, category: ReportCategory.ROADS }),
           createMockReport({ id: 2, assigneeId: userId, category: ReportCategory.ROADS }),
@@ -395,6 +409,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = mockReports.map(r => ({ id: r.id, category: r.category }));
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
           mockMappedReports.find(m => m.id === report.id)
@@ -413,12 +428,14 @@ describe('ReportService', () => {
       it('should call mapper for each report entity', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId }),
           createMockReport({ id: 2, assigneeId: userId }),
           createMockReport({ id: 3, assigneeId: userId }),
         ];
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockReturnValue({});
 
@@ -435,6 +452,7 @@ describe('ReportService', () => {
       it('should return mapped responses', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({ id: 1, assigneeId: userId, title: 'Report 1' }),
         ];
@@ -446,6 +464,7 @@ describe('ReportService', () => {
           category: ReportCategory.ROADS,
         };
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockReturnValue(mockMappedResponse);
 
@@ -461,7 +480,9 @@ describe('ReportService', () => {
       it('should propagate repository errors', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const error = new Error('Database connection error');
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockRejectedValue(error);
 
         // Act & Assert
@@ -473,8 +494,10 @@ describe('ReportService', () => {
       it('should propagate mapper errors', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [createMockReport({ id: 1, assigneeId: userId })];
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation(() => {
           throw new Error('Mapping error');
@@ -502,6 +525,7 @@ describe('ReportService', () => {
       it('should handle reports with anonymous reporters', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = [
           createMockReport({
             id: 1,
@@ -514,6 +538,7 @@ describe('ReportService', () => {
 
         const mockMappedReports = [{ id: 1, isAnonymous: true }];
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockReturnValue(mockMappedReports[0]);
 
@@ -528,6 +553,7 @@ describe('ReportService', () => {
       it('should handle reports with different user IDs correctly', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const anotherUserId = 99;
 
         // Mock should only return reports for the requested user
@@ -536,6 +562,7 @@ describe('ReportService', () => {
           createMockReport({ id: 2, assigneeId: userId }),
         ];
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) => ({
           id: report.id,
@@ -553,10 +580,12 @@ describe('ReportService', () => {
       it('should handle large number of assigned reports', async () => {
         // Arrange
         const userId = 50;
+        const mockUser = createMockUser('Water Network staff member');
         const mockReports: reportEntity[] = Array.from({ length: 100 }, (_, i) =>
           createMockReport({ id: i + 1, assigneeId: userId })
         );
 
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue(mockReports);
         (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) => ({
           id: report.id
@@ -570,8 +599,146 @@ describe('ReportService', () => {
         expect(mapReportEntityToReportResponse).toHaveBeenCalledTimes(100);
       });
     });
+
+    describe('when user is an External Service Provider', () => {
+      it('should call findByExternalAssigneeId', async () => {
+        // Arrange
+        const userId = 77;
+        const mockUser = createMockUser('External Maintainer', 'External Service Providers', {
+          id: userId
+        });
+
+        const mockReports: reportEntity[] = [
+          createMockReport({ id: 1, assigneeId: userId }),
+          createMockReport({ id: 2, assigneeId: userId })
+        ];
+
+        const mockMappedReports = mockReports.map(r => ({ id: r.id }));
+
+        (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
+        jest.spyOn(reportRepository, 'findByExternalAssigneeId').mockResolvedValue(mockReports);
+        jest.spyOn(reportRepository, 'findByAssigneeId');
+        (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) =>
+          mockMappedReports.find(m => m.id === report.id)
+        );
+
+        // Act
+        const result = await reportService.getMyAssignedReports(userId);
+
+        // Assert
+        expect(userRepository.findUserById).toHaveBeenCalledWith(userId);
+        expect(reportRepository.findByExternalAssigneeId).toHaveBeenCalledWith(userId, undefined);
+        expect(reportRepository.findByAssigneeId).not.toHaveBeenCalled();
+        expect(result).toHaveLength(2);
+        expect(mapReportEntityToReportResponse).toHaveBeenCalledTimes(2);
+      });
+    });
+  });
+
+  describe('getAssignedReportsToExternalMaintainer', () => {
+    const externalMaintainerId = 50;
+    const mockReportAssigned: reportEntity = createMockReport({ 
+      id: 1, 
+      assigneeId: externalMaintainerId, 
+      status: ReportStatus.ASSIGNED 
+    });
+    const mockReportInProgress: reportEntity = createMockReport({ 
+      id: 2, 
+      assigneeId: externalMaintainerId, 
+      status: ReportStatus.IN_PROGRESS 
+    });
+    const mockReportResolved: reportEntity = createMockReport({ 
+      id: 3, 
+      assigneeId: externalMaintainerId, 
+      status: ReportStatus.RESOLVED 
+    });
+
+    const mockMappedReportAssigned = { id: 1, title: 'Test Assigned', status: ReportStatus.ASSIGNED };
+    const mockMappedReportInProgress = { id: 2, title: 'Test In Progress', status: ReportStatus.IN_PROGRESS };
+    const mockMappedReportResolved = { id: 3, title: 'Test Resolved', status: ReportStatus.RESOLVED };
+
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should return all reports assigned to the external maintainer without status filter', async () => {
+      // Arrange
+      const mockReports: reportEntity[] = [mockReportAssigned, mockReportInProgress, mockReportResolved];
+      jest.spyOn(reportRepository, 'findByExternalAssigneeId').mockResolvedValue(mockReports);
+      (mapReportEntityToReportResponse as jest.Mock).mockImplementation((report) => {
+        if (report.id === 1) return mockMappedReportAssigned;
+        if (report.id === 2) return mockMappedReportInProgress;
+        if (report.id === 3) return mockMappedReportResolved;
+        return {};
+      });
+
+      // Act
+      const result = await reportService.getAssignedReportsToExternalMaintainer(externalMaintainerId);
+
+      // Assert
+      expect(reportRepository.findByExternalAssigneeId).toHaveBeenCalledWith(externalMaintainerId, undefined);
+      expect(result).toHaveLength(3);
+      expect(result).toEqual([mockMappedReportAssigned, mockMappedReportInProgress, mockMappedReportResolved]);
+      expect(mapReportEntityToReportResponse).toHaveBeenCalledTimes(3);
+    });
+
+    it('should return only ASSIGNED reports when status filter is ASSIGNED', async () => {
+      // Arrange
+      const mockReports: reportEntity[] = [mockReportAssigned];
+      jest.spyOn(reportRepository, 'findByExternalAssigneeId').mockResolvedValue(mockReports);
+      (mapReportEntityToReportResponse as jest.Mock).mockReturnValue(mockMappedReportAssigned);
+
+      // Act
+      const result = await reportService.getAssignedReportsToExternalMaintainer(externalMaintainerId, ReportStatus.ASSIGNED);
+
+      // Assert
+      expect(reportRepository.findByExternalAssigneeId).toHaveBeenCalledWith(externalMaintainerId, ReportStatus.ASSIGNED);
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe(ReportStatus.ASSIGNED);
+      expect(mapReportEntityToReportResponse).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return empty array when external maintainer has no assigned reports', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findByExternalAssigneeId').mockResolvedValue([]);
+
+      // Act
+      const result = await reportService.getAssignedReportsToExternalMaintainer(externalMaintainerId);
+
+      // Assert
+      expect(reportRepository.findByExternalAssigneeId).toHaveBeenCalledWith(externalMaintainerId, undefined);
+      expect(result).toHaveLength(0);
+      expect(mapReportEntityToReportResponse).not.toHaveBeenCalled();
+    });
+
+    it('should propagate repository errors', async () => {
+      // Arrange
+      const error = new Error('Database connection failed');
+      jest.spyOn(reportRepository, 'findByExternalAssigneeId').mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(reportService.getAssignedReportsToExternalMaintainer(externalMaintainerId))
+        .rejects
+        .toThrow('Database connection failed');
+    });
+
+    it('should propagate mapper errors', async () => {
+      // Arrange
+      const mockReports: reportEntity[] = [mockReportAssigned];
+      jest.spyOn(reportRepository, 'findByExternalAssigneeId').mockResolvedValue(mockReports);
+      (mapReportEntityToReportResponse as jest.Mock).mockImplementation(() => {
+        throw new Error('Mapping failed');
+      });
+
+      // Act & Assert
+      await expect(reportService.getAssignedReportsToExternalMaintainer(externalMaintainerId))
+        .rejects
+        .toThrow('Mapping failed');
+    });
   });
 });
+
 
 describe('ReportService additional unit tests', () => {
   beforeEach(() => {
@@ -672,6 +839,7 @@ describe('ReportService additional unit tests', () => {
       lastName: 'User',
       departmentRoleId: 1,
       emailNotificationsEnabled: true,
+      isVerified: true,
       createdAt: new Date(),
       departmentRole: {
         id: 1,
@@ -874,148 +1042,88 @@ describe('ReportService additional unit tests', () => {
     });
   });
 
-  describe('approveReport', () => {
-    const createMockUser = (id: number): userEntity => ({
-      id,
-      email: 'test@example.com',
-      username: 'testuser',
-      firstName: 'Test',
-      lastName: 'User',
-      passwordHash: 'hashedpassword',
-      departmentRoleId: 1,
-      departmentRole: null as any,
-      emailNotificationsEnabled: true,
-      createdAt: new Date()
-    });
-
+  describe('updateReportStatus', () => {
     beforeEach(() => {
       jest.clearAllMocks();
     });
 
-    describe('input validation', () => {
-      it('should throw BadRequestError for invalid report ID (NaN)', async () => {
+    describe('approval workflow', () => {
+      it('should throw BadRequestError for invalid report ID (NaN) when approving', async () => {
+        const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
+        jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
+        
         await expect(
-          reportService.approveReport(NaN, 1)
+          reportService.updateReportStatus(NaN, ReportStatus.ASSIGNED, {}, 1)
         ).rejects.toThrow(BadRequestError);
         
         await expect(
-          reportService.approveReport(NaN, 1)
+          reportService.updateReportStatus(NaN, ReportStatus.ASSIGNED, {}, 1)
         ).rejects.toThrow('Invalid report ID');
       });
 
-      it('should throw NotFoundError when report does not exist', async () => {
+      it('should throw NotFoundError when report does not exist for approval', async () => {
+        const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
+        jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(null);
 
         await expect(
-          reportService.approveReport(999, 1)
+          reportService.updateReportStatus(999, ReportStatus.ASSIGNED, {}, 1)
         ).rejects.toThrow(NotFoundError);
         
         await expect(
-          reportService.approveReport(999, 1)
+          reportService.updateReportStatus(999, ReportStatus.ASSIGNED, {}, 1)
         ).rejects.toThrow('Report not found');
       });
 
-      it('should throw BadRequestError when report status is not PENDING_APPROVAL', async () => {
+      it('should throw BadRequestError when report status is not PENDING_APPROVAL for approval', async () => {
         const mockReport = createMockReport({ 
           id: 1, 
           status: ReportStatus.ASSIGNED 
         });
-        
+        const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
+        jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
 
         await expect(
-          reportService.approveReport(1, 1)
+          reportService.updateReportStatus(1, ReportStatus.ASSIGNED, {}, 1)
         ).rejects.toThrow(BadRequestError);
         
         await expect(
-          reportService.approveReport(1, 1)
-        ).rejects.toThrow('Cannot approve report with status');
+          reportService.updateReportStatus(1, ReportStatus.ASSIGNED, {}, 1)
+        ).rejects.toThrow('Cannot approve report with status Assigned. Only reports with status Pending Approval can be approved.');
       });
 
-      it('should throw BadRequestError for invalid category', async () => {
+      it('should throw InsufficientRightsError when user is not a PRO', async () => {
         const mockReport = createMockReport({ 
           id: 1, 
           status: ReportStatus.PENDING_APPROVAL 
         });
-        
+        const mockUser = createMockUser('Citizen', undefined, { id: 1 });
+        jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
 
         await expect(
-          reportService.approveReport(1, 1, 'INVALID_CATEGORY' as any)
-        ).rejects.toThrow(BadRequestError);
-        
-        await expect(
-          reportService.approveReport(1, 1, 'INVALID_CATEGORY' as any)
-        ).rejects.toThrow('Invalid category');
-      });
-    });
-
-    describe('category management', () => {
-      it('should update category when newCategory is provided', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL,
-          category: ReportCategory.ROADS 
-        });
-        const mockStaff = createMockUser(50);
-
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(categoryRoleRepository, 'findRoleIdByCategory').mockResolvedValue(5);
-        jest.spyOn(userRepository, 'findAvailableStaffByRoleId').mockResolvedValue(mockStaff);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          category: ReportCategory.PUBLIC_LIGHTING,
-          status: ReportStatus.ASSIGNED,
-          assigneeId: 50
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
-
-        await reportService.approveReport(1, 1, ReportCategory.PUBLIC_LIGHTING);
-
-        expect(mockReport.category).toBe(ReportCategory.PUBLIC_LIGHTING);
+          reportService.updateReportStatus(1, ReportStatus.ASSIGNED, {}, 1)
+        ).rejects.toThrow(InsufficientRightsError);
       });
 
-      it('should keep original category when newCategory is not provided', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL,
-          category: ReportCategory.ROADS 
-        });
-        const mockStaff = createMockUser(50);
-
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(categoryRoleRepository, 'findRoleIdByCategory').mockResolvedValue(5);
-        jest.spyOn(userRepository, 'findAvailableStaffByRoleId').mockResolvedValue(mockStaff);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.ASSIGNED,
-          assigneeId: 50
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
-
-        await reportService.approveReport(1, 1);
-
-        expect(categoryRoleRepository.findRoleIdByCategory).toHaveBeenCalledWith(ReportCategory.ROADS);
-      });
-    });
-
-    describe('assignment logic', () => {
       it('should throw BadRequestError when no role mapping exists for category', async () => {
         const mockReport = createMockReport({ 
           id: 1, 
           status: ReportStatus.PENDING_APPROVAL 
         });
-
+        const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
+        jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
         jest.spyOn(categoryRoleRepository, 'findRoleIdByCategory').mockResolvedValue(null);
 
         await expect(
-          reportService.approveReport(1, 1)
+          reportService.updateReportStatus(1, ReportStatus.ASSIGNED, {}, 1)
         ).rejects.toThrow(BadRequestError);
         
         await expect(
-          reportService.approveReport(1, 1)
-        ).rejects.toThrow('No role mapping found for category');
+          reportService.updateReportStatus(1, ReportStatus.ASSIGNED, {}, 1)
+        ).rejects.toThrow('No role mapping found for category: Roads and Urban Furnishings.');
       });
 
       it('should throw BadRequestError when no available staff found', async () => {
@@ -1023,442 +1131,504 @@ describe('ReportService additional unit tests', () => {
           id: 1, 
           status: ReportStatus.PENDING_APPROVAL 
         });
-
+        const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
+        jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
         jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
         jest.spyOn(categoryRoleRepository, 'findRoleIdByCategory').mockResolvedValue(5);
         jest.spyOn(userRepository, 'findAvailableStaffByRoleId').mockResolvedValue(null);
 
         await expect(
-          reportService.approveReport(1, 1)
+          reportService.updateReportStatus(1, ReportStatus.ASSIGNED, {}, 1)
         ).rejects.toThrow(BadRequestError);
         
         await expect(
-          reportService.approveReport(1, 1)
-        ).rejects.toThrow('No available technical staff found for category');
-      });
-
-      it('should assign report to available staff', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        const mockStaff = createMockUser(50);
-
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(categoryRoleRepository, 'findRoleIdByCategory').mockResolvedValue(5);
-        jest.spyOn(userRepository, 'findAvailableStaffByRoleId').mockResolvedValue(mockStaff);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.ASSIGNED,
-          assigneeId: 50
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1, assigneeId: 50 });
-
-        const result = await reportService.approveReport(1, 1);
-
-        expect(mockReport.assigneeId).toBe(50);
-      });
-    });
-
-    describe('status update', () => {
-      it('should change status to ASSIGNED', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        const mockStaff = createMockUser(50);
-
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(categoryRoleRepository, 'findRoleIdByCategory').mockResolvedValue(5);
-        jest.spyOn(userRepository, 'findAvailableStaffByRoleId').mockResolvedValue(mockStaff);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.ASSIGNED,
-          assigneeId: 50
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1, status: ReportStatus.ASSIGNED });
-
-        await reportService.approveReport(1, 1);
-
-        expect(mockReport.status).toBe(ReportStatus.ASSIGNED);
-      });
-
-      it('should clear rejection reason', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL,
-          rejectionReason: 'Previous rejection'
-        });
-        const mockStaff = createMockUser(50);
-
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(categoryRoleRepository, 'findRoleIdByCategory').mockResolvedValue(5);
-        jest.spyOn(userRepository, 'findAvailableStaffByRoleId').mockResolvedValue(mockStaff);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.ASSIGNED,
-          assigneeId: 50,
-          rejectionReason: undefined
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
-
-        await reportService.approveReport(1, 1);
-
-        expect(mockReport.rejectionReason).toBeUndefined();
-      });
-
-      it('should update updatedAt timestamp', async () => {
-        const oldDate = new Date('2024-01-01');
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL,
-          updatedAt: oldDate
-        });
-        const mockStaff = createMockUser(50);
-
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(categoryRoleRepository, 'findRoleIdByCategory').mockResolvedValue(5);
-        jest.spyOn(userRepository, 'findAvailableStaffByRoleId').mockResolvedValue(mockStaff);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.ASSIGNED,
-          assigneeId: 50
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
-
-        await reportService.approveReport(1, 1);
-
-        expect(mockReport.updatedAt.getTime()).toBeGreaterThan(oldDate.getTime());
-      });
-    });
-
-    describe('successful approval', () => {
-      it('should save and return approved report', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        const mockStaff = createMockUser(50);
-        const savedReport = {
-          ...mockReport,
-          status: ReportStatus.ASSIGNED,
-          assigneeId: 50
-        };
-        const mappedReport = { id: 1, status: ReportStatus.ASSIGNED };
-
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(categoryRoleRepository, 'findRoleIdByCategory').mockResolvedValue(5);
-        jest.spyOn(userRepository, 'findAvailableStaffByRoleId').mockResolvedValue(mockStaff);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue(savedReport);
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue(mappedReport);
-
-        const result = await reportService.approveReport(1, 1);
-
-        expect(reportRepository.save).toHaveBeenCalledWith(mockReport);
-        expect(mapReportEntityToDTO).toHaveBeenCalledWith(savedReport);
-        expect(result).toEqual(mappedReport);
+          reportService.updateReportStatus(1, ReportStatus.ASSIGNED, {}, 1)
+        ).rejects.toThrow('No available technical staff found for category: Roads and Urban Furnishings. All staff members may be overloaded or the role has no assigned users.');
       });
     });
   });
 
-  describe('rejectReport', () => {
+
+
+  describe('rejection workflow', () => {
+
+    it('should throw BadRequestError for invalid report ID (NaN) when rejecting', async () => {
+      const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
+
+      await expect(
+        reportService.updateReportStatus(NaN, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
+      ).rejects.toThrow(BadRequestError);
+      await expect(
+        reportService.updateReportStatus(NaN, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
+      ).rejects.toThrow('Invalid report ID');
+    });
+
+    it('should throw BadRequestError when rejection reason is empty string', async () => {
+      const mockReport = createMockReport({ 
+        id: 1, 
+        status: ReportStatus.PENDING_APPROVAL 
+      });
+
+      const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+
+      await expect(
+        reportService.updateReportStatus(1, ReportStatus.REJECTED, { rejectionReason: '' }, 1)
+      ).rejects.toThrow(BadRequestError);
+
+      await expect(
+        reportService.updateReportStatus(1, ReportStatus.REJECTED, { rejectionReason: '' }, 1)
+      ).rejects.toThrow('Rejection reason is required');
+    });
+
+    it('should throw BadRequestError when report status is not PENDING_APPROVAL for rejection', async () => {
+      const mockReport = createMockReport({ 
+        id: 1, 
+        status: ReportStatus.ASSIGNED 
+      });
+
+      const mockUser = createMockUser('Municipal Public Relations Officer', undefined, { id: 1 });
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+
+      await expect(
+        reportService.updateReportStatus(1, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
+      ).rejects.toThrow(BadRequestError);
+
+      await expect(
+        reportService.updateReportStatus(1, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
+      ).rejects.toThrow('Cannot reject report with status Assigned.');
+
+    });
+
+    it('should throw InsufficientRightsError when user is not a PRO for rejection', async () => {
+
+      const mockReport = createMockReport({ 
+        id: 1, 
+        status: ReportStatus.PENDING_APPROVAL 
+      });
+
+      const mockUser = createMockUser('Citizen', undefined, { id: 1 });
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockUser);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+
+      await expect(
+        reportService.updateReportStatus(1, ReportStatus.REJECTED, { rejectionReason: 'Test reason' }, 1)
+      ).rejects.toThrow(InsufficientRightsError);
+    });
+
+  });
+
+  describe('resolution workflow', () => {
+
+    const reportId = 1;
+    const externalMaintainerId = 50;
+    const technicalManagerId = 60;
+    const technicalAssistantId = 70;
+    const citizenId = 80;
+    const proId = 90;
+    const mockReportAssigned = createMockReport({
+      id: reportId,
+      status: ReportStatus.ASSIGNED,
+      assigneeId: externalMaintainerId,
+    });
+
+    const mockReportAssignedToTechManager = createMockReport({
+      id: reportId,
+      status: ReportStatus.ASSIGNED,
+      assigneeId: technicalManagerId,
+    });
+
+    const mockReportInProgress = createMockReport({
+      id: reportId,
+      status: ReportStatus.IN_PROGRESS,
+      assigneeId: externalMaintainerId,
+    });
+    const mockReportSuspended = createMockReport({
+      id: reportId,
+      status: ReportStatus.SUSPENDED,
+      assigneeId: externalMaintainerId,
+    });
+    const mockExternalMaintainer = createMockUser('External Maintainer', undefined, { id: externalMaintainerId });
+    const mockTechnicalManager = createMockUser('Technical Manager', undefined, { id: technicalManagerId });
+    const mockTechnicalAssistant = createMockUser('Technical Assistant', undefined, { id: technicalAssistantId });
+    const mockCitizen = createMockUser('Citizen', undefined, { id: citizenId });
+    const mockPRO = createMockUser('Municipal Public Relations Officer', undefined, { id: proId });
+
     beforeEach(() => {
       jest.clearAllMocks();
+      // Reset mock report status to prevent mutation between tests
+      mockReportAssigned.status = ReportStatus.ASSIGNED;
+      mockReportAssignedToTechManager.status = ReportStatus.ASSIGNED;
+      mockReportInProgress.status = ReportStatus.IN_PROGRESS;
+      mockReportSuspended.status = ReportStatus.SUSPENDED;
     });
 
-    describe('input validation', () => {
-      it('should throw BadRequestError for invalid report ID (NaN)', async () => {
-        await expect(
-          reportService.rejectReport(NaN, 'Test reason', 1)
-        ).rejects.toThrow(BadRequestError);
-        
-        await expect(
-          reportService.rejectReport(NaN, 'Test reason', 1)
-        ).rejects.toThrow('Invalid report ID');
-      });
+    it('should successfully resolve a report by an assigned External Maintainer', async () => {
 
-      it('should throw BadRequestError when rejection reason is empty string', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockExternalMaintainer) // for user validation
+        .mockResolvedValueOnce(mockExternalMaintainer); // for report update authorization
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReportAssigned);
+      jest.spyOn(reportRepository, 'save').mockImplementation(async (report) => ({ ...report, updated_at: new Date() }));
+      (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => report);
 
-        await expect(
-          reportService.rejectReport(1, '', 1)
-        ).rejects.toThrow(BadRequestError);
-        
-        await expect(
-          reportService.rejectReport(1, '', 1)
-        ).rejects.toThrow('Rejection reason is required');
-      });
+      const result = await reportService.updateReportStatus(reportId, ReportStatus.RESOLVED, {}, externalMaintainerId);
 
-      it('should throw BadRequestError when rejection reason is whitespace only', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      expect(userRepository.findUserById).toHaveBeenCalledWith(externalMaintainerId);
+      expect(reportRepository.findReportById).toHaveBeenCalledWith(reportId);
+      expect(reportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+        id: reportId,
+        status: ReportStatus.RESOLVED,
+      }));
+      expect(result.status).toBe(ReportStatus.RESOLVED);
+      expect(result.updated_at).toBeInstanceOf(Date);
 
-        await expect(
-          reportService.rejectReport(1, '   ', 1)
-        ).rejects.toThrow(BadRequestError);
-        
-        await expect(
-          reportService.rejectReport(1, '   ', 1)
-        ).rejects.toThrow('Rejection reason is required');
-      });
-
-      it('should throw BadRequestError when rejection reason is undefined', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-
-        await expect(
-          reportService.rejectReport(1, undefined as any, 1)
-        ).rejects.toThrow(BadRequestError);
-        
-        await expect(
-          reportService.rejectReport(1, undefined as any, 1)
-        ).rejects.toThrow('Rejection reason is required');
-      });
-
-      it('should throw NotFoundError when report does not exist', async () => {
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(null);
-
-        await expect(
-          reportService.rejectReport(999, 'Valid reason', 1)
-        ).rejects.toThrow(NotFoundError);
-        
-        await expect(
-          reportService.rejectReport(999, 'Valid reason', 1)
-        ).rejects.toThrow('Report not found');
-      });
     });
 
-    describe('status validation', () => {
-      it('should throw BadRequestError when report status is ASSIGNED', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.ASSIGNED 
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+    it('should successfully resolve a report by a Technical Manager', async () => {
 
-        await expect(
-          reportService.rejectReport(1, 'Test reason', 1)
-        ).rejects.toThrow(BadRequestError);
-        
-        await expect(
-          reportService.rejectReport(1, 'Test reason', 1)
-        ).rejects.toThrow('Cannot reject report with status');
-      });
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockTechnicalManager);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReportAssignedToTechManager);
+      jest.spyOn(reportRepository, 'save').mockImplementation(async (report) => ({ ...report, updated_at: new Date() }));
+      (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => report);
 
-      it('should throw BadRequestError when report status is IN_PROGRESS', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.IN_PROGRESS 
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      const result = await reportService.updateReportStatus(reportId, ReportStatus.RESOLVED, {}, technicalManagerId);
 
-        await expect(
-          reportService.rejectReport(1, 'Test reason', 1)
-        ).rejects.toThrow(BadRequestError);
-        
-        await expect(
-          reportService.rejectReport(1, 'Test reason', 1)
-        ).rejects.toThrow('Cannot reject report with status');
-      });
+      expect(userRepository.findUserById).toHaveBeenCalledWith(technicalManagerId);
+      expect(reportRepository.findReportById).toHaveBeenCalledWith(reportId);
+      expect(reportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+        id: reportId,
+        status: ReportStatus.RESOLVED,
+      }));
 
-      it('should throw BadRequestError when report status is RESOLVED', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.RESOLVED 
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      expect(result.status).toBe(ReportStatus.RESOLVED);
+      expect(result.updated_at).toBeInstanceOf(Date);
 
-        await expect(
-          reportService.rejectReport(1, 'Test reason', 1)
-        ).rejects.toThrow(BadRequestError);
-        
-        await expect(
-          reportService.rejectReport(1, 'Test reason', 1)
-        ).rejects.toThrow('Cannot reject report with status');
-      });
-
-      it('should throw BadRequestError when report is already REJECTED', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.REJECTED 
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-
-        await expect(
-          reportService.rejectReport(1, 'Test reason', 1)
-        ).rejects.toThrow(BadRequestError);
-        
-        await expect(
-          reportService.rejectReport(1, 'Test reason', 1)
-        ).rejects.toThrow('Cannot reject report with status');
-      });
-
-      it('should allow rejection when status is PENDING_APPROVAL', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.REJECTED,
-          rejectionReason: 'Valid reason'
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
-
-        await expect(
-          reportService.rejectReport(1, 'Valid reason', 1)
-        ).resolves.toBeDefined();
-      });
     });
 
-    describe('rejection logic', () => {
-      it('should set status to REJECTED', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.REJECTED,
-          rejectionReason: 'Not valid'
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
+    it('should successfully resolve a report by a Technical Assistant', async () => {
 
-        await reportService.rejectReport(1, 'Not valid', 1);
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockTechnicalAssistant);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReportInProgress);
+      jest.spyOn(reportRepository, 'save').mockImplementation(async (report) => ({ ...report, updated_at: new Date() }));
+      (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => report);
 
-        expect(mockReport.status).toBe(ReportStatus.REJECTED);
-      });
+      const result = await reportService.updateReportStatus(reportId, ReportStatus.RESOLVED, {}, technicalAssistantId);
 
-      it('should set rejection reason', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        const reason = 'Duplicate report';
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.REJECTED,
-          rejectionReason: reason
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
+      expect(userRepository.findUserById).toHaveBeenCalledWith(technicalAssistantId);
+      expect(reportRepository.findReportById).toHaveBeenCalledWith(reportId);
+      expect(reportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+        id: reportId,
+        status: ReportStatus.RESOLVED,
+      }));
+      expect(result.status).toBe(ReportStatus.RESOLVED);
+      expect(result.updated_at).toBeInstanceOf(Date);
 
-        await reportService.rejectReport(1, reason, 1);
-
-        expect(mockReport.rejectionReason).toBe(reason);
-      });
-
-      it('should update updatedAt timestamp', async () => {
-        const oldDate = new Date('2024-01-01');
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL,
-          updatedAt: oldDate
-        });
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.REJECTED,
-          rejectionReason: 'Test'
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
-
-        await reportService.rejectReport(1, 'Test', 1);
-
-        expect(mockReport.updatedAt.getTime()).toBeGreaterThan(oldDate.getTime());
-      });
-
-      it('should handle long rejection reasons', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        const longReason = 'A'.repeat(500);
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.REJECTED,
-          rejectionReason: longReason
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
-
-        await reportService.rejectReport(1, longReason, 1);
-
-        expect(mockReport.rejectionReason).toBe(longReason);
-      });
     });
 
-    describe('successful rejection', () => {
-      it('should save and return rejected report', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        const savedReport = {
-          ...mockReport,
-          status: ReportStatus.REJECTED,
-          rejectionReason: 'Invalid location'
-        };
-        const mappedReport = { 
-          id: 1, 
-          status: ReportStatus.REJECTED,
-          rejectionReason: 'Invalid location'
-        };
+    it('should throw InsufficientRightsError when non-assigned External Maintainer tries to resolve', async () => {
 
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue(savedReport);
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue(mappedReport);
+      const anotherExternalMaintainer = createMockUser('External Maintainer', undefined, { id: 99 });
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(anotherExternalMaintainer)
+        .mockResolvedValueOnce(anotherExternalMaintainer);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReportAssigned);
 
-        const result = await reportService.rejectReport(1, 'Invalid location', 1);
+      await expect(
+        reportService.updateReportStatus(reportId, ReportStatus.RESOLVED, {}, anotherExternalMaintainer.id)
+      ).rejects.toThrow(InsufficientRightsError);
+      expect(reportRepository.save).not.toHaveBeenCalled();
 
-        expect(reportRepository.save).toHaveBeenCalledWith(mockReport);
-        expect(mapReportEntityToDTO).toHaveBeenCalledWith(savedReport);
-        expect(result).toEqual(mappedReport);
+    });
+
+    it('should throw InsufficientRightsError when a Citizen tries to resolve a report', async () => {
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockCitizen);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReportAssigned);
+
+      await expect(
+        reportService.updateReportStatus(reportId, ReportStatus.RESOLVED, {}, citizenId)
+      ).rejects.toThrow(InsufficientRightsError);
+      expect(reportRepository.save).not.toHaveBeenCalled();
+
+    });
+
+    it('should throw InsufficientRightsError when a PRO tries to resolve a report', async () => {
+      
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockPRO);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReportAssigned);
+
+      await expect(
+        reportService.updateReportStatus(reportId, ReportStatus.RESOLVED, {}, proId)
+      ).rejects.toThrow(InsufficientRightsError);
+      expect(reportRepository.save).not.toHaveBeenCalled();
+
+    });
+
+    it('should throw NotFoundError when report does not exist', async () => {
+
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockTechnicalManager);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(null);
+
+      await expect(
+        reportService.updateReportStatus(999, ReportStatus.RESOLVED, {}, technicalManagerId)
+      ).rejects.toThrow(NotFoundError);
+      expect(reportRepository.save).not.toHaveBeenCalled();
+
+    });
+
+    it('should throw BadRequestError for invalid report ID (NaN)', async () => {
+
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockTechnicalManager);
+
+      await expect(
+        reportService.updateReportStatus(NaN, ReportStatus.RESOLVED, {}, technicalManagerId)
+      ).rejects.toThrow(BadRequestError);
+      expect(reportRepository.save).not.toHaveBeenCalled();
+
+    });
+
+    it('should throw BadRequestError if current status does not allow resolution (e.g., PENDING_APPROVAL)', async () => {
+
+      const mockReportPending = createMockReport({
+        id: reportId,
+        status: ReportStatus.PENDING_APPROVAL,
+        assigneeId: technicalManagerId, // Assignee irrelevant here
       });
 
-      it('should work with trimmed rejection reason', async () => {
-        const mockReport = createMockReport({ 
-          id: 1, 
-          status: ReportStatus.PENDING_APPROVAL 
-        });
-        const reasonWithSpaces = '  Some reason  ';
-        
-        jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
-        jest.spyOn(reportRepository, 'save').mockResolvedValue({
-          ...mockReport,
-          status: ReportStatus.REJECTED,
-          rejectionReason: reasonWithSpaces
-        });
-        (mapReportEntityToDTO as jest.Mock).mockReturnValue({ id: 1 });
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockTechnicalManager);
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReportPending);
 
-        await reportService.rejectReport(1, reasonWithSpaces, 1);
+      await expect(
+        reportService.updateReportStatus(reportId, ReportStatus.RESOLVED, {}, technicalManagerId)
+      ).rejects.toThrow(BadRequestError);
+      expect(reportRepository.save).not.toHaveBeenCalled();
 
-        expect(mockReport.rejectionReason).toBe(reasonWithSpaces);
+    });
+
+  });
+  
+  describe('assignToExternalMaintainer', () => {
+    const reportId = 1;
+    const technicalStaffId = 10;
+    const externalMaintainerId = 20;
+    const nonTechnicalUserId = 30;
+  
+    const mockTechnicalStaff = createMockUser('Technical Staff', undefined, { id: technicalStaffId });
+    const mockExternalMaintainer = createMockUser('External Maintainer', 'External Service Providers', {
+      id: externalMaintainerId,
+      companyId: 5,
+    });
+    const mockNonTechnicalUser = createMockUser('Citizen', undefined, { id: nonTechnicalUserId });
+  
+    const mockReport = createMockReport({
+      id: reportId,
+      status: ReportStatus.ASSIGNED,
+      category: ReportCategory.ROADS,
+    });
+  
+    const mockCompany = {
+      id: 5,
+      name: 'Roads Inc.',
+      category: ReportCategory.ROADS,
+    };
+  
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Restore mock report to its original state before each test
+      mockReport.status = ReportStatus.ASSIGNED;
+    });
+  
+    it('should successfully assign a report to an external maintainer', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff) // for authorizer
+        .mockResolvedValueOnce(mockExternalMaintainer); // for assignee
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(mockCompany as any);
+      jest.spyOn(reportRepository, 'save').mockImplementation(async (report) => report);
+      (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => ({
+        assignee_id: report.assigneeId,
+      }));
+  
+      // Act
+      const result = await reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId);
+  
+      // Assert
+      expect(reportRepository.findReportById).toHaveBeenCalledWith(reportId);
+      expect(userRepository.findUserById).toHaveBeenCalledWith(technicalStaffId);
+      expect(userRepository.findUserById).toHaveBeenCalledWith(externalMaintainerId);
+      expect(companyRepository.findById).toHaveBeenCalledWith(mockExternalMaintainer.companyId);
+      expect(reportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
+        id: reportId,
+        assigneeId: externalMaintainerId,
+      }));
+      expect(result.assignee_id).toBe(externalMaintainerId);
+    });
+  
+    it('should throw NotFoundError if report is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(null);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(999, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(NotFoundError);
+    });
+  
+    it('should throw UnauthorizedError if user is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(null);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, 999)
+      ).rejects.toThrow(UnauthorizedError);
+    });
+  
+    it('should throw InsufficientRightsError if user is not technical staff', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockNonTechnicalUser);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, nonTechnicalUserId)
+      ).rejects.toThrow(InsufficientRightsError);
+    });
+  
+    it('should throw BadRequestError if report is not in ASSIGNED status', async () => {
+      // Arrange
+      mockReport.status = ReportStatus.IN_PROGRESS;
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(mockTechnicalStaff);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+  
+    it('should throw NotFoundError if assignee is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(null);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, 999, technicalStaffId)
+      ).rejects.toThrow(NotFoundError);
+    });
+  
+    it('should throw BadRequestError if assignee is not an External Maintainer', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockTechnicalStaff); // Assigning to another technical staff
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, technicalStaffId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+  
+    it('should throw BadRequestError if external maintainer has no company', async () => {
+      // Arrange
+      const maintainerWithoutCompany = { ...mockExternalMaintainer, companyId: null };
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(maintainerWithoutCompany as any);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+  
+    it('should throw BadRequestError if maintainer company is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockExternalMaintainer);
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(null as any);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+  
+    it("should throw BadRequestError if maintainer's company does not handle the report category", async () => {
+      // Arrange
+      const wrongCategoryCompany = { ...mockCompany, category: ReportCategory.WASTE };
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockExternalMaintainer);
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(wrongCategoryCompany as any);
+  
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId)
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should update the updatedAt field of the report', async () => {
+      // Arrange
+      const originalUpdatedAt = mockReport.updatedAt;
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockExternalMaintainer);
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(mockCompany as any);
+      jest.spyOn(reportRepository, 'save').mockImplementation(async (report) => {
+        report.updatedAt = new Date();
+        return report;
       });
+      (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => report);
+
+      // Act
+      const result = await reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId);
+
+      // Assert
+      expect(result.updated_at).not.toBe(originalUpdatedAt);
+    });
+
+    it('should update the assignee field of the report', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById')
+        .mockResolvedValueOnce(mockTechnicalStaff)
+        .mockResolvedValueOnce(mockExternalMaintainer);
+      jest.spyOn(companyRepository, 'findById').mockResolvedValue(mockCompany as any);
+      (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => ({
+        assignee_id: report.assigneeId,
+      }));
+
+      // Act
+      const result = await reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId);
+
+      // Assert
+      expect(result.assignee_id).toBe(mockExternalMaintainer.id);
+    });
+
+    it('should throw UnauthorizedError if the user making the assignment is not found', async () => {
+      // Arrange
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      jest.spyOn(userRepository, 'findUserById').mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        reportService.assignToExternalMaintainer(reportId, externalMaintainerId, 999)
+      ).rejects.toThrow(UnauthorizedError);
     });
   });
 });

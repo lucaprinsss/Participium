@@ -255,6 +255,133 @@ describe('ReportRepository', () => {
     });
   });
 
+  describe('findByExternalAssigneeId', () => {
+    const externalMaintainerId = 50;
+    const mockExternalMaintainerRole = { id: 1, name: 'External Maintainer' };
+
+    const mockReportAssigned: reportEntity = {
+      id: 1,
+      reporterId: 100,
+      title: 'Report for External Maintainer',
+      description: 'Desc',
+      category: ReportCategory.ROADS,
+      location: 'POINT(0 0)',
+      isAnonymous: false,
+      status: ReportStatus.ASSIGNED,
+      assigneeId: externalMaintainerId,
+      reporter: {} as any,
+      assignee: {
+        id: externalMaintainerId,
+        username: 'ext_maint',
+        departmentRole: { role: mockExternalMaintainerRole } as any
+      } as any,
+      photos: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const mockReportInProgress: reportEntity = {
+      ...mockReportAssigned,
+      id: 2,
+      status: ReportStatus.IN_PROGRESS,
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should return all reports assigned to a specific external maintainer without status filter', async () => {
+      const mockReports = [mockReportAssigned, mockReportInProgress];
+      
+      const queryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockReports),
+      };
+      jest.spyOn(reportRepository['repository'], 'createQueryBuilder').mockReturnValue(queryBuilder as any);
+
+      const result = await reportRepository.findByExternalAssigneeId(externalMaintainerId);
+
+      expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('report.reporter', 'reporter');
+      expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('report.externalAssignee', 'externalAssignee');
+      expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('externalAssignee.departmentRole', 'departmentRole');
+      expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
+      expect(queryBuilder.where).toHaveBeenCalledWith('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
+      expect(result).toEqual(mockReports);
+      expect(result.length).toBe(2);
+    });
+
+    it('should return only ASSIGNED reports when status filter is ASSIGNED', async () => {
+      const mockReports = [mockReportAssigned];
+      
+      const queryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockReports),
+      };
+      jest.spyOn(reportRepository['repository'], 'createQueryBuilder').mockReturnValue(queryBuilder as any);
+
+      const result = await reportRepository.findByExternalAssigneeId(externalMaintainerId, ReportStatus.ASSIGNED);
+
+      expect(queryBuilder.where).toHaveBeenCalledWith('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('report.status = :status', { status: ReportStatus.ASSIGNED });
+      expect(result).toEqual(mockReports);
+      expect(result.length).toBe(1);
+    });
+
+    it('should return empty array when external maintainer has no assigned reports', async () => {
+      const queryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      jest.spyOn(reportRepository['repository'], 'createQueryBuilder').mockReturnValue(queryBuilder as any);
+
+      const result = await reportRepository.findByExternalAssigneeId(externalMaintainerId);
+
+      expect(queryBuilder.where).toHaveBeenCalledWith('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
+      expect(result).toEqual([]);
+      expect(result.length).toBe(0);
+    });
+
+    it('should return empty array when assigned user is not an External Maintainer', async () => {
+      const mockNonExternalMaintainerReport: reportEntity = {
+        ...mockReportAssigned,
+        assignee: {
+          id: externalMaintainerId,
+          username: 'tech_staff',
+          departmentRole: { role: { id: 2, name: 'Technical Staff' } } as any
+        } as any,
+      };
+      const mockReports = [mockNonExternalMaintainerReport];
+
+      const queryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]), // Repository should return empty as role filter applies
+      };
+      jest.spyOn(reportRepository['repository'], 'createQueryBuilder').mockReturnValue(queryBuilder as any);
+
+      const result = await reportRepository.findByExternalAssigneeId(externalMaintainerId);
+
+      expect(queryBuilder.where).toHaveBeenCalledWith('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
+      expect(result).toEqual([]);
+      expect(result.length).toBe(0);
+    });
+  });
+
   describe('save', () => {
     it('should save a new report', async () => {
       const newReport: Partial<reportEntity> = {
@@ -363,6 +490,27 @@ describe('ReportRepository', () => {
       expect(result.category).toBe(ReportCategory.PUBLIC_LIGHTING);
       expect(result.status).toBe(ReportStatus.ASSIGNED);
       expect(result.assigneeId).toBe(50);
+    });
+
+    it('should update report status to RESOLVED and set updatedAt', async () => {
+      const report: Partial<reportEntity> = {
+        id: 1,
+        status: ReportStatus.IN_PROGRESS,
+        assigneeId: 50
+      };
+
+      const resolvedReport = {
+        ...report,
+        status: ReportStatus.RESOLVED,
+        updatedAt: new Date(),
+      } as reportEntity;
+
+      jest.spyOn(reportRepository, 'save').mockResolvedValue(resolvedReport);
+
+      const result = await reportRepository.save(report as reportEntity);
+
+      expect(result.status).toBe(ReportStatus.RESOLVED);
+      expect(result.updatedAt).toBeInstanceOf(Date);
     });
   });
 

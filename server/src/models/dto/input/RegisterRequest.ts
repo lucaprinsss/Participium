@@ -41,7 +41,10 @@
  *           type: string
  *           description: Department name (optional)
  *           example: "Organization"
- *       description: User registration request with role and department
+ *         company_name:
+ *           type: string
+ *           description: Company name (optional, required for External Maintainers)
+ *           example: "Enel X"
  */
 export interface RegisterRequest {
     username: string;
@@ -51,4 +54,5 @@ export interface RegisterRequest {
     last_name: string;
     role_name: string;
     department_name?: string;
+    company_name?: string;
 }

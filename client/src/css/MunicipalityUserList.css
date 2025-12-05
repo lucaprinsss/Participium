@@ -41,6 +41,7 @@
   margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
+  margin: 2rem;
 }
 
 .mul-title {
@@ -67,66 +68,174 @@
 .mul-filters {
   display: flex;
   gap: 1rem;
-}
-
-.mul-filter-dropdown {
-  width: 300px; 
-}
-
-.mul-filter-dropdown-departments {
-  width: 400px; 
-}
-
-/* --- DROPDOWNS (FIXED) --- */
-.dropdown-toggle.modern-dropdown-toggle {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
-  background: var(--bg-card) !important;
-  color: var(--text-main) !important;
-  transition: all 0.2s ease;
-  display: flex;
   align-items: center;
-  gap: 0.75rem;
-  box-shadow: var(--shadow-sm);
 }
 
-.dropdown-toggle.modern-dropdown-toggle::after { display: none; }
+/* --- DROPDOWNS & FILTER STYLING --- */
 
-.dropdown-toggle.modern-dropdown-toggle .dropdown-icon {
-  color: var(--text-muted); 
-  transition: color 0.2s;
+.mul-filter-group {
+    /* Larghezza fissa del gruppo */
+    width: 350px; 
+    border-radius: 0.75rem;
+    position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    transition: all 0.2s ease;
 }
 
-.dropdown-toggle.modern-dropdown-toggle:hover:not(:disabled) {
-  border-color: var(--brand-navy); 
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+/* Icona a sinistra */
+.mul-filter-icon {
+    background-color: #f8f9fa;
+    border: 1px solid var(--border-subtle);
+    border-right: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding-left: 1rem;
+    padding-right: 0.75rem;
+    border-top-left-radius: 0.75rem !important;
+    border-bottom-left-radius: 0.75rem !important;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    z-index: 1;
+    display: flex;
+    align-items: center;
 }
 
-.dropdown-toggle.modern-dropdown-toggle:hover .dropdown-icon {
-  color: var(--brand-navy);
+/* Il corpo del dropdown */
+.mul-filter-toggle {
+    border: 1px solid var(--border-subtle);
+    border-left: none;
+    background-color: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    font-size: 0.9rem;
+    padding: 0.75rem 0.75rem 0.75rem 0.5rem;
+    height: auto;
+    font-weight: 500;
+    border-top-right-radius: 0.75rem !important;
+    border-bottom-right-radius: 0.75rem !important;
+    transition: all 0.3s ease;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden; 
 }
 
-.dropdown-toggle.modern-dropdown-toggle[aria-expanded="true"] {
-  border-color: var(--brand-red) !important; 
-  box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.1) !important;
+/* Forza la dimensione massima del testo all'interno del toggle */
+.mul-filter-toggle .text-truncate {
+    display: block;
+    max-width: 230px; 
 }
 
-.dropdown-toggle.modern-dropdown-toggle[aria-expanded="true"] .dropdown-icon {
-  color: var(--brand-red);
+.mul-filter-toggle::after {
+    display: none;
 }
 
-/* --- DROPDOWN MENU FIX --- */
+.mul-dropdown-arrow {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+    margin-left: auto;
+}
+
+/* --- BUTTON RESET --- */
+.mul-btn-reset {
+    background: #fff;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    width: 45px; 
+    height: 45px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0; 
+}
+
+.mul-btn-reset:hover:not(:disabled) {
+    color: var(--brand-red);
+    border-color: var(--brand-red);
+    background: #fff5f5;
+    transform: translateY(-1px);
+}
+
+.mul-btn-reset:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f8fafc;
+}
+
+/* --- HOVER EFFECTS --- */
+
+.mul-filter-group:hover .mul-filter-icon {
+    border-color: var(--brand-red) !important;
+    color: var(--brand-red) !important;
+    background-color: #fff;
+    border-right: none !important;
+}
+
+.mul-filter-group:hover .mul-filter-toggle {
+    border-color: var(--brand-red) !important;
+    border-left: none !important;
+}
+
+.mul-filter-group:hover .mul-dropdown-arrow {
+    color: var(--brand-red);
+}
+
+.mul-filter-toggle[aria-expanded="true"] {
+    border-color: var(--brand-red) !important;
+}
+
+/* Importante per l'allineamento: static permette al menu di posizionarsi relativo al gruppo */
+.mul-custom-dropdown {
+    flex: 1;
+    min-width: 0;
+    position: static !important; 
+}
+
+/* --- MENU DEL DROPDOWN (CORRETTO) --- */
 .modern-dropdown-menu {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   padding: 0.5rem;
-  /* REMOVED: animation and transform causing glitches */
-  /* React-Bootstrap/Popper.js handles positioning now */
+  margin-top: 2px !important;
+  
+  /* ALLINEAMENTO PERFETTO:
+     Dato che il parent .mul-custom-dropdown è static, il menu si posiziona
+     relativo a .mul-filter-group (che è relative).
+     Quindi left: 0 e width: 100% coprono esattamente tutto il gruppo.
+  */
+  left: 0 !important;
+  width: 100% !important; 
+  min-width: 100% !important;
+  margin-left: -40px !important; /* Reset margin */
+
+  /* Altezza e scroll */
+  max-height: 260px; 
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.modern-dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+.modern-dropdown-menu::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+.modern-dropdown-menu::-webkit-scrollbar-thumb {
+  background: var(--brand-red);
+  border-radius: 3px;
+}
+.modern-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-red-hover);
 }
 
 .modern-dropdown-menu .dropdown-item {
@@ -136,15 +245,18 @@
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .modern-dropdown-menu .dropdown-item:hover {
-  background: var(--bg-page); 
-  color: var(--brand-dark);
+  background-color: rgba(161, 43, 50, 0.08);
+  color: var(--brand-red);
 }
 
 .modern-dropdown-menu .dropdown-item.active {
-  background: var(--brand-navy) !important; 
+  background: var(--brand-red) !important; 
   color: #fff !important;
 }
 
@@ -154,7 +266,6 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  /* CHANGED: visible so dropdowns can overflow */
   overflow: visible; 
 }
 
@@ -177,13 +288,13 @@
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 1rem;
+  display: inline-block;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .mul-table-wrapper {
   width: 100%;
-  /* Allow horizontal scroll for table only if needed */
   overflow-x: auto; 
 }
 
@@ -263,7 +374,6 @@
   transition: all 0.2s;
 }
 
-/* Edit Button */
 .mul-btn-edit {
   background: var(--accent-blue-soft);
   color: var(--accent-blue);
@@ -276,7 +386,6 @@
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
-/* Delete Button */
 .mul-btn-delete {
   background: #fef2f2;
   color: #dc2626;
@@ -323,6 +432,63 @@
 }
 
 /* --- Forms inside Modal --- */
+.mul-modal-body .mul-input-group {
+    border-radius: var(--radius-md);
+    position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    transition: all 0.2s ease;
+}
+
+.mul-modal-body .mul-icon {
+    background-color: #f8f9fa;
+    border: 1px solid var(--border-subtle);
+    border-right: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding-left: 1rem;
+    padding-right: 0.75rem;
+    border-top-left-radius: 0.75rem !important;
+    border-bottom-left-radius: 0.75rem !important;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+}
+
+.mul-modal-body .mul-input {
+    border: 1px solid var(--border-subtle);
+    border-left: none;
+    background-color: #fff;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    padding: 0.75rem;
+    height: auto;
+    font-weight: 500;
+    border-top-right-radius: 0.75rem !important;
+    border-bottom-right-radius: 0.75rem !important;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.mul-modal-body .mul-input:focus {
+    border-color: var(--brand-red);
+    box-shadow: none;
+}
+
+.mul-modal-body .mul-input-group:hover .mul-icon {
+    border-color: var(--brand-red) !important;
+    color: var(--brand-red) !important;
+    background-color: #fff;
+    border-right: none !important;
+}
+
+.mul-modal-body .mul-input-group:hover .mul-input {
+    border-color: var(--brand-red) !important;
+    border-left: none !important;
+}
+
 .mul-label {
   font-size: 0.85rem;
   font-weight: 600;
@@ -334,23 +500,6 @@
 .mul-required::after {
   content: " *";
   color: var(--brand-red);
-}
-
-.mul-edit-form input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: #fff;
-  color: var(--brand-dark);
-  transition: all 0.2s;
-  font-size: 0.95rem;
-}
-
-.mul-edit-form input:focus {
-  outline: none;
-  border-color: var(--accent-blue); 
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .mul-readonly {
@@ -424,7 +573,7 @@
     align-items: flex-start;
   }
   
-  .mul-filters, .mul-filter-dropdown {
+  .mul-filters, .mul-filter-group {
     width: 100%;
   }
 

@@ -1,10 +1,48 @@
-/* === Inserisci questo in index.css o App.css === */
 :root {
-  --brand-red: #A12B32;
-  --brand-red-hover: #b40612;
+  /* COLORI (I tuoi originali) */
+  --primary: #a12b32;
+  --primary-hover: #8a242a;
+  --brand-red: #a12b32;
+  --brand-red-light: rgba(161, 43, 50, 0.1);
+  --text-muted: #6c757d;
+  --text-light: #adb5bd;
+  --text-dark: #212529;
+  
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --transition: all 0.2s ease-in-out;
+
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+}
+
+html {
+  /* Sintassi: clamp(MINIMO, FLUIDO, MASSIMO) */
+  font-size: clamp(15px, 0.78125vw, 80px);
+}
+
+/* OPZIONALE MA CONSIGLIATO:
+   Sotto una certa soglia (es. cellulari verticali), la proporzione pura renderebbe
+   il testo microscopico (3px). Qui mettiamo un "paracadute" per i mobili.
+   Se vuoi che scali all'infinito senza limiti, rimuovi questa media query.
+*/
+@media (max-width: 768px) {
+  html {
+    /* Ho cambiato 12px con 16px.
+       La funzione max() userà il valore più grande tra i due:
+       se il calcolo vw scende sotto i 16px, il browser userà 16px fissi.
+    */
+    font-size: max(0.78125vw, 16px); 
+  }
 }
 
 body {
+  margin: 0;
+  font-family: 'Noto Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
 }

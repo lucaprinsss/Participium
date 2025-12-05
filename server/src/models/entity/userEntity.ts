@@ -39,8 +39,8 @@ export class userEntity implements Express.User {
   @Column({ default: true })
   emailNotificationsEnabled!: boolean;
 
-  @Column({ length: 255, nullable: true })
-  companyName?: string;
+  @Column({ name: "company_id", nullable: true })
+  companyId?: number;
 
   @Column({ default: false })
   isVerified!: boolean;

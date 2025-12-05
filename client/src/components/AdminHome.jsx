@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Row, Col, Alert, Tabs, Tab } from 'react-bootstrap';
+import { Container, Tab, Nav } from 'react-bootstrap';
 import { BsPersonFillGear, BsPersonFillAdd, BsGearFill } from 'react-icons/bs';
 import MunicipalityUserForm from './MunicipalityUserForm';
 import MunicipalityUserList from './MunicipalityUserList';
@@ -15,72 +15,66 @@ export default function AdminHome() {
   };
 
   return (
-    <Container className="admin-home-container">
-      <div className="admin-header-modern">
-        <h2 className="admin-title-modern">
-          Administrator Dashboard
-        </h2>
-        <p className="admin-subtitle-modern">
-          Manage municipality users and their access to the platform
-        </p>
+    <Container fluid className="admin-home-container">
+      <div className="admin-header-compact">
+        <div>
+          <h2 className="admin-title-modern">Admin Dashboard</h2>
+          <p className="admin-subtitle-modern">Manage Municipality Officers</p>
+        </div>
       </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onSelect={setActiveTab}
-        className="modern-tabs"
-      >
-        <Tab
-          eventKey="users"
-          title={
-            <span className="modern-tab-title">
-              <BsPersonFillGear className="me-2" />
-              Manage Officers
-            </span>
-          }
-        >
-          <div className="tab-content-wrapper">
-            <MunicipalityUserList refreshTrigger={refreshTrigger} />
+      <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
+        <div className="admin-layout-wrapper">
+          {/* Sidebar Navigation for better horizontal space usage */}
+          <div className="admin-sidebar">
+            <Nav variant="pills" className="flex-column modern-pills">
+              <Nav.Item>
+                <Nav.Link eventKey="users">
+                  <BsPersonFillGear className="me-2" /> Officers List
+                </Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="add-user">
+                  <BsPersonFillAdd className="me-2" /> Add Officer
+                </Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="settings">
+                  <BsGearFill className="me-2" /> Settings
+                </Nav.Link>
+              </Nav.Item>
+            </Nav>
           </div>
-        </Tab>
 
-        <Tab
-          eventKey="add-user"
-          title={
-            <span className="modern-tab-title">
-              <BsPersonFillAdd className="me-2" />
-              Add Officer
-            </span>
-          }
-        >
-          <div className="tab-content-wrapper">
-            <Row className="justify-content-center">
-              <Col lg={12} xl={11}> 
+          {/* Main Content Area */}
+          <div className="admin-content">
+            <Tab.Content>
+              <Tab.Pane eventKey="users">
+                <div className="content-card">
+                  <MunicipalityUserList refreshTrigger={refreshTrigger} />
+                </div>
+              </Tab.Pane>
+
+              <Tab.Pane eventKey="add-user">
+                {/* Rimuovi eventuali div con padding qui intorno */}
                 <MunicipalityUserForm
                   onUserCreated={handleUserCreated}
+                  onCancel={() => setActiveTab('users')}
                 />
-              </Col>
-            </Row>
-          </div>
-        </Tab>
+              </Tab.Pane>
 
-        <Tab
-          eventKey="settings"
-          title={
-            <span className="modern-tab-title">
-              <BsGearFill className="me-2" />
-              Settings
-            </span>
-          }
-        >
-          <div className="tab-content-wrapper">
-            <Alert variant="info" className="modern-alert">
-              <h5 className="modern-alert-title">Coming Soon</h5>
-              <p className="modern-alert-text">Platform settings and configuration options will be available here.</p>
-            </Alert>
+              <Tab.Pane eventKey="settings">
+                <div className="content-card">
+                  <div className="p-4 text-center text-muted">
+                    <h5>Coming Soon</h5>
+                    <p>Configuration panel under construction.</p>
+                  </div>
+                </div>
+              </Tab.Pane>
+            </Tab.Content>
           </div>
-        </Tab>
-      </Tabs>
+        </div>
+      </Tab.Container>
     </Container>
   );
 }

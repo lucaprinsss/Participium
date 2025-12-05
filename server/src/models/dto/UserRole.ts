@@ -4,21 +4,37 @@
  *   schemas:
  *     UserRole:
  *       type: string
- *       enum:
- *         - Citizen
- *         - Administrator
- *         - Municipal Public Relations Officer
- *         - Technical Manager
- *         - Technical Assistant
- *       description: User role in the system
+ *       description: User role in the system (dynamically loaded from database)
  *       example: "Citizen"
  */
 
-export enum UserRole {
-  CITIZEN = 'Citizen',
-  ADMINISTRATOR = 'Administrator',
-  PUBLIC_RELATIONS_OFFICER = 'Municipal Public Relations Officer',
-  TECHNICAL_MANAGER = 'Technical Manager',
-  TECHNICAL_ASSISTANT = 'Technical Assistant',
-  EXTERNAL_MAINTAINER = 'External Maintainer'
+/**
+ * System roles - questi sono i ruoli speciali che hanno logica hardcoded
+ * Altri ruoli tecnici vengono caricati dinamicamente dal database
+ */
+export const SystemRoles = {
+  CITIZEN: 'Citizen',
+  ADMINISTRATOR: 'Administrator',
+  PUBLIC_RELATIONS_OFFICER: 'Municipal Public Relations Officer',
+  EXTERNAL_MAINTAINER: 'External Maintainer',
+  DEPARTMENT_DIRECTOR: 'Department Director'
+} as const;
+
+/**
+ * Type per i ruoli di sistema
+ */
+export type SystemRole = typeof SystemRoles[keyof typeof SystemRoles];
+
+/**
+ * Helper function per verificare se un ruolo è uno staff tecnico
+ * (tutti i ruoli che non sono Citizen, Administrator, Public Relations Officer o External Maintainer)
+ */
+export function isTechnicalStaff(roleName: string): boolean {
+  return roleName !== SystemRoles.CITIZEN &&
+         roleName !== SystemRoles.ADMINISTRATOR &&
+         roleName !== SystemRoles.PUBLIC_RELATIONS_OFFICER &&
+         roleName !== SystemRoles.EXTERNAL_MAINTAINER;
 }
+
+
+

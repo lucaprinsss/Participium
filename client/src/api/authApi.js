@@ -65,6 +65,7 @@ export async function getCurrentUser() {
 
 // DELETE /api/sessions/current
 export async function logout() {
+  try {
     const response = await fetch(`${BASE}/current`, {
       method: 'DELETE',
       headers: {
@@ -72,8 +73,16 @@ export async function logout() {
       },
       credentials: 'include',
     });
+    
+    // --- AGGIUNTA: Pulizia indizio ---
+    localStorage.removeItem("isLoggedIn"); 
 
     return await handleResponse(response);
+  } catch (error) {
+    // Anche se la chiamata fallisce, rimuoviamo l'indizio per sicurezza lato client
+    localStorage.removeItem("isLoggedIn");
+    throw error;
+  }
 }
 
 export default { login, getCurrentUser, logout };

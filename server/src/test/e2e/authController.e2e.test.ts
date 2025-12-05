@@ -142,6 +142,7 @@ describe('AuthController E2E Tests', () => {
         firstName: dynamicUser.first_name,
         lastName: dynamicUser.last_name,
         departmentRoleId: citizenDeptRole.id,
+        isVerified: true,
       });
     });
 

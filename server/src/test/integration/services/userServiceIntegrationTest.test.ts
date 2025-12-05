@@ -85,7 +85,8 @@ describe('UserService', () => {
         firstName: registerRequest.first_name,
         lastName: registerRequest.last_name,
         departmentRoleId: mockDepartmentRole.id,
-        emailNotificationsEnabled: true 
+        emailNotificationsEnabled: true,
+        isVerified: false
       });
       
       expect(mockedLogInfo).toHaveBeenCalledWith(expect.stringContaining('New citizen registered'));

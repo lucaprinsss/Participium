@@ -21,6 +21,9 @@ describe('UserRepository Unit Tests', () => {
       addSelect: jest.fn().mockReturnThis(),
       getOne: jest.fn(),
       leftJoinAndSelect: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn(),
     };
 
     // Setup mock del repository TypeORM
@@ -50,6 +53,7 @@ describe('UserRepository Unit Tests', () => {
       firstName: 'Test',
       lastName: 'User',
       departmentRoleId: 1,
+      isVerified: true,
     };
 
     it('should create user with hashed password successfully', async () => {
@@ -947,6 +951,41 @@ describe('UserRepository Unit Tests', () => {
 
     it('should have save method', () => {
       expect(typeof userRepository.save).toBe('function');
+    });
+  });
+
+  describe('findExternalMaintainersByCategory', () => {
+    it('should find and return external maintainers for a given category', async () => {
+        const categoryId = 1;
+        const expectedUsers: userEntity[] = [new userEntity(), new userEntity()];
+
+        mockQueryBuilder.getMany.mockResolvedValue(expectedUsers);
+
+        const result = await userRepository.findExternalMaintainersByCategory(categoryId);
+
+        expect(result).toEqual(expectedUsers);
+        expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+        expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('user.departmentRole', 'departmentRole');
+        expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.department', 'department');
+        expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
+        expect(mockQueryBuilder.innerJoin).toHaveBeenCalledWith(
+            'companies',
+            'c',
+            'c.id = user.company_id AND c.category = (SELECT category FROM report_categories WHERE id = :categoryId)',
+            { categoryId }
+        );
+        expect(mockQueryBuilder.where).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('user.company_id IS NOT NULL');
+        expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+    });
+
+    it('should return an empty array if no maintainers are found', async () => {
+        const categoryId = 2;
+        mockQueryBuilder.getMany.mockResolvedValue([]);
+
+        const result = await userRepository.findExternalMaintainersByCategory(categoryId);
+
+        expect(result).toEqual([]);
     });
   });
 });

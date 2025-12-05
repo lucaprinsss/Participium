@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Alert, Modal, Dropdown } from "react-bootstrap";
-import { FaFilter, FaBuilding } from "react-icons/fa";
+import { Alert, Modal, Dropdown, InputGroup, Tooltip, OverlayTrigger } from "react-bootstrap";
+import { FaFilter, FaBuilding, FaChevronDown, FaUndo, FaUser, FaEnvelope, FaUserShield, FaSave } from "react-icons/fa"; // Aggiunto FaUndo
 import { 
   getAllMunicipalityUsers, 
   deleteMunicipalityUser,
@@ -99,6 +99,12 @@ export default function MunicipalityUserList({ refreshTrigger }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // --- Reset Filters ---
+  const handleResetFilters = () => {
+      setDepartmentFilter("");
+      setRoleFilter("");
   };
 
   // --- Edit Modal Functions ---
@@ -221,68 +227,68 @@ export default function MunicipalityUserList({ refreshTrigger }) {
         <h1 className="mul-title">Officers Management</h1>
         
         <div className="mul-filters">
-          {/* Department Dropdown */}
-          <Dropdown 
-            onSelect={handleDepartmentSelect} 
-            className="mul-filter-dropdown-departments"
-          >
-            <Dropdown.Toggle 
-              className="modern-dropdown-toggle" 
-              id="department-filter-dropdown"
-            >
-              <FaBuilding className="dropdown-icon" />
-              <span className="dropdown-toggle-text">{getSelectedDepartmentName()}</span>
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="modern-dropdown-menu">
-              <Dropdown.Item eventKey="" active={departmentFilter === ""}>
-                All Departments
-              </Dropdown.Item>
-              {departments.map((dept) => (
-                <Dropdown.Item 
-                  key={dept.id} 
-                  eventKey={dept.id}
-                  active={departmentFilter === dept.id.toString()}
-                >
-                  {dept.name}
-                </Dropdown.Item>
-              ))}
-            </Dropdown.Menu>
-          </Dropdown>
+          
+          {/* Department Filter */}
+          <InputGroup className="mul-filter-group">
+             <InputGroup.Text className="mul-filter-icon"><FaBuilding/></InputGroup.Text>
+             <Dropdown onSelect={handleDepartmentSelect} className="mul-custom-dropdown">
+                <Dropdown.Toggle variant="light" className="mul-filter-toggle">
+                    <div className="d-flex align-items-center justify-content-between w-100">
+                        <span className="text-truncate">{getSelectedDepartmentName()}</span>
+                        <FaChevronDown className="mul-dropdown-arrow ms-2"/>
+                    </div>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="modern-dropdown-menu">
+                    <Dropdown.Item eventKey="" active={departmentFilter === ""}>
+                        All Departments
+                    </Dropdown.Item>
+                    {departments.map((dept) => (
+                        <Dropdown.Item key={dept.id} eventKey={dept.id} active={departmentFilter === dept.id.toString()}>
+                            {dept.name}
+                        </Dropdown.Item>
+                    ))}
+                </Dropdown.Menu>
+             </Dropdown>
+          </InputGroup>
 
-          {/* Role Dropdown */}
-          <Dropdown 
-            onSelect={handleRoleFilterSelect} 
-            className="mul-filter-dropdown"
-          >
-            <Dropdown.Toggle 
-              className="modern-dropdown-toggle" 
-              id="role-filter-dropdown"
-              disabled={loadingRoles} 
+          {/* Role Filter */}
+          <InputGroup className="mul-filter-group">
+             <InputGroup.Text className="mul-filter-icon"><FaFilter/></InputGroup.Text>
+             <Dropdown onSelect={handleRoleFilterSelect} className="mul-custom-dropdown">
+                <Dropdown.Toggle variant="light" className="mul-filter-toggle" disabled={loadingRoles}>
+                    <div className="d-flex align-items-center justify-content-between w-100">
+                        <span className="text-truncate">{loadingRoles ? "Loading..." : getRoleFilterName()}</span>
+                        <FaChevronDown className="mul-dropdown-arrow ms-2"/>
+                    </div>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="modern-dropdown-menu">
+                    <Dropdown.Item eventKey="" active={roleFilter === ""}>
+                        All Roles
+                    </Dropdown.Item>
+                    {roles.map((role) => {
+                        const roleValue = typeof role === 'object' ? role.name : role;
+                        const roleKey = typeof role === 'object' ? role.id : role;
+                        return (
+                            <Dropdown.Item key={roleKey} eventKey={roleValue} active={roleFilter === roleValue}>
+                                {roleValue}
+                            </Dropdown.Item>
+                        );
+                    })}
+                </Dropdown.Menu>
+             </Dropdown>
+          </InputGroup>
+
+          {/* Reset Filters Button */}
+          <OverlayTrigger placement="top" overlay={<Tooltip>Reset Filters</Tooltip>}>
+            <button 
+                className="mul-btn-reset" 
+                onClick={handleResetFilters} 
+                disabled={!departmentFilter && !roleFilter}
             >
-              <FaFilter className="dropdown-icon" />
-              <span className="dropdown-toggle-text">
-                {loadingRoles ? "Loading roles..." : getRoleFilterName()}
-              </span>
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="modern-dropdown-menu">
-              <Dropdown.Item eventKey="" active={roleFilter === ""}>
-                All Roles
-              </Dropdown.Item>
-              {roles.map((role) => {
-                 const roleValue = typeof role === 'object' ? role.name : role;
-                 const roleKey = typeof role === 'object' ? role.id : role;
-                 return (
-                  <Dropdown.Item 
-                    key={roleKey} 
-                    eventKey={roleValue}
-                    active={roleFilter === roleValue}
-                  >
-                    {roleValue}
-                  </Dropdown.Item>
-                 );
-              })}
-            </Dropdown.Menu>
-          </Dropdown>
+                <FaUndo />
+            </button>
+          </OverlayTrigger>
+
         </div>
       </div>
 
@@ -343,15 +349,9 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                       <td>
                         <div className="mul-actions">
                           <button className="mul-btn mul-btn-edit" onClick={() => handleEdit(user)}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                            </svg>
                             Edit
                           </button>
                           <button className="mul-btn mul-btn-delete" onClick={() => handleDeleteClick(user)}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                            </svg>
                             Delete
                           </button>
                         </div>
@@ -375,28 +375,43 @@ export default function MunicipalityUserList({ refreshTrigger }) {
             <div className="name-row">
               <div className="mul-field">
                 <label className="mul-label"><span className="mul-required">First Name</span></label>
-                <input type="text" name="firstName" value={editForm.firstName} onChange={handleEditChange} disabled={editLoading} required />
+                <InputGroup className="mul-input-group">
+                    <InputGroup.Text className="mul-icon"><FaUser/></InputGroup.Text>
+                    <input type="text" name="firstName" className="form-control mul-input" value={editForm.firstName} onChange={handleEditChange} required disabled={editLoading}/>
+                </InputGroup>
               </div>
               <div className="mul-field">
                 <label className="mul-label"><span className="mul-required">Last Name</span></label>
-                <input type="text" name="lastName" value={editForm.lastName} onChange={handleEditChange} disabled={editLoading} required />
+                <InputGroup className="mul-input-group">
+                    <InputGroup.Text className="mul-icon"><FaUser/></InputGroup.Text>
+                    <input type="text" name="lastName" className="form-control mul-input" value={editForm.lastName} onChange={handleEditChange} required disabled={editLoading}/>
+                </InputGroup>
               </div>
             </div>
 
             <div className="mul-field">
               <label className="mul-label">Username</label>
-              <input type="text" value={editForm.username} disabled className="mul-readonly" />
+              <InputGroup className="mul-input-group">
+                    <InputGroup.Text className="mul-icon"><FaUser/></InputGroup.Text>
+                    <input type="text" className="form-control mul-input mul-readonly" value={editForm.username} disabled />
+              </InputGroup>
               <small className="mul-help-text">Username cannot be changed</small>
             </div>
 
             <div className="mul-field">
               <label className="mul-label"><span className="mul-required">Email</span></label>
-              <input type="email" name="email" value={editForm.email} onChange={handleEditChange} disabled={editLoading} required />
+              <InputGroup className="mul-input-group">
+                    <InputGroup.Text className="mul-icon"><FaEnvelope/></InputGroup.Text>
+                    <input type="email" name="email" className="form-control mul-input" value={editForm.email} onChange={handleEditChange} required disabled={editLoading}/>
+              </InputGroup>
             </div>
 
             <div className="mul-field">
               <label className="mul-label">Role</label>
-              <input type="text" value={editForm.role} disabled className="mul-readonly" />
+              <InputGroup className="mul-input-group">
+                    <InputGroup.Text className="mul-icon"><FaUserShield/></InputGroup.Text>
+                    <input type="text" className="form-control mul-input mul-readonly" value={editForm.role} disabled />
+              </InputGroup>
             </div>
           </form>
         </Modal.Body>
@@ -405,7 +420,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
             Cancel
           </button>
           <button className="mul-modal-btn mul-modal-btn-confirm" onClick={handleEditSubmit} disabled={editLoading}>
-            {editLoading ? (<><div className="mul-loading-spinner" style={{ width: '16px', height: '16px' }}></div> Saving...</>) : 'Save Changes'}
+            {editLoading ? "Saving..." : <><FaSave className="me-2"/> Save Changes</>}
           </button>
         </Modal.Footer>
       </Modal>
@@ -433,7 +448,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
             Cancel
           </button>
           <button className="mul-modal-btn mul-modal-btn-danger" onClick={handleDeleteConfirm} disabled={deleteLoading}>
-            {deleteLoading ? (<><div className="mul-loading-spinner" style={{ width: '16px', height: '16px' }}></div> Deleting...</>) : 'Delete User'}
+            {deleteLoading ? "Deleting..." : "Delete User"}
           </button>
         </Modal.Footer>
       </Modal>

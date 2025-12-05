@@ -2,6 +2,7 @@ import { InsufficientRightsError } from "@models/errors/InsufficientRightsError"
 import { UnauthorizedError } from "@models/errors/UnauthorizedError";
 import { NextFunction, Response, Request, RequestHandler } from "express";
 import { userEntity } from "@models/entity/userEntity";
+import { isTechnicalStaff } from "@dto/UserRole";
 
 /**
  * Helper function to get the role name from a user entity
@@ -30,7 +31,7 @@ export const isLoggedIn: RequestHandler = (
 
 /**
  * Role-based authorization middleware factory
- * @param {string | string[]} requiredRole The role(s) required to access the route
+ * @param {string | string[]} requiredRole The role or roles required to access the route
  * @returns {function} Middleware function
  */
 export const requireRole = (requiredRole: string | string[]): RequestHandler => {
@@ -44,13 +45,40 @@ export const requireRole = (requiredRole: string | string[]): RequestHandler => 
       if (err) return next(err);
 
       const roleName = getUserRoleName(req.user);
+      if (!roleName || (Array.isArray(requiredRole) ? !requiredRole.includes(roleName) : roleName !== requiredRole)) {
+        return next(new InsufficientRightsError(`Access denied. Required role: ${requiredRole}`));
+      }
       
-      // Support both single role and array of roles
-      const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-      
-      if (!roleName || !allowedRoles.includes(roleName)) {
-        const rolesStr = allowedRoles.join(', ');
-        return next(new InsufficientRightsError(`Access denied. Required role(s): ${rolesStr}`));
+      next();
+    });
+  };
+};
+
+/**
+ * Middleware to check if user is technical staff or has specific roles
+ * Technical staff is any role that is not a system role (Citizen, Administrator, PRO, External Maintainer)
+ * @param {string[]} additionalRoles Optional additional roles that are allowed (e.g., PRO)
+ * @returns {function} Middleware function
+ */
+export const requireTechnicalStaffOrRole = (additionalRoles: string[] = []): RequestHandler => {
+  return (
+    req: Request, 
+    res: Response, 
+    next: NextFunction
+  ): void => {
+    // First check authentication using isLoggedIn
+    isLoggedIn(req, res, (err?: any) => {
+      if (err) return next(err);
+
+      const roleName = getUserRoleName(req.user);
+      if (!roleName) {
+        return next(new InsufficientRightsError('Access denied. No role assigned'));
+      }
+
+      // Check if user is technical staff OR has one of the additional roles
+      const hasAccess = isTechnicalStaff(roleName) || additionalRoles.includes(roleName);
+      if (!hasAccess) {
+        return next(new InsufficientRightsError('Access denied. Technical staff or specific role required'));
       }
       
       next();

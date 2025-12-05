@@ -39,77 +39,79 @@ describe('MunicipalityUserController Integration Tests', () => {
         }
     });
 
-    beforeEach(async () => {
-        // Get dynamic department role IDs
-        const adminDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Administrator');
-        const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
-        const employeeDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Water and Sewer Services Department', 'Water Network staff member');
-
-        if (!adminDeptRole || !citizenDeptRole || !employeeDeptRole) {
-            throw new Error('Required department roles not found in database');
-        }
-
-        ADMIN_CREDENTIALS = {
-            username: `admin_user${r()}`,
-            password: 'AdminPassword123!',
-            email: `admin${r()}@test.com`,
-            firstName: 'Admin',
-            lastName: 'User',
-            departmentRoleId: adminDeptRole.id
-        };
-        
-        CITIZEN_CREDENTIALS = {
-            username: `citizen_user${r()}`,
-            password: 'CitizenPassword123!',
-            email: `citizen${r()}@test.com`,
-            firstName: 'Citizen',
-            lastName: 'User',
-            departmentRoleId: citizenDeptRole.id
-        };
-        
-        EMPLOYEE_PAYLOAD = {
-            username: `employee_user${r()}`,
-            password: 'EmployeePassword123!',
-            email: `employee${r()}@test.com`,
-            first_name: 'Employee', 
-            last_name: 'User',
-            role_name: 'Water Network staff member',
-            department_name: 'Water and Sewer Services Department'
-        };
-
-        createdAdmin = await userRepository.createUserWithPassword({
-            ...ADMIN_CREDENTIALS,
-            emailNotificationsEnabled: true
+        beforeEach(async () => {
+            // Get dynamic department role IDs
+            const adminDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Administrator');
+            const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+            const employeeDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Water and Sewer Services Department', 'Water Network staff member');
+    
+            if (!adminDeptRole || !citizenDeptRole || !employeeDeptRole) {
+                throw new Error('Required department roles not found in database');
+            }
+    
+            ADMIN_CREDENTIALS = {
+                username: `admin_user${r()}`,
+                password: 'AdminPassword123!',
+                email: `admin${r()}@test.com`,
+                firstName: 'Admin',
+                lastName: 'User',
+                departmentRoleId: adminDeptRole.id
+            };
+            
+            CITIZEN_CREDENTIALS = {
+                username: `citizen_user${r()}`,
+                password: 'CitizenPassword123!',
+                email: `citizen${r()}@test.com`,
+                firstName: 'Citizen',
+                lastName: 'User',
+                departmentRoleId: citizenDeptRole.id
+            };
+            
+            EMPLOYEE_PAYLOAD = {
+                username: `employee_user${r()}`,
+                password: 'EmployeePassword123!',
+                email: `employee${r()}@test.com`,
+                first_name: 'Employee', 
+                last_name: 'User',
+                role_name: 'Water Network staff member',
+                department_name: 'Water and Sewer Services Department'
+            };
+    
+            createdAdmin = await userRepository.createUserWithPassword({
+                ...ADMIN_CREDENTIALS,
+                isVerified: true,
+                emailNotificationsEnabled: true
+            });
+            createdCitizen = await userRepository.createUserWithPassword({
+                ...CITIZEN_CREDENTIALS,
+                isVerified: true,
+                emailNotificationsEnabled: true
+            });
+            createdEmployee = await userRepository.createUserWithPassword({
+                username: EMPLOYEE_PAYLOAD.username,
+                password: EMPLOYEE_PAYLOAD.password,
+                email: EMPLOYEE_PAYLOAD.email,
+                firstName: EMPLOYEE_PAYLOAD.first_name, 
+                lastName: EMPLOYEE_PAYLOAD.last_name,
+                departmentRoleId: employeeDeptRole.id,
+                isVerified: true,
+                emailNotificationsEnabled: true
+            });
+    
+            createdUserIds.push(createdAdmin.id, createdCitizen.id, createdEmployee.id);
+    
+            adminAgent = request.agent(app);
+            citizenAgent = request.agent(app);
+    
+            await adminAgent.post('/api/sessions').send({
+                username: ADMIN_CREDENTIALS.username,
+                password: ADMIN_CREDENTIALS.password
+            });
+            await citizenAgent.post('/api/sessions').send({
+                username: CITIZEN_CREDENTIALS.username,
+                password: CITIZEN_CREDENTIALS.password
+            });
         });
-        createdCitizen = await userRepository.createUserWithPassword({
-            ...CITIZEN_CREDENTIALS,
-            emailNotificationsEnabled: true
-        });
-        createdEmployee = await userRepository.createUserWithPassword({
-            username: EMPLOYEE_PAYLOAD.username,
-            password: EMPLOYEE_PAYLOAD.password,
-            email: EMPLOYEE_PAYLOAD.email,
-            firstName: EMPLOYEE_PAYLOAD.first_name, 
-            lastName: EMPLOYEE_PAYLOAD.last_name,
-            departmentRoleId: employeeDeptRole.id,
-            emailNotificationsEnabled: true
-        });
-
-        createdUserIds.push(createdAdmin.id, createdCitizen.id, createdEmployee.id);
-
-        adminAgent = request.agent(app);
-        citizenAgent = request.agent(app);
-
-        await adminAgent.post('/api/sessions').send({
-            username: ADMIN_CREDENTIALS.username,
-            password: ADMIN_CREDENTIALS.password
-        });
-        await citizenAgent.post('/api/sessions').send({
-            username: CITIZEN_CREDENTIALS.username,
-            password: CITIZEN_CREDENTIALS.password
-        });
-    });
-
     afterEach(async () => {
         if (createdUserIds.length > 0) {
             const repository = AppDataSource.getRepository(userEntity);

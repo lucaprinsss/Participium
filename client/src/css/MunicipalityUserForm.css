@@ -1,467 +1,390 @@
-.muf-user-form {
-  width: 100%;
-  max-width: 1020px; 
+:root {
+  --muf-brand: #8A1E2B;
+  --muf-brand-hover: #701823;
+  --muf-text-dark: #1a1a1a;
+  --muf-text-muted: #6c757d;
+  --muf-border: #e2e8f0;
+  --muf-bg-white: #ffffff;
+  --muf-radius: 12px;
+  --muf-error-color: var(--muf-brand); 
+  --muf-error-bg: #FFF8F8; 
+}
+
+/* Container Principale */
+.muf-container-styled {
+  background: var(--muf-bg-white);
+  border-radius: var(--muf-radius);
+  border: 1px solid var(--muf-border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  overflow: visible; 
+  max-width: 80rem;
   margin: 0 auto;
-  padding: 1.53rem; 
-
-  --gradient-primary: linear-gradient(135deg, var(--brand-red) 0%, #c44569 100%);
 }
 
-.muf-form-glass-container {
-  background: var(--gradient-glass); 
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 1.53rem;
-  box-shadow: var(--shadow-soft);
-  overflow: hidden;
-}
-
-.muf-form-header {
-  background: linear-gradient(135deg, var(--brand-red) 0%, #c44569 100%); 
-  color: white;
-  padding: 1.7rem 2.295rem 1.275rem; 
-  text-align: center;
-  position: relative;
-}
-
-.muf-header-icon {
-  font-size: 2.125rem; 
-  margin-bottom: 0.85rem;
-}
-
-.muf-form-title {
-  font-size: 1.87rem; 
-  font-weight: 800;
-  margin: 0 0 0.425rem 0; 
-  color: white;
-}
-
-.muf-form-subtitle {
-  font-size: 0.935rem; 
-  opacity: 0.9;
-  margin: 0;
-  font-weight: 400;
-}
-
-.muf-alert-container {
-  padding: 0 2.295rem; 
-  margin-top: 0.85rem; 
-  margin-bottom: -2.125rem; 
-}
-
-.muf-modern-alert {
-  border: none;
-  border-radius: 0.765rem; 
-  padding: 0.85rem 1.1475rem; 
-  font-weight: 500;
-  border-left: 4px solid transparent;
-}
-
-.muf-modern-alert.alert-danger {
-  background: rgba(220, 53, 69, 0.08);
-  color: #dc3545;
-  border-left-color: #dc3545;
-}
-
-.muf-modern-alert.alert-success {
-  background: rgba(40, 167, 69, 0.08);
-  color: #28a745;
-  border-left-color: #28a745;
-}
-
-.muf-alert-content {
-  display: flex;
-  align-items: center;
-  gap: 0.57375rem; 
-  font-weight: 600;
-}
-
-.muf-modern-form {
-  padding: 2.295rem; 
-}
-
-.muf-form-cards-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.7rem; 
-  margin-bottom: 1.7rem;
-}
-
-.muf-form-card {
-  background: var(--card-bg); 
-  border-radius: 1.1475rem; 
-  padding: 1.7rem; 
-  box-shadow: 0 3.06px 9.18px rgba(161, 43, 50, 0.05);
-  border: 1px solid var(--border-light); 
-}
-
-.muf-card-header {
-  display: flex;
-  align-items: center;
-  gap: 0.765rem; 
-  margin-bottom: 1.275rem; 
-  padding-bottom: 0.765rem; 
-  border-bottom: 1px solid var(--border-light); 
-}
-
-.muf-card-icon {
-  font-size: 1.1475rem;
-  color: var(--brand-red); 
-  background: var(--accent-light); 
-  padding: 0.57375rem; 
-  border-radius: 0.765rem; 
-}
-
-.muf-card-title {
-  font-size: 1.1475rem; 
-  font-weight: 700;
-  color: var(--text-darker); 
-  margin: 0;
-}
-
-.muf-card-subtitle {
-  font-size: 0.72675rem; 
-  color: var(--text-muted); 
-  margin-top: 0.19125rem; 
-}
-
-.muf-form-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.0625rem; 
-}
-
-
-.muf-form-label {
-  font-weight: 700;
-  color: var(--text-darker); 
-  font-size: 0.72675rem; 
-  display: flex;
-  align-items: center;
-  gap: 0.19125rem; 
-}
-
-.muf-required-asterisk {
-  color: var(--brand-red); 
-  font-weight: 800;
-}
-
-.muf-modern-input {
-  width: 100%;
-  padding: 0.765rem 0.95625rem; 
-  border: 2px solid var(--border-light); 
-  border-radius: 0.765rem; 
-  font-size: 0.765rem; 
-  background: var(--card-bg); 
-  transition: all 0.3s ease;
-  color: var(--text-darker); 
-}
-
-.muf-modern-input:focus {
-  outline: none;
-  border-color: var(--brand-red); 
-  box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.1);
-}
-
-.muf-modern-input:disabled {
-  background: var(--bg-lighter);
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.muf-password-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.muf-password-input {
-  padding-right: 2.55rem;
-}
-
-.muf-password-toggle-btn {
-  position: absolute;
-  right: 0.68rem; 
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.34rem; 
-}
-
-.muf-password-toggle-btn:hover:not(:disabled) {
-  color: var(--brand-red);
-}
-
-.muf-password-strength {
-  display: flex;
-  flex-direction: column;
-  gap: 0.34rem; 
-  margin-top: 0.5rem;
-}
-
-.muf-strength-bar {
-  height: 4px;
-  background: var(--bg-lighter);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.muf-strength-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: all 0.3s ease;
-}
-
-.muf-strength-labels {
+/* Header */
+.muf-header-styled {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--muf-border);
   display: flex;
   justify-content: space-between;
-  font-size: 0.57375rem; 
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.muf-password-match {
-  font-size: 0.65025rem;
-  font-weight: 600;
-  margin-top: 0.19125rem;
-}
-
-.muf-match-success {
-  color: #28a745;
-}
-
-.muf-match-error {
-  color: #dc3545;
-}
-
-/* --- DROPDOWN --- */
-.dropdown-toggle.muf-modern-dropdown-toggle {
-  width: 100%;
-  padding: 0.765rem 0.95625rem; 
-  border: 2px solid var(--border-light); 
-  border-radius: 0.765rem; 
-  font-size: 0.765rem; 
-  background: var(--card-bg) !important;
-  transition: all 0.3s ease;
-  color: var(--text-darker) !important;
-  display: flex;
   align-items: center;
-  gap: 0.6375rem; 
-  text-align: left;
-  justify-content: flex-start;
-  overflow: hidden; 
+  background: linear-gradient(to right, #ffffff, #fafafa);
+  border-radius: var(--muf-radius) var(--muf-radius) 0 0;
 }
 
-.dropdown-toggle.muf-modern-dropdown-toggle::after {
+.muf-title {
+  margin: 0;
+  color: var(--muf-brand);
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.5px;
+}
+
+/* Body */
+.muf-body-styled {
+  padding: 2rem;
+}
+
+.muf-section-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muf-text-muted);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f1f1f1;
+}
+
+/* --- LABELS E INPUT --- */
+.muf-label {
+  font-weight: 700;
+  color: var(--muf-text-dark);
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+/* Classe aggiuntiva per colorare la label di rosso se c'è errore (Bootstrap standard text-danger) */
+.muf-label.text-danger {
+    color: var(--muf-error-color) !important;
+}
+
+.req { color: var(--muf-brand); margin-left: 2px; }
+
+/* Input Group Container */
+.muf-input-group {
+  border-radius: var(--muf-radius);
+  position: relative; 
+  display: flex;
+  flex-wrap: nowrap;
+  transition: all 0.2s ease;
+}
+
+/* Icona a sinistra */
+.muf-icon {
+  background-color: #f8f9fa;
+  border: 2px solid var(--muf-border);
+  border-right: none;
+  color: var(--muf-text-muted);
+  font-size: 0.9rem;
+  padding-left: 1rem;
+  padding-right: 0.75rem;
+  border-top-left-radius: var(--muf-radius) !important;
+  border-bottom-left-radius: var(--muf-radius) !important;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  z-index: 1; 
+}
+
+/* Input Field Standard */
+.muf-input {
+  border: 2px solid var(--muf-border);
+  border-left: none;
+  background-color: var(--muf-bg-white);
+  color: var(--muf-text-dark);
+  font-size: 0.9rem;
+  padding: 0.75rem 0.75rem 0.75rem 0.5rem; 
+  height: auto;
+  font-weight: 500;
+  border-top-right-radius: var(--muf-radius) !important;
+  border-bottom-right-radius: var(--muf-radius) !important;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.muf-input:focus {
+  border-color: var(--muf-brand);
+  box-shadow: none;
+  background-color: #fff;
+}
+.muf-input-group:focus-within .muf-icon {
+  border-color: var(--muf-brand);
+  color: var(--muf-brand);
+  background-color: #fff;
+}
+
+/* --- ERROR STATE STYLING --- */
+
+/* L'input stesso quando è in errore */
+.muf-input-error {
+    border-color: var(--muf-error-color) !important;
+    background-color: var(--muf-error-bg) !important; 
+    box-shadow: none !important; 
+}
+
+/* L'icona quando il gruppo è in errore */
+.muf-input-group.has-error .muf-icon {
+    border-color: var(--muf-error-color) !important;
+    color: var(--muf-error-color) !important;
+    background-color: var(--muf-error-bg) !important;
+}
+
+/* Il testo di errore sotto il campo */
+.muf-field-error {
+    color: var(--muf-error-color);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 4px;
+    margin-left: 4px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- DROPDOWN CUSTOM STYLE --- */
+
+.muf-custom-dropdown {
+  flex: 1; 
+  min-width: 0;
+  position: static !important;
+}
+
+.dropdown-toggle.muf-dropdown-toggle::after {
   display: none;
 }
 
-.dropdown-toggle.muf-modern-dropdown-toggle {
-  background-repeat: no-repeat;
-  background-position: right 0.85rem center; 
-  background-size: 16px;
-}
-
-.dropdown-toggle.muf-modern-dropdown-toggle .muf-dropdown-icon {
-  color: var(--text-muted); 
-  transition: color 0.3s ease;
-  flex-shrink: 0; 
-}
-
-.muf-dropdown-toggle-text {
-  flex: 1; 
-  min-width: 0; 
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dropdown-toggle.muf-modern-dropdown-toggle:hover:not(:disabled) {
-  border-color: var(--brand-red); 
-}
-
-.dropdown-toggle.muf-modern-dropdown-toggle:hover:not(:disabled) .muf-dropdown-icon {
-  color: var(--brand-red);
-}
-
-.dropdown-toggle.muf-modern-dropdown-toggle[aria-expanded="true"] {
-  border-color: var(--brand-red) !important;
-  box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.1) !important;
-}
-
-.dropdown-toggle.muf-modern-dropdown-toggle:disabled {
-  background: var(--bg-lighter) !important;
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.muf-modern-dropdown-menu {
+.dropdown-toggle.muf-dropdown-toggle {
+  background: white !important; 
+  color: var(--muf-text-dark) !important;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top-left-radius: 0 !important; 
+  border-bottom-left-radius: 0 !important;
   width: 100%;
-  background: var(--card-bg); 
-  border: 1px solid var(--border-light); 
-  border-radius: 0.765rem; 
-  box-shadow: var(--shadow-soft);
-  padding: 0.425rem; 
-  max-height: 212.5px; 
+  white-space: nowrap; 
+  overflow: hidden;
+}
+
+.dropdown-toggle.muf-dropdown-toggle:hover:not(:disabled) {
+  border-color: var(--muf-brand);
+  z-index: 2;
+}
+
+.muf-dropdown-arrow {
+  font-size: 0.7rem;
+  color: var(--muf-text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.dropdown-toggle.muf-dropdown-toggle[aria-expanded="true"] {
+  border-color: var(--muf-brand) !important;
+}
+
+/* MENU DEL DROPDOWN */
+.muf-dropdown-menu {
+  border: 1px solid var(--muf-border);
+  border-radius: var(--muf-radius);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  padding: 0.5rem;
+  margin-top: 2px !important;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 100%;
+  max-width: 100%;
+  background: white;
   overflow-y: auto;
-  margin-top: 0.2125rem; 
-  overflow-x: hidden; 
+  overflow-x: hidden;
+  z-index: 1050;
+  max-height: 250px;
+  margin-left: -40px;
 }
 
-.muf-modern-dropdown-menu::-webkit-scrollbar {
-  width: 8px;
+.muf-dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+.muf-dropdown-menu::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+.muf-dropdown-menu::-webkit-scrollbar-thumb {
+  background: var(--muf-brand);
+  border-radius: 3px;
+}
+.muf-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--muf-brand-hover);
 }
 
-.muf-modern-dropdown-menu::-webkit-scrollbar-track {
-  background: var(--bg-lighter); 
-  border-radius: 4px;
-}
-
-.muf-modern-dropdown-menu::-webkit-scrollbar-thumb {
-  background: var(--brand-red);
-  border-radius: 4px;
-}
-
-.muf-modern-dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--brand-red-hover);
-}
-
-.muf-modern-dropdown-menu .dropdown-item {
-  color: var(--text-darker); 
-  padding: 0.6375rem 0.85rem; 
-  border-radius: 0.51rem; 
+.muf-dropdown-item {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
   font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
+  color: var(--muf-text-dark);
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
 }
 
-.muf-modern-dropdown-menu .dropdown-item:hover,
-.muf-modern-dropdown-menu .dropdown-item:focus {
-  background: var(--accent-light); 
-  color: var(--brand-red); 
+.muf-dropdown-item:hover, 
+.muf-dropdown-item:focus {
+  background-color: rgba(138, 30, 43, 0.08);
+  color: var(--muf-brand);
 }
 
-.muf-modern-dropdown-menu .dropdown-item.active,
-.muf-modern-dropdown-menu .dropdown-item:active {
-  background: var(--brand-red) !important;
+.muf-dropdown-item.active, 
+.muf-dropdown-item:active {
+  background-color: var(--muf-brand) !important;
   color: white !important;
 }
 
-.muf-form-actions {
-  display: flex;
-  gap: 0.85rem; 
-  justify-content: center;
-  padding-top: 1.275rem; 
-  margin-top: 1.275rem;
-  border-top: 1px solid var(--border-light);
-}
-
-.muf-modern-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.425rem; 
-  padding: 0.765rem 1.53rem;
-  border: none;
-  border-radius: 0.765rem; 
-  font-size: 0.765rem;
-  font-weight: 600;
+/* --- ALTRI ELEMENTI --- */
+.muf-pwd-toggle {
+  background: transparent;
+  border: 2px solid var(--muf-border);
+  border-left: none;
+  color: var(--muf-text-muted);
+  border-top-right-radius: var(--muf-radius);
+  border-bottom-right-radius: var(--muf-radius);
+  padding: 0 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 102px; 
-  justify-content: center;
+  transition: all 0.2s;
+}
+.muf-pwd-toggle:hover { color: var(--muf-brand); }
+.muf-pwd-group .muf-input { border-radius: 0 !important; }
+
+.muf-strength-text { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+.muf-strength-line {
+  height: 4px; background: #eee; border-radius: 2px; margin-top: 6px; overflow: hidden;
+}
+.muf-strength-line .fill { height: 100%; transition: width 0.3s ease; }
+
+.muf-footer-actions {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--muf-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
 }
 
-.muf-modern-btn.primary {
-  background: var(--gradient-primary); 
+.muf-btn-primary {
+  background: linear-gradient(135deg, var(--muf-brand) 0%, #a02332 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  transition: transform 0.2s;
   color: white;
 }
-
-.muf-modern-btn.primary:hover:not(:disabled) {
+.muf-btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(161, 43, 50, 0.3);
+  box-shadow: 0 4px 12px rgba(138, 30, 43, 0.3);
 }
 
-.muf-modern-btn.secondary {
-  background: var(--card-bg); 
-  color: var(--text-darker); 
-  border: 2px solid var(--border-light); 
+.muf-btn-text {
+  background: none;
+  border: none;
+  color: var(--muf-text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.muf-btn-text:hover { color: var(--muf-text-dark); }
+
+@media (min-width: 992px) {
+  .muf-col-left { border-right: 1px solid #f0f0f0; padding-right: 2rem; max-width: 30rem; }
 }
 
-.muf-modern-btn.secondary:hover:not(:disabled) {
-  background: var(--accent-light); 
-  border-color: var(--brand-red); 
-  color: var(--brand-red); 
-  transform: translateY(-2px);
+/* --- HOVER EFFECT UNIFICATO --- */
+.muf-input-group:hover .muf-icon {
+    border-color: var(--muf-brand) !important;
+    color: var(--muf-brand) !important;
+    background-color: #fff;
+    border-right: none !important; 
 }
 
-.muf-modern-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
+.muf-input-group:hover .muf-input,
+.muf-input-group:hover .muf-dropdown-toggle {
+    border-color: var(--muf-brand) !important;
+    border-left: none !important; 
 }
 
-.muf-loading-spinner {
-  width: 0.85rem; 
-  height: 0.85rem; 
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: muf-spin 1s linear infinite;
+.muf-input-group:hover .muf-pwd-toggle {
+    border-color: var(--muf-brand) !important;
+    border-left: none !important;
+    color: var(--muf-brand);
 }
 
-@keyframes muf-spin {
-  to {
-    transform: rotate(360deg);
-  }
+/* --- ALLINEAMENTO MENU --- */
+.muf-placeholder-text {
+    color: var(--muf-text-muted) !important;
+    opacity: 1; 
+}
+.muf-placeholder-arrow {
+    color: var(--muf-text-muted) !important;
+    opacity: 1; 
 }
 
-@media (max-width: 768px) {
-  .muf-user-form {
-    padding: 0.85rem; 
-  }
-  
-  .muf-form-header {
-    padding: 1.275rem 0.85rem 0.85rem;
-  }
-  
-  .muf-modern-form {
-    padding: 1.275rem 0.85rem; 
-  }
-  
-  .muf-form-cards-container {
-    grid-template-columns: 1fr;
-    gap: 1.275rem; 
-  }
-  
-  .muf-form-card {
-    padding: 1.275rem; 
-  }
-  
-  .muf-form-actions {
-    flex-direction: column;
-  }
-  
-  .muf-modern-btn {
-    width: 100%;
-  }
-  
-  .muf-header-icon {
-    font-size: 1.7rem; 
-  }
-  
-  .muf-form-title {
-    font-size: 1.53rem;
-  }
-  
-  .dropdown-toggle.muf-modern-dropdown-toggle {
-    padding: 0.68rem 0.765rem; 
-    font-size: 0.7225rem; 
-    background-position: right 0.68rem center; 
-    gap: 0.425rem;
-  }
+.muf-custom-dropdown {
+  position: static !important; 
+}
+.muf-input-group {
+  position: relative; 
+}
+.muf-dropdown-menu {
+  left: 0;
+  width: 100%;
+}
 
+/* --- DISABLED STATE OVERRIDES --- */
+.dropdown-toggle.muf-dropdown-toggle:disabled {
+    background-color: var(--muf-bg-white) !important;
+    opacity: 1 !important;
+    color: var(--muf-text-dark) !important;
+    border-color: var(--muf-border) !important;
+    cursor: pointer !important;
+}
+
+/* FIX: Se è disabilitato MA ha errore, forza il colore rosso scavalcando lo stile disabilitato */
+.dropdown-toggle.muf-dropdown-toggle:disabled.muf-input-error {
+    border-color: var(--muf-error-color) !important;
+    background-color: var(--muf-error-bg) !important;
+}
+
+.dropdown-toggle.muf-dropdown-toggle:disabled .muf-placeholder-text {
+    color: var(--muf-text-muted) !important;
+}
+
+.dropdown-toggle.muf-dropdown-toggle:disabled .muf-dropdown-arrow {
+    opacity: 1 !important;
+    color: var(--muf-text-muted) !important;
+}
+
+.muf-input-group:hover .dropdown-toggle.muf-dropdown-toggle:disabled {
+    border-color: var(--muf-brand) !important;
+    border-left: none !important;
+}
+
+/* FIX per hover su disabilitato con errore: se ho errore, mantieni il rosso anche in hover */
+.muf-input-group.has-error:hover .dropdown-toggle.muf-dropdown-toggle:disabled {
+    border-color: var(--muf-error-color) !important;
 }

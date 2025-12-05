@@ -41,6 +41,7 @@ describe('AuthController Unit Tests', () => {
     personalPhotoUrl: undefined,
     telegramUsername: undefined,
     emailNotificationsEnabled: true,
+    isVerified: true,
     createdAt: new Date(),
   };
 

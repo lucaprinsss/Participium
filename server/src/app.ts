@@ -11,7 +11,8 @@ import roleRoutes from "@routes/roleRoutes";
 import reportRoutes from '@routes/reportRoutes';
 import departmentRoutes from "@routes/departmentRoutes";
 import municipalityUserRoutes from "@routes/municipalityUserRoutes";
-import {errorHandler} from "@middleware/errorMiddelware";
+import companyRoutes from "@routes/companyRoutes";
+import {errorHandler} from "@middleware/errorMiddleware";
 
 const app: Application = express();
 
@@ -60,6 +61,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/municipality/users", municipalityUserRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/companies', companyRoutes);
 
 // Check endpoint to verify server is running
 app.get("/health", (req: Request, res: Response) => {

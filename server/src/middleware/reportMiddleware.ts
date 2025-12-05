@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
 import { ReportCategory } from '../models/dto/ReportCategory';
 import { BadRequestError } from '../models/errors/BadRequestError';
+import { ReportStatus } from '@models/dto/ReportStatus';
 
 /**
  * Middleware to validate create report request
@@ -83,3 +84,4 @@ export const validateCreateReport = (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+

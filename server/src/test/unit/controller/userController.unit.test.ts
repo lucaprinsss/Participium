@@ -413,6 +413,271 @@ describe('UserController Unit Tests', () => {
     });
   });
 
+  describe('getExternalMaintainersByCategory', () => {
+    it('should get external maintainers and return 200 status', async () => {
+      const maintainers = [{ id: 1, name: 'Maintainer 1' }];
+      mockRequest.query = { categoryId: '1' };
+
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue(maintainers);
+
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(1);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(maintainers);
+    });
+
+    it('should call service with undefined if categoryId is missing', async () => {
+      mockRequest.query = {};
+
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(undefined);
+      expect(statusMock).toHaveBeenCalledWith(200);
+    });
+
+    it('should call next with an error if fetching maintainers fails', async () => {
+      const error = new Error('Fetch failed');
+      mockRequest.query = { categoryId: '1' };
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockRejectedValue(error);
+
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(mockNext).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('register - Input Validation Edge Cases', () => {
+    const validRegistrationData = {
+      username: 'newcitizen',
+      email: 'citizen@example.com',
+      password: 'SecurePass123!',
+      first_name: 'John',
+      last_name: 'Doe',
+    };
+
+    it('should handle special characters in names', async () => {
+      // Arrange
+      mockRequest.body = {
+        ...validRegistrationData,
+        first_name: 'João',
+        last_name: "O'Reilly",
+      };
+      (userService.registerCitizen as jest.Mock).mockResolvedValue(mockUserResponse);
+
+      // Act
+      await userController.register(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.registerCitizen).toHaveBeenCalledWith(
+        expect.objectContaining({
+          first_name: 'João',
+          last_name: "O'Reilly",
+        })
+      );
+    });
+
+    it('should handle numeric username', async () => {
+      // Arrange
+      mockRequest.body = {
+        ...validRegistrationData,
+        username: '12345',
+      };
+      (userService.registerCitizen as jest.Mock).mockResolvedValue(mockUserResponse);
+
+      // Act
+      await userController.register(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.registerCitizen).toHaveBeenCalledWith(
+        expect.objectContaining({
+          username: '12345',
+        })
+      );
+    });
+
+    it('should pass through extra fields in body to service', async () => {
+      // Arrange
+      mockRequest.body = {
+        ...validRegistrationData,
+        extraField: 'should-be-ignored',
+      };
+      (userService.registerCitizen as jest.Mock).mockResolvedValue(mockUserResponse);
+
+      // Act
+      await userController.register(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.registerCitizen).toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(201);
+    });
+  });
+
+  describe('getExternalMaintainersByCategory - Extended Coverage', () => {
+    it('should return empty array when no maintainers found', async () => {
+      // Arrange
+      mockRequest.query = { categoryId: '999' };
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
+
+      // Act
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith([]);
+    });
+
+    it('should return multiple external maintainers', async () => {
+      // Arrange
+      const maintainers = [
+        { id: 1, name: 'Maintainer 1' },
+        { id: 2, name: 'Maintainer 2' },
+        { id: 3, name: 'Maintainer 3' },
+      ];
+      mockRequest.query = { categoryId: '1' };
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue(maintainers);
+
+      // Act
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(jsonMock).toHaveBeenCalledWith(maintainers);
+      expect(jsonMock.mock.calls[0][0]).toHaveLength(3);
+    });
+
+    it('should handle non-numeric categoryId and convert to NaN', async () => {
+      // Arrange
+      mockRequest.query = { categoryId: 'invalid' };
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
+
+      // Act
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(NaN);
+      expect(statusMock).toHaveBeenCalledWith(200);
+    });
+
+    it('should handle negative categoryId', async () => {
+      // Arrange
+      mockRequest.query = { categoryId: '-1' };
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
+
+      // Act
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(-1);
+    });
+
+    it('should handle zero categoryId', async () => {
+      // Arrange
+      mockRequest.query = { categoryId: '0' };
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
+
+      // Act
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(0);
+    });
+
+    it('should handle large categoryId', async () => {
+      // Arrange
+      mockRequest.query = { categoryId: '999999999' };
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
+
+      // Act
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(999999999);
+    });
+
+    it('should handle timeout errors from service', async () => {
+      // Arrange
+      mockRequest.query = { categoryId: '1' };
+      const timeoutError = new Error('Request timeout');
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockRejectedValue(timeoutError);
+
+      // Act
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(timeoutError);
+      expect(statusMock).not.toHaveBeenCalled();
+    });
+
+    it('should handle ConflictError from service', async () => {
+      // Arrange
+      mockRequest.query = { categoryId: '1' };
+      const conflictError = new ConflictError('Category not found');
+      (userService.getExternalMaintainersByCategory as jest.Mock).mockRejectedValue(conflictError);
+
+      // Act
+      await userController.getExternalMaintainersByCategory(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(conflictError);
+    });
+  });
+
   describe('Controller Structure', () => {
     it('should be an object', () => {
       expect(typeof userController).toBe('object');
@@ -423,12 +688,25 @@ describe('UserController Unit Tests', () => {
       expect(typeof userController.register).toBe('function');
     });
 
+    it('should have getExternalMaintainersByCategory method', () => {
+      expect(userController).toHaveProperty('getExternalMaintainersByCategory');
+      expect(typeof userController.getExternalMaintainersByCategory).toBe('function');
+    });
+
     it('register should accept three parameters (req, res, next)', () => {
       expect(userController.register.length).toBe(3);
     });
 
     it('register should be async', () => {
       expect(userController.register.constructor.name).toBe('AsyncFunction');
+    });
+
+    it('getExternalMaintainersByCategory should accept three parameters (req, res, next)', () => {
+      expect(userController.getExternalMaintainersByCategory.length).toBe(3);
+    });
+
+    it('getExternalMaintainersByCategory should be async', () => {
+      expect(userController.getExternalMaintainersByCategory.constructor.name).toBe('AsyncFunction');
     });
   });
 });

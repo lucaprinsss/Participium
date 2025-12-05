@@ -1,7 +1,7 @@
 import express from 'express';
 import municipalityUserController from '@controllers/municipalityUserController';
 import { requireRole } from '@middleware/authMiddleware';
-import { UserRole } from '@dto/UserRole'; 
+import { SystemRoles } from '@dto/UserRole'; 
 
 const router = express.Router();
 
@@ -61,7 +61,7 @@ const router = express.Router();
  *               name: "InternalServerError"
  *               message: "Internal server error"
  */
-router.get('/', requireRole(UserRole.ADMINISTRATOR), municipalityUserController.getAllRoles);
+router.get('/', requireRole(SystemRoles.ADMINISTRATOR), municipalityUserController.getAllRoles);
 
 export default router;
 

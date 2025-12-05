@@ -35,10 +35,20 @@ export async function cleanDatabase(): Promise<void> {
     await queryRunner.query('TRUNCATE TABLE messages CASCADE;');
     
     // Pulisci solo utenti creati durante i test (non quelli di test-data.sql)
-await queryRunner.query(
-  'DELETE FROM users WHERE username NOT IN ($1, $2, $3, $4, $5);',
-  ['testcitizen', 'testmunicipality', 'testadmin', 'testuser_nonotif', 'teststaffmember']
-);
+    await queryRunner.query(
+      'DELETE FROM users WHERE username NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9);',
+      [
+        'testcitizen',
+        'testmunicipality',
+        'testadmin',
+        'testuser_nonotif',
+        'teststaffmember',
+        'testroadstaff',
+        'testsewerstaff',
+        'testpro',
+        'testexternal'
+      ]
+    );
 
     // Riabilita constraints
     await queryRunner.query('SET session_replication_role = DEFAULT;');

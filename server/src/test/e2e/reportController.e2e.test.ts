@@ -12,13 +12,23 @@ import { ReportCategory } from '@models/dto/ReportCategory';
 
 describe('ReportController E2E Tests - Assigned Reports', () => {
   let technicianId: number;
+  let externalMaintainerId: number;
   let technicianCookies: string[];
+  let techManagerCookies: string[];
+  let techAssstCookies: string[];
+  let proCookies: string[];
   let citizenId: number;
   let citizenCookies: string[];
 
   // Usa utenti di test già presenti in test-data.sql
   const TECHNICIAN_USERNAME = 'teststaffmember';
   const TECHNICIAN_PASSWORD = 'StaffPass123!';
+  const TECH_MANAGER_USERNAME = 'testroadstaff'; // Road Maintenance staff member (technical staff)
+  const TECH_MANAGER_PASSWORD = 'StaffPass123!';
+  const TECH_ASST_USERNAME = 'testsewerstaff'; // Sewer System staff member (technical staff)
+  const TECH_ASST_PASSWORD = 'StaffPass123!';
+  const PRO_USERNAME = 'testpro';
+  const PRO_PASSWORD = 'StaffPass123!';
   const CITIZEN_USERNAME = 'testcitizen';
   const CITIZEN_PASSWORD = 'TestPass123!';
 
@@ -36,6 +46,12 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     await setupTestDatabase();
     await ensureTestDatabase();
 
+    // Debug: Check what users exist in the database
+    const allUsers = await AppDataSource.query(
+      `SELECT username, email FROM users ORDER BY username`
+    );
+    console.log('Users in database:', allUsers.map((u: any) => u.username).join(', '));
+
     // Recupera gli id degli utenti di test già presenti
     const techResult = await AppDataSource.query(
       `SELECT id FROM users WHERE username = $1`,
@@ -49,7 +65,16 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     );
     citizenId = citizenResult[0].id;
 
+    // Get an external maintainer ID (testexternal from test-data.sql - External Maintainer role)
+    const externalResult = await AppDataSource.query(
+      `SELECT id FROM users WHERE username = 'testexternal'`
+    );
+    externalMaintainerId = externalResult[0].id;
+
     technicianCookies = await loginAs(TECHNICIAN_USERNAME, TECHNICIAN_PASSWORD);
+    techManagerCookies = await loginAs(TECH_MANAGER_USERNAME, TECH_MANAGER_PASSWORD);
+    techAssstCookies = await loginAs(TECH_ASST_USERNAME, TECH_ASST_PASSWORD);
+    proCookies = await loginAs(PRO_USERNAME, PRO_PASSWORD);
     citizenCookies = await loginAs(CITIZEN_USERNAME, CITIZEN_PASSWORD);
   });
 
@@ -496,6 +521,236 @@ afterAll(async () => {
     it('should require authentication', async () => {
       const response = await request(app)
         .get('/api/reports/map')
+        .expect(401);
+
+      expect(response.body).toHaveProperty('name');
+      expect(response.body.name).toBe('UnauthorizedError');
+    });
+  });
+
+  // E2E: GET /api/reports/assigned/external/:externalMaintainerId
+  describe('GET /api/reports/assigned/external/:externalMaintainerId', () => {
+    beforeEach(async () => {
+      // Insert test reports assigned to external maintainer
+      await AppDataSource.query(
+        `INSERT INTO reports 
+        (reporter_id, title, description, category, status, location, is_anonymous, assignee_id, created_at)
+        VALUES 
+        ($1, 'External Report 1', 'Test description', 'Public Lighting', 'Assigned', ST_GeogFromText('POINT(7.6869 45.0703)'), false, $2, CURRENT_TIMESTAMP),\n        ($3, 'External Report 2', 'Test description', 'Public Lighting', 'In Progress', ST_GeogFromText('POINT(7.6869 45.0703)'), false, $2, CURRENT_TIMESTAMP)`,
+        [citizenId, externalMaintainerId, citizenId]
+      );
+    });
+
+    it('should return 200 with assigned reports for valid ID (TECHNICAL_MANAGER)', async () => {
+      const response = await request(app)
+        .get(`/api/reports/assigned/external/${externalMaintainerId}`)
+        .set('Cookie', techManagerCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should return 200 for TECHNICAL_ASSISTANT', async () => {
+      const response = await request(app)
+        .get(`/api/reports/assigned/external/${externalMaintainerId}`)
+        .set('Cookie', techAssstCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should return 200 for PUBLIC_RELATIONS_OFFICER', async () => {
+      const response = await request(app)
+        .get(`/api/reports/assigned/external/${externalMaintainerId}`)
+        .set('Cookie', proCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should return 400 for non-integer ID (string)', async () => {
+      const response = await request(app)
+        .get('/api/reports/assigned/external/abc')
+        .set('Cookie', techManagerCookies)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for negative ID', async () => {
+      const response = await request(app)
+        .get('/api/reports/assigned/external/-1')
+        .set('Cookie', techManagerCookies)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for decimal ID', async () => {
+      const response = await request(app)
+        .get('/api/reports/assigned/external/1.5')
+        .set('Cookie', techManagerCookies)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 200 with empty array for ID with no assigned reports', async () => {
+      const response = await request(app)
+        .get('/api/reports/assigned/external/9999')
+        .set('Cookie', techManagerCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should filter by status query parameter', async () => {
+      const response = await request(app)
+        .get(`/api/reports/assigned/external/${externalMaintainerId}?status=Pending Approval`)
+        .set('Cookie', techManagerCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .get(`/api/reports/assigned/external/${externalMaintainerId}`)
+        .expect(401);
+
+      expect(response.body).toHaveProperty('name');
+      expect(response.body.name).toBe('UnauthorizedError');
+    });
+
+    it('should return 403 for unauthorized role (CITIZEN)', async () => {
+      const response = await request(app)
+        .get(`/api/reports/assigned/external/${externalMaintainerId}`)
+        .set('Cookie', citizenCookies)
+        .expect(403);
+    });
+  });
+
+  // E2E: PUT /api/reports/:id/status - RESOLVED status
+  describe('PUT /api/reports/:id/status - RESOLVED status', () => {
+    let reportId: number;
+
+    beforeEach(async () => {
+      // Insert a report in ASSIGNED status that can be resolved
+      const result = await AppDataSource.query(
+        `INSERT INTO reports 
+        (reporter_id, title, description, category, status, location, is_anonymous, created_at)
+        VALUES 
+        ($1, 'Resolvable Report', 'Test description', 'Roads and Urban Furnishings', 'Assigned', ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [citizenId]
+      );
+      reportId = result[0].id;
+    });
+
+    it('should return 200 when TECHNICAL_MANAGER resolves a report', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${reportId}/status`)
+        .set('Cookie', techManagerCookies)
+        .send({ newStatus: ReportStatus.RESOLVED })
+        .expect(200);
+
+      expect(response.body.status).toBe(ReportStatus.RESOLVED);
+    });
+
+    it('should return 200 when TECHNICAL_ASSISTANT resolves a report', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${reportId}/status`)
+        .set('Cookie', techAssstCookies)
+        .send({ newStatus: ReportStatus.RESOLVED })
+        .expect(200);
+
+      expect(response.body.status).toBe(ReportStatus.RESOLVED);
+    });
+
+    it('should return 403 when CITIZEN attempts to resolve a report', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${reportId}/status`)
+        .set('Cookie', citizenCookies)
+        .send({ newStatus: ReportStatus.RESOLVED })
+        .expect(403);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 403 when PUBLIC_RELATIONS_OFFICER attempts to resolve a report', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${reportId}/status`)
+        .set('Cookie', proCookies)
+        .send({ newStatus: ReportStatus.RESOLVED })
+        .expect(403);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for invalid ID format', async () => {
+      const response = await request(app)
+        .put('/api/reports/abc/status')
+        .set('Cookie', techManagerCookies)
+        .send({ newStatus: ReportStatus.RESOLVED })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for negative ID', async () => {
+      const response = await request(app)
+        .put('/api/reports/-1/status')
+        .set('Cookie', techManagerCookies)
+        .send({ newStatus: ReportStatus.RESOLVED })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for decimal ID', async () => {
+      const response = await request(app)
+        .put('/api/reports/1.5/status')
+        .set('Cookie', techManagerCookies)
+        .send({ newStatus: ReportStatus.RESOLVED })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 when status field is missing', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${reportId}/status`)
+        .set('Cookie', techManagerCookies)
+        .send({})
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should resolve report with resolution notes', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${reportId}/status`)
+        .set('Cookie', techManagerCookies)
+        .send({ newStatus: ReportStatus.RESOLVED, resolutionNotes: 'Fixed the issue' })
+        .expect(200);
+
+      expect(response.body.status).toBe(ReportStatus.RESOLVED);
+    });
+
+    it('should resolve report without resolution notes', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${reportId}/status`)
+        .set('Cookie', techManagerCookies)
+        .send({ newStatus: ReportStatus.RESOLVED })
+        .expect(200);
+
+      expect(response.body.status).toBe(ReportStatus.RESOLVED);
+    });
+
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${reportId}/status`)
+        .send({ newStatus: ReportStatus.RESOLVED })
         .expect(401);
 
       expect(response.body).toHaveProperty('name');

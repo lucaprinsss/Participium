@@ -1,3 +1,5 @@
+import { calculateAddress } from '../utils/retriveAddressUtils'; 
+
 /**
  * Handle API response and errors
  */
@@ -56,39 +58,24 @@ export const getReports = async () => {
 };
 
 /**
- * Approve a report
- * @param {string|number} reportId - ID of the report to approve
- * @param {string} [category] - Optional new category if changing it
+ * Update the status of a report
+ * @param {string|number} reportId - ID of the report to update
+ * @param {string} status - The new status of the report
+ * @param {string} [reason] - The reason for rejection (if applicable)
  */
-export const approveReport = async (reportId, category = null) => {
-  // Prepara il body solo se serve (es. cambio categoria)
-  const bodyData = category ? { category } : {};
+export const updateReportStatus = async (reportId, status, reason = null) => {
+  const bodyData = { status };
+  if (reason) {
+    bodyData.reason = reason;
+  }
 
-  const response = await fetch(`/api/reports/${reportId}/approve`, {
-    method: "PUT", // <--- CORRETTO: Backend usa PUT
-    credentials: "include", // <--- FONDAMENTALE: Invia il cookie di sessione
+  const response = await fetch(`/api/reports/${reportId}/status`, {
+    method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(bodyData), 
-  });
-
-  return handleResponse(response);
-};
-
-/**
- * Reject a report
- * @param {string|number} reportId - ID of the report to reject
- * @param {string} rejectionReason - Reason for rejection
- */
-export const rejectReport = async (reportId, rejectionReason) => {
-  const response = await fetch(`/api/reports/${reportId}/reject`, {
-    method: "PUT", // <--- CORRETTO: Backend usa PUT
-    credentials: "include", // <--- FONDAMENTALE: Invia il cookie di sessione
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ rejectionReason }), // Passa la motivazione nel body
+    body: JSON.stringify(bodyData),
   });
 
   return handleResponse(response);
@@ -103,4 +90,18 @@ export const getReportsAssignedToMe = async () => {
     credentials: "include",
   });
   return handleResponse(response);
+};
+
+
+/**
+ * Get address from coordinates using the utility function
+ * @param {number} latitude 
+ * @param {number} longitude 
+ * @returns {Promise<string>} The formatted address or coordinates fallback
+ */
+export const getAddressFromCoordinates = async (latitude, longitude) => {
+    // Utilizza direttamente la logica già definita in retriveAddressUtilis
+    // Non è necessario usare handleResponse qui perché calculateAddress 
+    // gestisce già il try/catch e restituisce una stringa pulita.
+    return await calculateAddress(latitude, longitude);
 };
