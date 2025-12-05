@@ -1,6 +1,6 @@
 # Participium - Database Structure (v4.3)
 
-This document describes the database schema (Version 4.2) designed for the **Participium** application.
+This document describes the database schema (Version 4.3) designed for the **Participium** application.
 
 * **Database System:** PostgreSQL (v15+)
 * **Required Extensions:** `postgis` (for geolocation data)
@@ -57,7 +57,25 @@ Represents the lifecycle states of a report.
 
 ## Tables
 
-### 1. `users`
+### 1. `companies`
+Stores information about external maintenance companies that handle specific report categories.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique company identifier |
+| `name` | `VARCHAR(255)` | NOT NULL, UNIQUE | Company name (e.g., "Enel X", "Acea") |
+| `category` | `report_category` | NOT NULL | Report category the company specializes in |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Company registration date |
+
+**Notes:**
+- **NEW in V4.3**: Separates company entities from user accounts
+- Each company specializes in one report category, but multiple companies can handle the same category
+- External maintainer users reference this table via `users.company_id`
+- MUST be created BEFORE users table because of foreign key dependency
+
+---
+
+### 2. `users`
 Stores information for all system actors (citizens, operators, administrators).
 
 | Column | Type | Constraints | Description |
@@ -72,7 +90,7 @@ Stores information for all system actors (citizens, operators, administrators).
 | `personal_photo_url` | `TEXT` | NULLABLE | URL to user's profile photo |
 | `telegram_username` | `VARCHAR(100)` | NULLABLE, UNIQUE | Telegram username for bot integration |
 | `email_notifications_enabled` | `BOOLEAN` | NOT NULL, DEFAULT true | Flag to enable/disable email notifications |
-| `company_name` | `VARCHAR(255)` | NULLABLE | Company name (only for External Maintainer role) |
+| `company_id` | `INT` | **FOREIGN KEY** → `companies(id)`, NULLABLE | Reference to external company (only for External Maintainer role) |
 | `is_verified` | `BOOLEAN` | NOT NULL, DEFAULT false | Indicates if the user's email has been verified |
 | `verification_code` | `VARCHAR(6)` | NULLABLE | 6-digit verification code sent via email (null after verification) |
 | `verification_code_expires_at` | `TIMESTAMPTZ` | NULLABLE | Expiration timestamp for the verification code (30 minutes from generation) |
@@ -89,12 +107,13 @@ Stores information for all system actors (citizens, operators, administrators).
 - In V3, user roles are no longer stored as an ENUM but are managed through the `department_role_id` foreign key
 - Each user is assigned to a specific "position" which is a combination of department and role
 - Citizens are assigned to the 'Organization' department with 'Citizen' role
-- **V4.1**: External maintainers are now regular users with the 'External Maintainer' role in the 'External Service Providers' department. The `company_name` field stores their company name (e.g., "Enel X S.p.A.", "Acea S.p.A.")
-- **V4.2**: Email verification system added. New users must verify their email within 30 minutes using a 6-digit code. Users cannot use the system until `is_verified` is true. Pre-existing users (admin, external maintainers) are automatically verified.
+- **V4.1**: External maintainers are now regular users with the 'External Maintainer' role in the 'External Service Providers' department
+- **V4.2**: Email verification system added. New users must verify their email within 30 minutes using a 6-digit code. Users cannot use the system until `is_verified` is true. Pre-existing users (admin, external maintainers) are automatically verified
+- **V4.3**: Added `company_id` foreign key to link external maintainers to their companies. The `companies` table now stores company data separately from user accounts
 
 ---
 
-### 2. `reports`
+### 3. `reports`
 Central table containing all citizen-submitted reports.
 
 | Column | Type | Constraints | Description |
@@ -135,7 +154,7 @@ Central table containing all citizen-submitted reports.
 
 ---
 
-### 3. `photos`
+### 4. `photos`
 Stores URLs of photos attached to a report (minimum 1, maximum 3 photos per report).
 
 | Column | Type | Constraints | Description |
@@ -154,7 +173,7 @@ Stores URLs of photos attached to a report (minimum 1, maximum 3 photos per repo
 
 ---
 
-### 4. `comments`
+### 5. `comments`
 Internal comments from staff operators related to report management (not visible to citizens).
 
 | Column | Type | Constraints | Description |
@@ -172,7 +191,7 @@ Internal comments from staff operators related to report management (not visible
 
 ---
 
-### 5. `notifications`
+### 6. `notifications`
 In-app notifications for citizens (e.g., "Your report has been approved").
 
 | Column | Type | Constraints | Description |
@@ -192,7 +211,7 @@ In-app notifications for citizens (e.g., "Your report has been approved").
 
 ---
 
-### 6. `messages`
+### 7. `messages`
 Bidirectional messaging between a citizen and an operator, related to a specific report.
 
 | Column | Type | Constraints | Description |
@@ -211,7 +230,7 @@ Bidirectional messaging between a citizen and an operator, related to a specific
 
 ---
 
-### 7. `departments`
+### 8. `departments`
 Stores municipality departments that handle different types of reports.
 
 | Column | Type | Constraints | Description |
@@ -236,7 +255,7 @@ Stores municipality departments that handle different types of reports.
 
 ---
 
-### 8. `roles`
+### 9. `roles`
 Stores permission levels and job roles that can be assigned to users across departments.
 
 | Column | Type | Constraints | Description |
@@ -271,7 +290,7 @@ Stores permission levels and job roles that can be assigned to users across depa
 
 ---
 
-### 9. `department_roles`
+### 10. `department_roles`
 Defines valid "positions" by linking departments to roles. This table represents which role types are applicable within each department (e.g., a "Water Network staff member" role exists within the "Water and Sewer Services Department").
 
 | Column | Type | Constraints | Description |
@@ -296,7 +315,7 @@ Defines valid "positions" by linking departments to roles. This table represents
 
 ---
 
-### 10. `category_role_mapping`
+### 11. `category_role_mapping`
 **NEW in V4:** Maps report categories to specific technical roles for automatic assignment.
 
 | Column | Type | Constraints | Description |
@@ -313,35 +332,39 @@ Defines valid "positions" by linking departments to roles. This table represents
 
 ---
 
-### 11. `company_categories`
-**NEW in V4.3:** Maps external maintainer companies to the report categories they can handle.
+### 12. `company_categories`
+**NEW in V4.3:** Maps external maintainer companies to the report categories they can handle. This is a future enhancement table (not yet implemented in current init.sql).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `SERIAL` | **PRIMARY KEY** | Unique mapping identifier |
-| `user_id` | `INT` | **FOREIGN KEY** → `users(id)` ON DELETE CASCADE, NOT NULL | External maintainer user ID |
+| `company_id` | `INT` | **FOREIGN KEY** → `companies(id)` ON DELETE CASCADE, NOT NULL | Company ID |
 | `category` | `report_category` | NOT NULL | Report category the company can handle |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Mapping creation date |
 
 **Constraints:**
-- **UNIQUE** constraint `uq_company_category` on `(user_id, category)` to prevent duplicate mappings
+- **UNIQUE** constraint `uq_company_category` on `(company_id, category)` to prevent duplicate mappings
 
 **Indexes:**
 - Primary key on `id`
-- Index on `user_id`
+- Index on `company_id`
 - Index on `category`
-- Unique index on `(user_id, category)`
+- Unique index on `(company_id, category)`
 
 **Notes:**
-- This table enables filtering external maintainers by category
-- A company can be associated with multiple categories
-- Used by the `/api/users/external-maintainers?categoryId=X` endpoint to return only qualified external maintainers
+- **PLANNED FEATURE**: This table will enable filtering external maintainers by category
+- Currently, each company has one category in the `companies` table
+- Future implementation will allow companies to be associated with multiple categories
+- Will be used by the `/api/users/external-maintainers?categoryId=X` endpoint to return only qualified external maintainers
 
 ---
 
 ## Entity Relationships
 
 ```
+companies (1) ──────────< (N) users [company_id] (for External Maintainers)
+companies (1) ──────────< (N) company_categories [company_id] (future)
+
 users (1) ──────────────< (N) reports [reporter_id]
 users (1) ──────────────< (N) reports [assignee_id] (internal staff)
 users (1) ──────────────< (N) reports [external_assignee_id] (external maintainers)
@@ -355,14 +378,11 @@ reports (1) ────────────< (N) notifications
 reports (1) ────────────< (N) messages
 
 departments (1) ────────────< (N) department_roles [department_id]
-departments (1) ────────────< (N) category_department_mapping [department_id]
 
 roles (1) ──────────────< (N) department_roles [role_id]
 roles (1) ──────────────< (N) category_role_mapping [role_id]
 
 department_roles (1) ───< (N) users [department_role_id]
-
-users (1) ──────────────< (N) company_categories [user_id] (for External Maintainers)
 ```
 
 **Key Relationship:**
@@ -439,28 +459,36 @@ The initialization script populates the following default data:
 - **Position:** Organization / Administrator
 - **Name:** System Administrator
 
-### Default External Maintainer Users (V4.3)
-Pre-populated external maintainer users in the 'External Service Providers' department with their specialized categories:
+### Default Companies (V4.3)
+Pre-populated external maintenance companies:
 
-1. **Enel X S.p.A.** - Public Lighting specialist
+1. **Enel X** - Specializes in `Public Lighting`
+2. **Acea** - Specializes in `Water Supply - Drinking Water`
+3. **Hera** - Specializes in `Waste`
+4. **ATM** - Specializes in `Road Signs and Traffic Lights`
+
+### Default External Maintainer Users (V4.3)
+Pre-populated external maintainer users in the 'External Service Providers' department, each linked to their respective company:
+
+1. **Enel X Support Team** (Company: Enel X)
    - Username: `enelx` | Password: `maintainer123`
    - Email: `interventions@enelx.com`
-   - Categories: `Public Lighting`
+   - Category: `Public Lighting`
 
-2. **Acea S.p.A.** - Water and Sewer Services specialist
+2. **Acea Water Services** (Company: Acea)
    - Username: `acea` | Password: `maintainer123`
    - Email: `water@acea.it`
-   - Categories: `Water Supply - Drinking Water`, `Sewer System`
+   - Category: `Water Supply - Drinking Water`
 
-3. **Hera S.p.A.** - Waste Management specialist
+3. **Hera Waste Management** (Company: Hera)
    - Username: `hera` | Password: `maintainer123`
    - Email: `waste@hera.it`
-   - Categories: `Waste`
+   - Category: `Waste`
 
-4. **ATM S.p.A.** - Traffic Management specialist
+4. **ATM Traffic Management** (Company: ATM)
    - Username: `atm` | Password: `maintainer123`
    - Email: `traffic@atm.it`
-   - Categories: `Road Signs and Traffic Lights`, `Roads and Urban Furnishings`
+   - Category: `Road Signs and Traffic Lights`
 
 **Note:** All external maintainer passwords should be changed in production!
 
@@ -476,13 +504,17 @@ Pre-populated external maintainer users in the 'External Service Providers' depa
 4. **System assigns to technical staff** → Finds available staff member in that department
 5. **Status changes to "Assigned"** → Technical staff receives the task
 
-**V4.3 Enhancement - External Maintainer Assignment:**
+**V4.2 Enhancement - External Maintainer Assignment:**
 - Technical office staff can manually assign reports to external maintainers
 - External maintainers are users with the 'External Maintainer' role
-- The `company_categories` table maps each external maintainer to specific report categories
-- The `/api/users/external-maintainers?categoryId=X` endpoint filters external maintainers by category
-- Only qualified external maintainers (those with matching category in `company_categories`) are shown for assignment
 - External maintainers can log in, view assigned reports, update status, and add internal comments
+
+**V4.3 Enhancement - Company Management:**
+- External maintainers are linked to companies via `users.company_id` foreign key
+- Each company specializes in one category (stored in `companies.category`)
+- The `companies` table stores company information separately from user accounts
+- Future implementation will add `company_categories` table for many-to-many category mapping
+- The `/api/users/external-maintainers?categoryId=X` endpoint will filter external maintainers by their company's category
 
 ## Database Initialization
 
@@ -502,6 +534,7 @@ The [`docker-compose.yml`](server/docker-compose.yml ) file automatically runs [
 | 3.0 | 2025-11-17 | **Major refactoring:** Replaced ENUM-based roles with relational role system. Added `departments`, `roles`, and `department_roles` tables. Changed `users.role` to `users.department_role_id` for flexible role-department assignments. Pre-populated 8 departments and 24+ roles covering various municipal services. |
 | 4.0 | 2025-11-22 | **Added automatic assignment:** Added `category_role_mapping` table to map report categories to departments. Reduced role count from 24 to 15 (consolidated similar roles). |
 | 4.1 | 2025-12-02 | **Integrated external maintainers as users (PT24, PT25, PT26):** Removed separate `external_maintainers` table. External maintainers are now regular users with 'External Maintainer' role. Added `company_name` field to `users` table. Removed `external_maintainer_id` and `single_assignment` constraint from `reports` table. External maintainers can now authenticate, update report status, and exchange internal comments with technical staff. |
-| 4.4 | 2025-12-02 | **Added email verification system (PT27) and dual assignment tracking:** Added `is_verified`, `verification_code`, and `verification_code_expires_at` fields to `users` table. New citizens must verify their email with a 6-digit code valid for 30 minutes before accessing the system. Pre-existing users are automatically marked as verified. Added `external_assignee_id` to `reports` table to maintain both internal staff assignee and external maintainer references, preserving the full chain of responsibility. |
+| 4.2 | 2025-12-02 | **Added email verification system (PT27) and dual assignment tracking:** Added `is_verified`, `verification_code`, and `verification_code_expires_at` fields to `users` table. New citizens must verify their email with a 6-digit code valid for 30 minutes before accessing the system. Pre-existing users are automatically marked as verified. Added `external_assignee_id` to `reports` table to maintain both internal staff assignee and external maintainer references, preserving the full chain of responsibility. |
+| 4.3 | 2025-12-05 | **Separated company entities from user accounts:** Created `companies` table to store external maintenance company information separately. Replaced `users.company_name` VARCHAR field with `users.company_id` foreign key. Each company specializes in one report category. Pre-populated 4 companies (Enel X, Acea, Hera, ATM). External maintainer users now reference companies via foreign key. Documented planned `company_categories` table for future many-to-many category mapping. |
 
 
