@@ -87,10 +87,7 @@ class UserService {
    * @returns Array of UserResponse DTOs
    */
   async getExternalMaintainersByCategory(category: string | undefined): Promise<UserResponse[]> {
-    if (!category) {
-      throw new AppError('category query parameter is required', 400);
-    }
-
+    
     const externalMaintainers = await userRepository.findExternalMaintainersByCategory(category);
     
     // Batch query companies for all external maintainers

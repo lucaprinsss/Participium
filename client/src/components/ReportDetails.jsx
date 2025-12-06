@@ -198,7 +198,7 @@ const ReportDetails = ({
     if (isOpen && externalUsers.length === 0) {
       setLoadingExternal(true);
       try {
-        const users = await getAllExternals(report.category);
+        const users = await getAllExternals();
         setExternalUsers(users || []);
       } catch (err) {
         console.error("Failed to load external users", err);
@@ -614,7 +614,7 @@ const ReportDetails = ({
                         id="external-assign-dropdown"
                       >
                         <span className="d-flex align-items-center gap-2">
-                          <FaUserPlus /> Assign to Contractor
+                          <FaUserPlus /> Assign to External
                         </span>
                         {/* La chevron è l'ultimo elemento, quindi andrà a destra */}
                         <FaChevronDown

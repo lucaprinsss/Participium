@@ -72,13 +72,196 @@
   border-radius: 2px;
 }
 
+/* --- FILTERS & DROPDOWNS --- */
+.eml-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.eml-filter-group {
+  width: 350px;
+  border-radius: 0.75rem;
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  transition: all 0.2s ease;
+}
+
+.eml-filter-icon {
+  background-color: #f8f9fa;
+  border: 1px solid var(--border-subtle);
+  border-right: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding-left: 1rem;
+  padding-right: 0.75rem;
+  border-top-left-radius: 0.75rem !important;
+  border-bottom-left-radius: 0.75rem !important;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+}
+
+.eml-filter-toggle {
+  border: 1px solid var(--border-subtle);
+  border-left: none;
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  font-size: 0.9rem;
+  padding: 0.75rem 0.75rem 0.75rem 0.5rem;
+  height: auto;
+  font-weight: 500;
+  border-top-right-radius: 0.75rem !important;
+  border-bottom-right-radius: 0.75rem !important;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.eml-filter-toggle .text-truncate {
+  display: block;
+  max-width: 230px;
+}
+
+.eml-filter-toggle::after {
+  display: none;
+}
+
+.eml-dropdown-arrow {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+  margin-left: auto;
+}
+
+/* Button Reset */
+.eml-btn-reset {
+  background: #fff;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  width: 45px;
+  height: 45px;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.eml-btn-reset:hover:not(:disabled) {
+  color: var(--brand-red);
+  border-color: var(--brand-red);
+  background: #fff5f5;
+  transform: translateY(-1px);
+}
+
+.eml-btn-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f8fafc;
+}
+
+/* Hover Effects for Filter Group */
+.eml-filter-group:hover .eml-filter-icon {
+  border-color: var(--brand-red) !important;
+  color: var(--brand-red) !important;
+  background-color: #fff;
+  border-right: none !important;
+}
+
+.eml-filter-group:hover .eml-filter-toggle {
+  border-color: var(--brand-red) !important;
+  border-left: none !important;
+}
+
+.eml-filter-group:hover .eml-dropdown-arrow {
+  color: var(--brand-red);
+}
+
+.eml-filter-toggle[aria-expanded="true"] {
+  border-color: var(--brand-red) !important;
+}
+
+.eml-custom-dropdown {
+  flex: 1;
+  min-width: 0;
+  position: static !important;
+}
+
+/* Menu del Dropdown */
+.modern-dropdown-menu {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 0.5rem;
+  margin-top: 2px !important;
+  left: 0 !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  margin-left: -40px !important;
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.modern-dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modern-dropdown-menu::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modern-dropdown-menu::-webkit-scrollbar-thumb {
+  background: var(--brand-red);
+  border-radius: 3px;
+}
+
+.modern-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-red-hover);
+}
+
+.modern-dropdown-menu .dropdown-item {
+  color: var(--text-main);
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modern-dropdown-menu .dropdown-item:hover {
+  background-color: rgba(161, 43, 50, 0.08);
+  color: var(--brand-red);
+}
+
+.modern-dropdown-menu .dropdown-item.active {
+  background: var(--brand-red) !important;
+  color: #fff !important;
+}
+
 /* --- Card Container --- */
 .eml-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  overflow: visible;
+  overflow: visible; /* Important for dropdowns */
   min-height: 250px;
   display: flex;
   flex-direction: column;
@@ -396,6 +579,11 @@
   .eml-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .eml-filters,
+  .eml-filter-group {
+    width: 100%;
   }
 
   .name-row {

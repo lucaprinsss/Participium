@@ -3,7 +3,7 @@ import { DataSource, DefaultNamingStrategy, NamingStrategyInterface } from "type
 import { snakeCase } from "typeorm/util/StringUtils";
 import * as dotenv from 'dotenv';
 import { logger } from "@services/loggingService";
-import { CategoryRoleEntity } from "../models/entity/CategoryRoleEntity";
+import { CategoryRoleEntity } from "../models/entity/categoryRoleEntity";
 
 dotenv.config({ debug: false });
 

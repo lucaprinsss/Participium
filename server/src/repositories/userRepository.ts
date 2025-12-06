@@ -275,7 +275,24 @@ class UserRepository {
    * @param category - The category string to filter by
    * @returns Array of user entities
    */
-  public async findExternalMaintainersByCategory(category: string): Promise<UserEntity[]> {
+  public async findExternalMaintainersByCategory(category: string | undefined): Promise<UserEntity[]> {
+
+    if (!category) {
+      return await this.repository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.departmentRole', 'departmentRole')
+      .leftJoinAndSelect('departmentRole.department', 'department')
+      .leftJoinAndSelect('departmentRole.role', 'role')
+      .innerJoin(
+        'companies', 
+        'c', 
+        'c.id = user.company_id', 
+      )
+      .where('role.name = :roleName', { roleName: 'External Maintainer' })
+      .andWhere('user.company_id IS NOT NULL')
+      .getMany();
+    }
+    
     return await this.repository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.departmentRole', 'departmentRole')
