@@ -33,8 +33,8 @@ describe('MunicipalityUserController E2E Tests', () => {
     await teardownTestDatabase();
   });
 
-  // Clean dynamic data before each test
-  beforeEach(async () => {
+  // Clean dynamic data after each test
+  afterEach(async () => {
     await cleanDatabase();
   });
 
@@ -909,6 +909,246 @@ describe('MunicipalityUserController E2E Tests', () => {
     });
   });
 
+  describe('POST /api/municipality/users - With company_name (External Maintainer)', () => {
+    const externalMaintainerData = {
+      username: 'newexternal',
+      email: 'external@test.com',
+      password: 'ExternalPass123!',
+      first_name: 'External',
+      last_name: 'Worker',
+      role_name: 'External Maintainer',
+      department_name: 'External Service Providers',
+      company_name: 'Lighting Solutions SRL'
+    };
 
+    it('should create external maintainer with company_name successfully', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .post('/api/municipality/users')
+        .set('Cookie', adminCookies)
+        .send(externalMaintainerData)
+        .expect('Content-Type', /json/)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('username', externalMaintainerData.username);
+      expect(response.body).toHaveProperty('company_name', 'Lighting Solutions SRL');
+      expect(response.body).toHaveProperty('role_name', 'External Maintainer');
+
+      // Verify user was created with company
+      const user = await userRepository.findUserByUsername(externalMaintainerData.username);
+      expect(user).toBeDefined();
+      expect(user?.companyId).toBeDefined();
+    });
+
+    it('should create municipality user without company_name for non-External Maintainer', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const { company_name, ...dataWithoutCompany } = externalMaintainerData;
+
+      const response = await request(app)
+        .post('/api/municipality/users')
+        .set('Cookie', adminCookies)
+        .send({ 
+          ...dataWithoutCompany, 
+          role_name: 'Road Maintenance staff member',
+          department_name: 'Public Infrastructure and Accessibility Department'
+        })
+        .expect('Content-Type', /json/)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).not.toHaveProperty('company_name');
+    })
+
+    it('should fail with non-existent company_name (404)', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .post('/api/municipality/users')
+        .set('Cookie', adminCookies)
+        .send({ ...externalMaintainerData, company_name: 'Non Existent Company XYZ' })
+        .expect('Content-Type', /json/)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Company');
+    });
+  });
+
+  describe('PUT /api/municipality/users/:id - Update with company_name', () => {
+    let testUserId: number;
+
+    beforeEach(async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const createResponse = await request(app)
+        .post('/api/municipality/users')
+        .set('Cookie', adminCookies)
+        .send({
+          username: 'externalupdate',
+          email: 'extupdate@test.com',
+          password: 'Pass123!',
+          first_name: 'External',
+          last_name: 'Update',
+          role_name: 'External Maintainer',
+          department_name: 'External Service Providers',
+          company_name: 'EcoWaste Management'
+        })
+        .expect(201);
+
+      testUserId = createResponse.body.id;
+    });
+
+    it('should update external maintainer and change company', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .put(`/api/municipality/users/${testUserId}`)
+        .set('Cookie', adminCookies)
+        .send({
+          first_name: 'Updated',
+          last_name: 'Name',
+          email: 'updated@test.com',
+          role_name: 'External Maintainer',
+          department_name: 'External Service Providers',
+          company_name: 'Road Repair Co.'
+        })
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', testUserId);
+      expect(response.body).toHaveProperty('first_name', 'Updated');
+      expect(response.body).toHaveProperty('company_name', 'Road Repair Co.');
+    });
+
+    it('should update user and remove company when company_name not provided', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .put(`/api/municipality/users/${testUserId}`)
+        .set('Cookie', adminCookies)
+        .send({
+          first_name: 'Updated',
+          last_name: 'NoCompany',
+          email: 'nocompany@test.com',
+          role_name: 'Road Maintenance staff member',
+          department_name: 'Public Infrastructure and Accessibility Department',
+          company_name: null  // Explicitly remove company
+        })
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', testUserId);
+      expect(response.body).not.toHaveProperty('company_name');
+
+      // Verify company was removed in database
+      const user = await userRepository.findUserById(testUserId);
+      expect(user?.companyId).toBeNull();
+    });
+
+    it('should fail when updating with non-existent company (404)', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .put(`/api/municipality/users/${testUserId}`)
+        .set('Cookie', adminCookies)
+        .send({
+          first_name: 'Updated',
+          last_name: 'Name',
+          email: 'updated@test.com',
+          role_name: 'External Maintainer',
+          department_name: 'External Service Providers',
+          company_name: 'Non Existent Company'
+        })
+        .expect('Content-Type', /json/)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Company');
+    });
+  });
+
+  describe('GET /api/municipality/users - List includes company_name', () => {
+    beforeEach(async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      // Create an external maintainer with company
+      await request(app)
+        .post('/api/municipality/users')
+        .set('Cookie', adminCookies)
+        .send({
+          username: 'externallist',
+          email: 'extlist@test.com',
+          password: 'Pass123!',
+          first_name: 'List',
+          last_name: 'Test',
+          role_name: 'External Maintainer',
+          department_name: 'External Service Providers',
+          company_name: 'Lighting Solutions SRL'
+        })
+        .expect(201);
+    });
+
+    it('should return users list with company_name field for external maintainers', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .get('/api/municipality/users')
+        .set('Cookie', adminCookies)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+
+      // Find the external maintainer we just created
+      const externalUser = response.body.find((u: any) => u.username === 'externallist');
+      expect(externalUser).toBeDefined();
+      expect(externalUser).toHaveProperty('company_name', 'Lighting Solutions SRL');
+
+      // Verify other users don't have company_name (or it's null/undefined)
+      const regularUser = response.body.find((u: any) => u.username === 'testmunicipality');
+      expect(regularUser?.company_name).toBeFalsy();
+    });
+  });
+
+  describe('GET /api/municipality/users/:id - Get single user with company_name', () => {
+    let externalUserId: number;
+
+    beforeEach(async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const createResponse = await request(app)
+        .post('/api/municipality/users')
+        .set('Cookie', adminCookies)
+        .send({
+          username: 'externalsingle',
+          email: 'extsingle@test.com',
+          password: 'Pass123!',
+          first_name: 'Single',
+          last_name: 'External',
+          role_name: 'External Maintainer',
+          department_name: 'External Service Providers',
+          company_name: 'EcoWaste Management'
+        })
+        .expect(201);
+
+      externalUserId = createResponse.body.id;
+    });
+
+    it('should return external maintainer with company_name', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .get(`/api/municipality/users/${externalUserId}`)
+        .set('Cookie', adminCookies)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', externalUserId);
+      expect(response.body).toHaveProperty('username', 'externalsingle');
+      expect(response.body).toHaveProperty('company_name', 'EcoWaste Management');
+    });
+  });
 
 });

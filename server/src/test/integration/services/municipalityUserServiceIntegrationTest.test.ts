@@ -264,7 +264,7 @@ describe('MunicipalityUserService', () => {
 
       await expect(
         municipalityUserService.createMunicipalityUser(maintainerRequest)
-      ).rejects.toThrow(BadRequestError);
+      ).rejects.toThrow(NotFoundError);
       expect(mockedUserRepository.createUserWithPassword).not.toHaveBeenCalled();
     });
   });

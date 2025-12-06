@@ -259,6 +259,128 @@ INSERT INTO users (
 
 
 -- ============================================
+-- INSERT TEST COMPANIES
+-- ============================================
+
+-- Company 1: Public Lighting company
+INSERT INTO companies (name, category, created_at)
+VALUES ('Lighting Solutions SRL', 'Public Lighting', CURRENT_TIMESTAMP);
+
+-- Company 2: Waste Management company
+INSERT INTO companies (name, category, created_at)
+VALUES ('EcoWaste Management', 'Waste', CURRENT_TIMESTAMP);
+
+-- Company 3: Roads Maintenance company
+INSERT INTO companies (name, category, created_at)
+VALUES ('Road Repair Co.', 'Roads and Urban Furnishings', CURRENT_TIMESTAMP);
+
+
+-- ============================================
+-- UPDATE EXTERNAL MAINTAINER WITH COMPANY
+-- ============================================
+
+-- Update testexternal user to belong to Lighting Solutions SRL
+UPDATE users
+SET company_id = (SELECT id FROM companies WHERE name = 'Lighting Solutions SRL')
+WHERE username = 'testexternal';
+
+
+-- ============================================
+-- ADD MORE EXTERNAL MAINTAINERS
+-- ============================================
+
+-- External Maintainer 2: Public Lighting
+-- Username: testexternal2
+-- Password: StaffPass123!
+INSERT INTO users (
+  username, 
+  email, 
+  password_hash, 
+  first_name, 
+  last_name, 
+  department_role_id,
+  company_id,
+  email_notifications_enabled,
+  is_verified,
+  created_at
+) VALUES (
+  'testexternal2',
+  'testexternal2@example.com',
+  'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
+  'Mario',
+  'Rossi',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
+  (SELECT id FROM companies WHERE name = 'Lighting Solutions SRL'),
+  true,
+  true,
+  CURRENT_TIMESTAMP
+);
+
+-- External Maintainer 3: Waste
+-- Username: testexternal3
+-- Password: StaffPass123!
+INSERT INTO users (
+  username, 
+  email, 
+  password_hash, 
+  first_name, 
+  last_name, 
+  department_role_id,
+  company_id,
+  email_notifications_enabled,
+  is_verified,
+  created_at
+) VALUES (
+  'testexternal3',
+  'testexternal3@example.com',
+  'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
+  'Giuseppe',
+  'Verdi',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
+  (SELECT id FROM companies WHERE name = 'EcoWaste Management'),
+  true,
+  true,
+  CURRENT_TIMESTAMP
+);
+
+-- External Maintainer 4: Roads and Urban Furnishings
+-- Username: testexternal4
+-- Password: StaffPass123!
+INSERT INTO users (
+  username, 
+  email, 
+  password_hash, 
+  first_name, 
+  last_name, 
+  department_role_id,
+  company_id,
+  email_notifications_enabled,
+  is_verified,
+  created_at
+) VALUES (
+  'testexternal4',
+  'testexternal4@example.com',
+  'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
+  'Luigi',
+  'Bianchi',
+  (SELECT dr.id FROM department_roles dr
+   JOIN departments d ON dr.department_id = d.id
+   JOIN roles r ON dr.role_id = r.id
+   WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
+  (SELECT id FROM companies WHERE name = 'Road Repair Co.'),
+  true,
+  true,
+  CURRENT_TIMESTAMP
+);
+
+
+-- ============================================
 -- INSERT TEST REPORTS
 -- ============================================
 

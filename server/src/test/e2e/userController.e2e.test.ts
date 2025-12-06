@@ -800,4 +800,135 @@ import {
       expect(response.body.message).toContain('Email already exists');
     });
   });
+
+  describe('GET /api/users/external-maintainers', () => {
+    let techStaffCookies: string[];
+    let citizenCookies: string[];
+
+    const TECH_STAFF_USERNAME = 'teststaffmember';
+    const TECH_STAFF_PASSWORD = 'StaffPass123!';
+    const CITIZEN_USERNAME = 'testcitizen';
+    const CITIZEN_PASSWORD = 'TestPass123!';
+
+    const loginAs = async (username: string, password: string): Promise<string[]> => {
+      const response = await request(app)
+        .post('/api/sessions')
+        .send({ username, password })
+        .expect(200);
+      const cookies = response.headers['set-cookie'];
+      return Array.isArray(cookies) ? cookies : [cookies];
+    };
+
+    beforeAll(async () => {
+      // Login users
+      techStaffCookies = await loginAs(TECH_STAFF_USERNAME, TECH_STAFF_PASSWORD);
+      citizenCookies = await loginAs(CITIZEN_USERNAME, CITIZEN_PASSWORD);
+    });
+
+    it('should get external maintainers by category successfully', async () => {
+      const response = await request(app)
+        .get('/api/users/external-maintainers')
+        .query({ category: 'Public Lighting' })
+        .set('Cookie', techStaffCookies)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThanOrEqual(2);
+
+      // Verify structure
+      response.body.forEach((maintainer: any) => {
+        expect(maintainer).toHaveProperty('id');
+        expect(maintainer).toHaveProperty('username');
+        expect(maintainer).toHaveProperty('email');
+        expect(maintainer).toHaveProperty('first_name');
+        expect(maintainer).toHaveProperty('last_name');
+        expect(maintainer.role_name).toBe('External Maintainer');
+        expect(maintainer.company_name).toBe('Lighting Solutions SRL');
+      });
+
+      // Verify test-data.sql maintainers are included
+      const usernames = response.body.map((m: any) => m.username);
+      expect(usernames).toContain('testexternal');
+      expect(usernames).toContain('testexternal2');
+    });
+
+    it('should return empty array for category with no maintainers', async () => {
+      const response = await request(app)
+        .get('/api/users/external-maintainers')
+        .query({ category: 'Sewer System' })
+        .set('Cookie', techStaffCookies)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(0);
+    });
+
+    it('should get waste category maintainers', async () => {
+      const response = await request(app)
+        .get('/api/users/external-maintainers')
+        .query({ category: 'Waste' })
+        .set('Cookie', techStaffCookies)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThanOrEqual(1);
+
+      // Verify testexternal3 is in Waste category
+      const usernames = response.body.map((m: any) => m.username);
+      expect(usernames).toContain('testexternal3');
+    });
+
+    it('should fail with invalid category (400)', async () => {
+      const response = await request(app)
+        .get('/api/users/external-maintainers')
+        .query({ category: 'INVALID_CATEGORY' })
+        .set('Cookie', techStaffCookies)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Invalid category');
+    });
+
+    it('should fail with missing category parameter (400)', async () => {
+      const response = await request(app)
+        .get('/api/users/external-maintainers')
+        .set('Cookie', techStaffCookies)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('category');
+    });
+
+    it('should fail without authentication (401)', async () => {
+      await request(app)
+        .get('/api/users/external-maintainers')
+        .query({ category: 'Public Lighting' })
+        .expect(401);
+    });
+
+    it('should fail as citizen (403)', async () => {
+      await request(app)
+        .get('/api/users/external-maintainers')
+        .query({ category: 'Public Lighting' })
+        .set('Cookie', citizenCookies)
+        .expect(403);
+    });
+
+    it('should return maintainers ordered by last_name', async () => {
+      const response = await request(app)
+        .get('/api/users/external-maintainers')
+        .query({ category: 'Public Lighting' })
+        .set('Cookie', techStaffCookies)
+        .expect(200);
+
+      const lastNames = response.body.map((m: any) => m.last_name);
+      const sortedLastNames = [...lastNames].sort();
+      expect(lastNames).toEqual(sortedLastNames);
+    });
+  });
 });

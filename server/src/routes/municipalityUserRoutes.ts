@@ -75,6 +75,16 @@ const router = express.Router();
  *               code: 400
  *               name: "BadRequestError"
  *               message: "All fields are required"
+ *       404:
+ *         description: Company not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Company not found"
  *       401:
  *         description: Unauthorized
  *         content:
@@ -293,6 +303,11 @@ router.get('/:id', requireRole(SystemRoles.ADMINISTRATOR), validateId('id', 'use
  *                 type: string
  *                 description: New department name (optional)
  *                 example: "Technical Office"
+ *               company_name:
+ *                 type: string
+ *                 description: Company name (optional, required for External Maintainers, use null to remove)
+ *                 example: "Lighting Solutions SRL"
+ *                 nullable: true
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -301,15 +316,22 @@ router.get('/:id', requireRole(SystemRoles.ADMINISTRATOR), validateId('id', 'use
  *             schema:
  *               $ref: '#/components/schemas/UserResponse'
  *       404:
- *         description: User not found
+ *         description: User or Company not found
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               code: 404
- *               name: "NotFoundError"
- *               message: "Municipality user not found"
+ *             examples:
+ *               userNotFound:
+ *                 value:
+ *                   code: 404
+ *                   name: "NotFoundError"
+ *                   message: "User not found"
+ *               companyNotFound:
+ *                 value:
+ *                   code: 404
+ *                   name: "NotFoundError"
+ *                   message: "Company not found"
  *       401:
  *         description: Unauthorized
  *         content:
