@@ -564,7 +564,7 @@ router.patch('/:id/assign-external', isLoggedIn, validateId('id', 'report'), rep
  *     summary: Get reports assigned to a specific external maintainer
  *     description: |
  *       Returns all reports assigned to a specific external maintainer, identified by their ID.
- *       Accessible by Technical Managers, Technical Assistants, and Public Relations Officers.
+ *       Accessible by Technical Managers, Technical Assistants, Public Relations Officers and External Maintainers.
  *     tags: [Reports]
  *     security:
  *       - cookieAuth: []
@@ -634,7 +634,7 @@ router.patch('/:id/assign-external', isLoggedIn, validateId('id', 'report'), rep
  */
 router.get(
   '/assigned/external/:externalMaintainerId',
-  requireTechnicalStaffOrRole([SystemRoles.PUBLIC_RELATIONS_OFFICER]),
+  requireTechnicalStaffOrRole([SystemRoles.PUBLIC_RELATIONS_OFFICER, SystemRoles.EXTERNAL_MAINTAINER]),
   validateId('externalMaintainerId', 'external maintainer'),
   reportController.getAssignedReportsToExternalMaintainer
 );

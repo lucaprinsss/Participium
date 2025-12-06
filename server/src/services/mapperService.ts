@@ -150,11 +150,9 @@ export function mapReportEntityToResponse(report: ReportEntity, photos: any[], l
  */
 export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCompanyName?: string): ReportResponse {
   // Parse PostGIS geography point to lat/lng
-  // Format: "POINT(longitude latitude)" or JSON format depending on query
   let location = { latitude: 0, longitude: 0 };
   
   if (typeof entity.location === 'string') {
-    // Parse WKT format: "POINT(lng lat)"
     const match = new RegExp(/POINT\(([^ ]+) ([^ ]+)\)/).exec(entity.location);
     if (match) {
       location = {
@@ -163,7 +161,6 @@ export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCo
       };
     }
   } else if (entity.location && typeof entity.location === 'object') {
-    // Already parsed as object
     location = entity.location;
   }
 
@@ -172,16 +169,29 @@ export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCo
     id: entity.reporter.id,
     first_name: entity.reporter.firstName,
     last_name: entity.reporter.lastName,
-    username: entity.reporter.username
+    username: entity.reporter.username,
+    // Aggiungo email anche qui per sicurezza, se UserResponse lo richiede sempre
+    email: entity.reporter.email 
   } : null;
 
-  // Map assignee info if available
+  // Map INTERNAL assignee info if available
   const assignee = entity.assignee ? {
     id: entity.assignee.id,
     first_name: entity.assignee.firstName,
     last_name: entity.assignee.lastName,
     username: entity.assignee.username,
-    company_name: assigneeCompanyName
+    email: entity.assignee.email, // <--- AGGIUNTO: Obbligatorio per UserResponse
+    company_name: assigneeCompanyName 
+  } : null;
+
+  // Map EXTERNAL assignee info if available
+  const externalAssignee = entity.externalAssignee ? {
+    id: entity.externalAssignee.id,
+    first_name: entity.externalAssignee.firstName,
+    last_name: entity.externalAssignee.lastName,
+    username: entity.externalAssignee.username,
+    email: entity.externalAssignee.email, // <--- AGGIUNTO: Obbligatorio per UserResponse
+    company_name: assigneeCompanyName 
   } : null;
 
   // Map photos if available with full URLs
@@ -205,12 +215,20 @@ export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCo
     isAnonymous: entity.isAnonymous,
     status: entity.status as ReportStatus,
     rejectionReason: entity.rejectionReason || null,
+    
+    // Internal Assignee fields
     assigneeId: entity.assigneeId || null,
     assignee,
+
+    // External Assignee fields
+    externalAssigneeId: entity.externalAssigneeId || null,
+    externalAssignee,
+
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt
   };
 }
+
 
 /**
  * Map CategoryRoleMappingEntity to CategoryRoleMapping DTO

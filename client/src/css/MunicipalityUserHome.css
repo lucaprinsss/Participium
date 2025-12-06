@@ -28,6 +28,7 @@
   
   --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --border-subtle: #e2e8f0;
 }
 
 /* --- Layout & Animation --- */
@@ -94,63 +95,158 @@
   gap: 1rem;
 }
 
-.mu-filter-dropdown {
-  min-width: 240px;
+/* --- DROPDOWNS & FILTER STYLING (NEW) --- */
+
+.mu-filter-group {
+    /* Larghezza fissa identica all'altra pagina */
+    width: 350px; 
+    border-radius: 0.75rem;
+    position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    transition: all 0.2s ease;
 }
 
-/* Styled Dropdown Toggle */
-.modern-dropdown-toggle {
-  background: white !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: var(--radius-md) !important;
-  padding: 0.75rem 1.25rem !important;
-  color: var(--brand-navy) !important;
-  font-weight: 500 !important;
-  font-size: 0.9rem !important;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: var(--shadow-sm);
-  transition: var(--transition-fast);
+/* Icona a sinistra */
+.mu-filter-icon {
+    background-color: #f8f9fa;
+    border: 1px solid var(--border-subtle);
+    border-right: none;
+    color: var(--brand-gray);
+    font-size: 0.9rem;
+    padding-left: 1rem;
+    padding-right: 0.75rem;
+    border-top-left-radius: 0.75rem !important;
+    border-bottom-left-radius: 0.75rem !important;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    z-index: 1;
+    display: flex;
+    align-items: center;
 }
 
-.modern-dropdown-toggle:hover, .modern-dropdown-toggle:focus {
-  border-color: var(--brand-primary) !important;
-  box-shadow: 0 0 0 4px var(--brand-primary-soft) !important;
-  transform: translateY(-1px);
+/* Il corpo del dropdown */
+.mu-filter-toggle {
+    border: 1px solid var(--border-subtle);
+    border-left: none;
+    background-color: white !important;
+    color: var(--brand-navy) !important;
+    font-size: 0.9rem;
+    padding: 0.75rem 0.75rem 0.75rem 0.5rem;
+    height: auto;
+    font-weight: 500;
+    border-top-right-radius: 0.75rem !important;
+    border-bottom-right-radius: 0.75rem !important;
+    transition: all 0.3s ease;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden; 
 }
 
-.modern-dropdown-toggle .dropdown-icon {
-  color: var(--brand-gray);
-  margin-right: 0.75rem;
+/* Forza dimensione massima testo per ellipsis */
+.mu-filter-toggle .text-truncate {
+    display: block;
+    max-width: 230px; 
 }
 
-/* Dropdown Menu */
+.mu-filter-toggle::after {
+    display: none;
+}
+
+.mu-dropdown-arrow {
+    font-size: 0.7rem;
+    color: var(--brand-gray);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+    margin-left: auto;
+}
+
+/* --- HOVER EFFECTS --- */
+
+.mu-filter-group:hover .mu-filter-icon {
+    border-color: var(--brand-primary) !important;
+    color: var(--brand-primary) !important;
+    background-color: #fff;
+    border-right: none !important;
+}
+
+.mu-filter-group:hover .mu-filter-toggle {
+    border-color: var(--brand-primary) !important;
+    border-left: none !important;
+}
+
+.mu-filter-group:hover .mu-dropdown-arrow {
+    color: var(--brand-primary);
+}
+
+.mu-filter-toggle[aria-expanded="true"] {
+    border-color: var(--brand-primary) !important;
+}
+
+.mu-custom-dropdown {
+    flex: 1;
+    min-width: 0;
+    position: static !important;
+}
+
+/* --- MENU DEL DROPDOWN --- */
 .modern-dropdown-menu {
-  border: none !important;
+  border: 1px solid var(--border-subtle) !important;
   border-radius: var(--radius-md) !important;
   box-shadow: var(--shadow-lg) !important;
   padding: 0.5rem !important;
+  margin-top: 2px !important;
+  
+  /* Allineamento a sinistra (offset icona) */
+  left: 0 !important;
+  width: 100% !important; 
+  min-width: 100% !important;
+  margin-left: -40px !important;
+
+  /* Altezza per 6 elementi e no scroll orizzontale */
+  max-height: 260px; 
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.modern-dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+.modern-dropdown-menu::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+.modern-dropdown-menu::-webkit-scrollbar-thumb {
+  background: var(--brand-primary);
+  border-radius: 3px;
+}
+.modern-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-primary-dark);
 }
 
 .dropdown-item {
-  border-radius: 8px;
+  color: var(--brand-navy);
   padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--brand-navy);
-  transition: var(--transition-fast);
+  transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dropdown-item:hover {
-  background-color: var(--brand-light);
+  background-color: var(--brand-primary-soft);
   color: var(--brand-primary);
-  padding-left: 1.25rem; 
 }
 
 .dropdown-item.active {
-  background-color: var(--brand-primary) !important;
-  color: white !important;
+  background: var(--brand-primary) !important; 
+  color: #fff !important;
 }
 
 /* --- Main Card & Table --- */
@@ -238,7 +334,7 @@
 @media (max-width: 768px) {
   .mu-home-container { padding: 1.5rem; }
   .mu-header-wrapper { flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .mu-filters, .mu-filter-dropdown { width: 100%; }
+  .mu-filters, .mu-filter-group { width: 100%; }
   
   .mu-table thead { display: none; }
   .mu-table, .mu-table tbody, .mu-table tr, .mu-table td { display: block; width: 100%; }

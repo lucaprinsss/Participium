@@ -388,3 +388,28 @@
 .muf-input-group.has-error:hover .dropdown-toggle.muf-dropdown-toggle:disabled {
     border-color: var(--muf-error-color) !important;
 }
+
+
+/* Styling per lo switch personalizzato */
+.muf-custom-switch .form-check-input {
+    cursor: pointer;
+    width: 3em; 
+    height: 1.5em;
+    background-color: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+.muf-custom-switch .form-check-input:checked {
+    background-color: var(--muf-brand);
+    border-color: var(--muf-brand);
+}
+
+.muf-custom-switch .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(138, 30, 43, 0.25);
+    border-color: var(--muf-brand);
+}
+
+.muf-type-toggle {
+    font-size: 0.9rem;
+    user-select: none;
+}

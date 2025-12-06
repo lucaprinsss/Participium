@@ -44,7 +44,7 @@ class UserController {
     try {
       const { category } = req.query;
 
-      const externalMaintainers = await userService.getExternalMaintainersByCategory(category as string);
+      const externalMaintainers = await userService.getExternalMaintainersByCategory(category as string || category as undefined);
       res.status(200).json(externalMaintainers);
     } catch (error) {
       next(error);

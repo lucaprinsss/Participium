@@ -88,15 +88,6 @@ class UserService {
    * @returns Array of UserResponse DTOs
    */
   async getExternalMaintainersByCategory(category: string | undefined): Promise<UserResponse[]> {
-    if (!category) {
-      throw new AppError('category query parameter is required', 400);
-    }
-
-    // Validate that category is a valid ReportCategory enum value
-    const validCategories = Object.values(ReportCategory);
-    if (!validCategories.includes(category as ReportCategory)) {
-      throw new AppError(`Invalid category. Must be one of: ${validCategories.join(', ')}`, 400);
-    }
 
     const externalMaintainers = await userRepository.findExternalMaintainersByCategory(category);
     

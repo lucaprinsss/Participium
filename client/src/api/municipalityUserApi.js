@@ -6,7 +6,9 @@ const handleResponse = async (response) => {
     const error = new Error();
     try {
       const data = await response.json();
-      error.message = data.error || `Request failed with status ${response.status}`;
+      
+      error.message = data.message || data.error || `Request failed with status ${response.status}`;
+      
       error.status = response.status;
       error.data = data;
     } catch {
@@ -24,6 +26,7 @@ const handleResponse = async (response) => {
  * @returns {Promise<Object>} Created user
  */
 export const createMunicipalityUser = async (userData) => {
+  
   const response = await fetch(`/api/municipality/users`, {
     method: "POST",
     headers: {
@@ -137,4 +140,18 @@ export const getAllRoles = async () => {
   return handleResponse(response);
 };
 
+/**
+ * 
+ * @returns {Promise<Array>} List of external maintainers
+ */
+export const getAllExternals = async (category) => {
+  const response = await fetch(`/api/users/external-maintainers?category=${category || ""}`, {
+    method: "GET",  
+    headers: {
+      "Content-Type": "application/json",
+    },  
+    credentials: "include",
+  });
 
+  return handleResponse(response);
+};

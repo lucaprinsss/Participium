@@ -21,7 +21,7 @@
 }
 
 /* --- Main Container --- */
-.municipalityUserList-modern {
+.externalMaintainerList-modern {
   width: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text-main);
@@ -41,7 +41,7 @@
 }
 
 /* --- Header --- */
-.mul-header {
+.eml-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -51,7 +51,7 @@
   margin: 2rem;
 }
 
-.mul-title {
+.eml-title {
   font-size: 1.75rem;
   font-weight: 700;
   color: var(--brand-dark);
@@ -61,7 +61,7 @@
   padding-left: 1rem;
 }
 
-.mul-title::before {
+.eml-title::before {
   content: '';
   position: absolute;
   left: 0;
@@ -72,7 +72,7 @@
   border-radius: 2px;
 }
 
-.mul-filters {
+.eml-filters {
   display: flex;
   gap: 1rem;
   align-items: center;
@@ -80,7 +80,7 @@
 
 /* --- DROPDOWNS & FILTER STYLING --- */
 
-.mul-filter-group {
+.eml-filter-group {
   /* Larghezza fissa del gruppo */
   width: 350px;
   border-radius: 0.75rem;
@@ -91,7 +91,7 @@
 }
 
 /* Icona a sinistra */
-.mul-filter-icon {
+.eml-filter-icon {
   background-color: #f8f9fa;
   border: 1px solid var(--border-subtle);
   border-right: none;
@@ -109,7 +109,7 @@
 }
 
 /* Il corpo del dropdown */
-.mul-filter-toggle {
+.eml-filter-toggle {
   border: 1px solid var(--border-subtle);
   border-left: none;
   background-color: var(--bg-card) !important;
@@ -130,16 +130,16 @@
 }
 
 /* Forza la dimensione massima del testo all'interno del toggle */
-.mul-filter-toggle .text-truncate {
+.eml-filter-toggle .text-truncate {
   display: block;
   max-width: 230px;
 }
 
-.mul-filter-toggle::after {
+.eml-filter-toggle::after {
   display: none;
 }
 
-.mul-dropdown-arrow {
+.eml-dropdown-arrow {
   font-size: 0.7rem;
   color: var(--text-muted);
   flex-shrink: 0;
@@ -148,7 +148,7 @@
 }
 
 /* --- BUTTON RESET --- */
-.mul-btn-reset {
+.eml-btn-reset {
   background: #fff;
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
@@ -164,14 +164,14 @@
   flex-shrink: 0;
 }
 
-.mul-btn-reset:hover:not(:disabled) {
+.eml-btn-reset:hover:not(:disabled) {
   color: var(--brand-red);
   border-color: var(--brand-red);
   background: #fff5f5;
   transform: translateY(-1px);
 }
 
-.mul-btn-reset:disabled {
+.eml-btn-reset:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: #f8fafc;
@@ -179,34 +179,34 @@
 
 /* --- HOVER EFFECTS --- */
 
-.mul-filter-group:hover .mul-filter-icon {
+.eml-filter-group:hover .eml-filter-icon {
   border-color: var(--brand-red) !important;
   color: var(--brand-red) !important;
   background-color: #fff;
   border-right: none !important;
 }
 
-.mul-filter-group:hover .mul-filter-toggle {
+.eml-filter-group:hover .eml-filter-toggle {
   border-color: var(--brand-red) !important;
   border-left: none !important;
 }
 
-.mul-filter-group:hover .mul-dropdown-arrow {
+.eml-filter-group:hover .eml-dropdown-arrow {
   color: var(--brand-red);
 }
 
-.mul-filter-toggle[aria-expanded="true"] {
+.eml-filter-toggle[aria-expanded="true"] {
   border-color: var(--brand-red) !important;
 }
 
 /* Importante per l'allineamento: static permette al menu di posizionarsi relativo al gruppo */
-.mul-custom-dropdown {
+.eml-custom-dropdown {
   flex: 1;
   min-width: 0;
   position: static !important;
 }
 
-/* --- MENU DEL DROPDOWN (CORRETTO) --- */
+/* --- MENU DEL DROPDOWN --- */
 .modern-dropdown-menu {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -214,11 +214,7 @@
   padding: 0.5rem;
   margin-top: 2px !important;
 
-  /* ALLINEAMENTO PERFETTO:
-     Dato che il parent .mul-custom-dropdown è static, il menu si posiziona
-     relativo a .mul-filter-group (che è relative).
-     Quindi left: 0 e width: 100% coprono esattamente tutto il gruppo.
-  */
+  /* ALLINEAMENTO PERFETTO */
   left: 0 !important;
   width: 100% !important;
   min-width: 100% !important;
@@ -272,33 +268,30 @@
 }
 
 /* --- Card Container --- */
-.mul-card {
+.eml-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   overflow: visible;
-  /* Già presente, ma fondamentale */
-
-  /* --- MODIFICA QUI --- */
   min-height: 250px;
   display: flex;
   flex-direction: column;
 }
 
-.mul-card-body {
+.eml-card-body {
   padding: 0;
 }
 
 /* --- Loading & Empty --- */
-.mul-loading,
-.mul-empty {
+.eml-loading,
+.eml-empty {
   padding: 4rem 2rem;
   text-align: center;
   color: var(--text-muted);
 }
 
-.mul-loading-spinner {
+.eml-loading-spinner {
   width: 40px;
   height: 40px;
   border: 3px solid var(--border-subtle);
@@ -315,18 +308,23 @@
   }
 }
 
-.mul-table-wrapper {
+.eml-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.eml-table-wrapper {
   width: 100%;
   overflow-x: auto;
 }
 
-.mul-table {
+.eml-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 800px;
 }
 
-.mul-table th {
+.eml-table th {
   background: var(--bg-page);
   color: var(--brand-navy);
   font-weight: 600;
@@ -338,7 +336,7 @@
   text-align: left;
 }
 
-.mul-table td {
+.eml-table td {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-main);
@@ -346,20 +344,20 @@
   font-size: 0.9rem;
 }
 
-.mul-table tbody tr {
+.eml-table tbody tr {
   transition: background 0.2s ease;
 }
 
-.mul-table tbody tr:hover {
+.eml-table tbody tr:hover {
   background: var(--bg-hover);
 }
 
-.mul-table tbody tr:last-child td {
+.eml-table tbody tr:last-child td {
   border-bottom: none;
 }
 
 /* --- Badges --- */
-.mul-role-badge {
+.eml-role-badge {
   display: inline-block;
   padding: 0.35rem 0.75rem;
   background: var(--accent-teal-soft);
@@ -372,18 +370,18 @@
 }
 
 /* --- Actions Buttons --- */
-.mul-actions {
+.eml-actions {
   display: flex;
   gap: 0.75rem;
   opacity: 0.6;
   transition: opacity 0.2s;
 }
 
-.mul-table tr:hover .mul-actions {
+.eml-table tr:hover .eml-actions {
   opacity: 1;
 }
 
-.mul-btn {
+.eml-btn {
   padding: 0.4rem 0.8rem;
   border: none;
   border-radius: 0.5rem;
@@ -396,24 +394,24 @@
   transition: all 0.2s;
 }
 
-.mul-btn-edit {
+.eml-btn-edit {
   background: var(--accent-blue-soft);
   color: var(--accent-blue);
 }
 
-.mul-btn-edit:hover {
+.eml-btn-edit:hover {
   background: var(--accent-blue);
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
-.mul-btn-delete {
+.eml-btn-delete {
   background: #fef2f2;
   color: #dc2626;
 }
 
-.mul-btn-delete:hover {
+.eml-btn-delete:hover {
   background: #dc2626;
   color: white;
   transform: translateY(-2px);
@@ -421,30 +419,30 @@
 }
 
 /* --- Modals --- */
-.mul-modal-content {
+.eml-modal-content {
   border: none;
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
-.mul-modal-header {
+.eml-modal-header {
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-subtle);
   padding: 1.5rem;
 }
 
-.mul-modal-title {
+.eml-modal-title {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--brand-dark);
 }
 
-.mul-modal-body {
+.eml-modal-body {
   padding: 2rem;
   background: var(--bg-card);
 }
 
-.mul-modal-footer {
+.eml-modal-footer {
   background: var(--bg-page);
   border-top: 1px solid var(--border-subtle);
   padding: 1.25rem 2rem;
@@ -454,7 +452,7 @@
 }
 
 /* --- Forms inside Modal --- */
-.mul-modal-body .mul-input-group {
+.eml-modal-body .eml-input-group {
   border-radius: var(--radius-md);
   position: relative;
   display: flex;
@@ -462,7 +460,7 @@
   transition: all 0.2s ease;
 }
 
-.mul-modal-body .mul-icon {
+.eml-modal-body .eml-icon {
   background-color: #f8f9fa;
   border: 1px solid var(--border-subtle);
   border-right: none;
@@ -479,7 +477,7 @@
   align-items: center;
 }
 
-.mul-modal-body .mul-input {
+.eml-modal-body .eml-input {
   border: 1px solid var(--border-subtle);
   border-left: none;
   background-color: #fff;
@@ -494,24 +492,24 @@
   width: 100%;
 }
 
-.mul-modal-body .mul-input:focus {
+.eml-modal-body .eml-input:focus {
   border-color: var(--brand-red);
   box-shadow: none;
 }
 
-.mul-modal-body .mul-input-group:hover .mul-icon {
+.eml-modal-body .eml-input-group:hover .eml-icon {
   border-color: var(--brand-red) !important;
   color: var(--brand-red) !important;
   background-color: #fff;
   border-right: none !important;
 }
 
-.mul-modal-body .mul-input-group:hover .mul-input {
+.eml-modal-body .eml-input-group:hover .eml-input {
   border-color: var(--brand-red) !important;
   border-left: none !important;
 }
 
-.mul-label {
+.eml-label {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--brand-navy);
@@ -519,12 +517,12 @@
   display: block;
 }
 
-.mul-required::after {
+.eml-required::after {
   content: " *";
   color: var(--brand-red);
 }
 
-.mul-readonly {
+.eml-readonly {
   background: var(--bg-page) !important;
   color: var(--text-muted) !important;
   border-color: transparent !important;
@@ -536,7 +534,7 @@
   gap: 1.5rem;
 }
 
-.mul-help-text {
+.eml-help-text {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin-top: 0.25rem;
@@ -544,7 +542,7 @@
 }
 
 /* --- Modal Buttons --- */
-.mul-modal-btn {
+.eml-modal-btn {
   padding: 0.75rem 1.5rem;
   border-radius: 0.6rem;
   font-weight: 600;
@@ -554,49 +552,49 @@
   transition: all 0.2s;
 }
 
-.mul-modal-btn-cancel {
+.eml-modal-btn-cancel {
   background: white;
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
 }
 
-.mul-modal-btn-cancel:hover {
+.eml-modal-btn-cancel:hover {
   background: var(--bg-hover);
   color: var(--text-main);
   border-color: #cbd5e1;
 }
 
-.mul-modal-btn-confirm {
+.eml-modal-btn-confirm {
   background: var(--brand-red);
   color: white;
   box-shadow: 0 4px 6px -1px rgba(161, 43, 50, 0.2);
 }
 
-.mul-modal-btn-confirm:hover {
+.eml-modal-btn-confirm:hover {
   background: var(--brand-red-hover);
   transform: translateY(-1px);
   box-shadow: 0 6px 8px -1px rgba(161, 43, 50, 0.3);
 }
 
-.mul-modal-btn-danger {
+.eml-modal-btn-danger {
   background: #dc2626;
   color: white;
 }
 
-.mul-modal-btn-danger:hover {
+.eml-modal-btn-danger:hover {
   background: #b91c1c;
   box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
 }
 
 /* --- Responsive --- */
 @media (max-width: 768px) {
-  .mul-header {
+  .eml-header {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .mul-filters,
-  .mul-filter-group {
+  .eml-filters,
+  .eml-filter-group {
     width: 100%;
   }
 
@@ -605,7 +603,7 @@
     gap: 1rem;
   }
 
-  .mul-actions {
+  .eml-actions {
     opacity: 1;
   }
 }

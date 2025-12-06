@@ -3,7 +3,7 @@ import express from 'express';
 import UserController from '@controllers/userController';
 import { validateRegisterInput } from '../middleware/registerUserMiddleware';
 import { isLoggedIn } from '@middleware/authMiddleware';
-import { isTechnicalStaff } from '@dto/UserRole';
+import { isTechnicalStaff, isAdmin } from '@dto/UserRole';
 
 const router = express.Router();
 
@@ -165,15 +165,15 @@ router.post('/', validateRegisterInput, UserController.register);
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-
 router.get(
   '/external-maintainers',
   isLoggedIn,
   (req, res, next) => {
+
     const user = req.user as any;
     const roleName = user?.departmentRole?.role?.name;
     
-    if (!roleName || !isTechnicalStaff(roleName)) {
+    if (!roleName || (!isTechnicalStaff(roleName) && !isAdmin(roleName))) {
       return res.status(403).json({
         code: 403,
         name: 'ForbiddenError',

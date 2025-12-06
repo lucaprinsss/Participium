@@ -528,8 +528,8 @@ class ReportService {
       throw new BadRequestError(`External maintainer's company does not handle ${report.category} category`);
     }
 
-    report.assignee = assignee;
-    report.assigneeId = assignee.id;
+    report.externalAssignee = assignee;
+    report.externalAssigneeId = assignee.id;
     report.updatedAt = new Date();
 
     await reportRepository.save(report);

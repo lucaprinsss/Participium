@@ -8,7 +8,9 @@ const handleResponse = async (response) => {
     const error = new Error();
     try {
       const data = await response.json();
+      
       error.message = data.message || data.error || `Request failed with status ${response.status}`;
+      
       error.status = response.status;
       error.data = data;
     } catch {
@@ -19,7 +21,6 @@ const handleResponse = async (response) => {
   }
   return response.json();
 };
-
 /**
  * Get all Categories
  */
@@ -64,20 +65,26 @@ export const getReports = async () => {
  * @param {string} [reason] - The reason for rejection (if applicable)
  */
 export const updateReportStatus = async (reportId, status, reason = null) => {
-  const bodyData = { status };
+  const bodyData = { newStatus: status }; 
+  
   if (reason) {
-    bodyData.reason = reason;
+    if (status === 'Rejected') {
+        bodyData.rejectionReason = reason;
+    } else {
+        bodyData.reason = reason; // Fallback per altri stati se necessario
+    }
   }
 
   const response = await fetch(`/api/reports/${reportId}/status`, {
     method: "PUT",
-    credentials: "include",
+    credentials: "include", // Importante per i cookie di sessione
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(bodyData),
   });
 
+  // Assumo tu abbia una funzione helper handleResponse definita da qualche parte
   return handleResponse(response);
 };
 
@@ -104,4 +111,42 @@ export const getAddressFromCoordinates = async (latitude, longitude) => {
     // Non è necessario usare handleResponse qui perché calculateAddress 
     // gestisce già il try/catch e restituisce una stringa pulita.
     return await calculateAddress(latitude, longitude);
+};
+
+/**
+ * Get reports assigned to a specific external maintainer
+ * @param {string} externalMaintainerId - ID of the external maintainer
+ * @param {Object} externalUserData - Data for the external maintainer assignment
+ */
+export const assignedToExternalUser = async (externalMaintainerId, externalUserData) => {
+  const response = await fetch(`/api/reports/assigned/external/${externalMaintainerId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(externalUserData),
+  });
+
+  return handleResponse(response);
+};
+
+/**
+ * Assign a report to an external user
+ * @param {string|number} reportId - ID of the report to assign
+ * @param {string|number} externalUserId - ID of the external user to assign the report to
+ * @returns {Promise<Object>} The updated report object
+ */
+export const assignToExternalUser = async (reportId, externalUserId) => {
+  const response = await fetch(`/api/reports/${reportId}/assign-external/`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    // MODIFICA QUI: Mappa externalUserId nella chiave attesa dal backend
+    body: JSON.stringify({ externalAssigneeId: externalUserId }), 
+  }); 
+
+  return handleResponse(response);
 };

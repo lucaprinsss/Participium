@@ -36,5 +36,11 @@ export function isTechnicalStaff(roleName: string): boolean {
          roleName !== SystemRoles.EXTERNAL_MAINTAINER;
 }
 
+/**
+ * Helper function per verificare se un ruolo è un amministratore
+ */
+export function isAdmin(roleName: string): boolean {
+  return roleName === SystemRoles.ADMINISTRATOR;
+}
 
 

@@ -1,6 +1,7 @@
 import { Location } from '../Location';
 import { ReportCategory } from '../ReportCategory';
 import { ReportStatus } from '../ReportStatus';
+import { UserResponse } from './UserResponse';
 
 /**
  * User info for reporter/assignee in API response
@@ -121,8 +122,10 @@ export interface ReportResponse {
   isAnonymous: boolean;
   status: ReportStatus;
   rejectionReason: string | null;
-  assigneeId: number | null;
-  assignee?: UserInfo | null;
+  assigneeId?: number | null;
+  assignee?: UserResponse | null;
+  externalAssigneeId?: number | null;
+  externalAssignee?: UserResponse | null; 
   createdAt: Date;
   updatedAt: Date;
 }
