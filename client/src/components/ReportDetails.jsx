@@ -34,6 +34,7 @@ import {
   FaCheck,
   FaUserPlus,
   FaBuilding,
+  FaMapPin,
   FaChevronDown, // Aggiunta icona chevron
 } from "react-icons/fa";
 import "../css/ReportDetails.css";
@@ -403,7 +404,8 @@ const ReportDetails = ({
                     )}
                     {showMap && !mapCoordinates && (
                       <div className="d-flex align-items-center justify-content-center h-100 text-muted bg-light">
-                        <FaExclamationCircle className="me-2" /> Location data unavailable
+                        <FaExclamationCircle className="me-2" /> Location data
+                        unavailable
                       </div>
                     )}
                   </div>
@@ -498,12 +500,15 @@ const ReportDetails = ({
                 ) : (
                   <div className="rdm-rejection-inline-container w-100 animate-fadeIn">
                     <div className="d-flex align-items-center mb-2 text-danger fw-bold small">
-                      <FaExclamationTriangle className="me-2" /> Rejecting Report
+                      <FaExclamationTriangle className="me-2" /> Rejecting
+                      Report
                     </div>
                     <Form.Group className="mb-2">
                       <Form.Control
                         as="textarea"
-                        className={`rdm-reject-textarea ${errorMsg ? "is-invalid" : ""}`}
+                        className={`rdm-reject-textarea ${
+                          errorMsg ? "is-invalid" : ""
+                        }`}
                         rows={2}
                         placeholder="Enter reason for rejection..."
                         value={rejectionReason}
@@ -602,7 +607,9 @@ const ReportDetails = ({
                     >
                       {/* NOTA LE CLASSI QUI: d-flex justify-content-between align-items-center */}
                       <Dropdown.Toggle
-                        className={`rdm-btn-external-assign w-100 d-flex justify-content-between align-items-center ${isDropdownOpen ? 'active' : ''}`}
+                        className={`rdm-btn-external-assign w-100 d-flex justify-content-between align-items-center ${
+                          isDropdownOpen ? "active" : ""
+                        }`}
                         variant="outline-dark"
                         id="external-assign-dropdown"
                       >
@@ -610,13 +617,20 @@ const ReportDetails = ({
                           <FaUserPlus /> Assign to Contractor
                         </span>
                         {/* La chevron è l'ultimo elemento, quindi andrà a destra */}
-                        <FaChevronDown className={`rdm-chevron ${isDropdownOpen ? 'rotate' : ''}`} />
+                        <FaChevronDown
+                          className={`rdm-chevron ${
+                            isDropdownOpen ? "rotate" : ""
+                          }`}
+                        />
                       </Dropdown.Toggle>
 
                       <Dropdown.Menu className="rdm-dropdown-menu shadow-lg border-0">
                         {loadingExternal ? (
                           <div className="rdm-loading-state">
-                            <div className="spinner-border spinner-border-sm text-primary me-2" role="status" />
+                            <div
+                              className="spinner-border spinner-border-sm text-primary me-2"
+                              role="status"
+                            />
                             Loading users...
                           </div>
                         ) : externalUsers.length > 0 ? (
@@ -628,7 +642,9 @@ const ReportDetails = ({
                               {externalUsers.map((extUser) => (
                                 <Dropdown.Item
                                   key={extUser.id}
-                                  onClick={() => handleAssignToExternal(extUser)}
+                                  onClick={() =>
+                                    handleAssignToExternal(extUser)
+                                  }
                                   className="rdm-dropdown-item"
                                 >
                                   <div className="d-flex align-items-center">
@@ -642,7 +658,10 @@ const ReportDetails = ({
                                       </div>
                                       {extUser.company_name && (
                                         <div className="rdm-company-name text-truncate">
-                                          <FaBuilding className="me-1" size={10} />
+                                          <FaBuilding
+                                            className="me-1"
+                                            size={10}
+                                          />
                                           {extUser.company_name}
                                         </div>
                                       )}
@@ -665,6 +684,31 @@ const ReportDetails = ({
 
               <div className="rdm-info-card">
                 <h4 className="rdm-card-label">Location Data</h4>
+
+                {/* === NUOVO CAMPO: ADDRESS === */}
+                <div className="rdm-info-row">
+                  <div className="rdm-icon-box location">
+                    <FaMapPin />
+                  </div>
+                  <div className="flex-grow-1">
+                    {" "}
+                    {/* Aggiunto flex-grow per gestire testi lunghi */}
+                    <span className="rdm-label">Address</span>
+                    <div className="rdm-value address-text">
+                      {" "}
+                      {/* Classe specifica aggiunta */}
+                      {report.address ? (
+                        report.address
+                      ) : (
+                        <span className="text-muted fst-italic">
+                          Address not available
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* === CAMPO ESISTENTE: COORDINATES === */}
                 <div className="rdm-info-row">
                   <div className="rdm-icon-box location">
                     <FaMapMarkerAlt />
@@ -676,6 +720,7 @@ const ReportDetails = ({
                     </div>
                   </div>
                 </div>
+
                 <button
                   className={`rdm-btn-map-toggle ${showMap ? "active" : ""}`}
                   onClick={() => setShowMap(!showMap)}
