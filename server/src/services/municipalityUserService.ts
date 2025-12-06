@@ -8,7 +8,7 @@ import { BadRequestError } from '@models/errors/BadRequestError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { ConflictError } from '@models/errors/ConflictError';
-import { AppError } from '@models/errors/AppError'; 
+import { AppError } from '@models/errors/AppError';
 
 /**
  * Service for municipality user management
@@ -59,7 +59,7 @@ class MunicipalityUserService {
     if (company_name) {
       const company = await companyRepository.findByName(company_name);
       if (!company) {
-        throw new BadRequestError(`Company "${company_name}" not found`);
+        throw new NotFoundError(`Company "${company_name}" not found`);
       }
       companyId = company.id;
     }
@@ -248,30 +248,43 @@ class MunicipalityUserService {
     }
 
     // Resolve company_name to company_id if provided
-    let companyId: number | null | undefined;
+    let companyId: number | undefined;
+    let shouldRemoveCompany = false;
+    
     if (updateData.company_name !== undefined) {
-      if (updateData.company_name === null || updateData.company_name === '') {
+      if (updateData.company_name === null) {
         // Validate: External Maintainer cannot remove company
         if (finalRoleName === 'External Maintainer') {
           throw new BadRequestError('External Maintainer role requires a company');
         }
-        companyId = null; // Allow removing company assignment for other roles
+        shouldRemoveCompany = true; // Mark for removal
       } else {
         const company = await companyRepository.findByName(updateData.company_name);
         if (!company) {
-          throw new BadRequestError(`Company "${updateData.company_name}" not found`);
+          throw new NotFoundError(`Company "${updateData.company_name}" not found`);
         }
         companyId = company.id;
       }
     }
 
-    const updatedUser = await userRepository.updateUser(id, {
+    const updatePayload: any = {
       firstName: updateData.first_name,
       lastName: updateData.last_name,
       email: updateData.email,
-      ...(departmentRoleId && { departmentRoleId }),
-      ...(companyId !== undefined && { companyId: companyId ?? undefined })
-    });
+      ...(departmentRoleId && { departmentRoleId })
+    };
+
+    // Add companyId to update payload if it was specified in the request
+    if (companyId !== undefined) {
+      updatePayload.companyId = companyId;
+    }
+
+    // If we need to remove the company, use repository method
+    if (shouldRemoveCompany) {
+      await userRepository.removeCompanyFromUser(id);
+    }
+
+    const updatedUser = await userRepository.updateUser(id, updatePayload);
 
     logInfo(`Municipality user updated: ${updatedUser.username} (ID: ${id})`);
 

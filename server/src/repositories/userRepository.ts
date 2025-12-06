@@ -148,7 +148,7 @@ class UserRepository {
   }
 
   /**
-   * Updates user information.
+   * Updates an existing user with the provided data.
    * @param id The ID of the user to update.
    * @param updateData Partial user data to update.
    * @returns The updated user entity.
@@ -166,6 +166,19 @@ class UserRepository {
     }
 
     return updatedUser;
+  }
+
+  /**
+   * Removes company assignment from a user (sets company_id to NULL).
+   * @param id The ID of the user.
+   * @returns void
+   */
+  public async removeCompanyFromUser(id: number): Promise<void> {
+    await this.repository.createQueryBuilder()
+      .update(UserEntity)
+      .set({ companyId: null as any })
+      .where('id = :id', { id })
+      .execute();
   }
 
   /**
@@ -289,6 +302,7 @@ class UserRepository {
       )
       .where('role.name = :roleName', { roleName: 'External Maintainer' })
       .andWhere('user.company_id IS NOT NULL')
+      .orderBy('user.last_name', 'ASC')
       .getMany();
   }
 

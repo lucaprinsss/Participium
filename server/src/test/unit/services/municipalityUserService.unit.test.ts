@@ -86,12 +86,12 @@ describe('MunicipalityUserService', () => {
             await expect(municipalityUserService.createMunicipalityUser(data)).rejects.toThrow(BadRequestError);
         });
 
-        it('should throw BadRequestError if company is not found', async () => {
+        it('should throw NotFoundError if company is not found', async () => {
             const data = { ...registerData, role_name: 'External Maintainer', company_name: 'Ghost Company' };
             mockUserRepository.existsUserByUsername.mockResolvedValue(false);
             mockUserRepository.existsUserByEmail.mockResolvedValue(false);
             mockCompanyRepository.findByName.mockResolvedValue(null);
-            await expect(municipalityUserService.createMunicipalityUser(data)).rejects.toThrow(BadRequestError);
+            await expect(municipalityUserService.createMunicipalityUser(data)).rejects.toThrow(NotFoundError);
         });
 
         it('should throw BadRequestError if department role is not found', async () => {

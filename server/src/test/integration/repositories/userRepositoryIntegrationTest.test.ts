@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, jest } from '@jes
 import { AppDataSource } from "@database/connection";
 import { userRepository } from "@repositories/userRepository";
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
+import { companyRepository } from '@repositories/companyRepository';
 import { UserEntity } from "@models/entity/userEntity";
 import { In } from 'typeorm'; 
 
@@ -477,6 +478,107 @@ describe('UserRepository Integration Tests', () => {
       result.forEach(user => {
         expect(user.departmentRole?.role?.name).toBe('External Maintainer');
       });
+    });
+  });
+
+  describe('removeCompanyFromUser', () => {
+    it('should remove company assignment from an external maintainer', async () => {
+      // Get External Maintainer role and a company
+      const externalMaintainerRole = await departmentRoleRepository.findByDepartmentAndRole(
+        'External Service Providers', 
+        'External Maintainer'
+      );
+      expect(externalMaintainerRole).toBeDefined();
+
+      const companies = await companyRepository.findAll();
+      expect(companies.length).toBeGreaterThan(0);
+      const company = companies[0];
+
+      // Create user with company
+      const userData = buildUserData({
+        departmentRoleId: externalMaintainerRole!.id,
+        companyId: company.id
+      });
+
+      const createdUser = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(createdUser.id);
+
+      // Verify user has company
+      expect(createdUser.companyId).toBe(company.id);
+
+      // Remove company
+      await userRepository.removeCompanyFromUser(createdUser.id);
+
+      // Verify company was removed
+      const updatedUser = await userRepository.findUserById(createdUser.id);
+      expect(updatedUser).toBeDefined();
+      expect(updatedUser!.companyId).toBeNull();
+    });
+
+    it('should not throw error when removing company from user without company', async () => {
+      // Create user without company
+      const userData = buildUserData();
+      const createdUser = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(createdUser.id);
+
+      // Verify user has no company
+      expect(createdUser.companyId).toBeFalsy();
+
+      // Remove company (should not throw)
+      await expect(
+        userRepository.removeCompanyFromUser(createdUser.id)
+      ).resolves.not.toThrow();
+
+      // Verify user still exists and has no company
+      const updatedUser = await userRepository.findUserById(createdUser.id);
+      expect(updatedUser).toBeDefined();
+      expect(updatedUser!.companyId).toBeFalsy();
+    });
+
+    it('should not throw error when removing company from non-existent user', async () => {
+      const nonExistentUserId = 999999;
+
+      // Should not throw error
+      await expect(
+        userRepository.removeCompanyFromUser(nonExistentUserId)
+      ).resolves.not.toThrow();
+    });
+
+    it('should only affect the specified user', async () => {
+      // Get External Maintainer role and companies
+      const externalMaintainerRole = await departmentRoleRepository.findByDepartmentAndRole(
+        'External Service Providers', 
+        'External Maintainer'
+      );
+      expect(externalMaintainerRole).toBeDefined();
+
+      const companies = await companyRepository.findAll();
+      expect(companies.length).toBeGreaterThanOrEqual(2);
+
+      // Create two users with companies
+      const user1Data = buildUserData({
+        departmentRoleId: externalMaintainerRole!.id,
+        companyId: companies[0].id
+      });
+      const user2Data = buildUserData({
+        departmentRoleId: externalMaintainerRole!.id,
+        companyId: companies[1].id
+      });
+
+      const user1 = await userRepository.createUserWithPassword(user1Data);
+      const user2 = await userRepository.createUserWithPassword(user2Data);
+      createdUserIds.push(user1.id, user2.id);
+
+      // Remove company from user1 only
+      await userRepository.removeCompanyFromUser(user1.id);
+
+      // Verify user1 has no company
+      const updatedUser1 = await userRepository.findUserById(user1.id);
+      expect(updatedUser1!.companyId).toBeNull();
+
+      // Verify user2 still has company
+      const updatedUser2 = await userRepository.findUserById(user2.id);
+      expect(updatedUser2!.companyId).toBe(companies[1].id);
     });
   });
 });

@@ -326,7 +326,7 @@ describe('MunicipalityUserController Integration Tests', () => {
                 .post('/api/municipality/users')
                 .send(maintainerData);
 
-            expect(response.status).toBe(400);
+            expect(response.status).toBe(404);
             expect(response.body.message || response.body.error).toContain('not found');
         });
     });

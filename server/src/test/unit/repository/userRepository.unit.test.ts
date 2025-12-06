@@ -23,7 +23,11 @@ describe('UserRepository Unit Tests', () => {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       innerJoin: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn(),
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      execute: jest.fn(),
     };
 
     // Setup mock del repository TypeORM
@@ -976,6 +980,7 @@ describe('UserRepository Unit Tests', () => {
         );
         expect(mockQueryBuilder.where).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('user.company_id IS NOT NULL');
+        expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('user.last_name', 'ASC');
         expect(mockQueryBuilder.getMany).toHaveBeenCalled();
     });
 
@@ -986,6 +991,30 @@ describe('UserRepository Unit Tests', () => {
         const result = await userRepository.findExternalMaintainersByCategory(category);
 
         expect(result).toEqual([]);
+    });
+  });
+
+  describe('removeCompanyFromUser', () => {
+    it('should remove company assignment from user', async () => {
+      const userId = 5;
+      mockQueryBuilder.execute.mockResolvedValue({ affected: 1 });
+
+      await userRepository.removeCompanyFromUser(userId);
+
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(UserEntity);
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({ companyId: null });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('id = :id', { id: userId });
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+    });
+
+    it('should handle removal even if user does not exist', async () => {
+      const userId = 999;
+      mockQueryBuilder.execute.mockResolvedValue({ affected: 0 });
+
+      await expect(userRepository.removeCompanyFromUser(userId)).resolves.not.toThrow();
+
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
     });
   });
 });

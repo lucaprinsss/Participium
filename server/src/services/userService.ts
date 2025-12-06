@@ -7,6 +7,7 @@ import { ConflictError } from '@models/errors/ConflictError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { AppError } from '@models/errors/AppError';
+import { ReportCategory } from '@models/dto/ReportCategory';
 
 /**
  * Service for user-related business logic
@@ -89,6 +90,12 @@ class UserService {
   async getExternalMaintainersByCategory(category: string | undefined): Promise<UserResponse[]> {
     if (!category) {
       throw new AppError('category query parameter is required', 400);
+    }
+
+    // Validate that category is a valid ReportCategory enum value
+    const validCategories = Object.values(ReportCategory);
+    if (!validCategories.includes(category as ReportCategory)) {
+      throw new AppError(`Invalid category. Must be one of: ${validCategories.join(', ')}`, 400);
     }
 
     const externalMaintainers = await userRepository.findExternalMaintainersByCategory(category);

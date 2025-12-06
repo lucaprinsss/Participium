@@ -768,4 +768,69 @@ afterAll(async () => {
       expect(response.body.name).toBe('UnauthorizedError');
     });
   });
+  describe('PATCH /api/reports/:id/assign-external', () => {
+    let assignedReportId: number;
+
+    beforeEach(async () => {
+      const result = await AppDataSource.query(
+        `INSERT INTO reports (reporter_id, title, description, category, location, address, status, assignee_id, is_anonymous, created_at) VALUES ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8, $9, $10) RETURNING id`,
+        [citizenId, 'Broken sidewalk for external', 'The sidewalk needs repair by external company', ReportCategory.ROADS, 'POINT(7.6932941 45.0692403)', 'Corso Vittorio Emanuele II 45, 10125 Torino', ReportStatus.ASSIGNED, technicianId, false, new Date()]
+      );
+      assignedReportId = result[0].id;
+    });
+
+    afterEach(async () => {
+      await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [assignedReportId]);
+    });
+
+    it('should assign external maintainer successfully', async () => {
+      const externalUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['testexternal4']);
+      const externalMaintainerId = externalUser[0].id;
+      const response = await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({ externalAssigneeId: externalMaintainerId }).expect(200);
+      expect(response.body.status).toBe(ReportStatus.ASSIGNED);
+      expect(response.body.assignee_id).toBe(externalMaintainerId);
+    });
+
+    it('should fail with non-ASSIGNED status (400)', async () => {
+      const externalUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['testexternal']);
+      await AppDataSource.query(`UPDATE reports SET status = $1 WHERE id = $2`, [ReportStatus.IN_PROGRESS, assignedReportId]);
+      const response = await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({ externalAssigneeId: externalUser[0].id }).expect(400);
+      expect(response.body.message).toContain('Assigned status');
+    });
+
+    it('should fail with non-existent maintainer (404)', async () => {
+      await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({ externalAssigneeId: 99999 }).expect(404);
+    });
+
+    it('should fail with category mismatch (400)', async () => {
+      const externalUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['testexternal']);
+      const response = await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({ externalAssigneeId: externalUser[0].id }).expect(400);
+      expect(response.body.message).toContain('category');
+    });
+
+    it('should fail with non-external maintainer role (400)', async () => {
+      const techUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['teststaffmember']);
+      const response = await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({ externalAssigneeId: techUser[0].id }).expect(400);
+      expect(response.body.message).toContain('not an external maintainer');
+    });
+
+    it('should fail without authentication (401)', async () => {
+      const externalUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['testexternal']);
+      await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).send({ externalAssigneeId: externalUser[0].id }).expect(401);
+    });
+
+    it('should fail as citizen (403)', async () => {
+      const externalUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['testexternal']);
+      await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', citizenCookies).send({ externalAssigneeId: externalUser[0].id }).expect(403);
+    });
+
+    it('should fail with missing externalAssigneeId (400)', async () => {
+      await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({}).expect(400);
+    });
+
+    it('should fail with non-existent report (404)', async () => {
+      const externalUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['testexternal']);
+      await request(app).patch('/api/reports/99999/assign-external').set('Cookie', techManagerCookies).send({ externalAssigneeId: externalUser[0].id }).expect(404);
+    });
+  });
 });
