@@ -244,7 +244,7 @@ class ReportRepository {
   public async findReportById(id: number): Promise<ReportEntity | null> {
     return await this.repository.findOne({
       where: { id },
-      relations: ['reporter', 'assignee', 'photos']
+      relations: ['reporter', 'assignee', 'assignee.departmentRole', 'assignee.departmentRole.role', 'photos']
     });
   }
 
@@ -328,10 +328,16 @@ class ReportRepository {
   /**
    * Save a report entity (create or update)
    * @param report - The report entity to save
-   * @returns The saved report entity
+   * @returns The saved report entity with all relations loaded
    */
-  public async save(report: ReportEntity): Promise<ReportEntity> {
-    return await this.repository.save(report);
+  public async save(report: reportEntity): Promise<reportEntity> {
+    const savedReport = await this.repository.save(report);
+    // Reload with all relations to ensure complete data
+    const reloadedReport = await this.findReportById(savedReport.id);
+    if (!reloadedReport) {
+      throw new Error(`Failed to reload report with id ${savedReport.id}`);
+    }
+    return reloadedReport;
   }
 }
 

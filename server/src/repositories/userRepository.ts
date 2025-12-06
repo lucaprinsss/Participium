@@ -272,10 +272,10 @@ class UserRepository {
   /**
    * Finds external maintainers by category.
    * Returns users with "External Maintainer" role whose company handles the specified category.
-   * @param categoryId - The category ID to filter by
+   * @param category - The category string to filter by
    * @returns Array of user entities
    */
-  public async findExternalMaintainersByCategory(categoryId: number): Promise<UserEntity[]> {
+  public async findExternalMaintainersByCategory(category: string): Promise<userEntity[]> {
     return await this.repository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.departmentRole', 'departmentRole')
@@ -284,8 +284,8 @@ class UserRepository {
       .innerJoin(
         'companies', 
         'c', 
-        'c.id = user.company_id AND c.category = (SELECT category FROM report_categories WHERE id = :categoryId)', 
-        { categoryId }
+        'c.id = user.company_id AND c.category = :category', 
+        { category }
       )
       .where('role.name = :roleName', { roleName: 'External Maintainer' })
       .andWhere('user.company_id IS NOT NULL')

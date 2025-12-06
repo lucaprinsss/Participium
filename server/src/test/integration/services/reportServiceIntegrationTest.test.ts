@@ -1,15 +1,18 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { departmentRoleRepository } from '../../../repositories/departmentRoleRepository';
 import { BadRequestError } from '../../../models/errors/BadRequestError';
+import { NotFoundError } from '../../../models/errors/NotFoundError';
 import { In } from 'typeorm';
 import { AppDataSource } from '@database/connection';
 import { reportService } from '@services/reportService';
 import { reportRepository } from '@repositories/reportRepository';
 import { userRepository } from '@repositories/userRepository';
 import { departmentRepository } from '@repositories/departmentRepository';
+import { companyRepository } from '@repositories/companyRepository';
 import { ReportStatus } from '@models/dto/ReportStatus';
 import { ReportCategory } from '@models/dto/ReportCategory';
 import { UserEntity } from '@models/entity/userEntity';
+import { ReportEntity } from '@models/entity/reportEntity';
 import { DepartmentEntity } from '@models/entity/departmentEntity';
 
 // Mock storage service to avoid actual file I/O
@@ -992,6 +995,423 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
       await expect(
         reportService.updateReportStatus(Number.NaN, ReportStatus.REJECTED, { rejectionReason: 'Invalid ID' }, proUser.id)
       ).rejects.toThrow('Invalid report ID');
+    });
+  });
+});
+
+describe('ReportService Integration Tests - Assign to External Maintainer', () => {
+  let techStaffUserId: number;
+  let externalMaintainerId: number;
+  let companyId: number;
+  let citizenId: number;
+  const createdUserIds: number[] = [];
+  const createdReportIds: number[] = [];
+  const createdCompanyIds: number[] = [];
+
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    const timestamp = Date.now();
+
+    // Create company
+    const company = await companyRepository.create(
+      `Test Company Report Service ${timestamp}`,
+      'Public Lighting'
+    );
+    companyId = company.id;
+    createdCompanyIds.push(companyId);
+
+    // Create tech staff user
+    const techStaffRole = await departmentRoleRepository.findByDepartmentAndRole(
+      'Public Lighting Department',
+      'Department Director'
+    );
+
+    if (!techStaffRole) {
+      throw new Error('Tech staff role not found');
+    }
+
+    const techStaff = await userRepository.createUserWithPassword({
+      username: `techstaff_report_service_${timestamp}`,
+      email: `techstaff_report_service_${timestamp}@test.com`,
+      password: 'Password123!',
+      firstName: 'Tech',
+      lastName: 'Staff',
+      departmentRoleId: techStaffRole.id,
+      isVerified: true,
+    });
+
+    techStaffUserId = techStaff.id;
+    createdUserIds.push(techStaffUserId);
+
+    // Create external maintainer
+    const externalRole = await departmentRoleRepository.findByDepartmentAndRole(
+      'External Service Providers',
+      'External Maintainer'
+    );
+
+    if (!externalRole) {
+      throw new Error('External Maintainer role not found');
+    }
+
+    const externalMaintainer = await userRepository.createUserWithPassword({
+      username: `external_maintainer_${timestamp}`,
+      email: `external_maintainer_${timestamp}@test.com`,
+      password: 'Password123!',
+      firstName: 'External',
+      lastName: 'Maintainer',
+      departmentRoleId: externalRole.id,
+      companyId: companyId,
+      isVerified: true,
+    });
+
+    externalMaintainerId = externalMaintainer.id;
+    createdUserIds.push(externalMaintainerId);
+
+    // Create citizen user
+    const citizenRole = await departmentRoleRepository.findByDepartmentAndRole(
+      'Organization',
+      'Citizen'
+    );
+
+    if (!citizenRole) {
+      throw new Error('Citizen role not found');
+    }
+
+    const citizen = await userRepository.createUserWithPassword({
+      username: `citizen_report_service_${timestamp}`,
+      email: `citizen_report_service_${timestamp}@test.com`,
+      password: 'Password123!',
+      firstName: 'Citizen',
+      lastName: 'Test',
+      departmentRoleId: citizenRole.id,
+      isVerified: true,
+    });
+
+    citizenId = citizen.id;
+    createdUserIds.push(citizenId);
+  });
+
+  afterAll(async () => {
+    // Cleanup in correct order (FK constraints)
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(reportEntity).delete({ id: In(createdReportIds) });
+    }
+    
+    if (createdUserIds.length > 0) {
+      await AppDataSource.getRepository(userEntity).delete({ id: In(createdUserIds) });
+    }
+    
+    if (createdCompanyIds.length > 0) {
+      await AppDataSource.query('DELETE FROM companies WHERE id = ANY($1)', [createdCompanyIds]);
+    }
+
+    if (AppDataSource.isInitialized) {
+      await AppDataSource.destroy();
+    }
+  });
+
+  describe('assignToExternalMaintainer', () => {
+    it('should successfully assign report to external maintainer', async () => {
+      const report = await reportRepository.createReport(
+        {
+          title: 'Light broken',
+          description: 'Needs fixing',
+          category: ReportCategory.PUBLIC_LIGHTING,
+          reporterId: citizenId,
+          location: 'POINT(7.6869 45.0703)',
+          isAnonymous: false
+        },
+        []
+      );
+      createdReportIds.push(report.id);
+
+      // Update status to ASSIGNED (requirement for assignToExternalMaintainer)
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, report.id]
+      );
+
+      await reportService.assignToExternalMaintainer(
+        report.id,
+        externalMaintainerId,
+        techStaffUserId
+      );
+
+      const updated = await reportRepository.findReportById(report.id);
+      expect(updated?.assigneeId).toBe(externalMaintainerId);
+      expect(updated?.status).toBe(ReportStatus.ASSIGNED);
+    });
+
+    it('should maintain ASSIGNED status after assignment', async () => {
+      const report = await reportRepository.createReport(
+        {
+          title: 'Test report',
+          description: 'Status test',
+          category: ReportCategory.PUBLIC_LIGHTING,
+          reporterId: citizenId,
+          location: 'POINT(7.6869 45.0703)',
+          isAnonymous: false
+        },
+        []
+      );
+      createdReportIds.push(report.id);
+
+      // Update to ASSIGNED
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, report.id]
+      );
+
+      expect((await reportRepository.findReportById(report.id))?.status).toBe(ReportStatus.ASSIGNED);
+
+      await reportService.assignToExternalMaintainer(
+        report.id,
+        externalMaintainerId,
+        techStaffUserId
+      );
+
+      const updated = await reportRepository.findReportById(report.id);
+      expect(updated?.status).toBe(ReportStatus.ASSIGNED);
+    });
+
+    it('should throw NotFoundError when report does not exist', async () => {
+      const nonExistentId = 999999;
+
+      await expect(
+        reportService.assignToExternalMaintainer(
+          nonExistentId,
+          externalMaintainerId,
+          techStaffUserId
+        )
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw NotFoundError when maintainer does not exist', async () => {
+      const report = await reportRepository.createReport(
+        {
+          title: 'Test report',
+          description: 'Test',
+          category: ReportCategory.PUBLIC_LIGHTING,
+          reporterId: citizenId,
+          location: 'POINT(7.6869 45.0703)',
+          isAnonymous: false
+        },
+        []
+      );
+      createdReportIds.push(report.id);
+
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, report.id]
+      );
+
+      const nonExistentUserId = 999999;
+
+      await expect(
+        reportService.assignToExternalMaintainer(
+          report.id,
+          nonExistentUserId,
+          techStaffUserId
+        )
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw BadRequestError when maintainer has wrong role', async () => {
+      const report = await reportRepository.createReport(
+        {
+          title: 'Test report',
+          description: 'Test',
+          category: ReportCategory.PUBLIC_LIGHTING,
+          reporterId: citizenId,
+          location: 'POINT(7.6869 45.0703)',
+          isAnonymous: false
+        },
+        []
+      );
+      createdReportIds.push(report.id);
+
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, report.id]
+      );
+
+      // Try to assign to citizen (wrong role)
+      await expect(
+        reportService.assignToExternalMaintainer(
+          report.id,
+          citizenId,
+          techStaffUserId
+        )
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should throw BadRequestError when category does not match', async () => {
+      const timestamp = Date.now();
+
+      // Create a Roads company and maintainer
+      const roadsCompany = await companyRepository.create(
+        `Roads Company ${timestamp}`,
+        'Roads and Urban Furnishings'
+      );
+      createdCompanyIds.push(roadsCompany.id);
+
+      const externalRole = await departmentRoleRepository.findByDepartmentAndRole(
+        'External Service Providers',
+        'External Maintainer'
+      );
+
+      const roadsMaintainer = await userRepository.createUserWithPassword({
+        username: `roads_maintainer_${timestamp}`,
+        email: `roads_maintainer_${timestamp}@test.com`,
+        password: 'Password123!',
+        firstName: 'Roads',
+        lastName: 'Maintainer',
+        departmentRoleId: externalRole!.id,
+        companyId: roadsCompany.id,
+        isVerified: true,
+      });
+      createdUserIds.push(roadsMaintainer.id);
+
+      // Create public lighting report
+      const report = await reportRepository.createReport(
+        {
+          title: 'Light issue',
+          description: 'Test',
+          category: ReportCategory.PUBLIC_LIGHTING,
+          reporterId: citizenId,
+          location: 'POINT(7.6869 45.0703)',
+          isAnonymous: false
+        },
+        []
+      );
+      createdReportIds.push(report.id);
+
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, report.id]
+      );
+
+      // Try to assign roads maintainer to lighting report
+      await expect(
+        reportService.assignToExternalMaintainer(
+          report.id,
+          roadsMaintainer.id,
+          techStaffUserId
+        )
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should throw BadRequestError when report is not in ASSIGNED status', async () => {
+      const report = await reportRepository.createReport(
+        {
+          title: 'Test report',
+          description: 'Test',
+          category: ReportCategory.PUBLIC_LIGHTING,
+          reporterId: citizenId,
+          location: 'POINT(7.6869 45.0703)',
+          isAnonymous: false
+        },
+        []
+      );
+      createdReportIds.push(report.id);
+
+      // Leave status as PENDING_APPROVAL
+      await expect(
+        reportService.assignToExternalMaintainer(
+          report.id,
+          externalMaintainerId,
+          techStaffUserId
+        )
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should allow reassignment to another maintainer', async () => {
+      const timestamp = Date.now();
+
+      // Create second maintainer
+      const externalRole = await departmentRoleRepository.findByDepartmentAndRole(
+        'External Service Providers',
+        'External Maintainer'
+      );
+
+      const secondMaintainer = await userRepository.createUserWithPassword({
+        username: `second_maintainer_${timestamp}`,
+        email: `second_maintainer_${timestamp}@test.com`,
+        password: 'Password123!',
+        firstName: 'Second',
+        lastName: 'Maintainer',
+        departmentRoleId: externalRole!.id,
+        companyId: companyId,
+        isVerified: true,
+      });
+      createdUserIds.push(secondMaintainer.id);
+
+      const report = await reportRepository.createReport(
+        {
+          title: 'Reassignment test',
+          description: 'Test',
+          category: ReportCategory.PUBLIC_LIGHTING,
+          reporterId: citizenId,
+          location: 'POINT(7.6869 45.0703)',
+          isAnonymous: false
+        },
+        []
+      );
+      createdReportIds.push(report.id);
+
+      // Set to ASSIGNED with first maintainer
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1, assignee_id = $2 WHERE id = $3',
+        [ReportStatus.ASSIGNED, externalMaintainerId, report.id]
+      );
+
+      // Reassign to second maintainer
+      await reportService.assignToExternalMaintainer(
+        report.id,
+        secondMaintainer.id,
+        techStaffUserId
+      );
+
+      const updated = await reportRepository.findReportById(report.id);
+      expect(updated?.assigneeId).toBe(secondMaintainer.id);
+      expect(updated?.status).toBe(ReportStatus.ASSIGNED);
+    });
+
+    it('should update updatedAt timestamp', async () => {
+      const report = await reportRepository.createReport(
+        {
+          title: 'Timestamp test',
+          description: 'Test',
+          category: ReportCategory.PUBLIC_LIGHTING,
+          reporterId: citizenId,
+          location: 'POINT(7.6869 45.0703)',
+          isAnonymous: false
+        },
+        []
+      );
+      createdReportIds.push(report.id);
+
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, report.id]
+      );
+
+      const originalUpdatedAt = (await reportRepository.findReportById(report.id))!.updatedAt;
+
+      // Wait a bit to ensure timestamp difference
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await reportService.assignToExternalMaintainer(
+        report.id,
+        externalMaintainerId,
+        techStaffUserId
+      );
+
+      const updated = await reportRepository.findReportById(report.id);
+      expect(updated!.updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime());
     });
   });
 });

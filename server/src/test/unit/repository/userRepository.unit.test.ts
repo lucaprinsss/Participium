@@ -956,12 +956,12 @@ describe('UserRepository Unit Tests', () => {
 
   describe('findExternalMaintainersByCategory', () => {
     it('should find and return external maintainers for a given category', async () => {
-        const categoryId = 1;
-        const expectedUsers: UserEntity[] = [new UserEntity(), new UserEntity()];
+        const category = 'Public Lighting';
+        const expectedUsers: userEntity[] = [new userEntity(), new userEntity()];
 
         mockQueryBuilder.getMany.mockResolvedValue(expectedUsers);
 
-        const result = await userRepository.findExternalMaintainersByCategory(categoryId);
+        const result = await userRepository.findExternalMaintainersByCategory(category);
 
         expect(result).toEqual(expectedUsers);
         expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
@@ -971,8 +971,8 @@ describe('UserRepository Unit Tests', () => {
         expect(mockQueryBuilder.innerJoin).toHaveBeenCalledWith(
             'companies',
             'c',
-            'c.id = user.company_id AND c.category = (SELECT category FROM report_categories WHERE id = :categoryId)',
-            { categoryId }
+            'c.id = user.company_id AND c.category = :category',
+            { category }
         );
         expect(mockQueryBuilder.where).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
         expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('user.company_id IS NOT NULL');
@@ -980,10 +980,10 @@ describe('UserRepository Unit Tests', () => {
     });
 
     it('should return an empty array if no maintainers are found', async () => {
-        const categoryId = 2;
+        const category = 'Roads and Urban Furnishings';
         mockQueryBuilder.getMany.mockResolvedValue([]);
 
-        const result = await userRepository.findExternalMaintainersByCategory(categoryId);
+        const result = await userRepository.findExternalMaintainersByCategory(category);
 
         expect(result).toEqual([]);
     });

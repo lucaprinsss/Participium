@@ -1,5 +1,4 @@
 import { AppDataSource } from "@database/connection";
-import { Repository } from "typeorm";
 
 /**
  * Simple interface for company data
@@ -12,7 +11,7 @@ export interface Company {
 }
 
 /**
- * Repository for Company data access.
+ * Repository for Company data access using TypeORM QueryBuilder
  */
 class CompanyRepository {
   private connection = AppDataSource;
@@ -23,11 +22,19 @@ class CompanyRepository {
    * @returns The company data or null if not found.
    */
   public async findByName(name: string): Promise<Company | null> {
-    const result = await this.connection.query(
-      'SELECT id, name, category, created_at as "createdAt" FROM companies WHERE name = $1',
-      [name]
-    );
-    return result.length > 0 ? result[0] : null;
+    const result = await this.connection
+      .createQueryBuilder()
+      .select([
+        'id',
+        'name',
+        'category',
+        'created_at AS "createdAt"'
+      ])
+      .from('companies', 'c')
+      .where('c.name = :name', { name })
+      .getRawOne();
+    
+    return result || null;
   }
 
   /**
@@ -36,22 +43,44 @@ class CompanyRepository {
    * @returns The company data or null if not found.
    */
   public async findById(id: number): Promise<Company | null> {
-    const result = await this.connection.query(
-      'SELECT id, name, category, created_at as "createdAt" FROM companies WHERE id = $1',
-      [id]
-    );
-    return result.length > 0 ? result[0] : null;
+    // Return null for invalid IDs
+    if (!Number.isFinite(id) || id <= 0) {
+      return null;
+    }
+    
+    const result = await this.connection
+      .createQueryBuilder()
+      .select([
+        'id',
+        'name',
+        'category',
+        'created_at AS "createdAt"'
+      ])
+      .from('companies', 'c')
+      .where('c.id = :id', { id })
+      .getRawOne();
+    
+    return result || null;
   }
 
   /**
-   * Finds all companies.
+   * Finds all companies ordered by name.
    * @returns Array of all companies.
    */
   public async findAll(): Promise<Company[]> {
-    const result = await this.connection.query(
-      'SELECT id, name, category, created_at as "createdAt" FROM companies ORDER BY name'
-    );
-    return result;
+    const results = await this.connection
+      .createQueryBuilder()
+      .select([
+        'id',
+        'name',
+        'category',
+        'created_at AS "createdAt"'
+      ])
+      .from('companies', 'c')
+      .orderBy('c.name', 'ASC')
+      .getRawMany();
+    
+    return results;
   }
 
   /**
@@ -61,11 +90,21 @@ class CompanyRepository {
    * @returns The created company data.
    */
   public async create(name: string, category: string): Promise<Company> {
-    const result = await this.connection.query(
-      'INSERT INTO companies (name, category) VALUES ($1, $2) RETURNING id, name, category, created_at as "createdAt"',
-      [name, category]
-    );
-    return result[0];
+    const result = await this.connection
+      .createQueryBuilder()
+      .insert()
+      .into('companies')
+      .values({ name, category })
+      .returning('*')
+      .execute();
+    
+    const raw = result.raw[0];
+    return {
+      id: raw.id,
+      name: raw.name,
+      category: raw.category,
+      createdAt: raw.created_at
+    };
   }
 
   /**
@@ -74,21 +113,29 @@ class CompanyRepository {
    * @returns True if the company exists, false otherwise.
    */
   public async existsByName(name: string): Promise<boolean> {
-    const result = await this.connection.query(
-      'SELECT EXISTS(SELECT 1 FROM companies WHERE name = $1) as exists',
-      [name]
-    );
-    return result[0].exists;
+    const result = await this.connection
+      .createQueryBuilder()
+      .select('COUNT(*)', 'count')
+      .from('companies', 'c')
+      .where('c.name = :name', { name })
+      .getRawOne();
+    
+    return parseInt(result.count) > 0;
   }
 
   /**
-   * Checks if a category exists in report_categories table.
+   * Checks if a category is a valid report_category enum value.
+   * This uses raw query as it needs to check PostgreSQL enum types.
    * @param category The category to check.
-   * @returns True if the category exists, false otherwise.
+   * @returns True if the category is valid, false otherwise.
    */
   public async isValidCategory(category: string): Promise<boolean> {
     const result = await this.connection.query(
-      'SELECT EXISTS(SELECT 1 FROM report_categories WHERE category = $1) as exists',
+      `SELECT EXISTS(
+        SELECT 1 FROM pg_enum e
+        JOIN pg_type t ON e.enumtypid = t.oid
+        WHERE t.typname = 'report_category' AND e.enumlabel = $1
+      ) as exists`,
       [category]
     );
     return result[0].exists;

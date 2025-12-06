@@ -93,7 +93,14 @@ class MunicipalityUserService {
     });
     logInfo(`Municipality user created: ${username} with role ${role_name}`);
 
-    const userResponse = mapUserEntityToUserResponse(newUser);
+    // Get company name if user has a company
+    let companyName: string | undefined;
+    if (newUser.companyId) {
+      const company = await companyRepository.findById(newUser.companyId);
+      companyName = company?.name;
+    }
+
+    const userResponse = mapUserEntityToUserResponse(newUser, companyName);
     if (!userResponse) {
       throw new AppError('Failed to map user response after creation', 500);
     }
@@ -107,10 +114,20 @@ class MunicipalityUserService {
   async getAllMunicipalityUsers(): Promise<UserResponse[]> {
     const users = await userRepository.findUsersExcludingRoles(['Citizen', 'Administrator']);
     
+    // Map users to response DTOs, getting company names for those who have companies
+    const userResponses = await Promise.all(
+      users.map(async user => {
+        let companyName: string | undefined;
+        if (user.companyId) {
+          const company = await companyRepository.findById(user.companyId);
+          companyName = company?.name;
+        }
+        return mapUserEntityToUserResponse(user, companyName);
+      })
+    );
+
     logInfo(`Retrieved ${users.length} municipality users`);
-    return users
-      .map(user => mapUserEntityToUserResponse(user))
-      .filter(user => user !== null);
+    return userResponses.filter((user): user is UserResponse => user !== null);
   }
 
   /**
@@ -130,7 +147,15 @@ class MunicipalityUserService {
     if (roleName === 'Citizen' || roleName === 'Administrator') {
       throw new NotFoundError('Municipality user not found');
     }
-    const userResponse = mapUserEntityToUserResponse(user);
+
+    // Get company name if user has a company
+    let companyName: string | undefined;
+    if (user.companyId) {
+      const company = await companyRepository.findById(user.companyId);
+      companyName = company?.name;
+    }
+
+    const userResponse = mapUserEntityToUserResponse(user, companyName);
     if (!userResponse) {
       throw new AppError('Failed to map user response for getById', 500);
     }
@@ -226,7 +251,11 @@ class MunicipalityUserService {
     let companyId: number | null | undefined;
     if (updateData.company_name !== undefined) {
       if (updateData.company_name === null || updateData.company_name === '') {
-        companyId = null; // Allow removing company assignment
+        // Validate: External Maintainer cannot remove company
+        if (finalRoleName === 'External Maintainer') {
+          throw new BadRequestError('External Maintainer role requires a company');
+        }
+        companyId = null; // Allow removing company assignment for other roles
       } else {
         const company = await companyRepository.findByName(updateData.company_name);
         if (!company) {
@@ -246,7 +275,14 @@ class MunicipalityUserService {
 
     logInfo(`Municipality user updated: ${updatedUser.username} (ID: ${id})`);
 
-    const userResponse = mapUserEntityToUserResponse(updatedUser);
+    // Get company name if user has a company
+    let companyName: string | undefined;
+    if (updatedUser.companyId) {
+      const company = await companyRepository.findById(updatedUser.companyId);
+      companyName = company?.name;
+    }
+
+    const userResponse = mapUserEntityToUserResponse(updatedUser, companyName);
     if (!userResponse) {
       throw new AppError('Failed to map user response after update', 500);
     }
@@ -325,7 +361,14 @@ class MunicipalityUserService {
 
     logInfo(`Role assigned to user ${user.username}: ${roleName} (ID: ${userId})`);
 
-    const userResponse = mapUserEntityToUserResponse(updatedUser);
+    // Get company name if user has a company
+    let companyName: string | undefined;
+    if (updatedUser.companyId) {
+      const company = await companyRepository.findById(updatedUser.companyId);
+      companyName = company?.name;
+    }
+
+    const userResponse = mapUserEntityToUserResponse(updatedUser, companyName);
     if (!userResponse) {
       throw new AppError('Failed to map user response after role assignment', 500);
     }
