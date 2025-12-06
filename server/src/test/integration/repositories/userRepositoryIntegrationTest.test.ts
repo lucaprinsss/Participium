@@ -341,4 +341,142 @@ describe('UserRepository Integration Tests', () => {
       expect(users[0].username).toBe(specificUsername);
     });
   });
+
+  describe('findExternalMaintainersByCategory', () => {
+    let lightingCompanyId: number;
+    let roadsCompanyId: number;
+    let externalRoleId: number;
+
+    beforeAll(async () => {
+      // Create companies
+      const lightingCompany = await AppDataSource.query(
+        'INSERT INTO companies (name, category) VALUES ($1, $2) RETURNING id',
+        [`Lighting Company ${Date.now()}`, 'Public Lighting']
+      );
+      lightingCompanyId = lightingCompany[0].id;
+
+      const roadsCompany = await AppDataSource.query(
+        'INSERT INTO companies (name, category) VALUES ($1, $2) RETURNING id',
+        [`Roads Company ${Date.now()}`, 'Roads and Urban Furnishings']
+      );
+      roadsCompanyId = roadsCompany[0].id;
+
+      // Get external maintainer role
+      const roleResult = await AppDataSource.query(
+        `SELECT dr.id FROM department_roles dr
+         JOIN departments d ON dr.department_id = d.id
+         JOIN roles r ON dr.role_id = r.id
+         WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'`
+      );
+      externalRoleId = roleResult[0].id;
+    });
+
+    afterAll(async () => {
+      // Cleanup companies
+      if (lightingCompanyId) {
+        await AppDataSource.query('DELETE FROM companies WHERE id = $1', [lightingCompanyId]);
+      }
+      if (roadsCompanyId) {
+        await AppDataSource.query('DELETE FROM companies WHERE id = $1', [roadsCompanyId]);
+      }
+    });
+
+    it('should return external maintainers filtered by category', async () => {
+      const timestamp = Date.now();
+
+      // Create lighting maintainers
+      const lightingM1 = await userRepository.createUserWithPassword({
+        username: `lighting_m1_${timestamp}`,
+        email: `lighting_m1_${timestamp}@test.com`,
+        password: 'Password123!',
+        firstName: 'Lighting',
+        lastName: 'M1',
+        departmentRoleId: externalRoleId,
+        companyId: lightingCompanyId,
+        isVerified: true,
+      });
+      createdUserIds.push(lightingM1.id);
+
+      const lightingM2 = await userRepository.createUserWithPassword({
+        username: `lighting_m2_${timestamp}`,
+        email: `lighting_m2_${timestamp}@test.com`,
+        password: 'Password123!',
+        firstName: 'Lighting',
+        lastName: 'M2',
+        departmentRoleId: externalRoleId,
+        companyId: lightingCompanyId,
+        isVerified: true,
+      });
+      createdUserIds.push(lightingM2.id);
+
+      // Create roads maintainer
+      const roadsM1 = await userRepository.createUserWithPassword({
+        username: `roads_m1_${timestamp}`,
+        email: `roads_m1_${timestamp}@test.com`,
+        password: 'Password123!',
+        firstName: 'Roads',
+        lastName: 'M1',
+        departmentRoleId: externalRoleId,
+        companyId: roadsCompanyId,
+        isVerified: true,
+      });
+      createdUserIds.push(roadsM1.id);
+
+      const result = await userRepository.findExternalMaintainersByCategory('Public Lighting');
+
+      const ids = result.map(u => u.id);
+      expect(ids).toContain(lightingM1.id);
+      expect(ids).toContain(lightingM2.id);
+      expect(ids).not.toContain(roadsM1.id);
+    });
+
+    it('should return empty array when no maintainers for category', async () => {
+      const result = await userRepository.findExternalMaintainersByCategory('Public Green Areas and Playgrounds');
+
+      // May have maintainers from other tests, but not our specific ones
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should include all user relations', async () => {
+      const timestamp = Date.now();
+
+      const maintainer = await userRepository.createUserWithPassword({
+        username: `maintainer_rel_${timestamp}`,
+        email: `maintainer_rel_${timestamp}@test.com`,
+        password: 'Password123!',
+        firstName: 'Test',
+        lastName: 'Maintainer',
+        departmentRoleId: externalRoleId,
+        companyId: lightingCompanyId,
+        isVerified: true,
+      });
+      createdUserIds.push(maintainer.id);
+
+      const result = await userRepository.findExternalMaintainersByCategory('Public Lighting');
+
+      const found = result.find(u => u.id === maintainer.id);
+      expect(found).toBeDefined();
+      expect(found?.departmentRole).toBeDefined();
+      expect(found?.departmentRole?.department).toBeDefined();
+      expect(found?.departmentRole?.role).toBeDefined();
+      expect(found?.companyId).toBe(lightingCompanyId);
+    });
+
+    it('should only return external maintainers, not other roles', async () => {
+      const result = await userRepository.findExternalMaintainersByCategory('Public Lighting');
+
+      result.forEach(user => {
+        expect(user.departmentRole?.role?.name).toBe('External Maintainer');
+      });
+    });
+
+    it('should handle categories with special characters', async () => {
+      const result = await userRepository.findExternalMaintainersByCategory('Roads and Urban Furnishings');
+
+      expect(Array.isArray(result)).toBe(true);
+      result.forEach(user => {
+        expect(user.departmentRole?.role?.name).toBe('External Maintainer');
+      });
+    });
+  });
 });

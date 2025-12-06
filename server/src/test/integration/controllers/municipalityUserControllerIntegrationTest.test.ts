@@ -5,6 +5,7 @@ import app from "../../../app";
 import { userEntity } from "@models/entity/userEntity";
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
+import { companyRepository } from '@repositories/companyRepository';
 import { RoleUtils } from '@utils/roleUtils';
 import { In } from 'typeorm';
 import { municipalityUserService } from '@services/municipalityUserService';
@@ -17,6 +18,8 @@ let createdEmployee: userEntity;
 let createdAdmin: userEntity; 
 let createdCitizen: userEntity; 
 let createdUserIds: number[] = [];
+let createdCompanyIds: number[] = [];
+let testCompanyName: string;
 
 
 describe('MunicipalityUserController Integration Tests', () => {
@@ -31,6 +34,13 @@ describe('MunicipalityUserController Integration Tests', () => {
     });
 
     afterAll(async () => {
+        if (createdCompanyIds.length > 0) {
+            await AppDataSource.createQueryBuilder()
+                .delete()
+                .from('companies')
+                .where('id IN (:...ids)', { ids: createdCompanyIds })
+                .execute();
+        }
         if (createdUserIds.length > 0) {
             await AppDataSource.getRepository(userEntity).delete({ id: In(createdUserIds) });
         }
@@ -40,6 +50,11 @@ describe('MunicipalityUserController Integration Tests', () => {
     });
 
         beforeEach(async () => {
+            // Create test company
+            testCompanyName = `Test Company ${r()}`;
+            const company = await companyRepository.create(testCompanyName, 'Public Lighting');
+            createdCompanyIds.push(company.id);
+
             // Get dynamic department role IDs
             const adminDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Administrator');
             const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
@@ -113,10 +128,20 @@ describe('MunicipalityUserController Integration Tests', () => {
             });
         });
     afterEach(async () => {
+        // Delete users first (they have FK to companies)
         if (createdUserIds.length > 0) {
             const repository = AppDataSource.getRepository(userEntity);
             await repository.delete({ id: In(createdUserIds) });
             createdUserIds = [];
+        }
+        // Then delete companies
+        if (createdCompanyIds.length > 0) {
+            await AppDataSource.createQueryBuilder()
+                .delete()
+                .from('companies')
+                .where('id IN (:...ids)', { ids: createdCompanyIds })
+                .execute();
+            createdCompanyIds = [];
         }
         adminAgent = null as any;
         citizenAgent = null as any;
@@ -228,6 +253,81 @@ describe('MunicipalityUserController Integration Tests', () => {
             
             expect(response.status).toBe(500);
             expect(response.body.message || response.body.error).toBe(mockError.message);
+        });
+
+        // Company field tests
+        it('should create External Maintainer with company (201)', async () => {
+            const maintainerData = {
+                username: `maintainer${r()}`,
+                password: 'Maintainer123!',
+                email: `maintainer${r()}@test.com`,
+                first_name: 'Test',
+                last_name: 'Maintainer',
+                role_name: 'External Maintainer',
+                company_name: testCompanyName
+            };
+
+            const response = await adminAgent
+                .post('/api/municipality/users')
+                .send(maintainerData);
+
+            expect(response.status).toBe(201);
+            expect(response.body.company_name).toBe(testCompanyName);
+            createdUserIds.push(response.body.id);
+        });
+
+        it('should return 400 when External Maintainer has no company', async () => {
+            const maintainerData = {
+                username: `maintainer${r()}`,
+                password: 'Maintainer123!',
+                email: `maintainer${r()}@test.com`,
+                first_name: 'Test',
+                last_name: 'Maintainer',
+                role_name: 'External Maintainer'
+                // company_name missing
+            };
+
+            const response = await adminAgent
+                .post('/api/municipality/users')
+                .send(maintainerData);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message || response.body.error).toContain('requires a company');
+        });
+
+        it('should return 400 when non-External Maintainer has company', async () => {
+            const employeeData = {
+                ...EMPLOYEE_PAYLOAD,
+                username: `employee${r()}`,
+                email: `employee${r()}@test.com`,
+                company_name: testCompanyName
+            };
+
+            const response = await adminAgent
+                .post('/api/municipality/users')
+                .send(employeeData);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message || response.body.error).toContain('Only External Maintainer');
+        });
+
+        it('should return 400 when company does not exist', async () => {
+            const maintainerData = {
+                username: `maintainer${r()}`,
+                password: 'Maintainer123!',
+                email: `maintainer${r()}@test.com`,
+                first_name: 'Test',
+                last_name: 'Maintainer',
+                role_name: 'External Maintainer',
+                company_name: 'NonExistentCompany'
+            };
+
+            const response = await adminAgent
+                .post('/api/municipality/users')
+                .send(maintainerData);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message || response.body.error).toContain('not found');
         });
     });
 
@@ -393,7 +493,76 @@ describe('MunicipalityUserController Integration Tests', () => {
                 .send({ first_name: 'ErrorTest' });
             
             expect(response.status).toBe(500);
-        }); 
+        });
+
+        // Company field update tests
+        it('should update External Maintainer company (200)', async () => {
+            // First create an External Maintainer
+            const maintainerData = {
+                username: `maintainer${r()}`,
+                password: 'Maintainer123!',
+                email: `maintainer${r()}@test.com`,
+                first_name: 'Test',
+                last_name: 'Maintainer',
+                role_name: 'External Maintainer',
+                company_name: testCompanyName
+            };
+
+            const createResponse = await adminAgent
+                .post('/api/municipality/users')
+                .send(maintainerData);
+            
+            createdUserIds.push(createResponse.body.id);
+
+            // Create another company
+            const newCompanyName = `New Company ${r()}`;
+            const newCompany = await companyRepository.create(newCompanyName, 'Waste');
+            createdCompanyIds.push(newCompany.id);
+
+            // Update company
+            const updateResponse = await adminAgent
+                .put(`/api/municipality/users/${createResponse.body.id}`)
+                .send({ company_name: newCompanyName });
+
+            expect(updateResponse.status).toBe(200);
+            expect(updateResponse.body.company_name).toBe(newCompanyName);
+        });
+
+        it('should return 400 when setting company for non-External Maintainer', async () => {
+            const response = await adminAgent
+                .put(`/api/municipality/users/${createdEmployee.id}`)
+                .send({ company_name: testCompanyName });
+
+            expect(response.status).toBe(400);
+            expect(response.body.message || response.body.error).toContain('Only External Maintainer');
+        });
+
+        it('should return 400 when removing company from External Maintainer', async () => {
+            // First create an External Maintainer
+            const maintainerData = {
+                username: `maintainer${r()}`,
+                password: 'Maintainer123!',
+                email: `maintainer${r()}@test.com`,
+                first_name: 'Test',
+                last_name: 'Maintainer',
+                role_name: 'External Maintainer',
+                company_name: testCompanyName
+            };
+
+            const createResponse = await adminAgent
+                .post('/api/municipality/users')
+                .send(maintainerData);
+            
+            createdUserIds.push(createResponse.body.id);
+
+            // Try to remove company (send first_name to avoid "no field" error, but company_name as null)
+            const updateResponse = await adminAgent
+                .put(`/api/municipality/users/${createResponse.body.id}`)
+                .send({ first_name: 'Same', company_name: null });
+
+            expect(updateResponse.status).toBe(400);
+            expect(updateResponse.body.message || updateResponse.body.error).toContain('requires a company');
+        });
     });
 
 

@@ -39,5 +39,6 @@ export interface UserResponse{
     first_name: string, 
     last_name: string, 
     department_name?: string,
-    role_name?: string
+    role_name?: string,
+    company_name?: string
 }

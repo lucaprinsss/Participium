@@ -444,9 +444,9 @@ describe('ReportService', () => {
 
         // Assert
         expect(mapReportEntityToReportResponse).toHaveBeenCalledTimes(3);
-        expect(mapReportEntityToReportResponse).toHaveBeenNthCalledWith(1, mockReports[0]);
-        expect(mapReportEntityToReportResponse).toHaveBeenNthCalledWith(2, mockReports[1]);
-        expect(mapReportEntityToReportResponse).toHaveBeenNthCalledWith(3, mockReports[2]);
+        expect(mapReportEntityToReportResponse).toHaveBeenNthCalledWith(1, mockReports[0], undefined);
+        expect(mapReportEntityToReportResponse).toHaveBeenNthCalledWith(2, mockReports[1], undefined);
+        expect(mapReportEntityToReportResponse).toHaveBeenNthCalledWith(3, mockReports[2], undefined);
       });
 
       it('should return mapped responses', async () => {

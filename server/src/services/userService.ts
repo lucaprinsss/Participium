@@ -2,6 +2,7 @@ import { UserResponse } from '@models/dto/output/UserResponse';
 import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
+import { companyRepository } from '@repositories/companyRepository';
 import { ConflictError } from '@models/errors/ConflictError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
@@ -81,23 +82,39 @@ class UserService {
   }
 
   /**
-   * Gets external maintainers filtered by category
-   * @param categoryId Category ID to filter by
+   * Get external maintainers by category
+   * @param category Category name to filter by
    * @returns Array of UserResponse DTOs
    */
-  async getExternalMaintainersByCategory(categoryId: number | undefined): Promise<UserResponse[]> {
-    if (categoryId === undefined || categoryId === null) {
-      throw new AppError('categoryId query parameter is required', 400);
+  async getExternalMaintainersByCategory(category: string | undefined): Promise<UserResponse[]> {
+    if (!category) {
+      throw new AppError('category query parameter is required', 400);
     }
 
-    if (isNaN(categoryId) || categoryId <= 0) {
-      throw new AppError('categoryId must be a valid positive integer', 400);
-    }
-
-    const externalMaintainers = await userRepository.findExternalMaintainersByCategory(categoryId);
+    const externalMaintainers = await userRepository.findExternalMaintainersByCategory(category);
     
+    // Batch query companies for all external maintainers
+    const companyIds = [...new Set(
+      externalMaintainers
+        .map(user => user.companyId)
+        .filter(id => id !== undefined && id !== null)
+    )] as number[];
+
+    const companyMap = new Map<number, string>();
+    if (companyIds.length > 0) {
+      const companies = await Promise.all(
+        companyIds.map(id => companyRepository.findById(id))
+      );
+      companies.forEach(company => {
+        if (company) companyMap.set(company.id, company.name);
+      });
+    }
+
     return externalMaintainers
-      .map(user => mapUserEntityToUserResponse(user))
+      .map(user => {
+        const companyName = user.companyId ? companyMap.get(user.companyId) : undefined;
+        return mapUserEntityToUserResponse(user, companyName);
+      })
       .filter((user): user is UserResponse => user !== null);
   }
 }

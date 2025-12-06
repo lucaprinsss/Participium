@@ -416,7 +416,7 @@ describe('UserController Unit Tests', () => {
   describe('getExternalMaintainersByCategory', () => {
     it('should get external maintainers and return 200 status', async () => {
       const maintainers = [{ id: 1, name: 'Maintainer 1' }];
-      mockRequest.query = { categoryId: '1' };
+      mockRequest.query = { category: 'Public Lighting' };
 
       (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue(maintainers);
 
@@ -426,12 +426,12 @@ describe('UserController Unit Tests', () => {
         mockNext
       );
 
-      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(1);
+      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith('Public Lighting');
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(jsonMock).toHaveBeenCalledWith(maintainers);
     });
 
-    it('should call service with undefined if categoryId is missing', async () => {
+    it('should call service with undefined if category is missing', async () => {
       mockRequest.query = {};
 
       await userController.getExternalMaintainersByCategory(
@@ -577,9 +577,9 @@ describe('UserController Unit Tests', () => {
       expect(jsonMock.mock.calls[0][0]).toHaveLength(3);
     });
 
-    it('should handle non-numeric categoryId and convert to NaN', async () => {
+    it('should handle valid category string', async () => {
       // Arrange
-      mockRequest.query = { categoryId: 'invalid' };
+      mockRequest.query = { category: 'Roads and Urban Furnishings' };
       (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
 
       // Act
@@ -590,61 +590,13 @@ describe('UserController Unit Tests', () => {
       );
 
       // Assert
-      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(NaN);
+      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith('Roads and Urban Furnishings');
       expect(statusMock).toHaveBeenCalledWith(200);
-    });
-
-    it('should handle negative categoryId', async () => {
-      // Arrange
-      mockRequest.query = { categoryId: '-1' };
-      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
-
-      // Act
-      await userController.getExternalMaintainersByCategory(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(-1);
-    });
-
-    it('should handle zero categoryId', async () => {
-      // Arrange
-      mockRequest.query = { categoryId: '0' };
-      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
-
-      // Act
-      await userController.getExternalMaintainersByCategory(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(0);
-    });
-
-    it('should handle large categoryId', async () => {
-      // Arrange
-      mockRequest.query = { categoryId: '999999999' };
-      (userService.getExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
-
-      // Act
-      await userController.getExternalMaintainersByCategory(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      // Assert
-      expect(userService.getExternalMaintainersByCategory).toHaveBeenCalledWith(999999999);
     });
 
     it('should handle timeout errors from service', async () => {
       // Arrange
-      mockRequest.query = { categoryId: '1' };
+      mockRequest.query = { category: 'Public Lighting' };
       const timeoutError = new Error('Request timeout');
       (userService.getExternalMaintainersByCategory as jest.Mock).mockRejectedValue(timeoutError);
 

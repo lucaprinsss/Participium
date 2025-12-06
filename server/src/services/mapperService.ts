@@ -81,7 +81,7 @@ export function mapRoleEntityToDTO(entity: RoleEntity): Role {
  * Maps a userEntity to UserResponse DTO
  * Excludes sensitive information like password hash
  */
-export function mapUserEntityToUserResponse(entity: userEntity | null | undefined): UserResponse | null {
+export function mapUserEntityToUserResponse(entity: userEntity | null | undefined, companyName?: string): UserResponse | null {
   
   if (!entity) {
     return null;
@@ -98,7 +98,8 @@ export function mapUserEntityToUserResponse(entity: userEntity | null | undefine
     first_name: entity.firstName,
     last_name: entity.lastName,
     department_name: departmentName,
-    role_name: roleName
+    role_name: roleName,
+    company_name: companyName
   }) as UserResponse;
 }
 
@@ -145,7 +146,7 @@ export function mapReportEntityToResponse(report: reportEntity, photos: any[], l
  * Maps a reportEntity to ReportResponse DTO
  * Handles location parsing from PostGIS automatically
  */
-export function mapReportEntityToReportResponse(entity: reportEntity): ReportResponse {
+export function mapReportEntityToReportResponse(entity: reportEntity, assigneeCompanyName?: string): ReportResponse {
   // Parse PostGIS geography point to lat/lng
   // Format: "POINT(longitude latitude)" or JSON format depending on query
   let location = { latitude: 0, longitude: 0 };
@@ -177,7 +178,8 @@ export function mapReportEntityToReportResponse(entity: reportEntity): ReportRes
     id: entity.assignee.id,
     first_name: entity.assignee.firstName,
     last_name: entity.assignee.lastName,
-    username: entity.assignee.username
+    username: entity.assignee.username,
+    company_name: assigneeCompanyName
   } : null;
 
   // Map photos if available with full URLs

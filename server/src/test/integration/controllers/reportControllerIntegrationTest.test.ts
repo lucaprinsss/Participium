@@ -6,6 +6,8 @@ import { userEntity } from "@models/entity/userEntity";
 import { reportEntity } from "@models/entity/reportEntity";
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
+import { companyRepository } from '@repositories/companyRepository';
+import { reportRepository } from '@repositories/reportRepository';
 import { In } from 'typeorm';
 
 
@@ -586,6 +588,282 @@ describe('ReportController Integration Tests - getMyAssignedReports', () => {
 
       // Assert
       expect(jsonMock).toHaveBeenCalledWith(serviceResponse);
+    });
+  });
+});
+
+describe('ReportController Integration Tests - Assign to External Maintainer', () => {
+  let techStaffAgent: ReturnType<typeof request.agent>;
+  let citizenAgent: ReturnType<typeof request.agent>;
+  let createdUserIds: number[] = [];
+  let createdReportIds: number[] = [];
+  let createdCompanyIds: number[] = [];
+
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+  });
+
+  afterAll(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(reportEntity).delete({ id: In(createdReportIds) });
+    }
+    if (createdUserIds.length > 0) {
+      await AppDataSource.getRepository(userEntity).delete({ id: In(createdUserIds) });
+    }
+    if (createdCompanyIds.length > 0) {
+      await AppDataSource.query('DELETE FROM companies WHERE id = ANY($1)', [createdCompanyIds]);
+    }
+    if (AppDataSource.isInitialized) {
+      await AppDataSource.destroy();
+    }
+  });
+
+  afterEach(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(reportEntity).delete({ id: In(createdReportIds) });
+      createdReportIds = [];
+    }
+    if (createdUserIds.length > 0) {
+      await AppDataSource.getRepository(userEntity).delete({ id: In(createdUserIds) });
+      createdUserIds = [];
+    }
+    if (createdCompanyIds.length > 0) {
+      await AppDataSource.query('DELETE FROM companies WHERE id = ANY($1)', [createdCompanyIds]);
+      createdCompanyIds = [];
+    }
+  });
+
+  beforeEach(async () => {
+    // Create Technical Staff user
+    const techStaffRole = await departmentRoleRepository.findByDepartmentAndRole('Public Lighting Department', 'Electrical staff member');
+    if (!techStaffRole) throw new Error('Technical staff role not found');
+
+    const techStaffUser = await userRepository.createUserWithPassword({
+      username: `techstaff${r()}`,
+      password: 'Password123!',
+      email: `techstaff${r()}@test.com`,
+      firstName: 'Tech',
+      lastName: 'Staff',
+      departmentRoleId: techStaffRole.id,
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    createdUserIds.push(techStaffUser.id);
+
+    techStaffAgent = request.agent(app);
+    await techStaffAgent.post('/api/sessions').send({
+      username: techStaffUser.username,
+      password: 'Password123!'
+    });
+
+    // Create Citizen user
+    const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    if (!citizenRole) throw new Error('Citizen role not found');
+
+    const citizenUser = await userRepository.createUserWithPassword({
+      username: `citizen${r()}`,
+      password: 'Password123!',
+      email: `citizen${r()}@test.com`,
+      firstName: 'Citizen',
+      lastName: 'User',
+      departmentRoleId: citizenRole.id,
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    createdUserIds.push(citizenUser.id);
+
+    citizenAgent = request.agent(app);
+    await citizenAgent.post('/api/sessions').send({
+      username: citizenUser.username,
+      password: 'Password123!'
+    });
+  });
+
+  describe('PATCH /api/reports/:id/assign-external', () => {
+    let reportId: number;
+    let externalMaintainerId: number;
+
+    beforeEach(async () => {
+      // Create a company
+      const company = await companyRepository.create(`External Company ${r()}`, 'Public Lighting');
+      const companyId = company.id;
+      createdCompanyIds.push(companyId);
+
+      // Create an external maintainer
+      const externalMaintainerRole = await departmentRoleRepository.findByDepartmentAndRole('External Service Providers', 'External Maintainer');
+      if (!externalMaintainerRole) throw new Error('External Maintainer role not found');
+
+      const externalMaintainer = await userRepository.createUserWithPassword({
+        username: `extmaint${r()}`,
+        password: 'Password123!',
+        email: `extmaint${r()}@test.com`,
+        firstName: 'External',
+        lastName: 'Maintainer',
+        departmentRoleId: externalMaintainerRole.id,
+        emailNotificationsEnabled: true,
+        companyId: companyId,
+        isVerified: true
+      });
+      createdUserIds.push(externalMaintainer.id);
+      externalMaintainerId = externalMaintainer.id;
+
+      // Create a report and set it to Assigned status
+      const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+      if (!citizenRole) throw new Error('Citizen role not found');
+
+      const reportCreator = await userRepository.createUserWithPassword({
+        username: `reporter${r()}`,
+        password: 'Password123!',
+        email: `reporter${r()}@test.com`,
+        firstName: 'Report',
+        lastName: 'Creator',
+        departmentRoleId: citizenRole.id,
+        emailNotificationsEnabled: true,
+        isVerified: true
+      });
+      createdUserIds.push(reportCreator.id);
+
+      // Create report using reportRepository
+      const report = await reportRepository.createReport(
+        {
+          title: 'Streetlight broken',
+          description: 'Needs external maintenance',
+          category: ReportCategory.PUBLIC_LIGHTING,
+          reporterId: reportCreator.id,
+          location: 'POINT(7.6869 45.0703)',
+          isAnonymous: false
+        },
+        [] // No photos
+      );
+      
+      // Update status to ASSIGNED (createReport sets it to PENDING_APPROVAL)
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, report.id]
+      );
+      
+      reportId = report.id;
+      createdReportIds.push(reportId);
+    });
+
+    it('should successfully assign report to external maintainer (200)', async () => {
+      const response = await techStaffAgent
+        .patch(`/api/reports/${reportId}/assign-external`)
+        .send({ externalAssigneeId: externalMaintainerId });
+
+      expect(response.status).toBe(200);
+      expect(response.body.id).toBe(reportId);
+      expect(response.body.assignee_id).toBe(externalMaintainerId);
+      // Note: assignToExternalMaintainer returns basic Report DTO without assignee details
+    });
+
+    it('should fail if report is not in Assigned status (400)', async () => {
+      await AppDataSource.getRepository(reportEntity).update(reportId, { 
+        status: ReportStatus.PENDING_APPROVAL 
+      });
+
+      const response = await techStaffAgent
+        .patch(`/api/reports/${reportId}/assign-external`)
+        .send({ externalAssigneeId: externalMaintainerId });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('Assigned status');
+    });
+
+    it('should fail if assignee is not an external maintainer (400)', async () => {
+      const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+      if (!citizenRole) throw new Error('Citizen role not found');
+
+      const regularUser = await userRepository.createUserWithPassword({
+        username: `regular${r()}`,
+        password: 'Password123!',
+        email: `regular${r()}@test.com`,
+        firstName: 'Regular',
+        lastName: 'User',
+        departmentRoleId: citizenRole.id,
+        emailNotificationsEnabled: true,
+        isVerified: true
+      });
+      createdUserIds.push(regularUser.id);
+
+      const response = await techStaffAgent
+        .patch(`/api/reports/${reportId}/assign-external`)
+        .send({ externalAssigneeId: regularUser.id });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('not an external maintainer');
+    });
+
+    it('should fail if company does not handle the report category (400)', async () => {
+      const wrongCompany = await companyRepository.create(`Wrong Company ${r()}`, 'Roads and Urban Furnishings');
+      const wrongCompanyId = wrongCompany.id;
+      createdCompanyIds.push(wrongCompanyId);
+
+      const externalMaintainerRole = await departmentRoleRepository.findByDepartmentAndRole('External Service Providers', 'External Maintainer');
+      if (!externalMaintainerRole) throw new Error('External Maintainer role not found');
+
+      const wrongMaintainer = await userRepository.createUserWithPassword({
+        username: `wrongmaint${r()}`,
+        password: 'Password123!',
+        email: `wrongmaint${r()}@test.com`,
+        firstName: 'Wrong',
+        lastName: 'Maintainer',
+        departmentRoleId: externalMaintainerRole.id,
+        emailNotificationsEnabled: true,
+        companyId: wrongCompanyId,
+        isVerified: true
+      });
+      createdUserIds.push(wrongMaintainer.id);
+
+      const response = await techStaffAgent
+        .patch(`/api/reports/${reportId}/assign-external`)
+        .send({ externalAssigneeId: wrongMaintainer.id });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('does not handle');
+    });
+
+    it('should fail if external maintainer does not exist (404)', async () => {
+      const response = await techStaffAgent
+        .patch(`/api/reports/${reportId}/assign-external`)
+        .send({ externalAssigneeId: 999999 });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should fail if report does not exist (404)', async () => {
+      const response = await techStaffAgent
+        .patch('/api/reports/999999/assign-external')
+        .send({ externalAssigneeId: externalMaintainerId });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should fail for citizen users (403)', async () => {
+      const response = await citizenAgent
+        .patch(`/api/reports/${reportId}/assign-external`)
+        .send({ externalAssigneeId: externalMaintainerId });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should fail if not authenticated (401)', async () => {
+      const unauthAgent = request.agent(app);
+      const response = await unauthAgent
+        .patch(`/api/reports/${reportId}/assign-external`)
+        .send({ externalAssigneeId: externalMaintainerId });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should fail with invalid report ID format (400)', async () => {
+      const response = await techStaffAgent
+        .patch('/api/reports/invalid/assign-external')
+        .send({ externalAssigneeId: externalMaintainerId });
+
+      expect(response.status).toBe(400);
     });
   });
 });

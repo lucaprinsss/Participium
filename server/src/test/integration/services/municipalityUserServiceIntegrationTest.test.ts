@@ -1,6 +1,7 @@
 import { municipalityUserService } from '@services/municipalityUserService';
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
+import { companyRepository } from '@repositories/companyRepository';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { RegisterRequest } from '@models/dto/input/RegisterRequest';
@@ -17,11 +18,13 @@ import { Not, In } from 'typeorm';
 
 jest.mock('@repositories/userRepository');
 jest.mock('@repositories/departmentRoleRepository');
+jest.mock('@repositories/companyRepository');
 jest.mock('@services/loggingService');
 jest.mock('@services/mapperService');
 
 const mockedUserRepository = userRepository as jest.Mocked<typeof userRepository>;
 const mockedDepartmentRoleRepository = departmentRoleRepository as jest.Mocked<typeof departmentRoleRepository>;
+const mockedCompanyRepository = companyRepository as jest.Mocked<typeof companyRepository>;
 const mockedLogInfo = logInfo as jest.Mock;
 const mockedMapper = mapUserEntityToUserResponse as jest.Mock;
 
@@ -71,7 +74,10 @@ describe('MunicipalityUserService', () => {
     // Mock userRepository.findUsersExcludingRoles() to return empty array by default
     mockedUserRepository.findUsersExcludingRoles.mockResolvedValue([]);
 
-    mockedMapper.mockImplementation((entity: userEntity) => {
+    // Mock companyRepository.findById() to return null by default (most users don't have a company)
+    mockedCompanyRepository.findById.mockResolvedValue(null);
+
+    mockedMapper.mockImplementation((entity: userEntity, companyName?: string) => {
       if (!entity) return null;
       return {
         id: entity.id,
@@ -81,6 +87,7 @@ describe('MunicipalityUserService', () => {
         last_name: entity.lastName,
         role_name: entity.departmentRole?.role?.name,
         department_name: entity.departmentRole?.department?.name,
+        company_name: companyName,
       };
     });
   });
@@ -164,6 +171,103 @@ describe('MunicipalityUserService', () => {
       await expect(
         municipalityUserService.createMunicipalityUser(registerRequest)
       ).rejects.toThrow(AppError);
+    });
+
+    it('should create External Maintainer with company successfully', async () => {
+      const maintainerRequest: RegisterRequest = {
+        username: 'maintainer.user',
+        email: 'maintainer@company.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        password: 'Password123!',
+        role_name: 'External Maintainer',
+        company_name: 'Test Company Ltd',
+      };
+
+      // Mock External Maintainer role exists
+      const mockExternalMaintainerRole = createMockDepartmentRole('External Maintainer', 'Maintenance Department');
+      mockedDepartmentRoleRepository.findAll.mockResolvedValue([mockExternalMaintainerRole]);
+
+      mockedUserRepository.existsUserByUsername.mockResolvedValue(false);
+      mockedUserRepository.existsUserByEmail.mockResolvedValue(false);
+      mockedCompanyRepository.findByName.mockResolvedValue({ id: 1, name: 'Test Company Ltd', category: 'maintenance', createdAt: new Date() });
+      
+      const maintainerEntity = createMockMunicipalityUser('External Maintainer', 'Maintenance Department', {
+        id: 15,
+        username: maintainerRequest.username,
+        email: maintainerRequest.email,
+        firstName: maintainerRequest.first_name,
+        lastName: maintainerRequest.last_name,
+        companyId: 1,
+      });
+      mockedUserRepository.createUserWithPassword.mockResolvedValue(maintainerEntity);
+
+      const result = await municipalityUserService.createMunicipalityUser(maintainerRequest);
+
+      expect(result.username).toBe(maintainerRequest.username);
+      expect(result.role_name).toBe('External Maintainer');
+      expect(mockedCompanyRepository.findByName).toHaveBeenCalledWith('Test Company Ltd');
+      expect(mockedUserRepository.createUserWithPassword).toHaveBeenCalledWith(
+        expect.objectContaining({ 
+          username: maintainerRequest.username,
+          companyId: 1,
+          password: maintainerRequest.password
+        })
+      );
+    });
+
+    it('should throw BadRequestError when External Maintainer created without company', async () => {
+      const maintainerRequest: RegisterRequest = {
+        username: 'maintainer.user',
+        email: 'maintainer@company.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        password: 'Password123!',
+        role_name: 'External Maintainer',
+      };
+
+      await expect(
+        municipalityUserService.createMunicipalityUser(maintainerRequest)
+      ).rejects.toThrow(BadRequestError);
+      expect(mockedUserRepository.createUserWithPassword).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError when non-External Maintainer role has company', async () => {
+      const invalidRequest: RegisterRequest = {
+        username: 'staff.user',
+        email: 'staff@test.com',
+        first_name: 'Staff',
+        last_name: 'User',
+        password: 'Password123!',
+        role_name: 'Technical Office Staff Member',
+        company_name: 'Some Company',
+      };
+
+      await expect(
+        municipalityUserService.createMunicipalityUser(invalidRequest)
+      ).rejects.toThrow(BadRequestError);
+      expect(mockedUserRepository.createUserWithPassword).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError when company does not exist', async () => {
+      const maintainerRequest: RegisterRequest = {
+        username: 'maintainer.user',
+        email: 'maintainer@company.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        password: 'Password123!',
+        role_name: 'External Maintainer',
+        company_name: 'Non Existent Company',
+      };
+
+      mockedUserRepository.existsUserByUsername.mockResolvedValue(false);
+      mockedUserRepository.existsUserByEmail.mockResolvedValue(false);
+      mockedCompanyRepository.findByName.mockResolvedValue(null);
+
+      await expect(
+        municipalityUserService.createMunicipalityUser(maintainerRequest)
+      ).rejects.toThrow(BadRequestError);
+      expect(mockedUserRepository.createUserWithPassword).not.toHaveBeenCalled();
     });
   });
 
@@ -325,6 +429,60 @@ describe('MunicipalityUserService', () => {
       mockedMapper.mockReturnValue(null); 
 
       await expect(municipalityUserService.updateMunicipalityUser(1, updateData)).rejects.toThrow(AppError);
+    });
+
+    it('should update External Maintainer company successfully', async () => {
+      const maintainerEntity = createMockMunicipalityUser('External Maintainer', 'Maintenance Department', {
+        id: 10,
+        username: 'maintainer.user',
+        email: 'maintainer@test.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        companyId: 1,
+      });
+
+      mockedUserRepository.findUserById.mockResolvedValue(maintainerEntity);
+      mockedCompanyRepository.findByName.mockResolvedValue({ id: 2, name: 'New Company Ltd', category: 'maintenance', createdAt: new Date() });
+      
+      const updatedMaintainerEntity = { ...maintainerEntity, companyId: 2 };
+      mockedUserRepository.updateUser.mockResolvedValue(updatedMaintainerEntity);
+
+      const updateCompanyData = { company_name: 'New Company Ltd' };
+      const result = await municipalityUserService.updateMunicipalityUser(10, updateCompanyData);
+
+      expect(mockedCompanyRepository.findByName).toHaveBeenCalledWith('New Company Ltd');
+      expect(mockedUserRepository.updateUser).toHaveBeenCalledWith(10, expect.objectContaining({ companyId: 2 }));
+    });
+
+    it('should throw BadRequestError when adding company to non-External Maintainer', async () => {
+      mockedUserRepository.findUserById.mockResolvedValue(mockStaffEntity);
+
+      const updateCompanyData = { company_name: 'Some Company' };
+      
+      await expect(
+        municipalityUserService.updateMunicipalityUser(1, updateCompanyData)
+      ).rejects.toThrow(BadRequestError);
+      expect(mockedUserRepository.updateUser).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError when removing company from External Maintainer', async () => {
+      const maintainerEntity = createMockMunicipalityUser('External Maintainer', 'Maintenance Department', {
+        id: 10,
+        username: 'maintainer.user',
+        email: 'maintainer@test.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        companyId: 1,
+      });
+
+      mockedUserRepository.findUserById.mockResolvedValue(maintainerEntity);
+
+      const updateData = { company_name: undefined };
+      
+      await expect(
+        municipalityUserService.updateMunicipalityUser(10, updateData)
+      ).rejects.toThrow(BadRequestError);
+      expect(mockedUserRepository.updateUser).not.toHaveBeenCalled();
     });
   });
 

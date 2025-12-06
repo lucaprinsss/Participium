@@ -362,10 +362,10 @@ describe('UserService', () => {
   });
 
   describe('getExternalMaintainersByCategory', () => {
-    describe('valid category ID', () => {
+    describe('valid category', () => {
       it('should return external maintainers for valid category', async () => {
         // Arrange
-        const categoryId = 5;
+        const category = 'Public Lighting';
         const mockUsers = [
           createMockUserEntity({ id: 1, username: 'maintainer1' }),
           createMockUserEntity({ id: 2, username: 'maintainer2' }),
@@ -383,31 +383,31 @@ describe('UserService', () => {
           .mockReturnValueOnce(mockResponses[1]);
 
         // Act
-        const result = await userService.getExternalMaintainersByCategory(categoryId);
+        const result = await userService.getExternalMaintainersByCategory('Public Lighting');
 
         // Assert
-        expect(userRepository.findExternalMaintainersByCategory).toHaveBeenCalledWith(categoryId);
+        expect(userRepository.findExternalMaintainersByCategory).toHaveBeenCalledWith('Public Lighting');
         expect(result).toHaveLength(2);
         expect(result).toEqual(mockResponses);
       });
 
       it('should handle empty list of maintainers', async () => {
         // Arrange
-        const categoryId = 5;
+        const category = 'Public Lighting';
         (userRepository.findExternalMaintainersByCategory as jest.Mock).mockResolvedValue([]);
 
         // Act
-        const result = await userService.getExternalMaintainersByCategory(categoryId);
+        const result = await userService.getExternalMaintainersByCategory(category);
 
         // Assert
-        expect(userRepository.findExternalMaintainersByCategory).toHaveBeenCalledWith(categoryId);
+        expect(userRepository.findExternalMaintainersByCategory).toHaveBeenCalledWith(category);
         expect(result).toHaveLength(0);
         expect(mapperService.mapUserEntityToUserResponse).not.toHaveBeenCalled();
       });
 
       it('should filter out null mappings', async () => {
         // Arrange
-        const categoryId = 5;
+        const category = 'Public Lighting';
         const mockUsers = [
           createMockUserEntity({ id: 1, username: 'maintainer1' }),
           createMockUserEntity({ id: 2, username: 'maintainer2' }),
@@ -428,7 +428,7 @@ describe('UserService', () => {
           .mockReturnValueOnce(mockResponses[2]);
 
         // Act
-        const result = await userService.getExternalMaintainersByCategory(categoryId);
+        const result = await userService.getExternalMaintainersByCategory(category);
 
         // Assert
         expect(result).toHaveLength(2);
@@ -437,40 +437,37 @@ describe('UserService', () => {
     });
 
     describe('invalid or missing category ID', () => {
-      it('should throw AppError if categoryId is undefined', async () => {
+      it('should throw AppError if category is undefined', async () => {
         // Act & Assert
         await expect(userService.getExternalMaintainersByCategory(undefined)).rejects.toThrow(
           AppError
         );
         await expect(userService.getExternalMaintainersByCategory(undefined)).rejects.toThrow(
-          'categoryId query parameter is required'
+          'category query parameter is required'
         );
       });
 
-      it('should throw AppError if categoryId is null', async () => {
+      it('should throw AppError if category is null', async () => {
         // Act & Assert
         await expect(userService.getExternalMaintainersByCategory(null as any)).rejects.toThrow(
           AppError
         );
         await expect(userService.getExternalMaintainersByCategory(null as any)).rejects.toThrow(
-          'categoryId query parameter is required'
+          'category query parameter is required'
         );
       });
 
-      it('should throw AppError if categoryId is not a positive integer', async () => {
+      it('should throw AppError if category is undefined', async () => {
         // Act & Assert
-        await expect(userService.getExternalMaintainersByCategory(0)).rejects.toThrow(
-          'categoryId must be a valid positive integer'
-        );
-        await expect(userService.getExternalMaintainersByCategory(-5)).rejects.toThrow(
-          'categoryId must be a valid positive integer'
+        await expect(userService.getExternalMaintainersByCategory(undefined)).rejects.toThrow(
+          'category query parameter is required'
         );
       });
 
-      it('should throw AppError if categoryId is NaN', async () => {
+      it('should throw AppError if category is null', async () => {
         // Act & Assert
-        await expect(userService.getExternalMaintainersByCategory(NaN)).rejects.toThrow(
-          'categoryId must be a valid positive integer'
+        await expect(userService.getExternalMaintainersByCategory('')).rejects.toThrow(
+          'category query parameter is required'
         );
       });
     });
@@ -478,12 +475,12 @@ describe('UserService', () => {
     describe('repository errors', () => {
       it('should propagate repository errors', async () => {
         // Arrange
-        const categoryId = 5;
+        const category = 'Public Lighting';
         const error = new Error('Database query failed');
         (userRepository.findExternalMaintainersByCategory as jest.Mock).mockRejectedValue(error);
 
         // Act & Assert
-        await expect(userService.getExternalMaintainersByCategory(categoryId)).rejects.toThrow(
+        await expect(userService.getExternalMaintainersByCategory(category)).rejects.toThrow(
           'Database query failed'
         );
       });
@@ -492,8 +489,8 @@ describe('UserService', () => {
     describe('multiple maintainers for different categories', () => {
       it('should return different maintainers for different categories', async () => {
         // Arrange
-        const categoryId1 = 1;
-        const categoryId2 = 2;
+        const category1 = 'Public Lighting';
+        const category2 = 'Roads and Urban Furnishings';
         const mockUsersCategory1 = [createMockUserEntity({ id: 1 })];
         const mockUsersCategory2 = [
           createMockUserEntity({ id: 10 }),
@@ -514,8 +511,8 @@ describe('UserService', () => {
           .mockReturnValueOnce(mockResponsesCategory2[1]);
 
         // Act
-        const result1 = await userService.getExternalMaintainersByCategory(categoryId1);
-        const result2 = await userService.getExternalMaintainersByCategory(categoryId2);
+        const result1 = await userService.getExternalMaintainersByCategory(category1);
+        const result2 = await userService.getExternalMaintainersByCategory(category2);
 
         // Assert
         expect(result1).toHaveLength(1);
@@ -523,11 +520,11 @@ describe('UserService', () => {
         expect(userRepository.findExternalMaintainersByCategory).toHaveBeenCalledTimes(2);
         expect(userRepository.findExternalMaintainersByCategory).toHaveBeenNthCalledWith(
           1,
-          categoryId1
+          category1
         );
         expect(userRepository.findExternalMaintainersByCategory).toHaveBeenNthCalledWith(
           2,
-          categoryId2
+          category2
         );
       });
     });

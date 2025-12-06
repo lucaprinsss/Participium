@@ -233,7 +233,29 @@ class ReportService {
       return true;
     });
 
-    return filteredReports.map(report => mapReportEntityToReportResponse(report));
+    // Batch query companies for all external assignees
+    const externalAssigneeIds = [...new Set(
+      filteredReports
+        .map(r => r.externalAssignee?.companyId)
+        .filter(id => id !== undefined && id !== null)
+    )] as number[];
+
+    const companyMap = new Map<number, string>();
+    if (externalAssigneeIds.length > 0) {
+      const companies = await Promise.all(
+        externalAssigneeIds.map(id => companyRepository.findById(id))
+      );
+      companies.forEach(company => {
+        if (company) companyMap.set(company.id, company.name);
+      });
+    }
+
+    return filteredReports.map(report => {
+      const companyName = report.externalAssignee?.companyId
+        ? companyMap.get(report.externalAssignee.companyId)
+        : undefined;
+      return mapReportEntityToReportResponse(report, companyName);
+    });
   }
 
   /**
@@ -257,7 +279,29 @@ class ReportService {
       reports = await reportRepository.findByAssigneeId(userId, status);
     }
 
-    return reports.map(report => mapReportEntityToReportResponse(report));
+    // Batch query companies for all external assignees
+    const externalAssigneeIds = [...new Set(
+      reports
+        .map(r => r.externalAssignee?.companyId)
+        .filter(id => id !== undefined && id !== null)
+    )] as number[];
+
+    const companyMap = new Map<number, string>();
+    if (externalAssigneeIds.length > 0) {
+      const companies = await Promise.all(
+        externalAssigneeIds.map(id => companyRepository.findById(id))
+      );
+      companies.forEach(company => {
+        if (company) companyMap.set(company.id, company.name);
+      });
+    }
+
+    return reports.map(report => {
+      const companyName = report.externalAssignee?.companyId
+        ? companyMap.get(report.externalAssignee.companyId)
+        : undefined;
+      return mapReportEntityToReportResponse(report, companyName);
+    });
   }
 
   /**
@@ -271,7 +315,30 @@ class ReportService {
     status?: ReportStatus
   ): Promise<ReportResponse[]> {
     const reports = await reportRepository.findByExternalAssigneeId(externalMaintainerId, status);
-    return reports.map(report => mapReportEntityToReportResponse(report));
+    
+    // Batch query companies for all external assignees
+    const externalAssigneeIds = [...new Set(
+      reports
+        .map(r => r.externalAssignee?.companyId)
+        .filter(id => id !== undefined && id !== null)
+    )] as number[];
+
+    const companyMap = new Map<number, string>();
+    if (externalAssigneeIds.length > 0) {
+      const companies = await Promise.all(
+        externalAssigneeIds.map(id => companyRepository.findById(id))
+      );
+      companies.forEach(company => {
+        if (company) companyMap.set(company.id, company.name);
+      });
+    }
+
+    return reports.map(report => {
+      const companyName = report.externalAssignee?.companyId
+        ? companyMap.get(report.externalAssignee.companyId)
+        : undefined;
+      return mapReportEntityToReportResponse(report, companyName);
+    });
   }
 
   /**
@@ -464,7 +531,14 @@ class ReportService {
     report.assigneeId = assignee.id;
     report.updatedAt = new Date();
 
-    const updatedReport = await reportRepository.save(report);
+    await reportRepository.save(report);
+    
+    // Reload report with all relations
+    const updatedReport = await reportRepository.findReportById(reportId);
+    if (!updatedReport) {
+      throw new NotFoundError('Report not found after update');
+    }
+    
     return mapReportEntityToDTO(updatedReport);
   }
 
