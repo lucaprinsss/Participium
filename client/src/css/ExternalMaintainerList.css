@@ -72,14 +72,16 @@
   border-radius: 2px;
 }
 
-/* --- FILTERS & DROPDOWNS --- */
 .eml-filters {
   display: flex;
   gap: 1rem;
   align-items: center;
 }
 
+/* --- DROPDOWNS & FILTER STYLING --- */
+
 .eml-filter-group {
+  /* Larghezza fissa del gruppo */
   width: 350px;
   border-radius: 0.75rem;
   position: relative;
@@ -88,6 +90,7 @@
   transition: all 0.2s ease;
 }
 
+/* Icona a sinistra */
 .eml-filter-icon {
   background-color: #f8f9fa;
   border: 1px solid var(--border-subtle);
@@ -105,6 +108,7 @@
   align-items: center;
 }
 
+/* Il corpo del dropdown */
 .eml-filter-toggle {
   border: 1px solid var(--border-subtle);
   border-left: none;
@@ -125,6 +129,7 @@
   overflow: hidden;
 }
 
+/* Forza la dimensione massima del testo all'interno del toggle */
 .eml-filter-toggle .text-truncate {
   display: block;
   max-width: 230px;
@@ -142,7 +147,7 @@
   margin-left: auto;
 }
 
-/* Button Reset */
+/* --- BUTTON RESET --- */
 .eml-btn-reset {
   background: #fff;
   border: 1px solid var(--border-subtle);
@@ -172,7 +177,8 @@
   background: #f8fafc;
 }
 
-/* Hover Effects for Filter Group */
+/* --- HOVER EFFECTS --- */
+
 .eml-filter-group:hover .eml-filter-icon {
   border-color: var(--brand-red) !important;
   color: var(--brand-red) !important;
@@ -193,23 +199,29 @@
   border-color: var(--brand-red) !important;
 }
 
+/* Importante per l'allineamento: static permette al menu di posizionarsi relativo al gruppo */
 .eml-custom-dropdown {
   flex: 1;
   min-width: 0;
   position: static !important;
 }
 
-/* Menu del Dropdown */
+/* --- MENU DEL DROPDOWN --- */
 .modern-dropdown-menu {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   padding: 0.5rem;
   margin-top: 2px !important;
+
+  /* ALLINEAMENTO PERFETTO */
   left: 0 !important;
   width: 100% !important;
   min-width: 100% !important;
   margin-left: -40px !important;
+  /* Reset margin */
+
+  /* Altezza e scroll */
   max-height: 260px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -261,7 +273,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  overflow: visible; /* Important for dropdowns */
+  overflow: visible;
   min-height: 250px;
   display: flex;
   flex-direction: column;
