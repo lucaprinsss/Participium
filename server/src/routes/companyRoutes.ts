@@ -29,12 +29,54 @@ const router = Router();
  *               $ref: '#/components/schemas/CompanyResponse'
  *       400:
  *         description: Invalid category or missing required fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 400
+ *               name: "BadRequestError"
+ *               message: "Invalid category \"Water\". Category does not exist in the system."
  *       401:
  *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       403:
  *         description: Forbidden - admin role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 403
+ *               name: "InsufficientRightsError"
+ *               message: "Access denied. Required role: Administrator"
  *       409:
  *         description: Company name already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 409
+ *               name: "ConflictError"
+ *               message: "Company \"ExampleCorp\" already exists"
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  */
 router.post(
   '/',
@@ -63,8 +105,34 @@ router.post(
  *                 $ref: '#/components/schemas/CompanyResponse'
  *       401:
  *         description: Unauthorized - authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
  *       403:
  *         description: Forbidden - admin role required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 403
+ *               name: "InsufficientRightsError"
+ *               message: "Access denied. Required role: Administrator"
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Internal server error"
  */
 router.get(
   '/',

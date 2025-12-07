@@ -306,10 +306,7 @@ describe('ReportRepository', () => {
 
       expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('report.reporter', 'reporter');
       expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('report.externalAssignee', 'externalAssignee');
-      expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('externalAssignee.departmentRole', 'departmentRole');
-      expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
       expect(queryBuilder.where).toHaveBeenCalledWith('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
-      expect(queryBuilder.andWhere).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
       expect(result).toEqual(mockReports);
       expect(result.length).toBe(2);
     });
@@ -329,7 +326,6 @@ describe('ReportRepository', () => {
       const result = await reportRepository.findByExternalAssigneeId(externalMaintainerId, ReportStatus.ASSIGNED);
 
       expect(queryBuilder.where).toHaveBeenCalledWith('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
-      expect(queryBuilder.andWhere).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
       expect(queryBuilder.andWhere).toHaveBeenCalledWith('report.status = :status', { status: ReportStatus.ASSIGNED });
       expect(result).toEqual(mockReports);
       expect(result.length).toBe(1);
@@ -348,7 +344,6 @@ describe('ReportRepository', () => {
       const result = await reportRepository.findByExternalAssigneeId(externalMaintainerId);
 
       expect(queryBuilder.where).toHaveBeenCalledWith('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
-      expect(queryBuilder.andWhere).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
       expect(result).toEqual([]);
       expect(result.length).toBe(0);
     });
@@ -367,7 +362,6 @@ describe('ReportRepository', () => {
       const result = await reportRepository.findByExternalAssigneeId(externalMaintainerId);
 
       expect(queryBuilder.where).toHaveBeenCalledWith('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
-      expect(queryBuilder.andWhere).toHaveBeenCalledWith('role.name = :roleName', { roleName: 'External Maintainer' });
       expect(result).toEqual([]);
       expect(result.length).toBe(0);
     });

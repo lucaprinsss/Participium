@@ -1451,7 +1451,7 @@ describe('ReportService additional unit tests', () => {
       jest.spyOn(companyRepository, 'findById').mockResolvedValue(mockCompany as any);
       jest.spyOn(reportRepository, 'save').mockImplementation(async (report) => report);
       (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => ({
-        assignee_id: report.assigneeId,
+        external_assignee_id: report.externalAssigneeId,
       }));
   
       // Act
@@ -1464,9 +1464,9 @@ describe('ReportService additional unit tests', () => {
       expect(companyRepository.findById).toHaveBeenCalledWith(mockExternalMaintainer.companyId);
       expect(reportRepository.save).toHaveBeenCalledWith(expect.objectContaining({
         id: reportId,
-        assigneeId: externalMaintainerId,
+        externalAssigneeId: externalMaintainerId,
       }));
-      expect(result.assignee_id).toBe(externalMaintainerId);
+      expect(result.external_assignee_id).toBe(externalMaintainerId);
     });
   
     it('should throw NotFoundError if report is not found', async () => {
@@ -1605,20 +1605,23 @@ describe('ReportService additional unit tests', () => {
 
     it('should update the assignee field of the report', async () => {
       // Arrange
-      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      const updatedMockReport = { ...mockReport, externalAssigneeId: externalMaintainerId };
+      jest.spyOn(reportRepository, 'findReportById')
+        .mockResolvedValueOnce(mockReport)
+        .mockResolvedValueOnce(updatedMockReport);
       jest.spyOn(userRepository, 'findUserById')
         .mockResolvedValueOnce(mockTechnicalStaff)
         .mockResolvedValueOnce(mockExternalMaintainer);
       jest.spyOn(companyRepository, 'findById').mockResolvedValue(mockCompany as any);
       (mapperService.mapReportEntityToDTO as jest.Mock).mockImplementation((report) => ({
-        assignee_id: report.assigneeId,
+        external_assignee_id: report.externalAssigneeId,
       }));
 
       // Act
       const result = await reportService.assignToExternalMaintainer(reportId, externalMaintainerId, technicalStaffId);
 
       // Assert
-      expect(result.assignee_id).toBe(mockExternalMaintainer.id);
+      expect(result.external_assignee_id).toBe(mockExternalMaintainer.id);
     });
 
     it('should throw UnauthorizedError if the user making the assignment is not found', async () => {

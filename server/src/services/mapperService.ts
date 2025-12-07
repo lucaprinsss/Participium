@@ -52,6 +52,7 @@ export function mapReportEntityToDTO(entity: ReportEntity): Report {
     status: entity.status,
     rejection_reason: entity.rejectionReason,
     assignee_id: entity.assigneeId,
+    external_assignee_id: entity.externalAssigneeId,
     created_at: entity.createdAt,
     updated_at: entity.updatedAt
   }) as Report;

@@ -270,24 +270,16 @@ describe('UserService Integration Tests', () => {
       });
     });
 
-    it('should throw AppError when category is undefined', async () => {
-      await expect(
-        userService.getExternalMaintainersByCategory(undefined as any)
-      ).rejects.toThrow(AppError);
-
-      await expect(
-        userService.getExternalMaintainersByCategory(undefined as any)
-      ).rejects.toThrow('category query parameter is required');
+    it('should return all maintainers when category is undefined', async () => {
+      const result = await userService.getExternalMaintainersByCategory(undefined as any);
+      expect(Array.isArray(result)).toBe(true);
+      // Should return maintainers without filtering
     });
 
-    it('should throw AppError when category is empty string', async () => {
-      await expect(
-        userService.getExternalMaintainersByCategory('')
-      ).rejects.toThrow(AppError);
-
-      await expect(
-        userService.getExternalMaintainersByCategory('')
-      ).rejects.toThrow('category query parameter is required');
+    it('should return all maintainers when category is empty string', async () => {
+      const result = await userService.getExternalMaintainersByCategory('');
+      expect(Array.isArray(result)).toBe(true);
+      // Should return maintainers without filtering
     });
 
     it('should separate maintainers by category correctly', async () => {

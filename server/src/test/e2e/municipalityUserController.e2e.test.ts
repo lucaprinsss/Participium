@@ -227,13 +227,13 @@ describe('MunicipalityUserController E2E Tests', () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
 
       // Create user first
-      await request(app)
+      const firstUser = await request(app)
         .post('/api/municipality/users')
         .set('Cookie', adminCookies)
         .send(validMunicipalityUserData)
         .expect(201);
 
-      // Act - Try to create with same email
+      // Act - Try to create with same email (within same test, no cleanup between)
       const duplicateData = {
         ...validMunicipalityUserData,
         username: 'differentuser',

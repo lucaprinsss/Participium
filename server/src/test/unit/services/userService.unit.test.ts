@@ -437,38 +437,28 @@ describe('UserService', () => {
     });
 
     describe('invalid or missing category ID', () => {
-      it('should throw AppError if category is undefined', async () => {
-        // Act & Assert
-        await expect(userService.getExternalMaintainersByCategory(undefined)).rejects.toThrow(
-          AppError
-        );
-        await expect(userService.getExternalMaintainersByCategory(undefined)).rejects.toThrow(
-          'category query parameter is required'
-        );
+      it('should return all external maintainers when category is undefined', async () => {
+        // Act
+        const result = await userService.getExternalMaintainersByCategory(undefined);
+        
+        // Assert - should return maintainers without filtering by category
+        expect(result.length).toBeGreaterThan(0);
       });
 
-      it('should throw AppError if category is null', async () => {
-        // Act & Assert
-        await expect(userService.getExternalMaintainersByCategory(null as any)).rejects.toThrow(
-          AppError
-        );
-        await expect(userService.getExternalMaintainersByCategory(null as any)).rejects.toThrow(
-          'category query parameter is required'
-        );
+      it('should return all external maintainers when category is null', async () => {
+        // Act
+        const result = await userService.getExternalMaintainersByCategory(null as any);
+        
+        // Assert - should return maintainers without filtering by category
+        expect(result.length).toBeGreaterThan(0);
       });
 
-      it('should throw AppError if category is undefined', async () => {
-        // Act & Assert
-        await expect(userService.getExternalMaintainersByCategory(undefined)).rejects.toThrow(
-          'category query parameter is required'
-        );
-      });
-
-      it('should throw AppError if category is null', async () => {
-        // Act & Assert
-        await expect(userService.getExternalMaintainersByCategory('')).rejects.toThrow(
-          'category query parameter is required'
-        );
+      it('should return all external maintainers when category is empty string', async () => {
+        // Act
+        const result = await userService.getExternalMaintainersByCategory('');
+        
+        // Assert - should return maintainers without filtering by category
+        expect(result.length).toBeGreaterThan(0);
       });
     });
 

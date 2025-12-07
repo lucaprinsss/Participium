@@ -893,15 +893,14 @@ import {
       expect(response.body.message).toContain('Invalid category');
     });
 
-    it('should fail with missing category parameter (400)', async () => {
+    it('should return all maintainers with missing category parameter (200)', async () => {
       const response = await request(app)
         .get('/api/users/external-maintainers')
         .set('Cookie', techStaffCookies)
         .expect('Content-Type', /json/)
-        .expect(400);
+        .expect(200);
 
-      expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('category');
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('should fail without authentication (401)', async () => {

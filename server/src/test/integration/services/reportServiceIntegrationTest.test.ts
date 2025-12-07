@@ -1141,7 +1141,7 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
       );
 
       const updated = await reportRepository.findReportById(report.id);
-      expect(updated?.assigneeId).toBe(externalMaintainerId);
+      expect(updated?.externalAssigneeId).toBe(externalMaintainerId);
       expect(updated?.status).toBe(ReportStatus.ASSIGNED);
     });
 
@@ -1376,7 +1376,7 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
       );
 
       const updated = await reportRepository.findReportById(report.id);
-      expect(updated?.assigneeId).toBe(secondMaintainer.id);
+      expect(updated?.externalAssigneeId).toBe(secondMaintainer.id);
       expect(updated?.status).toBe(ReportStatus.ASSIGNED);
     });
 

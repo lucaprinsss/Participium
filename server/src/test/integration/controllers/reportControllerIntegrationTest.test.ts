@@ -755,8 +755,8 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
 
       expect(response.status).toBe(200);
       expect(response.body.id).toBe(reportId);
-      expect(response.body.assignee_id).toBe(externalMaintainerId);
-      // Note: assignToExternalMaintainer returns basic Report DTO without assignee details
+      expect(response.body.external_assignee_id).toBe(externalMaintainerId);
+      // Note: assignToExternalMaintainer returns basic Report DTO
     });
 
     it('should fail if report is not in Assigned status (400)', async () => {

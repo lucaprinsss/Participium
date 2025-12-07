@@ -275,9 +275,10 @@ describe('UserController Integration Tests - Get External Maintainers', () => {
       expect(maintainer.company_name).toBeTruthy();
     });
 
-    it('should fail without category parameter (400)', async () => {
+    it('should return all maintainers without category parameter (200)', async () => {
       const response = await techStaffAgent.get('/api/users/external-maintainers');
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
     });
 
     it('should fail for citizen users (403)', async () => {

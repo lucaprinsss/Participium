@@ -128,21 +128,42 @@ describe('MunicipalityUserController Integration Tests', () => {
             });
         });
     afterEach(async () => {
-        // Delete users first (they have FK to companies)
-        if (createdUserIds.length > 0) {
-            const repository = AppDataSource.getRepository(UserEntity);
-            await repository.delete({ id: In(createdUserIds) });
-            createdUserIds = [];
+        // Use transaction to avoid deadlocks and ensure cleanup order
+        const queryRunner = AppDataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        
+        try {
+            // Delete users first (they have FK to companies)
+            if (createdUserIds.length > 0) {
+                await queryRunner.manager
+                    .createQueryBuilder()
+                    .delete()
+                    .from(UserEntity)
+                    .where('id IN (:...ids)', { ids: createdUserIds })
+                    .execute();
+                createdUserIds = [];
+            }
+            
+            // Then delete companies
+            if (createdCompanyIds.length > 0) {
+                await queryRunner.manager
+                    .createQueryBuilder()
+                    .delete()
+                    .from('companies')
+                    .where('id IN (:...ids)', { ids: createdCompanyIds })
+                    .execute();
+                createdCompanyIds = [];
+            }
+            
+            await queryRunner.commitTransaction();
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        } finally {
+            await queryRunner.release();
         }
-        // Then delete companies
-        if (createdCompanyIds.length > 0) {
-            await AppDataSource.createQueryBuilder()
-                .delete()
-                .from('companies')
-                .where('id IN (:...ids)', { ids: createdCompanyIds })
-                .execute();
-            createdCompanyIds = [];
-        }
+        
         adminAgent = null as any;
         citizenAgent = null as any;
         createdEmployee = null as any;

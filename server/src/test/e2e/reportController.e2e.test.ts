@@ -788,7 +788,7 @@ afterAll(async () => {
       const externalMaintainerId = externalUser[0].id;
       const response = await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({ externalAssigneeId: externalMaintainerId }).expect(200);
       expect(response.body.status).toBe(ReportStatus.ASSIGNED);
-      expect(response.body.assignee_id).toBe(externalMaintainerId);
+      expect(response.body.external_assignee_id).toBe(externalMaintainerId);
     });
 
     it('should fail with non-ASSIGNED status (400)', async () => {
