@@ -21,6 +21,8 @@ const handleResponse = async (response) => {
   }
   return response.json();
 };
+
+
 /**
  * Get all Categories
  */
@@ -48,13 +50,25 @@ export const createReport = async (reportData) => {
 };
 
 /**
+ * Helper per costruire la query string
+ */
+const buildQueryString = (status, category) => {
+  const params = new URLSearchParams();
+  if (status) params.append("status", status);
+  if (category) params.append("category", category);
+  return params.toString() ? `?${params.toString()}` : "";
+};
+
+/**
  * Get all Reports
  */
-export const getReports = async () => {
-  const response = await fetch(`/api/reports`, {
+export const getReports = async (status, category) => {
+  const queryString = buildQueryString(status, category);
+  const response = await fetch(`/api/reports${queryString}`, {
     method: "GET",
     credentials: "include",
   });
+  // Assumo tu abbia una funzione handleResponse importata o definita
   return handleResponse(response);
 };
 
@@ -91,8 +105,9 @@ export const updateReportStatus = async (reportId, status, reason = null) => {
 /**
  * Get all reports assigned to me (officer)
  */
-export const getReportsAssignedToMe = async () => {
-  const response = await fetch(`/api/reports/assigned/me`, {
+export const getReportsAssignedToMe = async (status, category) => {
+  const queryString = buildQueryString(status, category);
+  const response = await fetch(`/api/reports/assigned/me${queryString}`, {
     method: "GET",
     credentials: "include",
   });

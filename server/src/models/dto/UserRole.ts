@@ -43,4 +43,8 @@ export function isAdmin(roleName: string): boolean {
   return roleName === SystemRoles.ADMINISTRATOR;
 }
 
-
+/** * Helper function per verificare se un ruolo è un cittadino
+ */
+export function isCitizen(roleName: string): boolean {
+  return roleName === SystemRoles.CITIZEN;
+}

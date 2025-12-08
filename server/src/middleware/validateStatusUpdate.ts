@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ReportStatus } from '@dto/ReportStatus';
-import { SystemRoles, isTechnicalStaff } from '@dto/UserRole';
+import { SystemRoles, isTechnicalStaff, isCitizen } from '@dto/UserRole';
 import { InsufficientRightsError } from '@errors/InsufficientRightsError';
 import { BadRequestError } from '@errors/BadRequestError';
 import { UserEntity } from '@models/entity/userEntity';
@@ -49,9 +49,9 @@ export const validateStatusUpdate = (req: Request, res: Response, next: NextFunc
 
   // Special handling for IN_PROGRESS and SUSPENDED - allow only technical staff
   if ([ReportStatus.IN_PROGRESS, ReportStatus.SUSPENDED].includes(newStatus as ReportStatus)) {
-    if (!isTechnicalStaff(roleName)) {
+    if (isCitizen(roleName)) {
       return next(new InsufficientRightsError(
-        `Only technical staff can set status to ${newStatus}`
+        `Only staff can set status to ${newStatus}`
       ));
     }
     return next();

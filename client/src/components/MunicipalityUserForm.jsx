@@ -65,7 +65,6 @@ const CustomSelect = ({ value, options, onChange, placeholder, disabled, loading
     );
 };
 
-// >>> MODIFICA QUI: Aggiunta prop refreshTrigger <<<
 export default function MunicipalityUserForm({ onSuccess, onCancel, refreshTrigger }) {
     const initialFormState = {
         username: "", email: "", password: "", confirmPassword: "",
@@ -105,14 +104,10 @@ export default function MunicipalityUserForm({ onSuccess, onCancel, refreshTrigg
     }, [status.globalError, errors]);
 
     // --- 1. Load Departments & Companies ---
-    // >>> MODIFICA QUI: Dipendenza da refreshTrigger per ricaricare quando crei una company <<<
     useEffect(() => {
         let isMounted = true;
         
         const initData = async () => {
-            // Reset loading state per feedback visivo se necessario (opzionale)
-            // setStatus(prev => ({ ...prev, loadingDepts: true, loadingCompanies: true }));
-            
             try {
                 const [depts, comps] = await Promise.all([
                     getAllDepartments(),
@@ -132,7 +127,7 @@ export default function MunicipalityUserForm({ onSuccess, onCancel, refreshTrigg
 
         initData();
         return () => { isMounted = false; };
-    }, [refreshTrigger]); // AGGIUNTO QUI
+    }, [refreshTrigger]);
 
     // --- 2. Load Roles (Depends on Department) ---
     useEffect(() => {
@@ -157,6 +152,18 @@ export default function MunicipalityUserForm({ onSuccess, onCancel, refreshTrigg
         };
         fetchRoles();
     }, [formData.department]);
+
+    // >>> NUOVO CODICE AGGIUNTO: Nasconde il messaggio di successo dopo 3 secondi <<<
+    useEffect(() => {
+        let timer;
+        if (status.success) {
+            timer = setTimeout(() => {
+                setStatus(prev => ({ ...prev, success: "" }));
+            }, 3000);
+        }
+        return () => clearTimeout(timer);
+    }, [status.success]);
+    // >>> FINE NUOVO CODICE <<<
 
     // --- Derived Data ---
     const displayDepartments = useMemo(() => {
@@ -295,8 +302,9 @@ export default function MunicipalityUserForm({ onSuccess, onCancel, refreshTrigg
             </div>
 
             <Form noValidate onSubmit={handleSubmit} className="muf-body-styled">
+                {/* Visualizzazione Alert (che svanirà dopo 3s se è success) */}
                 {(status.globalError || status.success) && (
-                    <Alert variant={status.globalError ? "danger" : "success"} className="muf-alert mb-4">
+                    <Alert variant={status.globalError ? "danger" : "success"} className="muf-alert mb-4 fade-in">
                         {status.globalError || status.success}
                     </Alert>
                 )}

@@ -17,7 +17,7 @@ import "../css/MunicipalityUserHome.css";
 // Componenti
 import ReportDetails from "./ReportDetails";
 
-// IMPORT API
+// IMPORT API (Assicurati che siano state aggiornate come indicato sopra)
 import {
   getReports,
   getAllCategories,
@@ -48,25 +48,27 @@ const ROLE_DEPARTMENT_MAPPING = {
 };
 
 const getStatusBadgeVariant = (status) => {
-  switch (status) {
-    case "Pending Approval":
-      return "warning";
-    case "Assigned":
-      return "primary";
-    case "In Progress":
-      return "info";
-    case "Resolved":
-      return "success";
-    case "Rejected":
-      return "danger";
-    default:
-      return "secondary";
-  }
+  // Gestiamo sia il formato "Pending Approval" che "PENDING_APPROVAL" per sicurezza visiva
+  const normalizedStatus = status?.replace("_", " ").toLowerCase();
+  
+  if (normalizedStatus === "pending approval") return "warning";
+  if (normalizedStatus === "assigned") return "primary";
+  if (normalizedStatus === "in progress") return "info";
+  if (normalizedStatus === "resolved") return "success";
+  if (normalizedStatus === "rejected") return "danger";
+  return "secondary";
 };
 
 const getDepartmentCategory = (roleName) => {
   if (!roleName) return null;
   return ROLE_DEPARTMENT_MAPPING[roleName.toLowerCase()] || null;
+};
+
+// Helper per convertire lo stato UI (es. "Pending Approval") in stato API (es. "PENDING_APPROVAL")
+const formatStatusForApi = (uiStatus) => {
+    if (!uiStatus || uiStatus === "All Statuses") return null;
+    // Converte "Pending Approval" -> "PENDING_APPROVAL"
+    return uiStatus;
 };
 
 export default function MunicipalityUserHome({ user }) {
@@ -86,7 +88,6 @@ export default function MunicipalityUserHome({ user }) {
   }, [isStaffMember, user?.role_name]);
 
   // --- STATE ---
-  // Inizializziamo lo stato dei filtri direttamente con la logica corretta per evitare doppi render/fetch
   const [categoryFilter, setCategoryFilter] = useState(() => {
     return userDepartmentCategory || "";
   });
@@ -111,7 +112,7 @@ export default function MunicipalityUserHome({ user }) {
   const [showModal, setShowModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
 
-  // --- EFFECT: Handle User Role Changes (Reset filters if user prop changes radically) ---
+  // --- EFFECT: Handle User Role Changes ---
   useEffect(() => {
     if (isStaffMember) {
       setStatusFilter("Assigned");
@@ -120,15 +121,13 @@ export default function MunicipalityUserHome({ user }) {
       userRole === "administrator" ||
       userRole === "municipal public relations officer"
     ) {
-      // Solo se non abbiamo già un filtro impostato o se vogliamo forzare il reset al cambio utente
-      // Qui manteniamo la logica originale di default
       if (!statusFilter) setStatusFilter("Pending Approval");
     }
   }, [isStaffMember, userDepartmentCategory, userRole]);
 
   // --- FETCHING LOGIC ---
 
-  // 1. Fetch Categories (Only once on mount)
+  // 1. Fetch Categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -141,7 +140,7 @@ export default function MunicipalityUserHome({ user }) {
     fetchCategories();
   }, []);
 
-  // 2. Fetch Reports (Whenever filters or user changes)
+  // 2. Fetch Reports
   const fetchReportsData = useCallback(async () => {
     if (!user) return;
 
@@ -149,20 +148,20 @@ export default function MunicipalityUserHome({ user }) {
     setApiError(null);
 
     try {
-      // Prepare params: convert empty strings to null for the API if needed, 
-      // or pass them as is depending on API implementation. 
-      // Assumo che l'API accetti null o stringa vuota per indicare "nessun filtro".
-      const statusParam = statusFilter === "" || statusFilter === "All Statuses" ? null : statusFilter;
-      const categoryParam = categoryFilter === "" || categoryFilter === "All Categories" ? null : categoryFilter;
+      // Conversione Filtri per API
+      const apiStatusParam = formatStatusForApi(statusFilter);
+      const apiCategoryParam = categoryFilter === "" || categoryFilter === "All Categories" ? null : categoryFilter;
 
-      console.log(`Fetching reports with params - Status: ${statusParam}, Category: ${categoryParam}`);
+      console.log(`Fetching reports with params - Status: ${apiStatusParam}, Category: ${apiCategoryParam}`);
 
       let reportsData;
 
       if (isStaffMember) {
-        reportsData = await getReportsAssignedToMe(statusParam, categoryParam);
+        // Passiamo i parametri corretti
+        reportsData = await getReportsAssignedToMe(apiStatusParam, apiCategoryParam);
       } else {
-        reportsData = await getReports(statusParam, categoryParam);
+        // Passiamo i parametri corretti
+        reportsData = await getReports(apiStatusParam, apiCategoryParam);
       }
 
       const formattedReports = (reportsData || []).map((report) => ({
@@ -205,12 +204,10 @@ export default function MunicipalityUserHome({ user }) {
 
   const handleAcceptReport = async (reportId) => {
     try {
-      const result = await updateReportStatus(reportId, "Assigned");
-      // Refresh data to reflect status change (the current list might shrink if filtering by status)
+      const result = await updateReportStatus(reportId, "Assigned"); // Backend probably expects "ASSIGNED" here too? Check your API logic.
       await fetchReportsData();
 
       if (result?.error) throw new Error(result.error);
-
       if (!result?.assignee) return { noOfficerFound: true };
       return { success: true };
     } catch (error) {
@@ -246,7 +243,7 @@ export default function MunicipalityUserHome({ user }) {
         <div className="text-center p-5 text-muted">
           <h5>No reports found</h5>
           <p className="mb-0">
-            There are no reports matching the current criteria.
+            There are no reports matching the current criteria ({statusFilter || "All"}).
           </p>
         </div>
       );
@@ -276,7 +273,8 @@ export default function MunicipalityUserHome({ user }) {
                   bg={getStatusBadgeVariant(report.status)}
                   className="fw-normal"
                 >
-                  {report.status}
+                  {/* Visualizziamo lo status in modo pulito (togliamo underscore) */}
+                  {report.status.replace(/_/g, " ")}
                 </Badge>
               </td>
               <td className="text-end pe-4">
@@ -309,7 +307,6 @@ export default function MunicipalityUserHome({ user }) {
         </div>
 
         <div className="mu-filters">
-          {!isStaffMember ? (
             <>
               {/* Category Filter */}
               <InputGroup className="mu-filter-group">
@@ -387,13 +384,6 @@ export default function MunicipalityUserHome({ user }) {
                 </Dropdown>
               </InputGroup>
             </>
-          ) : (
-            <div className="bg-light p-2 px-3 rounded text-muted small border">
-              Viewing:{" "}
-              <strong>{userDepartmentCategory || "My Department"}</strong>{" "}
-              &nbsp;|&nbsp; Status: <strong>Assigned</strong>
-            </div>
-          )}
         </div>
       </div>
 
