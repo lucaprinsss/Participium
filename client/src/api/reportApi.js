@@ -165,3 +165,33 @@ export const assignToExternalUser = async (reportId, externalUserId) => {
 
   return handleResponse(response);
 };
+
+
+export const getAllReportComments = async (reportId) => {
+  const response = await fetch(`/api/reports/${reportId}/internal-comments`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return handleResponse(response);
+}
+
+export const addReportComment = async (reportId, commentData) => {
+  const response = await fetch(`/api/reports/${reportId}/internal-comments`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(commentData),
+  });
+  return handleResponse(response);
+}
+
+export const deleteReportComment = async (reportId, commentId) => {
+  const response = await fetch(`/api/reports/${reportId}/internal-comments/${commentId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  
+  return handleResponse(response);
+}

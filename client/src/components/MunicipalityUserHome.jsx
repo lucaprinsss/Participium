@@ -152,8 +152,6 @@ export default function MunicipalityUserHome({ user }) {
       const apiStatusParam = formatStatusForApi(statusFilter);
       const apiCategoryParam = categoryFilter === "" || categoryFilter === "All Categories" ? null : categoryFilter;
 
-      console.log(`Fetching reports with params - Status: ${apiStatusParam}, Category: ${apiCategoryParam}`);
-
       let reportsData;
 
       if (isStaffMember) {
