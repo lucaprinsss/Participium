@@ -581,4 +581,138 @@ describe('UserRepository Integration Tests', () => {
       expect(updatedUser2!.companyId).toBe(companies[1].id);
     });
   });
+
+  // ---- VERIFY EMAIL CODE ----
+  describe('verifyEmailCode', () => {
+    it('should return true for valid verification code', async () => {
+      const verificationCode = '123456';
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+
+      const userData = buildUserData({
+        isVerified: false,
+        verificationCode,
+        verificationCodeExpiresAt: expiresAt,
+      });
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      const result = await userRepository.verifyEmailCode(userData.email, verificationCode);
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false for invalid verification code', async () => {
+      const correctCode = '123456';
+      const wrongCode = '999999';
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+      const userData = buildUserData({
+        isVerified: false,
+        verificationCode: correctCode,
+        verificationCodeExpiresAt: expiresAt,
+      });
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      const result = await userRepository.verifyEmailCode(userData.email, wrongCode);
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when user has no verification code', async () => {
+      const userData = buildUserData({
+        isVerified: true,
+        verificationCode: undefined,
+        verificationCodeExpiresAt: undefined,
+      });
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      const result = await userRepository.verifyEmailCode(userData.email, '123456');
+
+      expect(result).toBe(false);
+    });
+
+    it('should throw BadRequestError for expired verification code', async () => {
+      const verificationCode = '123456';
+      const expiredDate = new Date(Date.now() - 60 * 1000); // 1 minute ago (expired)
+
+      const userData = buildUserData({
+        isVerified: false,
+        verificationCode,
+        verificationCodeExpiresAt: expiredDate,
+      });
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      await expect(
+        userRepository.verifyEmailCode(userData.email, verificationCode)
+      ).rejects.toThrow('Verification code has expired');
+    });
+
+    it('should return false when email does not exist', async () => {
+      const result = await userRepository.verifyEmailCode('nonexistent@test.com', '123456');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // ---- UPDATE USER IS VERIFIED ----
+  describe('updateUserIsVerified', () => {
+    it('should set user as verified and clear verification code', async () => {
+      const verificationCode = '123456';
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+      const userData = buildUserData({
+        isVerified: false,
+        verificationCode,
+        verificationCodeExpiresAt: expiresAt,
+      });
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      expect(user.isVerified).toBe(false);
+      expect(user.verificationCode).toBe(verificationCode);
+      expect(user.verificationCodeExpiresAt).toBeDefined();
+
+      await userRepository.updateUserIsVerified(userData.email, true);
+
+      const updatedUser = await userRepository.findUserByEmail(userData.email);
+
+      expect(updatedUser!.isVerified).toBe(true);
+      expect(updatedUser!.verificationCode).toBeNull();
+      expect(updatedUser!.verificationCodeExpiresAt).toBeNull();
+    });
+
+    it('should handle setting isVerified to false', async () => {
+      const userData = buildUserData({
+        isVerified: true,
+        verificationCode: undefined,
+        verificationCodeExpiresAt: undefined,
+      });
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      await userRepository.updateUserIsVerified(userData.email, false);
+
+      const updatedUser = await userRepository.findUserByEmail(userData.email);
+
+      expect(updatedUser!.isVerified).toBe(false);
+      expect(updatedUser!.verificationCode).toBeNull();
+      expect(updatedUser!.verificationCodeExpiresAt).toBeNull();
+    });
+
+    it('should not throw error when updating non-existent user', async () => {
+      // TypeORM update with no matching rows doesn't throw
+      await expect(
+        userRepository.updateUserIsVerified('nonexistent@test.com', true)
+      ).resolves.not.toThrow();
+    });
+  });
 });

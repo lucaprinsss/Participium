@@ -350,7 +350,11 @@ class UserRepository {
     await this.repository
       .createQueryBuilder()
       .update(UserEntity)
-      .set({ isVerified, verificationCode: undefined, verificationCodeExpiresAt: undefined })
+      .set({ 
+        isVerified, 
+        verificationCode: null as any, 
+        verificationCodeExpiresAt: null as any 
+      })
       .where('email = :email', { email })
       .execute();
   }

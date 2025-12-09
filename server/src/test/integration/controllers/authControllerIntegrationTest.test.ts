@@ -195,4 +195,246 @@ describe('AuthController Integration Tests', () => {
 
   });
 
+  // --- POST /api/sessions/verifyEmail (Email Verification)
+  describe('POST /api/sessions/verifyEmail', () => {
+    let unverifiedUser: {
+      id: number;
+      username: string;
+      email: string;
+      password: string;
+      verificationCode: string;
+    };
+
+    beforeEach(async () => {
+      const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+      if (!citizenDeptRole) {
+        throw new Error('Citizen role not found in database');
+      }
+
+      const testCode = '123456';
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+
+      const userData = {
+        username: `unverified${r()}`,
+        email: `unverified${r()}@test.com`,
+        password: 'UnverifiedPass123!',
+        firstName: 'Unverified',
+        lastName: 'User',
+        departmentRoleId: citizenDeptRole.id,
+        isVerified: false,
+        verificationCode: testCode,
+        verificationCodeExpiresAt: expiresAt,
+      };
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      unverifiedUser = {
+        id: user.id,
+        username: userData.username,
+        email: userData.email,
+        password: userData.password,
+        verificationCode: testCode,
+      };
+    });
+
+    it('should verify email successfully with valid code (200)', async () => {
+      const response = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: unverifiedUser.verificationCode,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('message', 'Email verified successfully');
+
+      // Verify user can now login
+      const loginResponse = await agent
+        .post('/api/sessions')
+        .send({
+          username: unverifiedUser.username,
+          password: unverifiedUser.password,
+        });
+
+      expect(loginResponse.status).toBe(200);
+      expect(loginResponse.body.username).toBe(unverifiedUser.username);
+    });
+
+    it('should return 400 when email is missing', async () => {
+      const response = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          otpCode: '123456',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        code: 400,
+        message: 'Email and verification code are required.',
+        name: 'BadRequestError',
+      });
+    });
+
+    it('should return 400 when verification code is missing', async () => {
+      const response = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        code: 400,
+        message: 'Email and verification code are required.',
+        name: 'BadRequestError',
+      });
+    });
+
+    it('should return 400 with invalid code format (not 6 digits)', async () => {
+      const response1 = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: '12345', // Only 5 digits
+        });
+
+      expect(response1.status).toBe(400);
+      expect(response1.body).toEqual({
+        code: 400,
+        message: 'Verification code must be exactly 6 digits',
+        name: 'BadRequestError',
+      });
+
+      const response2 = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: '12345A', // Contains letter
+        });
+
+      expect(response2.status).toBe(400);
+      expect(response2.body.message).toContain('must be exactly 6 digits');
+    });
+
+    it('should return 404 when email does not exist', async () => {
+      const response = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: 'nonexistent@test.com',
+          otpCode: '123456',
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        code: 404,
+        message: 'No account found with this email address.',
+        name: 'NotFoundError',
+      });
+    });
+
+    it('should return 400 with incorrect verification code', async () => {
+      const response = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: '999999', // Wrong code
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        code: 400,
+        message: 'Invalid verification code',
+        name: 'BadRequestError',
+      });
+    });
+
+    it('should return 400 when trying to verify already verified email', async () => {
+      // First verify the email
+      await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: unverifiedUser.verificationCode,
+        });
+
+      // Try to verify again
+      const response = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: unverifiedUser.verificationCode,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        code: 400,
+        message: 'Email is already verified.',
+        name: 'BadRequestError',
+      });
+    });
+
+    it('should return 400 with expired verification code', async () => {
+      const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+      const expiredDate = new Date(Date.now() - 60 * 1000); // 1 minute ago (expired)
+      const expiredCode = '654321';
+
+      const expiredUserData = {
+        username: `expired${r()}`,
+        email: `expired${r()}@test.com`,
+        password: 'ExpiredPass123!',
+        firstName: 'Expired',
+        lastName: 'User',
+        departmentRoleId: citizenDeptRole!.id,
+        isVerified: false,
+        verificationCode: expiredCode,
+        verificationCodeExpiresAt: expiredDate,
+      };
+
+      const expiredUser = await userRepository.createUserWithPassword(expiredUserData);
+      createdUserIds.push(expiredUser.id);
+
+      const response = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: expiredUserData.email,
+          otpCode: expiredCode,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('expired');
+    });
+
+    it('should prevent login before email verification', async () => {
+      const response = await agent
+        .post('/api/sessions')
+        .send({
+          username: unverifiedUser.username,
+          password: unverifiedUser.password,
+        });
+
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        code: 401,
+        message: 'Email not verified. Please verify your email before logging in.',
+        name: 'UnauthorizedError',
+      });
+    });
+
+    it('should handle internal server error gracefully (500)', async () => {
+      const mockError = new Error('Database connection failed');
+      jest.spyOn(userRepository, 'verifyEmailCode').mockRejectedValue(mockError);
+
+      const response = await agent
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: unverifiedUser.verificationCode,
+        });
+
+      expect(response.status).toBe(500);
+      expect(response.text).toContain(mockError.message);
+    });
+  });
+
 });
