@@ -7,7 +7,7 @@ import { Repository } from "typeorm";
  * Handles all database operations for the Role entity.
  */
 class RoleRepository {
-  private repository: Repository<RoleEntity>;
+  private readonly repository: Repository<RoleEntity>;
 
   constructor() {
     this.repository = AppDataSource.getRepository(RoleEntity);

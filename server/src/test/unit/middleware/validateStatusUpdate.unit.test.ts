@@ -440,7 +440,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
         'Parks and Gardens Staff',
       ];
 
-      technicalRoles.forEach((role) => {
+      for (const role of technicalRoles) {
         mockNext.mockClear();
         mockRequest.body = { newStatus: ReportStatus.IN_PROGRESS };
         mockRequest.user = { departmentRole: { role: { name: role } } };
@@ -454,7 +454,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
 
         // Assert
         expect(mockNext).toHaveBeenCalledWith();
-      });
+      }
     });
 
     it('should deny all non-technical, non-PRO roles for ASSIGNED', () => {
@@ -466,7 +466,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
         SystemRoles.DEPARTMENT_DIRECTOR,
       ];
 
-      nonAllowedRoles.forEach((role) => {
+      for (const role of nonAllowedRoles) {
         mockNext.mockClear();
         mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
         mockRequest.user = { departmentRole: { role: { name: role } } };
@@ -480,7 +480,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
 
         // Assert
         expect(mockNext).toHaveBeenCalledWith(expect.any(InsufficientRightsError));
-      });
+      }
     });
   });
 

@@ -31,6 +31,36 @@ import { CommentEntity } from '../models/entity/commentEntity';
  */
 class ReportService {
   /**
+   * Batch query companies for external assignees and map reports to responses
+   * @param reports - Array of report entities
+   * @returns Array of report responses with company names
+   */
+  private async mapReportsWithCompanyNames(reports: ReportEntity[]): Promise<ReportResponse[]> {
+    const externalAssigneeIds = [...new Set(
+      reports
+        .map(r => r.externalAssignee?.companyId)
+        .filter(id => id !== undefined && id !== null)
+    )] as number[];
+
+    const companyMap = new Map<number, string>();
+    if (externalAssigneeIds.length > 0) {
+      const companies = await Promise.all(
+        externalAssigneeIds.map(id => companyRepository.findById(id))
+      );
+      for (const company of companies) {
+        if (company) companyMap.set(company.id, company.name);
+      }
+    }
+
+    return reports.map(report => {
+      const companyName = report.externalAssignee?.companyId
+        ? companyMap.get(report.externalAssignee.companyId)
+        : undefined;
+      return mapReportEntityToReportResponse(report, companyName);
+    });
+  }
+
+  /**
    * Get all available report categories
    * @returns Array of category strings
    */
@@ -234,29 +264,7 @@ class ReportService {
       return true;
     });
 
-    // Batch query companies for all external assignees
-    const externalAssigneeIds = [...new Set(
-      filteredReports
-        .map(r => r.externalAssignee?.companyId)
-        .filter(id => id !== undefined && id !== null)
-    )] as number[];
-
-    const companyMap = new Map<number, string>();
-    if (externalAssigneeIds.length > 0) {
-      const companies = await Promise.all(
-        externalAssigneeIds.map(id => companyRepository.findById(id))
-      );
-      companies.forEach(company => {
-        if (company) companyMap.set(company.id, company.name);
-      });
-    }
-
-    return filteredReports.map(report => {
-      const companyName = report.externalAssignee?.companyId
-        ? companyMap.get(report.externalAssignee.companyId)
-        : undefined;
-      return mapReportEntityToReportResponse(report, companyName);
-    });
+    return await this.mapReportsWithCompanyNames(filteredReports);
   }
 
   /**
@@ -280,29 +288,7 @@ class ReportService {
       reports = await reportRepository.findByAssigneeId(userId, status);
     }
 
-    // Batch query companies for all external assignees
-    const externalAssigneeIds = [...new Set(
-      reports
-        .map(r => r.externalAssignee?.companyId)
-        .filter(id => id !== undefined && id !== null)
-    )] as number[];
-
-    const companyMap = new Map<number, string>();
-    if (externalAssigneeIds.length > 0) {
-      const companies = await Promise.all(
-        externalAssigneeIds.map(id => companyRepository.findById(id))
-      );
-      companies.forEach(company => {
-        if (company) companyMap.set(company.id, company.name);
-      });
-    }
-
-    return reports.map(report => {
-      const companyName = report.externalAssignee?.companyId
-        ? companyMap.get(report.externalAssignee.companyId)
-        : undefined;
-      return mapReportEntityToReportResponse(report, companyName);
-    });
+    return await this.mapReportsWithCompanyNames(reports);
   }
 
   /**
@@ -316,30 +302,7 @@ class ReportService {
     status?: ReportStatus
   ): Promise<ReportResponse[]> {
     const reports = await reportRepository.findByExternalAssigneeId(externalMaintainerId, status);
-    
-    // Batch query companies for all external assignees
-    const externalAssigneeIds = [...new Set(
-      reports
-        .map(r => r.externalAssignee?.companyId)
-        .filter(id => id !== undefined && id !== null)
-    )] as number[];
-
-    const companyMap = new Map<number, string>();
-    if (externalAssigneeIds.length > 0) {
-      const companies = await Promise.all(
-        externalAssigneeIds.map(id => companyRepository.findById(id))
-      );
-      companies.forEach(company => {
-        if (company) companyMap.set(company.id, company.name);
-      });
-    }
-
-    return reports.map(report => {
-      const companyName = report.externalAssignee?.companyId
-        ? companyMap.get(report.externalAssignee.companyId)
-        : undefined;
-      return mapReportEntityToReportResponse(report, companyName);
-    });
+    return await this.mapReportsWithCompanyNames(reports);
   }
 
   /**

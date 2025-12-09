@@ -227,7 +227,7 @@ describe('MunicipalityUserController E2E Tests', () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
 
       // Create user first
-      const firstUser = await request(app)
+      await request(app)
         .post('/api/municipality/users')
         .set('Cookie', adminCookies)
         .send(validMunicipalityUserData)
@@ -310,10 +310,10 @@ describe('MunicipalityUserController E2E Tests', () => {
       expect(response.body[0]).not.toHaveProperty('passwordHash');
 
       // Verify no Citizen or Administrator users
-      response.body.forEach((user: any) => {
+      for (const user of response.body) {
         expect(user.role).not.toBe('Citizen');
         expect(user.role).not.toBe('Administrator');
-      });
+      }
     });
 
     it('should return 401 when not authenticated', async () => {

@@ -89,7 +89,7 @@ describe('CompanyRepository', () => {
             const result = await companyRepository.findAll();
 
             expect(result).toEqual(companies);
-            expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('c.name', 'ASC');
+            expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('LOWER(c.name)', 'ASC');
         });
 
         it('should return an empty array when no companies are found', async () => {

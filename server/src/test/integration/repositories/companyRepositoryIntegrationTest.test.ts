@@ -137,7 +137,7 @@ describe('CompanyRepository Integration Tests', () => {
 
       expect(companies.length).toBeGreaterThan(0);
       
-      companies.forEach(company => {
+      for (const company of companies) {
         expect(company).toHaveProperty('id');
         expect(company).toHaveProperty('name');
         expect(company).toHaveProperty('category');
@@ -146,7 +146,7 @@ describe('CompanyRepository Integration Tests', () => {
         expect(typeof company.name).toBe('string');
         expect(typeof company.category).toBe('string');
         expect(company.createdAt).toBeInstanceOf(Date);
-      });
+      }
     });
   });
 
@@ -176,7 +176,7 @@ describe('CompanyRepository Integration Tests', () => {
     });
 
     it('should return null for invalid ID type', async () => {
-      const result = await companyRepository.findById(NaN);
+      const result = await companyRepository.findById(Number.NaN);
 
       expect(result).toBeNull();
     });

@@ -20,6 +20,8 @@ export const logger = winston.createLogger({
 
 export const logInfo = (message: string) => logger.info(message);
 export const logWarn = (message: string) => logger.warn(message);
-export const logError = (message: string, error?: any) =>
-  logger.error(`${message} ${error ? `\nStack: ${error.stack}` : ""}`);
+export const logError = (message: string, error?: any) => {
+  const stackTrace = error ? `\nStack: ${error.stack}` : "";
+  logger.error(`${message} ${stackTrace}`);
+};
 export const logDebug = (message: string) => logger.debug(message);

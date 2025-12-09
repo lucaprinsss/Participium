@@ -153,12 +153,12 @@ describe('CompanyController E2E Tests', () => {
       expect(response.body.length).toBeGreaterThanOrEqual(3);
       
       // Verify structure
-      response.body.forEach((company: any) => {
+      for (const company of response.body) {
         expect(company).toHaveProperty('id');
         expect(company).toHaveProperty('name');
         expect(company).toHaveProperty('category');
         expect(company).toHaveProperty('created_at');
-      });
+      }
 
       // Verify test-data.sql companies are included
       const companyNames = response.body.map((c: any) => c.name);
@@ -187,7 +187,7 @@ describe('CompanyController E2E Tests', () => {
         .expect(200);
 
       const names = response.body.map((c: any) => c.name);
-      const sortedNames = [...names].sort();
+      const sortedNames = [...names].sort((a, b) => a.localeCompare(b));
       expect(names).toEqual(sortedNames);
     });
   });

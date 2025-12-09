@@ -424,7 +424,7 @@ afterAll(async () => {
       expect(response.body.length).toBe(3); // PENDING_APPROVAL is excluded
 
       // Verifica che ogni report abbia i campi necessari per la mappa
-      response.body.forEach((report: any) => {
+      for (const report of response.body) {
         expect(report).toHaveProperty('id');
         expect(report).toHaveProperty('title');
         expect(report).toHaveProperty('category');
@@ -432,7 +432,7 @@ afterAll(async () => {
         expect(report).toHaveProperty('location');
         expect(report.location).toHaveProperty('latitude');
         expect(report.location).toHaveProperty('longitude');
-      });
+      }
     });
 
     it('should filter reports by category', async () => {
@@ -521,12 +521,12 @@ afterAll(async () => {
         .set('Cookie', citizenCookies)
         .expect(200);
 
-      response.body.forEach((report: any) => {
+      for (const report of response.body) {
         expect(report.location.latitude).toBeGreaterThanOrEqual(-90);
         expect(report.location.latitude).toBeLessThanOrEqual(90);
         expect(report.location.longitude).toBeGreaterThanOrEqual(-180);
         expect(report.location.longitude).toBeLessThanOrEqual(180);
-      });
+      }
     });
 
     it('should require authentication', async () => {

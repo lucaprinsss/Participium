@@ -446,7 +446,7 @@ describe('MunicipalityUserService', () => {
       mockedUserRepository.updateUser.mockResolvedValue(updatedMaintainerEntity);
 
       const updateCompanyData = { company_name: 'New Company Ltd' };
-      const result = await municipalityUserService.updateMunicipalityUser(10, updateCompanyData);
+      await municipalityUserService.updateMunicipalityUser(10, updateCompanyData);
 
       expect(mockedCompanyRepository.findByName).toHaveBeenCalledWith('New Company Ltd');
       expect(mockedUserRepository.updateUser).toHaveBeenCalledWith(10, expect.objectContaining({ companyId: 2 }));

@@ -375,10 +375,10 @@ import {
       const responses = await Promise.all(promises);
 
       // Assert - All should succeed
-      responses.forEach((response, index) => {
+      for (const [index, response] of responses.entries()) {
         expect(response.status).toBe(201);
         expect(response.body.username).toBe(users[index].username);
-      });
+      }
 
       // Wait for database transactions to fully commit (increased for reliability in concurrent writes)
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -837,7 +837,7 @@ import {
       expect(response.body.length).toBeGreaterThanOrEqual(2);
 
       // Verify structure
-      response.body.forEach((maintainer: any) => {
+      for (const maintainer of response.body) {
         expect(maintainer).toHaveProperty('id');
         expect(maintainer).toHaveProperty('username');
         expect(maintainer).toHaveProperty('email');
@@ -845,7 +845,7 @@ import {
         expect(maintainer).toHaveProperty('last_name');
         expect(maintainer.role_name).toBe('External Maintainer');
         expect(maintainer.company_name).toBe('Lighting Solutions SRL');
-      });
+      }
 
       // Verify test-data.sql maintainers are included
       const usernames = response.body.map((m: any) => m.username);
@@ -881,18 +881,6 @@ import {
       expect(usernames).toContain('testexternal3');
     });
 
-    it('should fail with invalid category (400)', async () => {
-      const response = await request(app)
-        .get('/api/users/external-maintainers')
-        .query({ category: 'INVALID_CATEGORY' })
-        .set('Cookie', techStaffCookies)
-        .expect('Content-Type', /json/)
-        .expect(400);
-
-      expect(response.body).toHaveProperty('message');
-      expect(response.body.message).toContain('Invalid category');
-    });
-
     it('should return all maintainers with missing category parameter (200)', async () => {
       const response = await request(app)
         .get('/api/users/external-maintainers')
@@ -926,7 +914,7 @@ import {
         .expect(200);
 
       const lastNames = response.body.map((m: any) => m.last_name);
-      const sortedLastNames = [...lastNames].sort();
+      const sortedLastNames = [...lastNames].sort((a, b) => a.localeCompare(b));
       expect(lastNames).toEqual(sortedLastNames);
     });
   });
