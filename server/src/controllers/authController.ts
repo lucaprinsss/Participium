@@ -2,7 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { authService } from '@services/authService';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
-
+import { userRepository } from '@repositories/userRepository';
+import { NotFoundError } from '@models/errors/NotFoundError';
+import { BadRequestError } from '@models/errors/BadRequestError';
+import { UserEntity } from '@models/entity/userEntity';
 
 /**
  * Controller for Authentication-related HTTP requests
@@ -18,8 +21,12 @@ class AuthController {
         return next(err);
       }
       
-      if (!user) {
+      if (!(user as UserEntity)) {
         return next(new UnauthorizedError(info?.message || 'Invalid credentials'));
+      }
+
+      if((user as UserEntity).isVerified === false) {
+        return next(new UnauthorizedError('Email not verified. Please verify your email before logging in.'));
       }
 
       req.logIn(user, (err) => {
@@ -70,6 +77,40 @@ class AuthController {
       });
     });
   }
+
+
+  /**
+   * Verify email code for user
+   * @param req Request object containing email and code
+   * @param res Response object
+   * @param next NextFunction for error handling
+   */ 
+  async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {email, otpCode } = req.body;
+
+      if (!email || !otpCode) {
+        throw new BadRequestError('Email and verification code are required.');
+      } 
+
+      if(otpCode.length !== 6 || !/^\d{6}$/.test(otpCode)) {
+        throw new BadRequestError('Verification code must be exactly 6 digits');
+      }
+
+      const userExist = await userRepository.existsUserByEmail(email);
+
+      if(!userExist) {
+        throw new NotFoundError('No account found with this email address.');
+      }
+
+      await authService.verifyEmailCode(email, otpCode);
+
+      res.status(200).json({ message: 'Email verified successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
 }
 
 export default new AuthController();

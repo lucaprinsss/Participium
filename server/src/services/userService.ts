@@ -7,6 +7,11 @@ import { ConflictError } from '@models/errors/ConflictError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { AppError } from '@models/errors/AppError';
+
+import { sendVerificationEmail } from '@utils/emailSender';
+
+import crypto from 'crypto';
+
 /**
  * Service for user-related business logic
  */
@@ -42,6 +47,10 @@ class UserService {
       throw new AppError('Citizen role configuration not found in database', 500);
     }
 
+    // Genera un intero tra 100000 (incluso) e 1000000 (escluso)
+    const otpCode = crypto.randomInt(100000, 1000000).toString();
+    const otpExpiration = new Date(Date.now() + 900000) // 15 minutes from now
+
     // Create new user with hashed password
     const newUser = await userRepository.createUserWithPassword({
       username,
@@ -51,7 +60,9 @@ class UserService {
       lastName: last_name,
       departmentRoleId: citizenDepartmentRole.id,
       emailNotificationsEnabled: true,
-      isVerified: false  // New citizens must verify their email
+      isVerified: false,  // New citizens must verify their email
+      verificationCode: otpCode,
+      verificationCodeExpiresAt: otpExpiration,
     });
 
     logInfo(`New citizen registered: ${username} (ID: ${newUser.id})`);
@@ -62,6 +73,9 @@ class UserService {
       throw new AppError('Failed to map user data', 500);
     }
 
+    await sendVerificationEmail(email, otpCode).catch((error) => {
+      logInfo(`Failed to send verification email to ${email}: ${error}`);
+    });
     return userResponse;
   }
 

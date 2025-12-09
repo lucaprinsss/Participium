@@ -210,7 +210,7 @@ router.delete('/current', isLoggedIn, AuthController.logout);
  *                 value:
  *                   code: 400
  *                   name: "BadRequestError"
- *                   message: "email and code are required"
+ *                   message: "Email and verification code are required."
  *               invalidCode:
  *                 summary: Invalid verification code
  *                 value:
@@ -228,7 +228,7 @@ router.delete('/current', isLoggedIn, AuthController.logout);
  *                 value:
  *                   code: 400
  *                   name: "BadRequestError"
- *                   message: "Email is already verified"
+ *                   message: "Email is already verified."
  *               invalidCodeFormat:
  *                 summary: Code must be 6 digits
  *                 value:
@@ -256,7 +256,7 @@ router.delete('/current', isLoggedIn, AuthController.logout);
  *               name: "InternalServerError"
  *               message: "Internal server error during verification"
  */
-// router.post('/verify', AuthController.verifyEmail);
+router.post('/verifyEmail', AuthController.verifyEmail);
 
 export default router;
 

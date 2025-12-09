@@ -1,0 +1,47 @@
+import nodemailer from 'nodemailer';
+
+// Configura il transporter (il "postino")
+// È meglio crearlo fuori dalla funzione per evitare di riconnettersi a ogni email
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS, // App password
+  },
+});
+
+
+export const sendVerificationEmail = async (userEmail: string, verificationCode: string) => {
+  try {
+    // Verifica che la configurazione sia corretta (opzionale, utile per debug)
+    // await transporter.verify(); 
+    const info = await transporter.sendMail({
+      from: `"Participium Team" <${process.env.EMAIL_USER}>`, // Deve coincidere con l'utente autenticato
+      to: userEmail,
+      subject: 'Verify your email for Participium',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Welcome to Participium!</h2>
+          <p>In order to complete your registration, please enter the following code:</p>
+          <h1 style="letter-spacing: 5px; color: #4CAF50;">${verificationCode}</h1>
+          <p>The code will expire in 15 minutes.</p>
+          <p>If you did not sign up for Participium, please ignore this email.</p>
+          <br/>
+          <br>
+          <p> If you loose the otp screen, you can always request a new one by waiting 15 minutes. </p>
+          <br/>
+          <p>Best regards,<br/>The Participium Team</p>
+        </div>
+      `,
+    });
+
+    console.log("Message sent: %s", info.messageId);
+    return info;
+
+  } catch (error) {
+    console.error("Error sending email with Nodemailer:", error);
+    throw error;
+  }
+};

@@ -1,3 +1,24 @@
+/**
+ * Handle API response and errors
+ */
+const handleResponse = async (response) => {
+  if (!response.ok) {
+    const error = new Error();
+    try {
+      const data = await response.json();
+      
+      error.message = data.message || data.error || `Request failed with status ${response.status}`;
+      
+      error.status = response.status;
+      error.data = data;
+    } catch {
+      error.message = `Request failed with status ${response.status}`;
+      error.status = response.status;
+    }
+    throw error;
+  }
+  return response.json();
+};
 // POST /api/users
 export async function registerCitizen(payload) {
   try {
@@ -26,4 +47,20 @@ export async function registerCitizen(payload) {
   }
 }
 
-export default { registerCitizen };
+export async function verifyEmailCode(email, otpCode) {
+  try {
+    const response = await fetch(`/api/sessions/verifyEmail`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, otpCode }),
+    }); 
+
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    throw error;
+  }
+
+}

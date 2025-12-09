@@ -3,6 +3,7 @@ import { UserEntity } from "@models/entity/userEntity";
 import { Repository } from "typeorm";
 import { verifyPassword, generatePasswordData } from "@utils/passwordUtils";
 import { ReportStatus } from "@models/dto/ReportStatus";
+import { BadRequestError } from "@models/errors/BadRequestError";
 
 /**
  * Repository for User data access.
@@ -321,6 +322,52 @@ class UserRepository {
       .andWhere('user.company_id IS NOT NULL')
       .orderBy('user.last_name', 'ASC')
       .getMany();
+  }
+
+
+  /**
+   * Checks if the provided email and verification code match a user
+   * and that the code is not expired.
+   * @param email The user's email address
+   * @param code The code inserted by user
+   * @returns True if code is valid, false otherwise
+   */
+  public async verifyEmailCode(email: string, code: string): Promise<boolean> {
+    const user = await this.findUserByEmail(email);
+    
+    if (!user?.verificationCode) {
+      return false;
+    }
+
+    if(user.verificationCodeExpiresAt && user.verificationCodeExpiresAt < new Date()) {
+      throw new BadRequestError('Verification code has expired. Please request a new code.');
+    }
+
+    return user.verificationCode === code;
+  }
+
+  public async updateUserIsVerified(email: string, isVerified: boolean): Promise<void> {
+    await this.repository
+      .createQueryBuilder()
+      .update(UserEntity)
+      .set({ isVerified, verificationCode: undefined, verificationCodeExpiresAt: undefined })
+      .where('email = :email', { email })
+      .execute();
+  }
+
+  /**
+   * Checks if a user is verified
+   * @param email The user's email address
+   * @returns True if verified, false otherwise
+   */
+  public async isUserVerified(email: string): Promise<boolean> {
+    const user = await this.findUserByEmail(email);
+
+    if (!user) {
+      return false;
+    }
+    
+    return user.isVerified;
   }
 
 }

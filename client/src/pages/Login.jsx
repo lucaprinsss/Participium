@@ -81,7 +81,6 @@ export default function Login({ onLoginSuccess }) {
     try {
       const userData = await login(trimmedUsername, formData.password);
 
-      // --- AGGIUNTA: Salviamo l'indizio ---
       localStorage.setItem("isLoggedIn", "true"); 
 
       if (onLoginSuccess) {
@@ -95,26 +94,33 @@ export default function Login({ onLoginSuccess }) {
       // Reset password on error for security
       setFormData(prev => ({ ...prev, password: "" }));
 
-      // ADVANCED ERROR HANDLING
-      // Priority: Status Code -> Network Message -> Generic Message
+      // --- LOGICA AGGIORNATA ---
       
+      // 1. Cerchiamo prima un messaggio specifico dal server.
+      // Solitamente i messaggi del backend si trovano in err.data.error o err.data.message
+      // o direttamente in err.message se l'API wrapper lo ha estratto.
+      const serverMessage = err.data?.error || err.data?.message || err.message;
+
+      // Se l'errore è di rete (fetch failed), lo gestiamo specificamente
       if (!err.status && (err.message === "Failed to fetch" || err.message.includes("Network"))) {
-        // Specific case: Server is down or unreachable (Loading/connection error)
-        setError("Unable to contact the server. Check your connection or try again later.");
-      } else if (err.status === 401) {
+         setError("Unable to contact the server. Check your connection.");
+      } 
+      // 2. Se il server ci ha mandato un messaggio specifico (es. "Email not verified"), usiamo quello!
+      // Escludiamo il caso in cui serverMessage sia generico come "Failed to fetch" (già gestito sopra)
+      else if (serverMessage && serverMessage !== "Failed to fetch") {
+         setError(serverMessage);
+      }
+      // 3. Fallback sui codici di stato (se il server non ha mandato un messaggio chiaro)
+      else if (err.status === 401) {
         setError("Invalid username or password.");
       } else if (err.status === 400) {
-        setError("Missing or invalid data. Check the fields.");
+        setError("Missing or invalid data.");
       } else if (err.status === 403) {
-        setError("Account temporarily blocked or inactive.");
+        setError("Account access restricted.");
       } else if (err.status >= 500) {
-        // Internal server errors shown as form errors
-        setError("Internal server error.");
-      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        setError("No internet connection detected.");
+        setError("Internal server error. Please try again later.");
       } else {
-        // Fallback to error message or generic message
-        setError(err.message || "Login failed. Please try again.");
+        setError("An unexpected error occurred.");
       }
     } finally {
       setLoading(false);

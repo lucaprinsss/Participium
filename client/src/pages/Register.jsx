@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Alert, Card, Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
 // Nota: Assicurati di esportare verifyCitizen dal tuo api file
-import { registerCitizen } from "../api/citizenApi"; 
+import { registerCitizen, verifyEmailCode } from "../api/citizenApi"; 
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock, FaArrowLeft, FaIdCard, FaCheckCircle } from "react-icons/fa";
 import "../css/Register.css";
@@ -158,7 +158,7 @@ export default function Register() {
       };
 
       // Chiamata API per la registrazione.
-      // Il backend dovrebbe salvare l'utente in stato "PENDING" e inviare l'email.
+      // Il backend dovrebbe salvare l'utente in con stato isVerified: undefined e inviare l'email.
       await registerCitizen(payload);
       
       setSuccess("Registration started! Please check your email for the OTP code.");
@@ -197,12 +197,10 @@ export default function Register() {
             otp_code: otp // Adatta questo nome al tuo backend
         };
 
-        // TODO: Chiamata API di verifica (da implementare nel file API)
-        //await verifyCitizen(payload);
+        await verifyEmailCode(payload.email, payload.otp_code);
 
         setSuccess("Account verified successfully! Redirecting to login...");
         setTimeout(() => navigate("/login"), 2000);
-
     } catch (err) {
         console.error("Verification failed:", err);
         handleApiError(err);
