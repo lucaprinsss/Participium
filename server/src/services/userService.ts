@@ -76,9 +76,6 @@ class UserService {
     await sendVerificationEmail(email, otpCode).catch((error) => {
       logInfo(`Failed to send verification email to ${email}: ${error}`);
     });
-    console.log("\nHO INVIATO UNA MAIL A: " + email + " CON CODICE: " + otpCode,"\n");
-
-
     return userResponse;
   }
 
