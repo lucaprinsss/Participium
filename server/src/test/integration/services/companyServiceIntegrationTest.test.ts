@@ -224,7 +224,9 @@ describe('CompanyService Integration Tests', () => {
       }
 
       const results = await Promise.all(promises);
-      results.forEach(r => createdCompanyIds.push(r.id));
+      for (const r of results) {
+        createdCompanyIds.push(r.id);
+      }
 
       expect(results.length).toBe(5);
       const names = results.map(r => r.name);

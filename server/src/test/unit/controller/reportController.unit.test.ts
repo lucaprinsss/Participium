@@ -24,7 +24,8 @@ describe('ReportController', () => {
     };
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis()
+      json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis()
     };
     mockNext = jest.fn();
     jest.clearAllMocks();
@@ -953,6 +954,180 @@ describe('ReportController', () => {
         (reportService.getMapReports as jest.Mock).mockRejectedValue(error);
 
         await reportController.getMapReports(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(error);
+        expect(mockResponse.status).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Internal Comments', () => {
+    describe('getInternalComments', () => {
+      it('should return comments with 200 status', async () => {
+        const mockUser = { id: 1 } as User;
+        const mockComments = [
+          {
+            id: 1,
+            reportId: 10,
+            content: 'Test comment',
+            author: {
+              id: 1,
+              username: 'testuser',
+              firstName: 'Test',
+              lastName: 'User',
+              role: 'Staff'
+            },
+            createdAt: new Date()
+          }
+        ];
+
+        mockRequest.user = mockUser;
+        mockRequest.params = { id: '10' };
+        (reportService.getInternalComments as jest.Mock).mockResolvedValue(mockComments);
+
+        await reportController.getInternalComments(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(reportService.getInternalComments).toHaveBeenCalledWith(10);
+        expect(mockResponse.status).toHaveBeenCalledWith(200);
+        expect(mockResponse.json).toHaveBeenCalledWith(mockComments);
+      });
+
+      it('should return empty array when no comments exist', async () => {
+        const mockUser = { id: 1 } as User;
+        mockRequest.user = mockUser;
+        mockRequest.params = { id: '10' };
+        (reportService.getInternalComments as jest.Mock).mockResolvedValue([]);
+
+        await reportController.getInternalComments(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockResponse.status).toHaveBeenCalledWith(200);
+        expect(mockResponse.json).toHaveBeenCalledWith([]);
+      });
+
+      it('should call next with error if service throws', async () => {
+        const mockUser = { id: 1 } as User;
+        const error = new Error('Service error');
+        mockRequest.user = mockUser;
+        mockRequest.params = { id: '10' };
+        (reportService.getInternalComments as jest.Mock).mockRejectedValue(error);
+
+        await reportController.getInternalComments(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(error);
+        expect(mockResponse.status).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('addInternalComment', () => {
+      it('should throw BadRequestError if content is missing', async () => {
+        const mockUser = { id: 1 } as User;
+        mockRequest.user = mockUser;
+        mockRequest.params = { id: '10' };
+        mockRequest.body = {};
+
+        await reportController.addInternalComment(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+        expect(reportService.addInternalComment).not.toHaveBeenCalled();
+      });
+
+      it('should add comment and return 201 status', async () => {
+        const mockUser = { id: 1 } as User;
+        const mockComment = {
+          id: 5,
+          reportId: 10,
+          content: 'New comment',
+          author: {
+            id: 1,
+            username: 'testuser',
+            firstName: 'Test',
+            lastName: 'User',
+            role: 'Staff'
+          },
+          createdAt: new Date()
+        };
+
+        mockRequest.user = mockUser;
+        mockRequest.params = { id: '10' };
+        mockRequest.body = { content: 'New comment' };
+        (reportService.addInternalComment as jest.Mock).mockResolvedValue(mockComment);
+
+        await reportController.addInternalComment(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(reportService.addInternalComment).toHaveBeenCalledWith(10, 1, 'New comment');
+        expect(mockResponse.status).toHaveBeenCalledWith(201);
+        expect(mockResponse.json).toHaveBeenCalledWith(mockComment);
+      });
+
+      it('should call next with error if service throws', async () => {
+        const mockUser = { id: 1 } as User;
+        const error = new Error('Service error');
+        mockRequest.user = mockUser;
+        mockRequest.params = { id: '10' };
+        mockRequest.body = { content: 'Test' };
+        (reportService.addInternalComment as jest.Mock).mockRejectedValue(error);
+
+        await reportController.addInternalComment(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(error);
+        expect(mockResponse.status).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('deleteInternalComment', () => {
+      it('should delete comment and return 204 status', async () => {
+        const mockUser = { id: 1 } as User;
+        mockRequest.user = mockUser;
+        mockRequest.params = { reportId: '10', commentId: '5' };
+        (reportService.deleteInternalComment as jest.Mock).mockResolvedValue(undefined);
+
+        await reportController.deleteInternalComment(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        expect(reportService.deleteInternalComment).toHaveBeenCalledWith(10, 5, 1);
+        expect(mockResponse.status).toHaveBeenCalledWith(204);
+        expect(mockResponse.send).toHaveBeenCalled();
+      });
+
+      it('should call next with error if service throws', async () => {
+        const mockUser = { id: 1 } as User;
+        const error = new Error('Service error');
+        mockRequest.user = mockUser;
+        mockRequest.params = { reportId: '10', commentId: '5' };
+        (reportService.deleteInternalComment as jest.Mock).mockRejectedValue(error);
+
+        await reportController.deleteInternalComment(
           mockRequest as Request,
           mockResponse as Response,
           mockNext

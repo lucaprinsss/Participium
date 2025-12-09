@@ -61,7 +61,7 @@ export function isValidImageDataUri(dataUri: string): boolean {
  * @returns The MIME type or null if invalid
  */
 export function extractMimeType(dataUri: string): string | null {
-  const match = dataUri.match(/^data:(image\/[a-z]+);base64,/);
+  const match = /^data:(image\/[a-z]+);base64,/.exec(dataUri);
   return match ? match[1] : null;
 }
 

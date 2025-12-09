@@ -14,7 +14,7 @@ export interface Company {
  * Repository for Company data access using TypeORM QueryBuilder
  */
 class CompanyRepository {
-  private connection = AppDataSource;
+  private readonly connection = AppDataSource;
 
   /**
    * Finds a company by name.
@@ -77,7 +77,7 @@ class CompanyRepository {
         'created_at AS "createdAt"'
       ])
       .from('companies', 'c')
-      .orderBy('c.name', 'ASC')
+      .orderBy('LOWER(c.name)', 'ASC')
       .getRawMany();
     
     return results;
@@ -120,7 +120,7 @@ class CompanyRepository {
       .where('c.name = :name', { name })
       .getRawOne();
     
-    return parseInt(result.count) > 0;
+    return Number.parseInt(result.count) > 0;
   }
 
   /**

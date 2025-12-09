@@ -7,7 +7,6 @@ import { companyRepository } from '@repositories/companyRepository';
 import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { UserEntity } from '@models/entity/userEntity';
 import { ConflictError } from '@models/errors/ConflictError';
-import { AppError } from '@models/errors/AppError';
 import { In } from 'typeorm';
 
 describe('UserService Integration Tests', () => {
@@ -255,8 +254,8 @@ describe('UserService Integration Tests', () => {
     it('should return empty array when no maintainers for category', async () => {
       const result = await userService.getExternalMaintainersByCategory('Public Green Areas and Playgrounds');
 
-      const testMaintainerIds = [lightingMaintainer1Id, lightingMaintainer2Id, roadsMaintainerId];
-      const hasTestMaintainers = result.some(u => testMaintainerIds.includes(u.id));
+      const testMaintainerIds = new Set([lightingMaintainer1Id, lightingMaintainer2Id, roadsMaintainerId]);
+      const hasTestMaintainers = result.some(u => testMaintainerIds.has(u.id));
       
       expect(hasTestMaintainers).toBe(false);
     });
@@ -265,9 +264,9 @@ describe('UserService Integration Tests', () => {
       const result = await userService.getExternalMaintainersByCategory('Public Lighting');
 
       expect(result.length).toBeGreaterThan(0);
-      result.forEach(user => {
+      for (const user of result) {
         expect(user.role_name).toBe('External Maintainer');
-      });
+      }
     });
 
     it('should return all maintainers when category is undefined', async () => {
@@ -337,10 +336,10 @@ describe('UserService Integration Tests', () => {
       expect(result.length).toBeGreaterThanOrEqual(2);
       
       // All maintainers should have company_name populated
-      result.forEach(maintainer => {
+      for (const maintainer of result) {
         expect(maintainer.company_name).toBeDefined();
         expect(typeof maintainer.company_name).toBe('string');
-      });
+      }
 
       // Maintainers from same company should have same company_name
       const m1 = result.find(u => u.id === lightingMaintainer1Id);

@@ -33,7 +33,7 @@ export const validateCreateReport = (req: Request, res: Response, next: NextFunc
       throw new BadRequestError('Category is required and must be a string');
     }
     const validCategories = Object.values(ReportCategory);
-    if (!validCategories.includes(data.category as ReportCategory)) {
+    if (!validCategories.includes(data.category)) {
       throw new BadRequestError(
         `Invalid category. Must be one of: ${validCategories.join(', ')}`
       );

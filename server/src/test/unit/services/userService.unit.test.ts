@@ -365,7 +365,6 @@ describe('UserService', () => {
     describe('valid category', () => {
       it('should return external maintainers for valid category', async () => {
         // Arrange
-        const category = 'Public Lighting';
         const mockUsers = [
           createMockUserEntity({ id: 1, username: 'maintainer1' }),
           createMockUserEntity({ id: 2, username: 'maintainer2' }),

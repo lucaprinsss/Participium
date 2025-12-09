@@ -46,12 +46,12 @@ describe('DepartmentService Integration Tests', () => {
       expect(departmentNames).toContain('Public Lighting Department');
       
       // Verify DTO structure
-      result.forEach(dept => {
+      for (const dept of result) {
         expect(dept).toHaveProperty('id');
         expect(dept).toHaveProperty('name');
         expect(typeof dept.id).toBe('number');
         expect(typeof dept.name).toBe('string');
-      });
+      }
     });
 
     it('should return exactly 9 municipality departments (8 total - Organization)', async () => {
@@ -83,13 +83,13 @@ describe('DepartmentService Integration Tests', () => {
       expect(roleNames).toContain('Water Network staff member');
       
       // Verify DTO structure
-      result.forEach(role => {
+      for (const role of result) {
         expect(role).toHaveProperty('id');
         expect(role).toHaveProperty('name');
         expect(role).toHaveProperty('description');
         expect(typeof role.id).toBe('number');
         expect(typeof role.name).toBe('string');
-      });
+      }
     });
 
     it('should return roles for Public Infrastructure Department', async () => {
@@ -170,12 +170,12 @@ describe('DepartmentService Integration Tests', () => {
       const result = await departmentService.getRolesByDepartment(waterDeptId);
 
       // Assert - Verify DTOs don't have entity relations
-      result.forEach(role => {
+      for (const role of result) {
         expect(role).not.toHaveProperty('departmentRoles');
         expect(role).toHaveProperty('id');
         expect(role).toHaveProperty('name');
         expect(role).toHaveProperty('description');
-      });
+      }
     });
   });
 

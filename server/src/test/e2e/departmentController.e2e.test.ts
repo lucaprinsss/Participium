@@ -99,12 +99,12 @@ describe('DepartmentController E2E Tests', () => {
       expect(departmentNames).toContain('Public Lighting Department');
       
       // Verify response structure
-      response.body.forEach((dept: any) => {
+      for (const dept of response.body) {
         expect(dept).toHaveProperty('id');
         expect(dept).toHaveProperty('name');
         expect(typeof dept.id).toBe('number');
         expect(typeof dept.name).toBe('string');
-      });
+      }
     });
 
     it('should return exactly 9 municipality departments', async () => {
@@ -228,13 +228,13 @@ describe('DepartmentController E2E Tests', () => {
       expect(roleNames).not.toContain('Administrator');
       
       // Verify response structure
-      response.body.forEach((role: any) => {
+      for (const role of response.body) {
         expect(role).toHaveProperty('id');
         expect(role).toHaveProperty('name');
         expect(role).toHaveProperty('description');
         expect(typeof role.id).toBe('number');
         expect(typeof role.name).toBe('string');
-      });
+      }
     });
 
     it('should return roles for Public Infrastructure Department', async () => {

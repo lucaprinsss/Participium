@@ -1,7 +1,85 @@
 jest.mock('@middleware/authMiddleware', () => ({
-  isLoggedIn: jest.fn((req, res, next) => next()),
+  isLoggedIn: jest.fn((req, res, next) => {
+    const userType = req.headers['x-test-user-type'];
+    if (!userType) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    // Re-import SystemRoles here to avoid hoisting issues
+    const { SystemRoles } = jest.requireActual('@dto/UserRole');
+    
+    const roleMap: { [key: string]: string } = {
+      PRO: SystemRoles.PUBLIC_RELATIONS_OFFICER,
+      TECHNICIAN: 'Water Network staff member',
+      TECHNICAL_MANAGER: 'Road Maintenance staff member',
+      EXTERNAL_MAINTAINER: SystemRoles.EXTERNAL_MAINTAINER,
+      CITIZEN: SystemRoles.CITIZEN,
+    };
+    
+    const role = roleMap[userType];
+    if (role) {
+      const userIdMap: { [key: string]: number } = {
+        'PRO': 1,
+        'CITIZEN': 2,
+        'TECHNICIAN': 3,
+        'TECHNICAL_MANAGER': 4,
+        'EXTERNAL_MAINTAINER': 8,
+      };
+      req.user = {
+        id: userIdMap[userType] || 1,
+        departmentRole: {
+          role: {
+            name: role,
+          },
+        },
+      };
+      next();
+    } else {
+      res.status(401).json({ error: 'Not authenticated' });
+    }
+  }),
   requireRole: jest.fn(() => (req: any, res: any, next: any) => next()),
-  requireTechnicalStaffOrRole: jest.fn(() => (req: any, res: any, next: any) => next()),
+  requireTechnicalStaffOrRole: jest.fn((additionalRoles: string[] = []) => {
+    return (req: any, res: any, next: any) => {
+      const userType = req.headers['x-test-user-type'];
+      if (!userType) return res.status(401).json({ error: 'Not authenticated' });
+      
+      // Re-import SystemRoles here to avoid hoisting issues
+      const { SystemRoles, isTechnicalStaff: isTechStaff } = jest.requireActual('@dto/UserRole');
+      
+      const roleMap: { [key: string]: string } = {
+        PRO: SystemRoles.PUBLIC_RELATIONS_OFFICER,
+        TECHNICIAN: 'Water Network staff member',
+        TECHNICAL_MANAGER: 'Road Maintenance staff member',
+        EXTERNAL_MAINTAINER: SystemRoles.EXTERNAL_MAINTAINER,
+        CITIZEN: SystemRoles.CITIZEN,
+      };
+      
+      const userRole = roleMap[userType];
+      if (!userRole) {
+        return res.status(403).json({ error: 'Insufficient rights' });
+      }
+      
+      // Check if user is technical staff OR has one of the additional roles
+      const hasAccess = isTechStaff(userRole) || additionalRoles.includes(userRole);
+      if (hasAccess) {
+        const userIdMap: { [key: string]: number } = {
+          'PRO': 1,
+          'CITIZEN': 2,
+          'TECHNICIAN': 3,
+          'TECHNICAL_MANAGER': 4,
+          'EXTERNAL_MAINTAINER': 8,
+        };
+        req.user = { 
+          id: userIdMap[userType] || 1, 
+          departmentRole: { role: { name: userRole } } 
+        };
+        return next();
+      }
+      
+      return res.status(403).json({ error: 'Insufficient rights' });
+    };
+  }),
 }));
 
 jest.mock('@controllers/reportController', () => ({
@@ -24,9 +102,8 @@ jest.mock('@middleware/reportMiddleware', () => ({
   validateReportUpdate: jest.fn((req, res, next) => next()),
 }));
 jest.mock('@middleware/validateId', () => ({
-  validateId: jest.fn(() => (req: any, res: any, next: any) => {
-    // Support both id and externalMaintainerId
-    const paramId = req.params.externalMaintainerId ?? req.params.id;
+  validateId: jest.fn((paramName: string = 'id', resourceName: string = 'resource') => (req: any, res: any, next: any) => {
+    const paramId = req.params[paramName];
     const numericId = Number(paramId);
     if (
       !paramId ||
@@ -35,7 +112,7 @@ jest.mock('@middleware/validateId', () => ({
       numericId <= 0 ||
       !Number.isInteger(numericId)
     ) {
-      return res.status(400).json({ message: 'Invalid ID. Must be a positive integer.' });
+      return res.status(400).json({ message: `Invalid ${resourceName} ID. Must be a positive integer.` });
     }
     return next();
   }),
@@ -605,5 +682,367 @@ describe('Report Routes Integration Tests', () => {
         });
 
       expect(res.status).toBe(404);
+    });
+  });
+
+  describe('Internal Comments Routes', () => {
+    const mockGetInternalComments = reportController.getInternalComments as jest.Mock;
+    const mockAddInternalComment = reportController.addInternalComment as jest.Mock;
+    const mockDeleteInternalComment = reportController.deleteInternalComment as jest.Mock;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+
+      // Mock getInternalComments controller
+      mockGetInternalComments.mockImplementation((req, res) => {
+        const reportId = Number.parseInt(req.params.id, 10);
+        if (reportId === 999) {
+          return res.status(404).json({ error: 'Report not found' });
+        }
+        const mockComments = [
+          {
+            id: 1,
+            reportId,
+            content: 'First internal comment',
+            author: {
+              id: 1,
+              username: 'tech1',
+              firstName: 'John',
+              lastName: 'Doe',
+              role: 'Sewer System staff member'
+            },
+            createdAt: new Date('2024-01-15T10:00:00Z')
+          },
+          {
+            id: 2,
+            reportId,
+            content: 'Second internal comment',
+            author: {
+              id: 2,
+              username: 'external1',
+              firstName: 'Jane',
+              lastName: 'Smith',
+              role: 'External Maintainer'
+            },
+            createdAt: new Date('2024-01-15T11:00:00Z')
+          }
+        ];
+        res.status(200).json(mockComments);
+      });
+
+      // Mock addInternalComment controller
+      mockAddInternalComment.mockImplementation((req, res) => {
+        const reportId = Number.parseInt(req.params.id, 10);
+        const { content } = req.body;
+
+        if (reportId === 999) {
+          return res.status(404).json({ error: 'Report not found' });
+        }
+        if (!content || content.trim().length === 0) {
+          return res.status(400).json({ error: 'Content is required' });
+        }
+        if (content.length > 2000) {
+          return res.status(400).json({ error: 'Content must be at most 2000 characters' });
+        }
+
+        const newComment = {
+          id: 3,
+          reportId,
+          content,
+          author: {
+            id: req.user?.id || 1,
+            username: 'testuser',
+            firstName: 'Test',
+            lastName: 'User',
+            role: 'Sewer System staff member'
+          },
+          createdAt: new Date()
+        };
+        res.status(201).json(newComment);
+      });
+
+      // Mock deleteInternalComment controller
+      mockDeleteInternalComment.mockImplementation((req, res) => {
+        const reportId = Number.parseInt(req.params.reportId, 10);
+        const commentId = Number.parseInt(req.params.commentId, 10);
+
+        if (reportId === 999) {
+          return res.status(404).json({ error: 'Report not found' });
+        }
+        if (commentId === 999) {
+          return res.status(404).json({ error: 'Comment not found' });
+        }
+        if (commentId === 888) {
+          return res.status(403).json({ error: 'You can only delete your own comments' });
+        }
+
+        res.status(204).send();
+      });
+    });
+
+    describe('GET /api/reports/:id/internal-comments', () => {
+      it('should return internal comments for technical staff', async () => {
+        const res = await request(app)
+          .get('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'TECHNICIAN');
+
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body.length).toBe(2);
+        expect(res.body[0]).toHaveProperty('content');
+        expect(res.body[0]).toHaveProperty('author');
+        expect(mockGetInternalComments).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return internal comments for PRO', async () => {
+        const res = await request(app)
+          .get('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'PRO');
+
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(mockGetInternalComments).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return internal comments for external maintainer', async () => {
+        const res = await request(app)
+          .get('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'EXTERNAL_MAINTAINER');
+
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(mockGetInternalComments).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return 403 for citizen', async () => {
+        const res = await request(app)
+          .get('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'CITIZEN');
+
+        expect(res.status).toBe(403);
+        expect(mockGetInternalComments).not.toHaveBeenCalled();
+      });
+
+      it('should return 401 if not authenticated', async () => {
+        const res = await request(app)
+          .get('/api/reports/1/internal-comments');
+
+        expect(res.status).toBe(401);
+        expect(mockGetInternalComments).not.toHaveBeenCalled();
+      });
+
+      it('should return 400 for invalid report ID', async () => {
+        const res = await request(app)
+          .get('/api/reports/invalid/internal-comments')
+          .set('x-test-user-type', 'TECHNICIAN');
+
+        expect(res.status).toBe(400);
+        expect(mockGetInternalComments).not.toHaveBeenCalled();
+      });
+
+      it('should return 404 if report not found', async () => {
+        const res = await request(app)
+          .get('/api/reports/999/internal-comments')
+          .set('x-test-user-type', 'TECHNICIAN');
+
+        expect(res.status).toBe(404);
+        expect(mockGetInternalComments).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe('POST /api/reports/:id/internal-comments', () => {
+      it('should add internal comment as technical staff', async () => {
+        const res = await request(app)
+          .post('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'TECHNICIAN')
+          .send({ content: 'New internal comment from tech staff' });
+
+        expect(res.status).toBe(201);
+        expect(res.body).toHaveProperty('id');
+        expect(res.body).toHaveProperty('content', 'New internal comment from tech staff');
+        expect(res.body).toHaveProperty('author');
+        expect(mockAddInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should add internal comment as PRO', async () => {
+        const res = await request(app)
+          .post('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'PRO')
+          .send({ content: 'PRO internal note' });
+
+        expect(res.status).toBe(201);
+        expect(mockAddInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should add internal comment as external maintainer', async () => {
+        const res = await request(app)
+          .post('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'EXTERNAL_MAINTAINER')
+          .send({ content: 'External maintainer update' });
+
+        expect(res.status).toBe(201);
+        expect(mockAddInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return 400 if content is missing', async () => {
+        const res = await request(app)
+          .post('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'TECHNICIAN')
+          .send({});
+
+        expect(res.status).toBe(400);
+        expect(mockAddInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return 400 if content is empty', async () => {
+        const res = await request(app)
+          .post('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'TECHNICIAN')
+          .send({ content: '   ' });
+
+        expect(res.status).toBe(400);
+        expect(mockAddInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return 400 if content is too long', async () => {
+        const longContent = 'a'.repeat(2001);
+        const res = await request(app)
+          .post('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'TECHNICIAN')
+          .send({ content: longContent });
+
+        expect(res.status).toBe(400);
+        expect(mockAddInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return 403 for citizen', async () => {
+        const res = await request(app)
+          .post('/api/reports/1/internal-comments')
+          .set('x-test-user-type', 'CITIZEN')
+          .send({ content: 'Should not work' });
+
+        expect(res.status).toBe(403);
+        expect(mockAddInternalComment).not.toHaveBeenCalled();
+      });
+
+      it('should return 401 if not authenticated', async () => {
+        const res = await request(app)
+          .post('/api/reports/1/internal-comments')
+          .send({ content: 'Should not work' });
+
+        expect(res.status).toBe(401);
+        expect(mockAddInternalComment).not.toHaveBeenCalled();
+      });
+
+      it('should return 400 for invalid report ID', async () => {
+        const res = await request(app)
+          .post('/api/reports/abc/internal-comments')
+          .set('x-test-user-type', 'TECHNICIAN')
+          .send({ content: 'Test comment' });
+
+        expect(res.status).toBe(400);
+        expect(mockAddInternalComment).not.toHaveBeenCalled();
+      });
+
+      it('should return 404 if report not found', async () => {
+        const res = await request(app)
+          .post('/api/reports/999/internal-comments')
+          .set('x-test-user-type', 'TECHNICIAN')
+          .send({ content: 'Test comment' });
+
+        expect(res.status).toBe(404);
+        expect(mockAddInternalComment).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe('DELETE /api/reports/:reportId/internal-comments/:commentId', () => {
+      it('should delete own comment as technical staff', async () => {
+        const res = await request(app)
+          .delete('/api/reports/1/internal-comments/1')
+          .set('x-test-user-type', 'TECHNICIAN');
+
+        expect(res.status).toBe(204);
+        expect(mockDeleteInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should delete own comment as PRO', async () => {
+        const res = await request(app)
+          .delete('/api/reports/1/internal-comments/2')
+          .set('x-test-user-type', 'PRO');
+
+        expect(res.status).toBe(204);
+        expect(mockDeleteInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should delete own comment as external maintainer', async () => {
+        const res = await request(app)
+          .delete('/api/reports/1/internal-comments/3')
+          .set('x-test-user-type', 'EXTERNAL_MAINTAINER');
+
+        expect(res.status).toBe(204);
+        expect(mockDeleteInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return 403 when trying to delete someone else comment', async () => {
+        const res = await request(app)
+          .delete('/api/reports/1/internal-comments/888')
+          .set('x-test-user-type', 'TECHNICIAN');
+
+        expect(res.status).toBe(403);
+        expect(mockDeleteInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return 403 for citizen', async () => {
+        const res = await request(app)
+          .delete('/api/reports/1/internal-comments/1')
+          .set('x-test-user-type', 'CITIZEN');
+
+        expect(res.status).toBe(403);
+        expect(mockDeleteInternalComment).not.toHaveBeenCalled();
+      });
+
+      it('should return 401 if not authenticated', async () => {
+        const res = await request(app)
+          .delete('/api/reports/1/internal-comments/1');
+
+        expect(res.status).toBe(401);
+        expect(mockDeleteInternalComment).not.toHaveBeenCalled();
+      });
+
+      it('should return 400 for invalid report ID', async () => {
+        const res = await request(app)
+          .delete('/api/reports/invalid/internal-comments/1')
+          .set('x-test-user-type', 'TECHNICIAN');
+
+        expect(res.status).toBe(400);
+        expect(mockDeleteInternalComment).not.toHaveBeenCalled();
+      });
+
+      it('should return 400 for invalid comment ID', async () => {
+        const res = await request(app)
+          .delete('/api/reports/1/internal-comments/invalid')
+          .set('x-test-user-type', 'TECHNICIAN');
+
+        expect(res.status).toBe(400);
+        expect(mockDeleteInternalComment).not.toHaveBeenCalled();
+      });
+
+      it('should return 404 if report not found', async () => {
+        const res = await request(app)
+          .delete('/api/reports/999/internal-comments/1')
+          .set('x-test-user-type', 'TECHNICIAN');
+
+        expect(res.status).toBe(404);
+        expect(mockDeleteInternalComment).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return 404 if comment not found', async () => {
+        const res = await request(app)
+          .delete('/api/reports/1/internal-comments/999')
+          .set('x-test-user-type', 'TECHNICIAN');
+
+        expect(res.status).toBe(404);
+        expect(mockDeleteInternalComment).toHaveBeenCalledTimes(1);
+      });
     });
   });

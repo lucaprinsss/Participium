@@ -466,18 +466,18 @@ describe('UserRepository Integration Tests', () => {
     it('should only return external maintainers, not other roles', async () => {
       const result = await userRepository.findExternalMaintainersByCategory('Public Lighting');
 
-      result.forEach(user => {
+      for (const user of result) {
         expect(user.departmentRole?.role?.name).toBe('External Maintainer');
-      });
+      }
     });
 
     it('should handle categories with special characters', async () => {
       const result = await userRepository.findExternalMaintainersByCategory('Roads and Urban Furnishings');
 
       expect(Array.isArray(result)).toBe(true);
-      result.forEach(user => {
+      for (const user of result) {
         expect(user.departmentRole?.role?.name).toBe('External Maintainer');
-      });
+      }
     });
   });
 

@@ -1,6 +1,7 @@
 import { AppDataSource } from '../database/connection';
 import { CommentEntity } from '@entity/commentEntity';
 import { Repository } from 'typeorm';
+import { NotFoundError } from '@models/errors/NotFoundError';
 
 /**
  * Comment Repository
@@ -75,7 +76,7 @@ class CommentRepository {
     const result = await this.repository.delete(commentId);
 
     if (result.affected === 0) {
-      throw new Error('Comment not found');
+      throw new NotFoundError('Comment not found');
     }
   }
 }

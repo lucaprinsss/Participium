@@ -228,16 +228,12 @@ class ReportController {
    */
   async addInternalComment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) {
-        throw new UnauthorizedError('Not authenticated');
-      }
-
       const userId = (req.user as User).id;
       const reportId = parseAndValidateId(req.params.id, 'report');
       const { content } = req.body as CreateCommentRequest;
 
       if (!content) {
-        throw new BadRequestError('Comment content is required');
+        throw new BadRequestError('content is required');
       }
 
       const comment = await reportService.addInternalComment(reportId, userId, content);
@@ -254,10 +250,6 @@ class ReportController {
    */
   async deleteInternalComment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) {
-        throw new UnauthorizedError('Not authenticated');
-      }
-
       const userId = (req.user as User).id;
       const reportId = parseAndValidateId(req.params.reportId, 'report');
       const commentId = parseAndValidateId(req.params.commentId, 'comment');

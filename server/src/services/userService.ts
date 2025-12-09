@@ -7,8 +7,6 @@ import { ConflictError } from '@models/errors/ConflictError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { AppError } from '@models/errors/AppError';
-import { ReportCategory } from '@models/dto/ReportCategory';
-
 /**
  * Service for user-related business logic
  */
@@ -103,9 +101,9 @@ class UserService {
       const companies = await Promise.all(
         companyIds.map(id => companyRepository.findById(id))
       );
-      companies.forEach(company => {
+      for (const company of companies) {
         if (company) companyMap.set(company.id, company.name);
-      });
+      }
     }
 
     return externalMaintainers
