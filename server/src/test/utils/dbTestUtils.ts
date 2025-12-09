@@ -110,13 +110,9 @@ export async function resetSequences(): Promise<void> {
 
   for (const entity of entities) {
     if (entity.tableName) {
-      try {
-        await AppDataSource.query(
-          `SELECT setval(pg_get_serial_sequence('${entity.tableName}', 'id'), COALESCE(MAX(id), 1)) FROM ${entity.tableName};`
-        );
-      } catch (error) {
-        // Ignora errori per tabelle senza sequence
-      }
+      await AppDataSource.query(
+        `SELECT setval(pg_get_serial_sequence('${entity.tableName}', 'id'), COALESCE(MAX(id), 1)) FROM ${entity.tableName};`
+      );
     }
   }
 }

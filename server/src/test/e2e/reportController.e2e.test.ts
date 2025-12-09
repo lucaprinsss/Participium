@@ -961,27 +961,12 @@ afterAll(async () => {
 
       beforeEach(async () => {
         // Add some test comments
-        const result1 = await AppDataSource.query(
-          `INSERT INTO comments (report_id, author_id, content, created_at)
-           VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-           RETURNING id`,
-          [testReportId, technicianId, 'First internal comment']
-        );
-        comment1Id = result1[0].id;
 
         const proresult = await AppDataSource.query(
           `SELECT id FROM users WHERE username = $1`,
           [PRO_USERNAME]
         );
-        const proId = proresult[0].id;
 
-        const result2 = await AppDataSource.query(
-          `INSERT INTO comments (report_id, author_id, content, created_at)
-           VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-           RETURNING id`,
-          [testReportId, proId, 'Second comment from PRO']
-        );
-        comment2Id = result2[0].id;
       });
 
       it('should allow technical staff to view internal comments', async () => {
