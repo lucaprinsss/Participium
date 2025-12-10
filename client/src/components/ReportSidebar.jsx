@@ -11,7 +11,8 @@ const ReportSidebar = ({
   onStatusUpdate,
   showMap, 
   setShowMap,
-  mapCoordinates 
+  mapCoordinates,
+  showToast // NUOVA PROP RICEVUTA
 }) => {
   const [externalUsers, setExternalUsers] = useState([]);
   const [loadingExternal, setLoadingExternal] = useState(false);
@@ -47,6 +48,7 @@ const ReportSidebar = ({
         setExternalUsers(users || []);
       } catch (err) {
         console.error("Failed to load external users", err);
+        showToast("Failed to load external users.", "error"); // Toast per errore
       } finally {
         setLoadingExternal(false);
       }
@@ -54,8 +56,12 @@ const ReportSidebar = ({
   };
 
   const handleAssignToExternal = async (externalUser) => {
+    // Prima di assegnare, chiudiamo il dropdown
+    setIsDropdownOpen(false); 
+    
     try {
       await assignToExternalUser(report.id, externalUser.id);
+      
       if (onReportUpdated) {
         onReportUpdated(report.id, {
           status: "Assigned",
@@ -63,9 +69,13 @@ const ReportSidebar = ({
         });
       }
       if (onStatusUpdate) await onStatusUpdate();
+      
+      showToast(`Assigned to ${externalUser.first_name} ${externalUser.last_name} (${externalUser.id})`, "success");
+
     } catch (err) {
       console.error("Failed to assign", err);
-      alert("Failed to assign to external user.");
+      // SOSTITUZIONE: alert("Failed to assign to external user.");
+      showToast("Failed to assign to external user. Report can't be reassigned if it is resolved or already in progress.", "error"); 
     }
   };
 

@@ -19,13 +19,14 @@ const ReportMainContent = ({
   onOpenImage,
   showMap,
   mapCoordinates,
-  onHide // Per chiudere il modale dopo un'azione
+  onHide,
+  showToast // NUOVA PROP RICEVUTA
 }) => {
   // Stati per le azioni
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [assignmentWarning, setAssignmentWarning] = useState("");
+  const [validationError, setValidationError] = useState(""); // Rinomino errorMsg per gli errori di validazione locali
+  const [assignmentWarning, setAssignmentWarning] = useState(""); // Mantenuto per i messaggi interni
 
   const photos = report.photos
     ? report.photos.map((p) => (typeof p === "string" ? p : p.storageUrl))
@@ -36,35 +37,59 @@ const ReportMainContent = ({
   const isExternalAssignee = currentUserId && report.externalAssigneeId && Number(currentUserId) === Number(report.externalAssigneeId);
 
   // Handlers Azioni
-  const handleRejectClick = () => { setIsRejecting(true); setErrorMsg(""); setAssignmentWarning(""); };
-  const handleCancelReject = () => { setIsRejecting(false); setRejectionReason(""); setErrorMsg(""); };
+  const handleRejectClick = () => { setIsRejecting(true); setValidationError(""); setAssignmentWarning(""); };
+  const handleCancelReject = () => { setIsRejecting(false); setRejectionReason(""); setValidationError(""); };
 
   const handleSubmitReject = async () => {
-    if (!rejectionReason.trim()) { setErrorMsg("Please provide a reason."); return; }
+    if (!rejectionReason.trim()) { 
+      setValidationError("Please provide a reason."); 
+      return; 
+    }
+    setValidationError(""); // Resetta errore di validazione
     try {
       const success = await onReject(report.id, rejectionReason);
-      if (success) onHide();
-    } catch (err) { setErrorMsg(err.message || "Error rejecting report"); }
+      if (success) {
+        showToast("Report rejected successfully.", "success");
+        onHide();
+      } else {
+        showToast("Failed to reject report.", "error"); // Toast per errore API
+      }
+    } catch (err) { 
+      showToast(err.message || "Error rejecting report", "error"); 
+    }
   };
 
   const handleApproveClick = async () => {
-    setErrorMsg("");
     try {
       const result = await onApprove(report.id);
-      if (result && result.error) { setErrorMsg(result.error); return; }
+      if (result && result.error) { 
+        showToast(result.error, "error"); // Toast per errore logico
+        return; 
+      }
+      showToast("Report accepted and assigned!", "success");
       onHide();
-    } catch (error) { setErrorMsg(error.message || "Approval error."); }
+    } catch (error) { 
+      showToast(error.message || "Approval error.", "error"); // Toast per errore API
+    }
   };
 
   const handleStatusChange = async (newStatus) => {
-    setErrorMsg("");
     try {
       const result = await updateReportStatus(report.id, newStatus);
       if (result?.error) throw new Error(result.error);
       if (onReportUpdated) onReportUpdated(report.id, { status: newStatus });
       if (onStatusUpdate) await onStatusUpdate();
+      
+      let message = `Status updated to ${newStatus}.`;
+      let type = "success";
+      if (newStatus === "Suspended") { type = "warning"; message = "Work on the report has been suspended."; }
+      if (newStatus === "Resolved") { message = "Report successfully resolved!"; }
+
+      showToast(message, type); // Toast per successo
       onHide();
-    } catch (error) { setErrorMsg(error.message || `Failed to update status`); }
+    } catch (error) { 
+      showToast(error.message || `Failed to update status`, "error"); // Toast per errore
+    }
   };
 
   return (
@@ -131,19 +156,22 @@ const ReportMainContent = ({
         </div>
 
         {/* === COMMENTS COMPONENT === */}
-        <ReportComments reportId={report.id} currentUserId={currentUserId} />
+        {/* Passa showToast a ReportComments, se gestisce le sue API */}
+        <ReportComments reportId={report.id} currentUserId={currentUserId} showToast={showToast} />
       </div>
 
       {/* ACTION BUTTONS & FOOTER */}
       <div className="mt-3">
+        {/* Mantenuto assignmentWarning per il posizionamento */}
         {assignmentWarning && (
           <div className="rdm-alert rdm-alert-warning mb-2 py-2 px-3">
             <div className="d-flex align-items-center gap-2"><FaExclamationTriangle /><span className="small">{assignmentWarning}</span></div>
           </div>
         )}
-        {errorMsg && (
+        {/* Usiamo validationError per il rifiuto in linea */}
+        {validationError && (
           <div className="rdm-alert rdm-alert-error mb-2 py-2 px-3">
-            <div className="d-flex align-items-center gap-2"><FaExclamationCircle /><span className="small">{errorMsg}</span></div>
+            <div className="d-flex align-items-center gap-2"><FaExclamationCircle /><span className="small">{validationError}</span></div>
           </div>
         )}
       </div>
@@ -177,7 +205,15 @@ const ReportMainContent = ({
           <div className="rdm-rejection-inline-container w-100 animate-fadeIn">
             <div className="d-flex align-items-center mb-2 text-danger fw-bold small"><FaExclamationTriangle className="me-2" /> Rejecting Report</div>
             <Form.Group className="mb-2">
-              <Form.Control as="textarea" className={`rdm-reject-textarea ${errorMsg ? "is-invalid" : ""}`} rows={2} placeholder="Reason..." value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} autoFocus />
+              <Form.Control 
+                as="textarea" 
+                className={`rdm-reject-textarea ${validationError ? "is-invalid" : ""}`} 
+                rows={2} 
+                placeholder="Reason..." 
+                value={rejectionReason} 
+                onChange={(e) => setRejectionReason(e.target.value)} 
+                autoFocus 
+              />
             </Form.Group>
             <div className="d-flex justify-content-between align-items-center mt-2">
                <div className="rdm-id-text text-muted font-monospace fw-bold small">ID: #{report.id}</div>

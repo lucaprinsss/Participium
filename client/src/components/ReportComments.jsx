@@ -8,7 +8,7 @@ import "../css/ReportComments.css";
 // URL placeholder se manca la foto
 const DEFAULT_AVATAR = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png";
 
-const ReportComments = ({ reportId, currentUserId }) => {
+const ReportComments = ({ reportId, currentUserId, showToast }) => { // NUOVA PROP RICEVUTA
     // Stato per gestire l'apertura/chiusura (True = aperto all'inizio, False = chiuso)
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -34,6 +34,7 @@ const ReportComments = ({ reportId, currentUserId }) => {
             }
         } catch (error) {
             console.error("Failed to load comments", error);
+            // Non uso Toast qui, è un errore silente
         } finally {
             setLoadingComments(false);
         }
@@ -60,9 +61,13 @@ const ReportComments = ({ reportId, currentUserId }) => {
             await addReportComment(reportId, { content: newCommentText });
             await fetchComments();
             setNewCommentText("");
+            showToast("Comment added successfully!", "success"); // Toast per successo post
             // Se scrivi un commento, assicurati che la tendina rimanga aperta e scrolli
             if (!isExpanded) setIsExpanded(true);
-        } catch (error) { console.error("Error posting comment:", error); }
+        } catch (error) { 
+            console.error("Error posting comment:", error); 
+            showToast("Failed to post comment. Please try again.", "error"); // Toast per errore post
+        }
         finally { setSubmittingComment(false); }
     };
 
@@ -79,14 +84,19 @@ const ReportComments = ({ reportId, currentUserId }) => {
             setComments((prev) => prev.filter((c) => c.id !== commentToDelete));
             setShowDeleteModal(false);
             setCommentToDelete(null);
+            showToast("Comment deleted.", "success");
         } catch (error) {
             console.error("Error deleting comment:", error);
+            
+            // Logica per gestire la risposta non-JSON in caso di successo (frequente nelle API DELETE)
             if (error.message && error.message.includes("JSON")) {
                 setComments((prev) => prev.filter((c) => c.id !== commentToDelete));
                 setShowDeleteModal(false);
                 setCommentToDelete(null);
+                showToast("Comment deleted.", "success");
             } else {
-                alert("Error deleting comment. Please try again.");
+                // SOSTITUZIONE: alert("Error deleting comment. Please try again.");
+                showToast("Error deleting comment. Please try again.", "error"); 
             }
         } finally {
             setIsDeleting(false);
