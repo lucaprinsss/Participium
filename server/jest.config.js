@@ -45,4 +45,6 @@ module.exports = {
   reporters: [
     ['default', { summaryThreshold: 0 }]
   ],
+  forceExit: true,
+  detectOpenHandles: false,
 };

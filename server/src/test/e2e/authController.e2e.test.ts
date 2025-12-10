@@ -408,4 +408,279 @@ describe('AuthController E2E Tests', () => {
         .expect(200);
     });
   });
+
+  describe('POST /api/sessions/verifyEmail - Email Verification', () => {
+    let unverifiedUser: {
+      username: string;
+      email: string;
+      password: string;
+      verificationCode: string;
+    };
+
+    beforeEach(async () => {
+      // Get Citizen role ID
+      const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+      if (!citizenDeptRole) {
+        throw new Error('Citizen role not found in database');
+      }
+
+      // Create unverified user with verification code
+      const testCode = '123456';
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+
+      unverifiedUser = {
+        username: 'unverified_user',
+        email: 'unverified@example.com',
+        password: 'TestPass123!',
+        verificationCode: testCode,
+      };
+
+      await userRepository.createUserWithPassword({
+        username: unverifiedUser.username,
+        email: unverifiedUser.email,
+        password: unverifiedUser.password,
+        firstName: 'Unverified',
+        lastName: 'User',
+        departmentRoleId: citizenDeptRole.id,
+        isVerified: false,
+        verificationCode: testCode,
+        verificationCodeExpiresAt: expiresAt,
+      });
+    });
+
+    it('should verify email successfully with valid code', async () => {
+      // Act
+      const response = await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: unverifiedUser.verificationCode,
+        })
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      // Assert
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('verified successfully');
+
+      // Verify user can now login
+      const loginResponse = await request(app)
+        .post('/api/sessions')
+        .send({
+          username: unverifiedUser.username,
+          password: unverifiedUser.password,
+        })
+        .expect(200);
+
+      expect(loginResponse.body.username).toBe(unverifiedUser.username);
+    });
+
+    it('should return 400 when email is missing', async () => {
+      // Act
+      const response = await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          otpCode: '123456',
+        })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      // Assert
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Email and verification code are required');
+    });
+
+    it('should return 400 when verification code is missing', async () => {
+      // Act
+      const response = await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+        })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      // Assert
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Email and verification code are required');
+    });
+
+    it('should return 400 with invalid code format (not 6 digits)', async () => {
+      // Act - Code too short
+      const response1 = await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: '12345', // Only 5 digits
+        })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response1.body.message).toContain('must be exactly 6 digits');
+
+      // Act - Code with letters
+      const response2 = await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: '12345A',
+        })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response2.body.message).toContain('must be exactly 6 digits');
+    });
+
+    it('should return 404 when email does not exist', async () => {
+      // Act
+      const response = await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: 'nonexistent@example.com',
+          otpCode: '123456',
+        })
+        .expect('Content-Type', /json/)
+        .expect(404);
+
+      // Assert
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('No account found with this email');
+    });
+
+    it('should return 400 with incorrect verification code', async () => {
+      // Act
+      const response = await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: '999999', // Wrong code
+        })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      // Assert
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Invalid verification code');
+    });
+
+    it('should return 400 when trying to verify already verified email', async () => {
+      // Arrange - First verify the email
+      await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: unverifiedUser.verificationCode,
+        })
+        .expect(200);
+
+      // Act - Try to verify again
+      const response = await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: unverifiedUser.verificationCode,
+        })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      // Assert
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('already verified');
+    });
+
+    it('should return 400 with expired verification code', async () => {
+      // Arrange - Create user with expired code
+      const expiredCodeUser = {
+        username: 'expired_code_user',
+        email: 'expired@example.com',
+        password: 'TestPass123!',
+        verificationCode: '654321',
+      };
+
+      const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+      const expiredDate = new Date(Date.now() - 60 * 1000); // 1 minute ago (expired)
+
+      await userRepository.createUserWithPassword({
+        username: expiredCodeUser.username,
+        email: expiredCodeUser.email,
+        password: expiredCodeUser.password,
+        firstName: 'Expired',
+        lastName: 'User',
+        departmentRoleId: citizenDeptRole!.id,
+        isVerified: false,
+        verificationCode: expiredCodeUser.verificationCode,
+        verificationCodeExpiresAt: expiredDate,
+      });
+
+      // Act
+      const response = await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: expiredCodeUser.email,
+          otpCode: expiredCodeUser.verificationCode,
+        })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      // Assert
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('expired');
+    });
+
+    it('should prevent login before email verification', async () => {
+      // Act - Try to login without verifying email
+      const response = await request(app)
+        .post('/api/sessions')
+        .send({
+          username: unverifiedUser.username,
+          password: unverifiedUser.password,
+        })
+        .expect('Content-Type', /json/)
+        .expect(401);
+
+      // Assert
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Email not verified');
+    });
+
+    it('should complete full registration and verification flow', async () => {
+      // Step 1: Verify cannot login before verification
+      await request(app)
+        .post('/api/sessions')
+        .send({
+          username: unverifiedUser.username,
+          password: unverifiedUser.password,
+        })
+        .expect(401);
+
+      // Step 2: Verify email
+      await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: unverifiedUser.email,
+          otpCode: unverifiedUser.verificationCode,
+        })
+        .expect(200);
+
+      // Step 3: Login after verification
+      const loginResponse = await request(app)
+        .post('/api/sessions')
+        .send({
+          username: unverifiedUser.username,
+          password: unverifiedUser.password,
+        })
+        .expect(200);
+
+      expect(loginResponse.body.username).toBe(unverifiedUser.username);
+      expect(loginResponse.headers['set-cookie']).toBeDefined();
+
+      // Step 4: Access protected route
+      const getCurrentResponse = await request(app)
+        .get('/api/sessions/current')
+        .set('Cookie', loginResponse.headers['set-cookie'])
+        .expect(200);
+
+      expect(getCurrentResponse.body.username).toBe(unverifiedUser.username);
+    });
+  });
 });

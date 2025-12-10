@@ -2,95 +2,270 @@ import { authService } from '../../../services/authService';
 import { UserEntity } from '../../../models/entity/userEntity';
 import { UserResponse } from '../../../models/dto/output/UserResponse';
 import { createMockMunicipalityUser, createMockCitizen } from '@test/utils/mockEntities';
+import { AppDataSource } from '@database/connection';
+import { userRepository } from '@repositories/userRepository';
+import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
+import { In } from 'typeorm';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
+
+const random = () => Math.floor(Math.random() * 1000000);
 
 describe('AuthService Integration Tests', () => {
   let mockUserEntity: UserEntity;
   let expectedDtoResponse: UserResponse;
+  let createdUserIds: number[] = [];
+  let defaultCitizenRoleId: number;
 
-  beforeEach(() => {
-    const creationDate = new Date('2023-01-01T12:00:00Z');
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+    const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    if (!citizenDeptRole) {
+      throw new Error('Citizen role not found in database');
+    }
+    defaultCitizenRoleId = citizenDeptRole.id;
+  });
 
-    mockUserEntity = createMockMunicipalityUser('Administrator', 'Administration', {
-      id: 123,
-      username: 'testuser',
-      firstName: 'Mario',
-      lastName: 'Rossi',
-      email: 'mario.rossi@example.com',
-      personalPhotoUrl: 'http://example.com/photo.jpg',
-      telegramUsername: '@mariorossi',
-      emailNotificationsEnabled: true,
-      createdAt: creationDate,
+  afterAll(async () => {
+    if (createdUserIds.length > 0) {
+      const repository = AppDataSource.getRepository(UserEntity);
+      await repository.delete({ id: In(createdUserIds) });
+      createdUserIds = [];
+    }
+    if (AppDataSource.isInitialized) {
+      await AppDataSource.destroy();
+    }
+  });
+
+  afterEach(async () => {
+    if (createdUserIds.length > 0) {
+      const repository = AppDataSource.getRepository(UserEntity);
+      await repository.delete({ id: In(createdUserIds) });
+      createdUserIds = [];
+    }
+  });
+
+  describe('createUserResponse', () => {
+    beforeEach(() => {
+      const creationDate = new Date('2023-01-01T12:00:00Z');
+
+      mockUserEntity = createMockMunicipalityUser('Administrator', 'Administration', {
+        id: 123,
+        username: 'testuser',
+        firstName: 'Mario',
+        lastName: 'Rossi',
+        email: 'mario.rossi@example.com',
+        personalPhotoUrl: 'http://example.com/photo.jpg',
+        telegramUsername: '@mariorossi',
+        emailNotificationsEnabled: true,
+        createdAt: creationDate,
+      });
+      mockUserEntity.passwordHash = 'hash_super_segreto_da_nascondere';
+
+      expectedDtoResponse = {
+        id: 123,
+        username: 'testuser',
+        email: 'mario.rossi@example.com',
+        first_name: 'Mario',
+        last_name: 'Rossi',
+        role_name: 'Administrator',
+        department_name: 'Administration',
+      };
     });
-    mockUserEntity.passwordHash = 'hash_super_segreto_da_nascondere';
 
-    expectedDtoResponse = {
-      id: 123,
-      username: 'testuser',
-      email: 'mario.rossi@example.com',
-      first_name: 'Mario',
-      last_name: 'Rossi',
-      role_name: 'Administrator',
-      department_name: 'Administration',
-    };
-  });
+    it('should correctly map a full user entity to a public UserResponse DTO', () => {
+      // Arrange
+      const expressUser: Express.User = mockUserEntity;
 
-  it('should correctly map a full user entity to a public UserResponse DTO', () => {
-    // Arrange
-    const expressUser: Express.User = mockUserEntity;
+      // Act
+      const result = authService.createUserResponse(expressUser);
 
-    // Act
-    const result = authService.createUserResponse(expressUser);
+      // Assert
+      expect(result).toEqual(expectedDtoResponse);
 
-    // Assert
-    expect(result).toEqual(expectedDtoResponse);
+      expect(result).not.toHaveProperty('passwordHash');
+      expect(result).not.toHaveProperty('createdAt');
+      expect(result).not.toHaveProperty('personalPhotoUrl');
+      expect(result).not.toHaveProperty('telegramUsername');
+      expect(result).not.toHaveProperty('emailNotificationsEnabled');
 
-    expect(result).not.toHaveProperty('passwordHash');
-    expect(result).not.toHaveProperty('createdAt');
-    expect(result).not.toHaveProperty('personalPhotoUrl');
-    expect(result).not.toHaveProperty('telegramUsername');
-    expect(result).not.toHaveProperty('emailNotificationsEnabled');
-
-    expect(result).not.toHaveProperty('firstName');
-    expect(result).not.toHaveProperty('lastName');
-    expect(result).toHaveProperty('first_name');
-    expect(result).toHaveProperty('last_name');
-  });
-
-  it('should map a different role (e.g., Citizen) correctly', () => {
-    // Arrange
-    mockUserEntity = createMockCitizen({
-      id: 123,
-      username: 'testuser',
-      firstName: 'Mario',
-      lastName: 'Rossi',
-      email: 'mario.rossi@example.com',
+      expect(result).not.toHaveProperty('firstName');
+      expect(result).not.toHaveProperty('lastName');
+      expect(result).toHaveProperty('first_name');
+      expect(result).toHaveProperty('last_name');
     });
-    const expressUser: Express.User = mockUserEntity;
 
-    const expectedCitizenResponse: UserResponse = {
-      id: 123,
-      username: 'testuser',
-      email: 'mario.rossi@example.com',
-      first_name: 'Mario',
-      last_name: 'Rossi',
-      role_name: 'Citizen',
-    };
+    it('should map a different role (e.g., Citizen) correctly', () => {
+      // Arrange
+      mockUserEntity = createMockCitizen({
+        id: 123,
+        username: 'testuser',
+        firstName: 'Mario',
+        lastName: 'Rossi',
+        email: 'mario.rossi@example.com',
+      });
+      const expressUser: Express.User = mockUserEntity;
 
-    // Act
-    const result = authService.createUserResponse(expressUser);
+      const expectedCitizenResponse: UserResponse = {
+        id: 123,
+        username: 'testuser',
+        email: 'mario.rossi@example.com',
+        first_name: 'Mario',
+        last_name: 'Rossi',
+        role_name: 'Citizen',
+      };
 
-    // Assert
-    expect(result).toEqual(expectedCitizenResponse);
+      // Act
+      const result = authService.createUserResponse(expressUser);
+
+      // Assert
+      expect(result).toEqual(expectedCitizenResponse);
+    });
+
+    it('should handle null user input gracefully', () => {
+      // Arrange
+      const expressUser = (null as unknown) as Express.User;
+
+      // Act
+      const result = authService.createUserResponse(expressUser);
+
+      // Assert
+      expect(result).toBeNull();
+    });
   });
 
-  it('should handle null user input gracefully', () => {
-    // Arrange
-    const expressUser = (null as unknown) as Express.User;
+  describe('verifyEmailCode', () => {
+    it('should verify email successfully with valid code', async () => {
+      const verificationCode = '123456';
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
-    // Act
-    const result = authService.createUserResponse(expressUser);
+      const userData = {
+        username: `testuser_${random()}`,
+        firstName: 'Test',
+        lastName: 'User',
+        email: `test.user.${random()}@example.com`,
+        password: 'securePass123',
+        departmentRoleId: defaultCitizenRoleId,
+        isVerified: false,
+        verificationCode,
+        verificationCodeExpiresAt: expiresAt,
+      };
 
-    // Assert
-    expect(result).toBeNull();
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      await expect(
+        authService.verifyEmailCode(userData.email, verificationCode)
+      ).resolves.not.toThrow();
+
+      const updatedUser = await userRepository.findUserByEmail(userData.email);
+      expect(updatedUser!.isVerified).toBe(true);
+      expect(updatedUser!.verificationCode).toBeNull();
+    });
+
+    it('should throw BadRequestError for invalid verification code', async () => {
+      const correctCode = '123456';
+      const wrongCode = '999999';
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+      const userData = {
+        username: `testuser_${random()}`,
+        firstName: 'Test',
+        lastName: 'User',
+        email: `test.user.${random()}@example.com`,
+        password: 'securePass123',
+        departmentRoleId: defaultCitizenRoleId,
+        isVerified: false,
+        verificationCode: correctCode,
+        verificationCodeExpiresAt: expiresAt,
+      };
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      await expect(
+        authService.verifyEmailCode(userData.email, wrongCode)
+      ).rejects.toThrow('Invalid verification code');
+    });
+
+    it('should throw BadRequestError when email is already verified', async () => {
+      const verificationCode = '123456';
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+      const userData = {
+        username: `testuser_${random()}`,
+        firstName: 'Test',
+        lastName: 'User',
+        email: `test.user.${random()}@example.com`,
+        password: 'securePass123',
+        departmentRoleId: defaultCitizenRoleId,
+        isVerified: false,
+        verificationCode,
+        verificationCodeExpiresAt: expiresAt,
+      };
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      // First verification
+      await authService.verifyEmailCode(userData.email, verificationCode);
+
+      // Try to verify again
+      await expect(
+        authService.verifyEmailCode(userData.email, verificationCode)
+      ).rejects.toThrow('Email is already verified');
+    });
+
+    it('should throw BadRequestError for expired verification code', async () => {
+      const verificationCode = '123456';
+      const expiredDate = new Date(Date.now() - 60 * 1000); // 1 minute ago
+
+      const userData = {
+        username: `testuser_${random()}`,
+        firstName: 'Test',
+        lastName: 'User',
+        email: `test.user.${random()}@example.com`,
+        password: 'securePass123',
+        departmentRoleId: defaultCitizenRoleId,
+        isVerified: false,
+        verificationCode,
+        verificationCodeExpiresAt: expiredDate,
+      };
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      await expect(
+        authService.verifyEmailCode(userData.email, verificationCode)
+      ).rejects.toThrow('expired');
+    });
+
+    it('should throw BadRequestError when user has no verification code', async () => {
+      const userData = {
+        username: `testuser_${random()}`,
+        firstName: 'Test',
+        lastName: 'User',
+        email: `test.user.${random()}@example.com`,
+        password: 'securePass123',
+        departmentRoleId: defaultCitizenRoleId,
+        isVerified: true,
+        verificationCode: undefined,
+        verificationCodeExpiresAt: undefined,
+      };
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      await expect(
+        authService.verifyEmailCode(userData.email, '123456')
+      ).rejects.toThrow('Email is already verified');
+    });
+
+    it('should throw BadRequestError when email does not exist', async () => {
+      await expect(
+        authService.verifyEmailCode('nonexistent@example.com', '123456')
+      ).rejects.toThrow('Invalid verification code');
+    });
   });
 });

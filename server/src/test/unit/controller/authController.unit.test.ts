@@ -1,12 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import authController from '@controllers/authController';
 import { authService } from '@services/authService';
+import { userRepository } from '@repositories/userRepository';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { UserEntity } from '@models/entity/userEntity';
 import passport from 'passport';
 
 // Mock delle dipendenze
 jest.mock('@services/authService');
+jest.mock('@repositories/userRepository');
 jest.mock('passport');
 
 describe('AuthController Unit Tests', () => {
@@ -396,6 +398,176 @@ describe('AuthController Unit Tests', () => {
 
     it('logout should accept three parameters (req, res, next)', () => {
       expect(authController.logout.length).toBe(3);
+    });
+  });
+
+  describe('verifyEmail', () => {
+    const validVerificationData = {
+      email: 'test@example.com',
+      otpCode: '123456',
+    };
+
+    beforeEach(() => {
+      mockRequest.body = {};
+    });
+
+    it('should verify email successfully with valid code', async () => {
+      // Arrange
+      mockRequest.body = validVerificationData;
+      (authService.verifyEmailCode as jest.Mock).mockResolvedValue(undefined);
+      const mockExistsUserByEmail = jest.fn().mockResolvedValue(true);
+      (userRepository as any).existsUserByEmail = mockExistsUserByEmail;
+
+      // Act
+      await authController.verifyEmail(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockExistsUserByEmail).toHaveBeenCalledWith(validVerificationData.email);
+      expect(authService.verifyEmailCode).toHaveBeenCalledWith(
+        validVerificationData.email,
+        validVerificationData.otpCode
+      );
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({ message: 'Email verified successfully' });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return 400 when email is missing', async () => {
+      // Arrange
+      mockRequest.body = { otpCode: '123456' };
+
+      // Act
+      await authController.verifyEmail(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Email and verification code are required.',
+        })
+      );
+      expect(authService.verifyEmailCode).not.toHaveBeenCalled();
+    });
+
+    it('should return 400 when otpCode is missing', async () => {
+      // Arrange
+      mockRequest.body = { email: 'test@example.com' };
+
+      // Act
+      await authController.verifyEmail(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Email and verification code are required.',
+        })
+      );
+      expect(authService.verifyEmailCode).not.toHaveBeenCalled();
+    });
+
+    it('should return 400 when otpCode is not 6 digits', async () => {
+      // Arrange
+      mockRequest.body = {
+        email: 'test@example.com',
+        otpCode: '12345', // Only 5 digits
+      };
+
+      // Act
+      await authController.verifyEmail(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Verification code must be exactly 6 digits',
+        })
+      );
+      expect(authService.verifyEmailCode).not.toHaveBeenCalled();
+    });
+
+    it('should return 400 when otpCode contains non-digits', async () => {
+      // Arrange
+      mockRequest.body = {
+        email: 'test@example.com',
+        otpCode: '12345A',
+      };
+
+      // Act
+      await authController.verifyEmail(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Verification code must be exactly 6 digits',
+        })
+      );
+      expect(authService.verifyEmailCode).not.toHaveBeenCalled();
+    });
+
+    it('should return 404 when email does not exist', async () => {
+      // Arrange
+      mockRequest.body = validVerificationData;
+      const mockExistsUserByEmail = jest.fn().mockResolvedValue(false);
+      (userRepository as any).existsUserByEmail = mockExistsUserByEmail;
+
+      // Act
+      await authController.verifyEmail(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockExistsUserByEmail).toHaveBeenCalledWith(validVerificationData.email);
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'No account found with this email address.',
+        })
+      );
+      expect(authService.verifyEmailCode).not.toHaveBeenCalled();
+    });
+
+    it('should call next with error when authService.verifyEmailCode throws', async () => {
+      // Arrange
+      mockRequest.body = validVerificationData;
+      const mockError = new Error('Invalid verification code');
+      (authService.verifyEmailCode as jest.Mock).mockRejectedValue(mockError);
+      const mockExistsUserByEmail = jest.fn().mockResolvedValue(true);
+      (userRepository as any).existsUserByEmail = mockExistsUserByEmail;
+
+      // Act
+      await authController.verifyEmail(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+      expect(statusMock).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+
+    it('verifyEmail should accept three parameters (req, res, next)', () => {
+      expect(authController.verifyEmail.length).toBe(3);
     });
   });
 });

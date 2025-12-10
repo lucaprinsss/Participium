@@ -34,17 +34,17 @@ class AuthService {
    */
   async verifyEmailCode(email: string, otpCode: string): Promise<void> {
 
+    // Check if already verified first
+    if(await userRepository.isUserVerified(email) == true) {
+      throw new BadRequestError('Email is already verified.');
+    }
+
     // Verify code matches the stored code for that email
     const isCodeValid = await userRepository.verifyEmailCode(email, otpCode);
     
     if(!isCodeValid) {
       throw new BadRequestError('Invalid verification code');
     }
-    
-    // If already verified, throw error
-     if(await userRepository.isUserVerified(email) == true) {
-      throw new BadRequestError('Email is already verified.');
-     }
 
     // If valid, update user's is_verified flag to true
     await userRepository.updateUserIsVerified(email, true);

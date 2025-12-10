@@ -103,6 +103,17 @@ import {
         .send(validRegistrationData)
         .expect(201);
 
+      // Verify email
+      const user = await userRepository.findUserByEmail(validRegistrationData.email);
+      expect(user?.verificationCode).toBeDefined();
+      await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: validRegistrationData.email,
+          otpCode: user!.verificationCode,
+        })
+        .expect(200);
+
       // Act - Try to login
       const loginResponse = await request(app)
         .post('/api/sessions')
@@ -419,6 +430,17 @@ import {
       // Assert
       expect(response.body.username).toBe(specialData.username);
 
+      // Verify email
+      const user = await userRepository.findUserByEmail(specialData.email);
+      expect(user?.verificationCode).toBeDefined();
+      await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: specialData.email,
+          otpCode: user!.verificationCode,
+        })
+        .expect(200);
+
       // Verify can login with special chars username
       const loginResponse = await request(app)
         .post('/api/sessions')
@@ -564,6 +586,17 @@ import {
       expect(registerResponse.body.username).toBe(newUser.username);
       const userId = registerResponse.body.id;
 
+      // Step 1.5: Verify email
+      const user = await userRepository.findUserByEmail(newUser.email);
+      expect(user?.verificationCode).toBeDefined();
+      await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: newUser.email,
+          otpCode: user!.verificationCode,
+        })
+        .expect(200);
+
       // Step 2: Login
       const loginResponse = await request(app)
         .post('/api/sessions')
@@ -626,6 +659,17 @@ import {
         .send(duplicateEmail)
         .expect(409);
 
+      // Step 3.5: Verify email
+      const user = await userRepository.findUserByEmail(newUser.email);
+      expect(user?.verificationCode).toBeDefined();
+      await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: newUser.email,
+          otpCode: user!.verificationCode,
+        })
+        .expect(200);
+
       // Step 4: Verify original user can still login
       const loginResponse = await request(app)
         .post('/api/sessions')
@@ -658,6 +702,27 @@ import {
 
       await request(app).post('/api/users').send(user1).expect(201);
       await request(app).post('/api/users').send(user2).expect(201);
+
+      // Verify emails for both users
+      const dbUser1 = await userRepository.findUserByEmail(user1.email);
+      expect(dbUser1?.verificationCode).toBeDefined();
+      await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: user1.email,
+          otpCode: dbUser1!.verificationCode,
+        })
+        .expect(200);
+
+      const dbUser2 = await userRepository.findUserByEmail(user2.email);
+      expect(dbUser2?.verificationCode).toBeDefined();
+      await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: user2.email,
+          otpCode: dbUser2!.verificationCode,
+        })
+        .expect(200);
 
       // Act - Login both users
       const login1 = await request(app)
@@ -705,6 +770,16 @@ import {
       const [salt, hash] = user!.passwordHash.split(':');
       expect(salt).toHaveLength(32);
       expect(hash).toHaveLength(128);
+
+      // Step 3.5: Verify email
+      expect(user!.verificationCode).toBeDefined();
+      await request(app)
+        .post('/api/sessions/verifyEmail')
+        .send({
+          email: newUser.email,
+          otpCode: user!.verificationCode,
+        })
+        .expect(200);
 
       // Step 4: Verify password is verifiable (can login)
       const loginResponse = await request(app)
