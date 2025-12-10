@@ -88,15 +88,21 @@ The backend will start on **`http://localhost:3001`**
 **Notes:**
 - If you remove the backend container, all uploaded photos will be deleted unless because no Docker volume is set up for persistence.
 
-### 4. Default Administrator Account
+### 4. Default Users
 
-The database is initialized with a default administrator account:
+The database is pre-populated with default users for testing and development purposes:
 
-**Credentials:**
-- **Username:** `admin`
-- **Password:** `admin`
+**Quick Access:**
+- **Admin:** `admin` / `admin`
+- **Officer:** `officer` / `officer`
+- **Directors:** `director_*` / `director`
+- **Staff:** `staff_*` / `staff`
+- **External Maintainers:** `enelx`, `acea`, `hera`, `atm` / `password`
+- **Citizens:** `user`, `user2` / `password`
 
-**Login via API:**
+**Complete user list with roles and departments:** [`server/src/docs/default-users.md`](server/src/docs/default-users.md)
+
+**Login via API (example):**
 ```bash
 curl -X POST http://localhost:3001/api/sessions \
   -H "Content-Type: application/json" \

@@ -12,9 +12,6 @@ openapi.json
 # Build output
 dist/
 
-# Uploads (user-generated content)
-uploads/
-
 # Others
 database-workflow-guide.md
 dockerization.md
