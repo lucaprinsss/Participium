@@ -834,7 +834,7 @@ afterAll(async () => {
     });
   });
 
-  describe('Internal Comments - GET/POST/DELETE /api/reports/:id/internal-comments', () => {
+  describe('POST /api/reports/:id/internal-comments - Create Internal Comments', () => {
     let testReportId: number;
 
     beforeEach(async () => {
@@ -859,8 +859,6 @@ afterAll(async () => {
       // Clean up test report and its comments (CASCADE should handle comments)
       await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [testReportId]);
     });
-
-    describe('POST /api/reports/:id/internal-comments', () => {
       it('should allow technical staff to add internal comment', async () => {
         const response = await request(app)
           .post(`/api/reports/${testReportId}/internal-comments`)
@@ -953,21 +951,58 @@ afterAll(async () => {
           .send({ content: 'Invalid ID' })
           .expect(400);
       });
+  });
+
+  describe('GET /api/reports/:id/internal-comments - Read Internal Comments', () => {
+    let testReportId: number;
+    let comment1Id: number;
+    let comment2Id: number;
+
+    beforeEach(async () => {
+      // Create a test report
+      const reportResult = await AppDataSource.query(
+        `INSERT INTO reports (reporter_id, title, description, category, location, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, ST_GeomFromText($5, 4326), $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [
+          citizenId,
+          'Test Report for Comments',
+          'This is a test report to test internal comments functionality',
+          ReportCategory.ROADS,
+          'POINT(9.1900 45.4642)',
+          ReportStatus.ASSIGNED
+        ]
+      );
+      testReportId = reportResult[0].id;
+
+      // Add test comments
+      const proResult = await AppDataSource.query(
+        `SELECT id FROM users WHERE username = $1`,
+        [PRO_USERNAME]
+      );
+      const proId = proResult[0].id;
+
+      const comment1Result = await AppDataSource.query(
+        `INSERT INTO comments (report_id, author_id, content, created_at)
+         VALUES ($1, $2, $3, CURRENT_TIMESTAMP - INTERVAL '2 hours')
+         RETURNING id`,
+        [testReportId, technicianId, 'First internal comment']
+      );
+      comment1Id = comment1Result[0].id;
+
+      const comment2Result = await AppDataSource.query(
+        `INSERT INTO comments (report_id, author_id, content, created_at)
+         VALUES ($1, $2, $3, CURRENT_TIMESTAMP - INTERVAL '1 hour')
+         RETURNING id`,
+        [testReportId, proId, 'Second comment from PRO']
+      );
+      comment2Id = comment2Result[0].id;
     });
 
-    describe('GET /api/reports/:id/internal-comments', () => {
-      let comment1Id: number;
-      let comment2Id: number;
-
-      beforeEach(async () => {
-        // Add some test comments
-
-        const proresult = await AppDataSource.query(
-          `SELECT id FROM users WHERE username = $1`,
-          [PRO_USERNAME]
-        );
-
-      });
+    afterEach(async () => {
+      // Clean up test report and its comments (CASCADE should handle comments)
+      await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [testReportId]);
+    });
 
       it('should allow technical staff to view internal comments', async () => {
         const response = await request(app)
@@ -1049,37 +1084,59 @@ afterAll(async () => {
         expect(response.body[0].content).toBe('First internal comment');
         expect(response.body[1].content).toBe('Second comment from PRO');
       });
+  });
+
+  describe('DELETE /api/reports/:reportId/internal-comments/:commentId - Delete Internal Comments', () => {
+    let testReportId: number;
+    let commentId: number;
+    let otherUserCommentId: number;
+
+    beforeEach(async () => {
+      // Create a test report
+      const reportResult = await AppDataSource.query(
+        `INSERT INTO reports (reporter_id, title, description, category, location, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, ST_GeomFromText($5, 4326), $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [
+          citizenId,
+          'Test Report for Deletion',
+          'Testing comment deletion',
+          ReportCategory.ROADS,
+          'POINT(9.1900 45.4642)',
+          ReportStatus.ASSIGNED
+        ]
+      );
+      testReportId = reportResult[0].id;
+
+      // Create comment by technician
+      const result1 = await AppDataSource.query(
+        `INSERT INTO comments (report_id, author_id, content, created_at)
+         VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [testReportId, technicianId, 'Comment to be deleted']
+      );
+      commentId = result1[0].id;
+
+      // Create comment by another user (PRO)
+      const proresult = await AppDataSource.query(
+        `SELECT id FROM users WHERE username = $1`,
+        [PRO_USERNAME]
+      );
+      const proId = proresult[0].id;
+
+      const result2 = await AppDataSource.query(
+        `INSERT INTO comments (report_id, author_id, content, created_at)
+         VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [testReportId, proId, 'PRO comment']
+      );
+      otherUserCommentId = result2[0].id;
     });
 
-    describe('DELETE /api/reports/:reportId/internal-comments/:commentId', () => {
-      let commentId: number;
-      let otherUserCommentId: number;
-
-      beforeEach(async () => {
-        // Create comment by technician
-        const result1 = await AppDataSource.query(
-          `INSERT INTO comments (report_id, author_id, content, created_at)
-           VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-           RETURNING id`,
-          [testReportId, technicianId, 'Comment to be deleted']
-        );
-        commentId = result1[0].id;
-
-        // Create comment by another user (PRO)
-        const proresult = await AppDataSource.query(
-          `SELECT id FROM users WHERE username = $1`,
-          [PRO_USERNAME]
-        );
-        const proId = proresult[0].id;
-
-        const result2 = await AppDataSource.query(
-          `INSERT INTO comments (report_id, author_id, content, created_at)
-           VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-           RETURNING id`,
-          [testReportId, proId, 'PRO comment']
-        );
-        otherUserCommentId = result2[0].id;
-      });
+    afterEach(async () => {
+      // Clean up test report (CASCADE handles comments)
+      await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [testReportId]);
+    });
 
       it('should allow author to delete their own comment', async () => {
         await request(app)
@@ -1189,6 +1246,5 @@ afterAll(async () => {
         );
         expect(result.length).toBe(0);
       });
-    });
   });
 });

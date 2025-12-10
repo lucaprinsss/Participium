@@ -715,4 +715,109 @@ describe('UserRepository Integration Tests', () => {
       ).resolves.not.toThrow();
     });
   });
+
+  describe('deleteUnverifiedUsers', () => {
+    it('should delete unverified users with expired verification codes', async () => {
+      // Create unverified user with expired verification code
+      const expiredDate = new Date(Date.now() - 1000); // 1 second ago
+      const userData = buildUserData({
+        isVerified: false,
+        verificationCode: '123456',
+        verificationCodeExpiresAt: expiredDate,
+      });
+
+      const user = await userRepository.createUserWithPassword(userData);
+      const userId = user.id;
+
+      // Verify user was created
+      const userBeforeCleanup = await userRepository.findUserById(userId);
+      expect(userBeforeCleanup).not.toBeNull();
+
+      // Execute cleanup
+      await userRepository.deleteUnverifiedUsers();
+
+      // Verify user was deleted (no need to track in createdUserIds since it's deleted)
+      const userAfterCleanup = await userRepository.findUserById(userId);
+      expect(userAfterCleanup).toBeNull();
+    });
+
+    it('should NOT delete verified users even if verification code is expired', async () => {
+      // Create verified user with expired verification code
+      const expiredDate = new Date(Date.now() - 1000);
+      const userData = buildUserData({
+        isVerified: true,
+        verificationCode: '123456',
+        verificationCodeExpiresAt: expiredDate,
+      });
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      // Execute cleanup
+      await userRepository.deleteUnverifiedUsers();
+
+      // Verify user was NOT deleted
+      const userAfterCleanup = await userRepository.findUserById(user.id);
+      expect(userAfterCleanup).not.toBeNull();
+      expect(userAfterCleanup!.isVerified).toBe(true);
+    });
+
+    it('should NOT delete unverified users with non-expired verification codes', async () => {
+      // Create unverified user with future expiration
+      const futureDate = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+      const userData = buildUserData({
+        isVerified: false,
+        verificationCode: '123456',
+        verificationCodeExpiresAt: futureDate,
+      });
+
+      const user = await userRepository.createUserWithPassword(userData);
+      createdUserIds.push(user.id);
+
+      // Execute cleanup
+      await userRepository.deleteUnverifiedUsers();
+
+      // Verify user was NOT deleted
+      const userAfterCleanup = await userRepository.findUserById(user.id);
+      expect(userAfterCleanup).not.toBeNull();
+      expect(userAfterCleanup!.isVerified).toBe(false);
+    });
+
+    it('should delete multiple unverified users with expired codes', async () => {
+      // Create multiple unverified users with expired codes
+      const expiredDate = new Date(Date.now() - 1000);
+      const user1Data = buildUserData({
+        isVerified: false,
+        verificationCode: '111111',
+        verificationCodeExpiresAt: expiredDate,
+      });
+      const user2Data = buildUserData({
+        isVerified: false,
+        verificationCode: '222222',
+        verificationCodeExpiresAt: expiredDate,
+      });
+
+      const user1 = await userRepository.createUserWithPassword(user1Data);
+      const user2 = await userRepository.createUserWithPassword(user2Data);
+
+      const userId1 = user1.id;
+      const userId2 = user2.id;
+
+      // Verify users were created
+      expect(await userRepository.findUserById(userId1)).not.toBeNull();
+      expect(await userRepository.findUserById(userId2)).not.toBeNull();
+
+      // Execute cleanup
+      await userRepository.deleteUnverifiedUsers();
+
+      // Verify both users were deleted
+      expect(await userRepository.findUserById(userId1)).toBeNull();
+      expect(await userRepository.findUserById(userId2)).toBeNull();
+    });
+
+    it('should handle cleanup when no users need to be deleted', async () => {
+      // Don't create any users, just run cleanup
+      await expect(userRepository.deleteUnverifiedUsers()).resolves.not.toThrow();
+    });
+  });
 });

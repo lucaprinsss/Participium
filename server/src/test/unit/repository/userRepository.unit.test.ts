@@ -1017,4 +1017,239 @@ describe('UserRepository Unit Tests', () => {
       expect(mockQueryBuilder.execute).toHaveBeenCalled();
     });
   });
+
+  describe('verifyEmailCode', () => {
+    const email = 'test@example.com';
+    const validCode = '123456';
+
+    it('should return true when code is valid and not expired', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        email,
+        isVerified: false,
+      });
+      mockUser.verificationCode = validCode;
+      mockUser.verificationCodeExpiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes in future
+
+      const mockFindUserByEmail = jest.fn().mockResolvedValue(mockUser);
+      (userRepository as any).findUserByEmail = mockFindUserByEmail;
+
+      // Act
+      const result = await userRepository.verifyEmailCode(email, validCode);
+
+      // Assert
+      expect(mockFindUserByEmail).toHaveBeenCalledWith(email);
+      expect(result).toBe(true);
+    });
+
+    it('should return false when code does not match', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        email,
+        isVerified: false,
+      });
+      mockUser.verificationCode = '999999';
+      mockUser.verificationCodeExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+      const mockFindUserByEmail = jest.fn().mockResolvedValue(mockUser);
+      (userRepository as any).findUserByEmail = mockFindUserByEmail;
+
+      // Act
+      const result = await userRepository.verifyEmailCode(email, validCode);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should return false when user has no verification code', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        email,
+        isVerified: true,
+      });
+      mockUser.verificationCode = undefined;
+      mockUser.verificationCodeExpiresAt = undefined;
+
+      const mockFindUserByEmail = jest.fn().mockResolvedValue(mockUser);
+      (userRepository as any).findUserByEmail = mockFindUserByEmail;
+
+      // Act
+      const result = await userRepository.verifyEmailCode(email, validCode);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should throw BadRequestError when code is expired', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        email,
+        isVerified: false,
+      });
+      mockUser.verificationCode = validCode;
+      mockUser.verificationCodeExpiresAt = new Date(Date.now() - 60 * 1000); // 1 minute ago
+
+      const mockFindUserByEmail = jest.fn().mockResolvedValue(mockUser);
+      (userRepository as any).findUserByEmail = mockFindUserByEmail;
+
+      // Act & Assert
+      await expect(userRepository.verifyEmailCode(email, validCode)).rejects.toThrow(
+        'Verification code has expired'
+      );
+    });
+
+    it('should return false when user does not exist', async () => {
+      // Arrange
+      const mockFindUserByEmail = jest.fn().mockResolvedValue(null);
+      (userRepository as any).findUserByEmail = mockFindUserByEmail;
+
+      // Act
+      const result = await userRepository.verifyEmailCode(email, validCode);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('updateUserIsVerified', () => {
+    const email = 'test@example.com';
+
+    it('should update user verification status and clear verification code', async () => {
+      // Arrange
+      mockQueryBuilder.execute.mockResolvedValue({ affected: 1 });
+
+      // Act
+      await userRepository.updateUserIsVerified(email, true);
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(UserEntity);
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        isVerified: true,
+        verificationCode: null,
+        verificationCodeExpiresAt: null,
+      });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('email = :email', { email });
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+    });
+
+    it('should set isVerified to false when requested', async () => {
+      // Arrange
+      mockQueryBuilder.execute.mockResolvedValue({ affected: 1 });
+
+      // Act
+      await userRepository.updateUserIsVerified(email, false);
+
+      // Assert
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        isVerified: false,
+        verificationCode: null,
+        verificationCodeExpiresAt: null,
+      });
+    });
+
+    it('should not throw error when user does not exist', async () => {
+      // Arrange
+      mockQueryBuilder.execute.mockResolvedValue({ affected: 0 });
+
+      // Act & Assert
+      await expect(userRepository.updateUserIsVerified(email, true)).resolves.not.toThrow();
+    });
+  });
+
+  describe('isUserVerified', () => {
+    const email = 'test@example.com';
+
+    it('should return true when user is verified', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        email,
+        isVerified: true,
+      });
+
+      const mockFindUserByEmail = jest.fn().mockResolvedValue(mockUser);
+      (userRepository as any).findUserByEmail = mockFindUserByEmail;
+
+      // Act
+      const result = await userRepository.isUserVerified(email);
+
+      // Assert
+      expect(mockFindUserByEmail).toHaveBeenCalledWith(email);
+      expect(result).toBe(true);
+    });
+
+    it('should return false when user is not verified', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        email,
+        isVerified: false,
+      });
+
+      const mockFindUserByEmail = jest.fn().mockResolvedValue(mockUser);
+      (userRepository as any).findUserByEmail = mockFindUserByEmail;
+
+      // Act
+      const result = await userRepository.isUserVerified(email);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should return false when user does not exist', async () => {
+      // Arrange
+      const mockFindUserByEmail = jest.fn().mockResolvedValue(null);
+      (userRepository as any).findUserByEmail = mockFindUserByEmail;
+
+      // Act
+      const result = await userRepository.isUserVerified(email);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('deleteUnverifiedUsers', () => {
+    it('should delete unverified users with expired verification codes', async () => {
+      // Arrange
+      mockQueryBuilder.delete = jest.fn().mockReturnThis();
+      mockQueryBuilder.from = jest.fn().mockReturnThis();
+
+      // Act
+      await userRepository.deleteUnverifiedUsers();
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.delete).toHaveBeenCalled();
+      expect(mockQueryBuilder.from).toHaveBeenCalledWith(UserEntity);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'isVerified = :verifiedStatus',
+        { verifiedStatus: false }
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'verificationCodeExpiresAt < NOW()'
+      );
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+    });
+
+    it('should not throw error when no users to delete', async () => {
+      // Arrange
+      mockQueryBuilder.delete = jest.fn().mockReturnThis();
+      mockQueryBuilder.from = jest.fn().mockReturnThis();
+      mockQueryBuilder.execute.mockResolvedValue({ affected: 0 });
+
+      // Act & Assert
+      await expect(userRepository.deleteUnverifiedUsers()).resolves.not.toThrow();
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+    });
+
+    it('should handle database errors gracefully', async () => {
+      // Arrange
+      mockQueryBuilder.delete = jest.fn().mockReturnThis();
+      mockQueryBuilder.from = jest.fn().mockReturnThis();
+      mockQueryBuilder.execute.mockRejectedValue(new Error('Database error'));
+
+      // Act & Assert
+      await expect(userRepository.deleteUnverifiedUsers()).rejects.toThrow('Database error');
+    });
+  });
 });
