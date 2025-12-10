@@ -459,12 +459,11 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       }
     });
 
-    it('should deny all non-technical, non-PRO roles for ASSIGNED', () => {
+    it('should deny all non-technical, non-PRO, non-External Maintainer roles for ASSIGNED', () => {
       // Arrange
       const nonAllowedRoles = [
         SystemRoles.CITIZEN,
         SystemRoles.ADMINISTRATOR,
-        SystemRoles.EXTERNAL_MAINTAINER,
         SystemRoles.DEPARTMENT_DIRECTOR,
       ];
 
@@ -482,6 +481,30 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
 
         // Assert
         expect(mockNext).toHaveBeenCalledWith(expect.any(InsufficientRightsError));
+      }
+    });
+
+    it('should allow PUBLIC_RELATIONS_OFFICER and EXTERNAL_MAINTAINER to set ASSIGNED', () => {
+      // Arrange
+      const allowedRoles = [
+        SystemRoles.PUBLIC_RELATIONS_OFFICER,
+        SystemRoles.EXTERNAL_MAINTAINER,
+      ];
+
+      for (const role of allowedRoles) {
+        mockNext.mockClear();
+        mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
+        mockRequest.user = { departmentRole: { role: { name: role } } };
+
+        // Act
+        validateStatusUpdate(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+
+        // Assert
+        expect(mockNext).toHaveBeenCalledWith();
       }
     });
   });
