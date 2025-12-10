@@ -452,10 +452,17 @@ The initialization script populates the following default data:
 ---
 
 
-### Default Administrator User
-- **Username:** `admin`
-- **Password:** `admin`
-- **Email:** `admin@participium.local`
+### Default Users
+
+The database is pre-populated with default users for testing and development purposes, including:
+- 1 System Administrator
+- 1 Municipal Public Relations Officer
+- 7 Department Directors
+- 9 Technical Staff Members
+- 4 External Maintainers
+- 2 Test Citizens
+
+**For complete list of default users with credentials, see:** [`default-users.md`](default-users.md)
 - **Position:** Organization / Administrator
 - **Name:** System Administrator
 
