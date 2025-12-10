@@ -196,6 +196,20 @@ class UserRepository {
     }
   }
 
+ /**
+ * Deletes all unverified users whose verification code has expired.
+ * @returns void
+ */
+  public async deleteUnverifiedUsers(): Promise<void> {
+    await this.repository.createQueryBuilder()
+      .delete()
+      .from(UserEntity)
+      .where('isVerified = :verifiedStatus', { verifiedStatus: false })
+      .andWhere('verificationCodeExpiresAt < NOW()')
+      .execute();
+  }
+
+
   /**
    * Finds all users with optional filters.
    * @param options Optional query options (where, order, etc.)
@@ -270,8 +284,8 @@ class UserRepository {
       .createQueryBuilder("user")
       .innerJoinAndSelect("user.departmentRole", "dr")
       .innerJoinAndSelect("dr.role", "role")
-      .leftJoin("reports", "r", "r.assignee_id = user.id AND r.status IN (:...statuses)", { 
-        statuses: [ReportStatus.ASSIGNED, ReportStatus.IN_PROGRESS, ReportStatus.SUSPENDED] 
+      .leftJoin("reports", "r", "r.assignee_id = user.id AND r.status IN (:...statuses)", {
+        statuses: [ReportStatus.ASSIGNED, ReportStatus.IN_PROGRESS, ReportStatus.SUSPENDED]
       })
       .where("dr.role_id = :roleId", { roleId })
       .groupBy("user.id")
@@ -293,29 +307,29 @@ class UserRepository {
 
     if (!category) {
       return await this.repository
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.departmentRole', 'departmentRole')
-      .leftJoinAndSelect('departmentRole.department', 'department')
-      .leftJoinAndSelect('departmentRole.role', 'role')
-      .innerJoin(
-        'companies', 
-        'c', 
-        'c.id = user.company_id', 
-      )
-      .where('role.name = :roleName', { roleName: 'External Maintainer' })
-      .andWhere('user.company_id IS NOT NULL')
-      .getMany();
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.departmentRole', 'departmentRole')
+        .leftJoinAndSelect('departmentRole.department', 'department')
+        .leftJoinAndSelect('departmentRole.role', 'role')
+        .innerJoin(
+          'companies',
+          'c',
+          'c.id = user.company_id',
+        )
+        .where('role.name = :roleName', { roleName: 'External Maintainer' })
+        .andWhere('user.company_id IS NOT NULL')
+        .getMany();
     }
-    
+
     return await this.repository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.departmentRole', 'departmentRole')
       .leftJoinAndSelect('departmentRole.department', 'department')
       .leftJoinAndSelect('departmentRole.role', 'role')
       .innerJoin(
-        'companies', 
-        'c', 
-        'c.id = user.company_id AND c.category = :category', 
+        'companies',
+        'c',
+        'c.id = user.company_id AND c.category = :category',
         { category }
       )
       .where('role.name = :roleName', { roleName: 'External Maintainer' })
@@ -334,12 +348,12 @@ class UserRepository {
    */
   public async verifyEmailCode(email: string, code: string): Promise<boolean> {
     const user = await this.findUserByEmail(email);
-    
+
     if (!user?.verificationCode) {
       return false;
     }
 
-    if(user.verificationCodeExpiresAt && user.verificationCodeExpiresAt < new Date()) {
+    if (user.verificationCodeExpiresAt && user.verificationCodeExpiresAt < new Date()) {
       throw new BadRequestError('Verification code has expired. Please request a new code.');
     }
 
@@ -370,7 +384,7 @@ class UserRepository {
     if (!user) {
       return false;
     }
-    
+
     return user.isVerified;
   }
 

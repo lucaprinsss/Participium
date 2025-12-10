@@ -405,7 +405,7 @@ SELECT
   'Via Roma 15, 10121 Torino',
   false,
   'Pending Approval',
-  CURRENT_TIMESTAMP - INTERVAL '2 days'
+  CURRENT_TIMESTAMP - INTERVAL '2 days' AS created_at
 FROM users u WHERE u.username = 'testcitizen';
 
 -- Report 2: Assigned - Roads and Urban Furnishings
@@ -431,7 +431,7 @@ SELECT
   false,
   'Assigned',
   staff.id,
-  CURRENT_TIMESTAMP - INTERVAL '3 days'
+  CURRENT_TIMESTAMP - INTERVAL '3 days' AS created_at
 FROM users citizen, users staff 
 WHERE citizen.username = 'testcitizen' 
   AND staff.username = 'teststaffmember';
@@ -459,7 +459,7 @@ SELECT
   false,
   'In Progress',
   staff.id,
-  CURRENT_TIMESTAMP - INTERVAL '5 days'
+  CURRENT_TIMESTAMP - INTERVAL '5 days' AS created_at
 FROM users citizen, users staff 
 WHERE citizen.username = 'testcitizen' 
   AND staff.username = 'teststaffmember';
@@ -487,7 +487,7 @@ SELECT
   false,
   'Resolved',
   staff.id,
-  CURRENT_TIMESTAMP - INTERVAL '7 days'
+  CURRENT_TIMESTAMP - INTERVAL '7 days' AS created_at
 FROM users citizen, users staff 
 WHERE citizen.username = 'testcitizen' 
   AND staff.username = 'teststaffmember';
@@ -515,7 +515,7 @@ SELECT
   false,
   'Rejected',
   'Duplicate report - already exists',
-  CURRENT_TIMESTAMP - INTERVAL '10 days'
+  CURRENT_TIMESTAMP - INTERVAL '10 days' AS created_at
 FROM users u WHERE u.username = 'testcitizen';
 
 -- Report 6: Anonymous Pending - Architectural Barriers
@@ -539,7 +539,7 @@ SELECT
   'Via Milano 8, 10123 Torino',
   true,
   'Pending Approval',
-  CURRENT_TIMESTAMP - INTERVAL '1 day'
+  CURRENT_TIMESTAMP - INTERVAL '1 day' AS created_at
 FROM users u WHERE u.username = 'testcitizen';
 
 -- Report 7: Suspended - Sewer System
@@ -565,7 +565,7 @@ SELECT
   false,
   'Suspended',
   staff.id,
-  CURRENT_TIMESTAMP - INTERVAL '4 days'
+  CURRENT_TIMESTAMP - INTERVAL '4 days' AS created_at
 FROM users citizen, users staff 
 WHERE citizen.username = 'testcitizen' 
   AND staff.username = 'teststaffmember';
@@ -604,7 +604,7 @@ FROM users u
 JOIN department_roles dr ON u.department_role_id = dr.id
 JOIN roles r ON dr.role_id = r.id
 JOIN departments d ON dr.department_id = d.id
-ORDER BY u.id;
+ORDER BY u.id ASC;
 
 -- Display inserted test reports
 SELECT 

@@ -29,6 +29,8 @@ export default function Navbar({ user, onLogout }) {
     return user?.username || 'User'; 
   };
 
+  const isCitizen = () => user?.role_name === 'Citizen';
+
   return (
     <nav className={`navbar-modern ${scrolled ? 'navbar-scrolled' : ''}`}>
       <div className="navbar-container">
@@ -59,7 +61,7 @@ export default function Navbar({ user, onLogout }) {
             </button>
           )}
 
-          {user && (
+          {user && isCitizen() && (
             <button className="home-btn-navbar" onClick={() => navigate("/new-report")}>
               {/* NUOVA ICONA: Map Pin (Indicatore Mappa) */}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

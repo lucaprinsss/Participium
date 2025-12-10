@@ -15,6 +15,8 @@ import companyRoutes from "@routes/companyRoutes";
 import geocodingRoutes from './routes/geocodingRoutes';
 import {errorHandler} from "@middleware/errorMiddleware";
 
+import "./utils/deleteUnverifiedAccounts"; // Import the scheduled job to delete unverified accounts
+
 const app: Application = express();
 
 // Middleware

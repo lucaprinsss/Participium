@@ -1,0 +1,181 @@
+/* --- COMMENTS SECTION --- */
+
+.rdm-comments-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--rdm-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-top: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.rdm-comments-list {
+  padding: 16px 2px 16px 16px; 
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: #ffffff;
+}
+
+/* Scrollbar Sottile e Rossa */
+.rdm-comments-list::-webkit-scrollbar { width: 5px; }
+.rdm-comments-list::-webkit-scrollbar-track { background: transparent; }
+.rdm-comments-list::-webkit-scrollbar-thumb { background-color: var(--rdm-brand); border-radius: 10px; }
+.rdm-comments-list::-webkit-scrollbar-thumb:hover { background-color: var(--rdm-brand-dark); }
+
+/* --- ITEM GENERICO --- */
+.rdm-comment-item {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box; /* Importante per gestire bene i padding */
+}
+
+/* --- 1. I MIEI MESSAGGI (A DESTRA) --- */
+.rdm-comment-item.my-message {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+  
+  /* FORZATURA VISIVA: */
+  /* Lascia il 40% dello schermo vuoto a sinistra. 
+     Il messaggio potrà occupare solo il restante 60% a destra. */
+  padding-left: 70%; 
+}
+
+.rdm-comment-item.my-message .rdm-comment-body {
+  border-radius: 16px 0 16px 16px; 
+  background-color: #fce7e7; 
+  border-color: #f8d7da;
+  text-align: left; 
+}
+
+/* Nascondi nome */
+.rdm-comment-item.my-message .rdm-comment-author { display: none; }
+
+/* NASCONDE IL NOME NEI MIEI MESSAGGI */
+.rdm-comment-item.my-message .rdm-comment-author { display: none; }
+
+/* --- 2. MESSAGGI ALTRI (A SINISTRA) --- */
+.rdm-comment-item.other-message {
+  justify-content: flex-start;
+  flex-direction: row;
+  
+  /* Speculare: Lascia il 40% dello schermo vuoto a destra. */
+  padding-right: 40%; 
+}
+
+.rdm-comment-item.other-message .rdm-comment-body {
+  border-radius: 0 16px 16px 16px; 
+  background-color: #f3f4f6;
+}
+
+.rdm-comment-item.other-message .rdm-comment-header {
+  justify-content: flex-start;
+  flex-direction: row;
+}
+
+/* --- BODY DEL MESSAGGIO --- */
+.rdm-comment-body {
+  padding: 10px 14px;
+  position: relative;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  word-break: break-word;
+  
+  /* Rimuovi max-width fisso se presente, lascia fare al padding del contenitore */
+  min-width: 100px; /* Larghezza minima per estetica */
+}
+
+/* --- RESPONSIVE MOBILE (Opzionale) --- */
+/* Su schermi piccoli riduciamo lo spazio vuoto per leggere meglio */
+@media (max-width: 768px) {
+  .rdm-comment-item.my-message { padding-left: 15%; }
+  .rdm-comment-item.other-message { padding-right: 15%; }
+}
+
+/* --- RIMANENZA STILI (Avatar, etc) INVARIATI --- */
+.rdm-comment-avatar {
+  width: 34px; height: 34px; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #374151; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem; flex-shrink: 0; border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.rdm-comment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.rdm-comment-author { font-weight: 700; font-size: 0.9rem; color: var(--rdm-text-main); }
+.rdm-comment-date { font-size: 0.70rem; color: #9ca3af; }
+.rdm-comment-content { font-size: 0.95rem; color: #4b5563; line-height: 1.5; }
+
+.rdm-comment-delete {
+  background: transparent; border: none; color: #d1d5db; cursor: pointer; padding: 6px; font-size: 0.9rem;
+  transition: all 0.2s; align-self: center; opacity: 0;
+}
+.rdm-comment-item:hover .rdm-comment-delete { opacity: 1; }
+.rdm-comment-delete:hover { color: var(--rdm-danger); transform: scale(1.1); }
+
+.rdm-empty-comments { padding: 32px; text-align: center; color: #9ca3af; font-size: 0.9rem; background: white; }
+
+.rdm-comment-input-area {
+  padding: 12px 16px; background-color: #ffffff; border-top: 1px solid var(--rdm-border); display: flex; gap: 12px; align-items: center;
+}
+.rdm-comment-input {
+  flex-grow: 1; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 24px; padding: 10px 18px; font-size: 0.95rem; outline: none; transition: all 0.2s; color: var(--rdm-text-main);
+}
+.rdm-comment-input:focus { background-color: #ffffff; border-color: var(--rdm-brand); box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.05); }
+.rdm-comment-input::placeholder { color: #9ca3af; }
+
+.rdm-comment-submit {
+  width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--rdm-brand) 0%, #c44569 100%);
+  color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; box-shadow: 0 2px 4px rgba(161, 43, 50, 0.2);
+}
+.rdm-comment-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(161, 43, 50, 0.3); }
+.rdm-comment-submit:disabled { background: #e5e7eb; color: #9ca3af; box-shadow: none; cursor: not-allowed; }
+
+/* --- DELETE CONFIRMATION MODAL --- */
+.rdm-delete-modal .modal-content {
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.rdm-delete-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #fce7e7; /* Rosso molto chiaro */
+  color: var(--rdm-danger, #dc3545);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.rdm-btn-cancel {
+  border-radius: 20px;
+  padding: 6px 20px;
+  font-size: 0.9rem;
+  background-color: #e5e7eb;
+  border: none;
+  color: #374151;
+}
+.rdm-btn-cancel:hover {
+  background-color: #d1d5db;
+  color: #1f2937;
+}
+
+.rdm-btn-confirm {
+  border-radius: 20px;
+  padding: 6px 20px;
+  font-size: 0.9rem;
+  background-color: var(--rdm-danger, #dc3545);
+  border: none;
+}
+.rdm-btn-confirm:hover {
+  background-color: #bb2d3b;
+}

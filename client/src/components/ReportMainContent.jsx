@@ -1,0 +1,196 @@
+import React, { useState } from "react";
+import { Button, Form } from "react-bootstrap";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { 
+  FaExclamationTriangle, FaInfoCircle, FaCamera, FaMapMarkedAlt, FaExternalLinkAlt, 
+  FaExclamationCircle, FaTimesCircle, FaCheckCircle, FaPlay, FaPause, FaCheck 
+} from "react-icons/fa";
+import ReportComments from "./ReportComments";
+import { updateReportStatus } from "../api/reportApi";
+
+const ReportMainContent = ({
+  report,
+  user,
+  currentUserId,
+  onApprove,
+  onReject,
+  onStatusUpdate,
+  onReportUpdated,
+  onOpenImage,
+  showMap,
+  mapCoordinates,
+  onHide // Per chiudere il modale dopo un'azione
+}) => {
+  // Stati per le azioni
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [assignmentWarning, setAssignmentWarning] = useState("");
+
+  const photos = report.photos
+    ? report.photos.map((p) => (typeof p === "string" ? p : p.storageUrl))
+    : report.images || [];
+
+  const canManage = user && (user.role_name === "Administrator" || user.role_name.toLowerCase() === "municipal public relations officer");
+  
+  const isExternalAssignee = currentUserId && report.externalAssigneeId && Number(currentUserId) === Number(report.externalAssigneeId);
+
+  // Handlers Azioni
+  const handleRejectClick = () => { setIsRejecting(true); setErrorMsg(""); setAssignmentWarning(""); };
+  const handleCancelReject = () => { setIsRejecting(false); setRejectionReason(""); setErrorMsg(""); };
+
+  const handleSubmitReject = async () => {
+    if (!rejectionReason.trim()) { setErrorMsg("Please provide a reason."); return; }
+    try {
+      const success = await onReject(report.id, rejectionReason);
+      if (success) onHide();
+    } catch (err) { setErrorMsg(err.message || "Error rejecting report"); }
+  };
+
+  const handleApproveClick = async () => {
+    setErrorMsg("");
+    try {
+      const result = await onApprove(report.id);
+      if (result && result.error) { setErrorMsg(result.error); return; }
+      onHide();
+    } catch (error) { setErrorMsg(error.message || "Approval error."); }
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    setErrorMsg("");
+    try {
+      const result = await updateReportStatus(report.id, newStatus);
+      if (result?.error) throw new Error(result.error);
+      if (onReportUpdated) onReportUpdated(report.id, { status: newStatus });
+      if (onStatusUpdate) await onStatusUpdate();
+      onHide();
+    } catch (error) { setErrorMsg(error.message || `Failed to update status`); }
+  };
+
+  return (
+    <div className="rdm-main-content d-flex flex-column">
+      <div className="flex-grow-1">
+        {/* Rejection Display */}
+        {report.status === "Rejected" && (report.rejectionReason || report.rejection_reason) && (
+          <div className="rdm-section mt-0 mb-4">
+            <h3 className="rdm-section-title" style={{ color: "var(--rdm-danger)" }}>
+              <FaExclamationTriangle /> Reason for Rejection
+            </h3>
+            <div className="rdm-rejection-display">
+              {report.rejectionReason || report.rejection_reason}
+            </div>
+          </div>
+        )}
+
+        {/* Description */}
+        <div className="rdm-section mt-0">
+          <h3 className="rdm-section-title"><FaInfoCircle /> Description</h3>
+          <div className="rdm-description-box">{report.description || "No description provided."}</div>
+        </div>
+
+        {/* Evidence */}
+        <div className="rdm-section">
+          <h3 className="rdm-section-title"><FaCamera /> Evidence ({photos.length})</h3>
+          {photos.length > 0 ? (
+            <div className="rdm-photo-grid">
+              {photos.map((photo, index) => (
+                <div key={index} className="rdm-photo-card" onClick={() => onOpenImage(photo)}>
+                  <img src={photo} alt={`Evidence ${index}`} loading="lazy" />
+                  <div className="rdm-photo-overlay"><span>View Fullscreen</span></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted fst-italic mt-2">No images attached.</p>
+          )}
+        </div>
+
+        {/* Map */}
+        <div className={`rdm-map-wrapper ${showMap ? "open" : ""}`}>
+          <h3 className="rdm-section-title mt-4"><FaMapMarkedAlt /> Map Location</h3>
+          <div className="rdm-map-container">
+            {showMap && mapCoordinates && (
+              <MapContainer center={mapCoordinates} zoom={15} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
+                <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <Marker position={mapCoordinates}>
+                  <Popup>
+                    <div className="rdm-map-popup">
+                      <strong>{report.title}</strong><br />
+                      <a href={`http://googleusercontent.com/maps.google.com/?q=${mapCoordinates[0]},${mapCoordinates[1]}`} target="_blank" rel="noopener noreferrer" className="map-link" style={{ color: "var(--rdm-brand)", fontWeight: "bold" }}>
+                        <FaExternalLinkAlt style={{ marginRight: "5px" }} /> Open in Google Maps
+                      </a>
+                    </div>
+                  </Popup>
+                </Marker>
+              </MapContainer>
+            )}
+            {showMap && !mapCoordinates && (
+               <div className="d-flex align-items-center justify-content-center h-100 text-muted bg-light"><FaExclamationCircle className="me-2" /> Location unavailable</div>
+            )}
+          </div>
+        </div>
+
+        {/* === COMMENTS COMPONENT === */}
+        <ReportComments reportId={report.id} currentUserId={currentUserId} />
+      </div>
+
+      {/* ACTION BUTTONS & FOOTER */}
+      <div className="mt-3">
+        {assignmentWarning && (
+          <div className="rdm-alert rdm-alert-warning mb-2 py-2 px-3">
+            <div className="d-flex align-items-center gap-2"><FaExclamationTriangle /><span className="small">{assignmentWarning}</span></div>
+          </div>
+        )}
+        {errorMsg && (
+          <div className="rdm-alert rdm-alert-error mb-2 py-2 px-3">
+            <div className="d-flex align-items-center gap-2"><FaExclamationCircle /><span className="small">{errorMsg}</span></div>
+          </div>
+        )}
+      </div>
+
+      <div className="rdm-footer-section mt-4 pt-3 border-top">
+        {!isRejecting ? (
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div className="rdm-id-text text-muted font-monospace fw-bold">ID: #{report.id}</div>
+            <div className="d-flex gap-2">
+              {canManage && report.status === "Pending Approval" && (
+                <>
+                  <Button variant="outline-danger" className="rdm-btn-action" onClick={handleRejectClick}><FaTimesCircle className="me-2" /> Reject</Button>
+                  <Button variant="success" className="rdm-btn-action" onClick={handleApproveClick}><FaCheckCircle className="me-2" /> Accept & Assign</Button>
+                </>
+              )}
+              {isExternalAssignee && (
+                <>
+                  {report.status === "Assigned" && <Button className="rdm-btn-action rdm-btn-start" onClick={() => handleStatusChange("In Progress")}><FaPlay className="me-2" /> Start Work</Button>}
+                  {report.status === "Suspended" && <Button className="rdm-btn-action rdm-btn-start" onClick={() => handleStatusChange("In Progress")}><FaPlay className="me-2" /> Resume Work</Button>}
+                  {report.status === "In Progress" && (
+                    <>
+                      <Button className="rdm-btn-action rdm-btn-suspend" onClick={() => handleStatusChange("Suspended")}><FaPause className="me-2" /> Suspend</Button>
+                      <Button className="rdm-btn-action rdm-btn-resolve" onClick={() => handleStatusChange("Resolved")}><FaCheck className="me-2" /> Resolve</Button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="rdm-rejection-inline-container w-100 animate-fadeIn">
+            <div className="d-flex align-items-center mb-2 text-danger fw-bold small"><FaExclamationTriangle className="me-2" /> Rejecting Report</div>
+            <Form.Group className="mb-2">
+              <Form.Control as="textarea" className={`rdm-reject-textarea ${errorMsg ? "is-invalid" : ""}`} rows={2} placeholder="Reason..." value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} autoFocus />
+            </Form.Group>
+            <div className="d-flex justify-content-between align-items-center mt-2">
+               <div className="rdm-id-text text-muted font-monospace fw-bold small">ID: #{report.id}</div>
+               <div className="d-flex gap-2">
+                 <Button variant="secondary" size="sm" className="rdm-btn-action px-3" onClick={handleCancelReject}>Cancel</Button>
+                 <Button variant="danger" size="sm" className="rdm-btn-action px-3" onClick={handleSubmitReject}>Confirm Reject</Button>
+               </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ReportMainContent;
