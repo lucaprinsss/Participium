@@ -972,6 +972,26 @@ afterAll(async () => {
         ]
       );
       testReportId = reportResult[0].id;
+
+      // Create two internal comments for testing
+      await AppDataSource.query(
+        `INSERT INTO comments (report_id, author_id, content, created_at)
+         VALUES ($1, $2, $3, CURRENT_TIMESTAMP - INTERVAL '2 minutes')`,
+        [testReportId, technicianId, 'First internal comment']
+      );
+
+      // Get PRO user ID for second comment
+      const proresult = await AppDataSource.query(
+        `SELECT id FROM users WHERE username = $1`,
+        [PRO_USERNAME]
+      );
+      const proId = proresult[0].id;
+
+      await AppDataSource.query(
+        `INSERT INTO comments (report_id, author_id, content, created_at)
+         VALUES ($1, $2, $3, CURRENT_TIMESTAMP - INTERVAL '1 minute')`,
+        [testReportId, proId, 'Second comment from PRO']
+      );
     });
 
     afterEach(async () => {
