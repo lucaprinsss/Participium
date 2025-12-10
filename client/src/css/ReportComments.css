@@ -174,3 +174,59 @@
 .rdm-btn-confirm:hover {
   background-color: #bb2d3b;
 }
+
+/* --- ACCORDION / TOGGLE STYLE --- */
+
+/* Titolo cliccabile */
+.rdm-section-title.interactable {
+  cursor: pointer;
+  user-select: none; /* Evita la selezione del testo col doppio click */
+  padding: 8px 0; /* Un po' di padding verticale per il target del click */
+  margin-bottom: 0; /* Rimuoviamo il margine bottom perché lo gestirà il wrapper */
+  transition: opacity 0.2s;
+}
+
+.rdm-section-title.interactable:hover {
+  opacity: 0.8;
+}
+
+/* Badge conteggio commenti (opzionale, piccolo pallino grigio) */
+.rdm-comment-count-badge {
+    background-color: #e5e7eb;
+    color: #4b5563;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+/* Icona freccia che ruota */
+.rdm-chevron-toggle {
+  font-size: 0.9rem;
+  color: #9ca3af;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rdm-chevron-toggle.rotate {
+  transform: rotate(180deg);
+  color: var(--rdm-brand); /* Diventa rossa quando aperta */
+}
+
+/* --- ANIMAZIONE ALTEZZA FLUIDA (CSS Grid Trick) --- */
+.rdm-collapsible-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-top 0.3s ease;
+  overflow: hidden;
+  margin-top: 0;
+}
+
+.rdm-collapsible-wrapper.open {
+  grid-template-rows: 1fr;
+  margin-top: 1rem; /* Spazio sopra solo quando è aperto */
+}
+
+.rdm-collapsible-inner {
+  min-height: 0;
+  overflow: hidden; /* Importante per nascondere il contenuto mentre si chiude */
+}
