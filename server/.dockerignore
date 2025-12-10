@@ -3,3 +3,5 @@ dist
 coverage
 .env
 .git
+# Ignoriamo uploads perché le foto seed sono in seed-data/
+uploads/

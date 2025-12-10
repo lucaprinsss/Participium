@@ -572,6 +572,37 @@ WHERE citizen.username = 'testcitizen'
 
 
 -- ============================================
+-- INSERT PHOTOS FOR TEST REPORTS
+-- ============================================
+-- Le foto sono copiate nell'immagine Docker dal Dockerfile
+-- Percorsi relativi: /uploads/reports/{reportId}/{filename}
+
+-- Foto per Report 1
+INSERT INTO photos (report_id, storage_url, created_at)
+VALUES (1, '/uploads/reports/1/1.jpg', CURRENT_TIMESTAMP - INTERVAL '2 days');
+
+-- Foto per Report 2
+INSERT INTO photos (report_id, storage_url, created_at)
+VALUES (2, '/uploads/reports/2/2.jpg', CURRENT_TIMESTAMP - INTERVAL '3 days');
+
+-- Foto per Report 3
+INSERT INTO photos (report_id, storage_url, created_at)
+VALUES (3, '/uploads/reports/3/2_2.jpg', CURRENT_TIMESTAMP - INTERVAL '4 days');
+
+-- Foto per Report 4
+INSERT INTO photos (report_id, storage_url, created_at)
+VALUES (4, '/uploads/reports/4/3.jpg', CURRENT_TIMESTAMP - INTERVAL '5 days');
+
+-- Foto per Report 5
+INSERT INTO photos (report_id, storage_url, created_at)
+VALUES (5, '/uploads/reports/5/4.jpg', CURRENT_TIMESTAMP - INTERVAL '6 days');
+
+-- Foto per Report 6
+INSERT INTO photos (report_id, storage_url, created_at)
+VALUES (6, '/uploads/reports/6/5.jpg', CURRENT_TIMESTAMP - INTERVAL '1 day');
+
+
+-- ============================================
 -- VERIFY DATA
 -- ============================================
 
@@ -622,3 +653,14 @@ FROM reports r
 JOIN users u ON r.reporter_id = u.id
 LEFT JOIN users a ON r.assignee_id = a.id
 ORDER BY r.created_at DESC;
+
+-- Display inserted test photos
+SELECT 
+  p.id,
+  p.report_id,
+  r.title AS report_title,
+  p.storage_url,
+  p.created_at
+FROM photos p
+JOIN reports r ON p.report_id = r.id
+ORDER BY p.report_id ASC;

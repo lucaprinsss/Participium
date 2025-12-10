@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS postgis;
  * ====================================
  */
 
--- RIMOSSO: Il tipo 'user_role' è ora gestito da tabelle relazionali.
+-- REMOVED: The 'user_role' type is now managed by relational tables.
 -- CREATE TYPE user_role AS ENUM (...);
 
 CREATE TYPE report_category AS ENUM (
@@ -44,8 +44,8 @@ CREATE TYPE report_status AS ENUM (
  */
 
 /*
- * Tabella Dipartimenti
- * Elenca i dipartimenti municipali (es. Ufficio Tecnico, Urbanistica)
+ * Departments Table
+ * Lists municipal departments (e.g., Technical Office, Urban Planning)
  */
 CREATE TABLE departments (
     id SERIAL PRIMARY KEY,
@@ -53,8 +53,8 @@ CREATE TABLE departments (
 );
 
 /*
- * Tabella Ruoli
- * Elenca i livelli di permesso generici (es. Manager, Staff Member)
+ * Roles Table
+ * Lists generic permission levels (e.g., Manager, Staff Member)
  */
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
@@ -63,16 +63,16 @@ CREATE TABLE roles (
 );
 
 /*
- * Tabella Ruoli Dipartimento (Join Table)
- * Definisce le "posizioni" valide collegando dipartimenti a ruoli.
- * Permette all'UI Admin di filtrare i ruoli per dipartimento.
+ * Department Roles Table (Join Table)
+ * Defines valid "positions" by linking departments to roles.
+ * Allows the Admin UI to filter roles by department.
  */
 CREATE TABLE department_roles (
     id SERIAL PRIMARY KEY,
     department_id INT NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
     role_id INT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
     
-    -- Assicura che non ci siano coppie Dipartimento/Ruolo duplicate
+    -- Ensures no duplicate Department/Role pairs
     CONSTRAINT uq_department_role UNIQUE (department_id, role_id)
 );
 
@@ -98,8 +98,8 @@ CREATE TABLE companies (
 );
 
 /*
- * User tables (users)
- * MODIFICATA: Sostituito ENUM 'role' con 'department_role_id' FK
+ * Users table (users)
+ * MODIFIED: Replaced ENUM 'role' with 'department_role_id' FK
  */
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -108,8 +108,8 @@ CREATE TABLE users (
     last_name VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     
-    -- AGGIUNTO: Collega alla "posizione" (Dipartimento + Ruolo) dell'utente.
-    -- La logica applicativa assegnerà il ruolo 'Citizen' ai nuovi utenti.
+    -- ADDED: Links to the user's "position" (Department + Role).
+    -- Application logic will assign the 'Citizen' role to new users.
     department_role_id INT NOT NULL REFERENCES department_roles(id),
     
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -117,10 +117,10 @@ CREATE TABLE users (
     telegram_username VARCHAR(100) UNIQUE,
     email_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
     
-    -- Campo per manutentori esterni (riferimento all'azienda)
+    -- Field for external maintainers (reference to company)
     company_id INT REFERENCES companies(id) ON DELETE SET NULL,
     
-    -- Campi per verifica email 
+    -- Email verification fields 
     is_verified BOOLEAN NOT NULL DEFAULT false,
     verification_code VARCHAR(6),
     verification_code_expires_at TIMESTAMPTZ,
@@ -154,7 +154,8 @@ CREATE TABLE reports (
 
 
 /*
- * Images table (photos)
+ * Photos table (photos)
+ * Stores photos attached to reports
  */
 CREATE TABLE photos (
     id SERIAL PRIMARY KEY,
@@ -177,7 +178,7 @@ CREATE TABLE comments (
 
 
 /*
- * Notifications tables (notifications)
+ * Notifications table (notifications)
  */
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
@@ -218,8 +219,8 @@ CREATE TABLE category_role_mapping (
  * ====================================
  */
 
--- 1. Popola le nuove tabelle Dipartimenti e Ruoli
--- Questi dati sono necessari per creare l'utente admin di default.
+-- 1. Populate the new Departments and Roles tables
+-- This data is required to create the default admin user.
 
 INSERT INTO departments (name)
 VALUES
@@ -231,7 +232,7 @@ VALUES
     ('Mobility and Traffic Management Department'),
     ('Parks, Green Areas and Recreation Department'),
     ('General Services Department'),
-    ('External Service Providers')                              -- Per manutentori esterni
+    ('External Service Providers')                              -- For external maintainers
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO roles (name, description)
@@ -254,10 +255,10 @@ VALUES
     ('External Maintainer', 'External company contractor specialized in specific report categories')
 ON CONFLICT (name) DO NOTHING;
 
--- 2. Collega Dipartimenti e Ruoli per creare "Posizioni"
+-- 2. Link Departments and Roles to create "Positions"
 INSERT INTO department_roles (department_id, role_id)
 VALUES
-    -- Ruoli di sistema
+    -- System roles
     ((SELECT id FROM departments WHERE name = 'Organization'), (SELECT id FROM roles WHERE name = 'Citizen')),
     ((SELECT id FROM departments WHERE name = 'Organization'), (SELECT id FROM roles WHERE name = 'Administrator')),
     ((SELECT id FROM departments WHERE name = 'Organization'), (SELECT id FROM roles WHERE name = 'Municipal Public Relations Officer')),
@@ -317,8 +318,8 @@ VALUES
 ON CONFLICT (category) DO NOTHING;*/
 
 /*
- * Popola la tabella di mapping categoria-ruolo
- * Associa ogni categoria di report al ruolo tecnico specifico responsabile
+ * Populate the category-role mapping table
+ * Associates each report category with the specific responsible technical role
  */
  
 INSERT INTO category_role_mapping (category, role_id)
@@ -335,10 +336,10 @@ VALUES
 ON CONFLICT (category) DO NOTHING;
 
 /*
- * 4. Crea l'utente amministratore di default
- * MODIFICATO: Usa il 'department_role_id' corretto
+ * 4. Create the default administrator user
+ * MODIFIED: Uses the correct 'department_role_id'
  * Username: admin
- * Password: admin (hashed con bcrypt)
+ * Password: admin (hashed with bcrypt)
  * Note: Change this password in production!
  */
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
@@ -348,7 +349,7 @@ VALUES (
     'Administrator',
     '455eb328698d8cb5c8956fa51027dd4b:a93a35cebfb7f7b59c8ebe7720eac36c4ef76ec6d7d19d5e4e179555e57d2695fbbfc34ad8931d6c985fdcf2492f6fe3fc87dc4e7ddc20b9f4c66caa50c36e4d',
     
-    -- Questa subquery trova l'ID per la posizione 'Organization' / 'Administrator'
+    -- This subquery finds the ID for the 'Organization' / 'Administrator' position
     (SELECT dr.id FROM department_roles dr
      JOIN departments d ON dr.department_id = d.id
      JOIN roles r ON dr.role_id = r.id
@@ -356,7 +357,7 @@ VALUES (
      
     'admin@participium.local',
     true,
-    true  -- Admin è già verificato
+    true  -- Admin is already verified
 )
 ON CONFLICT (username) DO NOTHING;
 
@@ -374,15 +375,15 @@ VALUES
 ON CONFLICT (name) DO NOTHING;
 
 /*
- * 6. Crea utenti per i manutentori esterni
- * I manutentori esterni sono ora utenti con ruolo 'External Maintainer'
- * Password di default per tutti: 'maintainer123'
- * Hash bcrypt: $2b$10$
+ * 6. Create users for external maintainers
+ * External maintainers are now users with 'External Maintainer' role
+ * Default password for all: 'maintainer123'
+ * Bcrypt hash: $2b$10$
  * company_id is assigned directly during user creation
  */
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, company_id, email_notifications_enabled, is_verified)
 VALUES
-    -- Enel X - Specializzato in illuminazione pubblica
+    -- Enel X - Specialized in public lighting
     ('enelx',
      'Enel X',
      'Support Team',
@@ -394,9 +395,9 @@ VALUES
      'interventions@enelx.com',
      (SELECT id FROM companies WHERE name = 'Enel X'),
      true,
-     true),  -- Manutentori esterni sono già verificati
+     true),  -- External maintainers are already verified
     
-    -- Acea - Specializzato in acqua e fognature
+    -- Acea - Specialized in water and sewer systems
     ('acea',
      'Acea',
      'Water Services',
@@ -410,7 +411,7 @@ VALUES
      true,
      true),
     
-    -- Hera - Specializzato in gestione rifiuti
+    -- Hera - Specialized in waste management
     ('hera',
      'Hera',
      'Waste Management',
@@ -424,7 +425,7 @@ VALUES
      true,
      true),
     
-    -- ATM - Specializzato in mobilità e traffico
+    -- ATM - Specialized in mobility and traffic
     ('atm',
      'ATM',
      'Traffic Management',
@@ -440,7 +441,7 @@ VALUES
 ON CONFLICT (username) DO NOTHING;
 
 /*
- * 7. Crea utente citizen di test
+ * 7. Create test citizen user
  * Username: user
  * Password: password
  * Status: Verified
@@ -461,7 +462,7 @@ VALUES (
      
     'user@test.com',
     true,
-    true  -- Citizen di test già verificato
+    true  -- Test citizen already verified
 )
 ON CONFLICT (username) DO NOTHING;
 
@@ -485,7 +486,7 @@ VALUES (
 ON CONFLICT (username) DO NOTHING;
 
 /*
- * 8. Crea Municipal Public Relations Officer di test
+ * 8. Create test Municipal Public Relations Officer
  * Username: officer
  * Password: officer
  * Status: Verified
@@ -506,14 +507,14 @@ VALUES (
      
     'officer@participium.local',
     true,
-    true  -- Officer già verificato
+    true  -- Officer already verified
 )
 ON CONFLICT (username) DO NOTHING;
 
 /*
- * 9. Crea Department Directors di test
+ * 9. Create test Department Directors
  * Username: director_[department]
- * Password: director (per tutti)
+ * Password: director (for all)
  * Status: Verified
  */
 
@@ -644,9 +645,9 @@ VALUES (
 ON CONFLICT (username) DO NOTHING;
 
 /*
- * 10. Crea Technical Staff Members di test
+ * 10. Create test Technical Staff Members
  * Username: staff_[category]
- * Password: staff (per tutti)
+ * Password: staff (for all)
  * Status: Verified
  */
 
@@ -813,13 +814,13 @@ VALUES (
 ON CONFLICT (username) DO NOTHING;
 
 /*
- * 11. Crea reports di test
+ * 11. Create test reports
  */
 INSERT INTO reports (reporter_id, title, description, category, location, address, is_anonymous, status, created_at, updated_at)
 VALUES (
     (SELECT id FROM users WHERE username = 'user'),
-    'Segnale stradale pericolante',
-    'Segnalo un palo per la segnaletica stradale in condizioni pericolose in Via Legnano. Il palo appare inclinato e instabile, rappresentando un potenziale pericolo per pedoni e veicoli. Richiedo un intervento urgente per la messa in sicurezza.',
+    'Dangerous Road Sign',
+    'I am reporting a road sign pole in dangerous conditions on Via Legnano. The pole appears tilted and unstable, representing a potential danger for pedestrians and vehicles. I request urgent intervention to secure the area.',
     'Road Signs and Traffic Lights',
     ST_SetSRID(ST_MakePoint(7.673451, 45.059551), 4326)::geography,
     'Via Legnano, Torino, TO, Italy',
@@ -833,8 +834,8 @@ ON CONFLICT DO NOTHING;
 INSERT INTO reports (reporter_id, title, description, category, location, address, is_anonymous, status, created_at, updated_at)
 VALUES (
     (SELECT id FROM users WHERE username = 'user2'),
-    'Semaforo danneggiato',
-    'Segnalo un semaforo danneggiato in Corso Duca degli Abbruzzi, 52. In allegato le foto.',
+    'Damaged Traffic Light',
+    'I am reporting a damaged traffic light on Corso Duca degli Abbruzzi, 52. Photos attached.',
     'Road Signs and Traffic Lights',
     ST_SetSRID(ST_MakePoint(7.659592, 45.058406), 4326)::geography,
     'Corso Duca degli Abbruzzi, 52, Torino, TO, Italy',
@@ -848,8 +849,8 @@ ON CONFLICT DO NOTHING;
 INSERT INTO reports (reporter_id, title, description, category, location, address, is_anonymous, status, created_at, updated_at)
 VALUES (
     (SELECT id FROM users WHERE username = 'user2'),
-    'Rifiuti sparsi per strada',
-    'Segnalo la presenza di riufiuti sparsi per strada. In allegato le foto.',
+    'Scattered Waste on Street',
+    'I am reporting scattered waste on the street. Photos attached.',
     'Waste',
     ST_SetSRID(ST_MakePoint(7.666404, 45.069951), 4326)::geography,
     'Via Giuseppe Giusti, 3, Torino, TO, Italy',
@@ -863,8 +864,8 @@ ON CONFLICT DO NOTHING;
 INSERT INTO reports (reporter_id, title, description, category, location, address, is_anonymous, status, created_at, updated_at)
 VALUES (
     (SELECT id FROM users WHERE username = 'user'),
-    'Lampione pericolante',
-    'Segnalo un lampione pericolante. In allegato le foto.',
+    'Tilting Street Lamp',
+    'I am reporting a tilting street lamp. Photos attached.',
     'Public Lighting',
     ST_SetSRID(ST_MakePoint(7.634984, 45.040559), 4326)::geography,
     'Corso Orbassano, 224a, Torino, TO, Italy',
@@ -876,11 +877,11 @@ VALUES (
 ON CONFLICT DO NOTHING;
 
 /*
- * 10. Crea foto allegata al report
+ * 12. Create photos attached to reports
  */
 INSERT INTO photos (report_id, storage_url, created_at)
 VALUES (
-    (SELECT id FROM reports WHERE title = 'Segnale stradale pericolante' LIMIT 1),
+    (SELECT id FROM reports WHERE title = 'Dangerous Road Sign' LIMIT 1),
     '/uploads/reports/1/1.jpg',
     CURRENT_TIMESTAMP
 )
@@ -888,15 +889,25 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO photos (report_id, storage_url, created_at)
 VALUES (
-    (SELECT id FROM reports WHERE title = 'Semaforo danneggiato' LIMIT 1),
+    (SELECT id FROM reports WHERE title = 'Damaged Traffic Light' LIMIT 1),
     '/uploads/reports/2/2.jpg',
     CURRENT_TIMESTAMP
 )
 ON CONFLICT DO NOTHING;
 
+-- Second photo for Report 2 from folder 2
 INSERT INTO photos (report_id, storage_url, created_at)
 VALUES (
-    (SELECT id FROM reports WHERE title = 'Semaforo danneggiato' LIMIT 1),
+    (SELECT id FROM reports WHERE title = 'Damaged Traffic Light' LIMIT 1),
+    '/uploads/reports/2/2_2.jpg',
+    CURRENT_TIMESTAMP
+)
+ON CONFLICT DO NOTHING;
+
+-- Photos from folder 3 (2_2.jpg and 5.jpg)
+INSERT INTO photos (report_id, storage_url, created_at)
+VALUES (
+    (SELECT id FROM reports WHERE title = 'Scattered Waste on Street' LIMIT 1),
     '/uploads/reports/3/2_2.jpg',
     CURRENT_TIMESTAMP
 )
@@ -904,16 +915,35 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO photos (report_id, storage_url, created_at)
 VALUES (
-    (SELECT id FROM reports WHERE title = 'Rifiuti sparsi per strada' LIMIT 1),
-    '/uploads/reports/6/5.jpg',
+    (SELECT id FROM reports WHERE title = 'Scattered Waste on Street' LIMIT 1),
+    '/uploads/reports/3/5.jpg',
     CURRENT_TIMESTAMP
 )
 ON CONFLICT DO NOTHING;
 
+-- Photo from folder 4
 INSERT INTO photos (report_id, storage_url, created_at)
 VALUES (
-    (SELECT id FROM reports WHERE title = 'Lampione pericolante' LIMIT 1),
+    (SELECT id FROM reports WHERE title = 'Tilting Street Lamp' LIMIT 1),
+    '/uploads/reports/4/4.jpg',
+    CURRENT_TIMESTAMP
+)
+ON CONFLICT DO NOTHING;
+
+-- Photo from folder 5
+INSERT INTO photos (report_id, storage_url, created_at)
+VALUES (
+    (SELECT id FROM reports WHERE title = 'Tilting Street Lamp' LIMIT 1),
     '/uploads/reports/5/4.jpg',
+    CURRENT_TIMESTAMP
+)
+ON CONFLICT DO NOTHING;
+
+-- Photo from folder 6
+INSERT INTO photos (report_id, storage_url, created_at)
+VALUES (
+    (SELECT id FROM reports WHERE title = 'Scattered Waste on Street' LIMIT 1),
+    '/uploads/reports/6/5.jpg',
     CURRENT_TIMESTAMP
 )
 ON CONFLICT DO NOTHING;

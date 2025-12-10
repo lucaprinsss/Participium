@@ -12,11 +12,8 @@ openapi.json
 # Build output
 dist/
 
-# Uploads - Ignore test-generated files with timestamps
-# Pattern: uploads/reports/*/[0-9]*-[a-f0-9]*.jpg
-uploads/reports/*/*.jpg
-!uploads/reports/*/[0-9].jpg
-!uploads/reports/*/[0-9]_[0-9].jpg
+# Uploads - Ignora completamente la cartella uploads (le foto seed sono in seed-data/)
+uploads/
 
 # Others
 database-workflow-guide.md
