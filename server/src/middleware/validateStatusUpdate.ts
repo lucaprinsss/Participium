@@ -57,11 +57,11 @@ export const validateStatusUpdate = (req: Request, res: Response, next: NextFunc
     return next();
   }
 
-  // Special handling for IN_PROGRESS and SUSPENDED - allow only technical staff
+  // Special handling for IN_PROGRESS and SUSPENDED - allow technical staff and external maintainers
   if ([ReportStatus.IN_PROGRESS, ReportStatus.SUSPENDED].includes(newStatus as ReportStatus)) {
-    if (!isTechnicalStaff(roleName) || roleName !== SystemRoles.EXTERNAL_MAINTAINER) {
+    if (!isTechnicalStaff(roleName) && roleName !== SystemRoles.EXTERNAL_MAINTAINER) {
       return next(new InsufficientRightsError(
-        `Only technical staff can set status to ${newStatus}`
+        `Only technical staff and external maintainers can set status to ${newStatus}`
       ));
     }
     return next();
