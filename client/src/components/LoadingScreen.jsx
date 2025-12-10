@@ -1,24 +1,13 @@
-import '../css/LoadingScreen.css';
-import PropTypes from 'prop-types';
+import React from 'react';
+import "../css/LoadingScreen.css"; // Assicurati di creare questo file CSS
 
-const LoadingScreen = ({ message = "Loading" }) => {
+const LoadingScreen = ({ message = "Loading the page..." }) => {
   return (
-    <div className="loading-screen">
-      <div className="loading-content">
-        <div className="loading-spinner-modern">
-          <div className="spinner-dot"></div>
-          <div className="spinner-dot"></div>
-          <div className="spinner-dot"></div>
-          <div className="spinner-dot"></div>
-        </div>
-        <p className="loading-message">{message}</p>
-      </div>
+    <div className="loading-container">
+      <div className="loading-spinner"></div>
+      <p className="loading-text">{message}</p>
     </div>
   );
-};
-
-LoadingScreen.propTypes = {
-  message: PropTypes.string,
 };
 
 export default LoadingScreen;

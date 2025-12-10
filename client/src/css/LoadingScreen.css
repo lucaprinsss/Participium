@@ -1,99 +1,47 @@
-  .loading-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0,0,0,0.15);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-
-  .loading-content {
-    text-align: center;
-    color: #fff;
-    animation: fadeInUp 0.6s ease-out;
-    background: rgba(30,30,30,0.65);
-    padding: 2.5rem 2rem 2rem 2rem;
-    border-radius: 18px;
-    box-shadow: 0 8px 32px rgba(161,43,50,0.12);
-    min-width: 320px;
-    backdrop-filter: blur(8px);
-  }
-
-.loading-logo {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 2rem;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(161,43,50,0.15));
-  animation: logo-spin 1.2s linear infinite;
-}
-
-@keyframes logo-spin {
-  0% { transform: rotate(0deg);}
-  100% { transform: rotate(360deg);}
-}
-
-.loading-spinner-modern {
+/* Container a tutto schermo */
+.loading-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 2rem;
+  height: 100vh; /* Occupa tutta l'altezza della finestra */
+  width: 100vw;
+  background-color: #f8f9fa; /* Grigio molto chiaro, o bianco #ffffff */
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999; /* Assicura che stia sopra a tutto */
 }
 
-.spinner-dot {
-  width: 18px;
-  height: 18px;
+/* Lo Spinner (Cerchio che gira) */
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e0e0e0; /* Colore base del cerchio (grigio chiaro) */
+  border-top: 4px solid #8A1E2B; /* COLORE BRAND (Il rosso che usi nel form) */
   border-radius: 50%;
-  background: #fff;
-  opacity: 0.7;
-  animation: dotPulse 1.2s infinite cubic-bezier(.4,0,.6,1);
-}
-.spinner-dot:nth-child(2) { animation-delay: 0.2s;}
-.spinner-dot:nth-child(3) { animation-delay: 0.4s;}
-.spinner-dot:nth-child(4) { animation-delay: 0.6s;}
-
-@keyframes dotPulse {
-  0%, 100% { transform: scale(0.8); opacity: 0.5;}
-  50% { transform: scale(1.2); opacity: 1;}
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
-.loading-message {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0;
-  opacity: 1;
-  letter-spacing: 1px;
-  color: #fff;
-  font-family: 'Cinzel', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+/* Testo opzionale sotto lo spinner */
+.loading-text {
+  color: #6c757d;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(30px);}
-  to { opacity: 1; transform: translateY(0);}
+/* Animazione Rotazione */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .loading-content {
-    min-width: 220px;
-    padding: 1.5rem 1rem 1rem 1rem;
-  }
-  .loading-message { font-size: 1.1rem;}
-  .spinner-dot { width: 14px; height: 14px;}
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .loading-screen {
-    background: var(--navbar-bg);
-  }
-  .loading-content { background: none; color: #fff;}
-  .loading-message { color: #fff;}
-  .spinner-dot { background: #fff;}
+/* Animazione Pulsazione Testo (Opzionale) */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }

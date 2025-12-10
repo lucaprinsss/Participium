@@ -45,7 +45,7 @@
   /* FORZATURA VISIVA: */
   /* Lascia il 40% dello schermo vuoto a sinistra. 
      Il messaggio potrà occupare solo il restante 60% a destra. */
-  padding-left: 70%; 
+  padding-left: 65%; 
 }
 
 .rdm-comment-item.my-message .rdm-comment-body {
@@ -55,11 +55,6 @@
   text-align: left; 
 }
 
-/* Nascondi nome */
-.rdm-comment-item.my-message .rdm-comment-author { display: none; }
-
-/* NASCONDE IL NOME NEI MIEI MESSAGGI */
-.rdm-comment-item.my-message .rdm-comment-author { display: none; }
 
 /* --- 2. MESSAGGI ALTRI (A SINISTRA) --- */
 .rdm-comment-item.other-message {
