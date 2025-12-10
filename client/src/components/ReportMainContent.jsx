@@ -14,20 +14,19 @@ const ReportMainContent = ({
   currentUserId,
   onApprove,
   onReject,
-  onStatusUpdate,
   onReportUpdated,
   onOpenImage,
+  onHide, // Manteniamo onHide qui per Accept/Reject
   showMap,
   mapCoordinates,
-  onHide,
   showComments,
-  showToast // NUOVA PROP RICEVUTA
+  showToast 
 }) => {
   // Stati per le azioni
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [validationError, setValidationError] = useState(""); // Rinomino errorMsg per gli errori di validazione locali
-  const [assignmentWarning, setAssignmentWarning] = useState(""); // Mantenuto per i messaggi interni
+  const [validationError, setValidationError] = useState("");
+  const [assignmentWarning, setAssignmentWarning] = useState("");
 
   const photos = report.photos
     ? report.photos.map((p) => (typeof p === "string" ? p : p.storageUrl))
@@ -46,14 +45,15 @@ const ReportMainContent = ({
       setValidationError("Please provide a reason."); 
       return; 
     }
-    setValidationError(""); // Resetta errore di validazione
+    setValidationError("");
     try {
       const success = await onReject(report.id, rejectionReason);
       if (success) {
         showToast("Report rejected successfully.", "success");
-        onHide();
+        onReportUpdated(report.id, { status: "Rejected", rejection_reason: rejectionReason }); // Aggiorna lo stato localmente E notifica il genitore per il re-fetch
+        onHide(); // CHIUDE la modale dopo il rifiuto (azione finale)
       } else {
-        showToast("Failed to reject report.", "error"); // Toast per errore API
+        showToast("Failed to reject report.", "error");
       }
     } catch (err) { 
       showToast(err.message || "Error rejecting report", "error"); 
@@ -64,13 +64,14 @@ const ReportMainContent = ({
     try {
       const result = await onApprove(report.id);
       if (result && result.error) { 
-        showToast(result.error, "error"); // Toast per errore logico
+        showToast(result.error, "error");
         return; 
       }
       showToast("Report accepted and assigned!", "success");
-      onHide();
+      onReportUpdated(report.id, { status: "Assigned", assignee: result?.assignee || report.assignee }); // Aggiorna lo stato localmente E notifica il genitore per il re-fetch
+      onHide(); // CHIUDE la modale dopo l'accettazione (azione finale)
     } catch (error) { 
-      showToast(error.message || "Approval error.", "error"); // Toast per errore API
+      showToast(error.message || "Approval error.", "error");
     }
   };
 
@@ -78,18 +79,21 @@ const ReportMainContent = ({
     try {
       const result = await updateReportStatus(report.id, newStatus);
       if (result?.error) throw new Error(result.error);
-      if (onReportUpdated) onReportUpdated(report.id, { status: newStatus });
-      if (onStatusUpdate) await onStatusUpdate();
+      
+      if (onReportUpdated) onReportUpdated(report.id, { status: newStatus }); // Aggiorna lo stato localmente E notifica il genitore per il re-fetch
       
       let message = `Status updated to ${newStatus}.`;
       let type = "success";
       if (newStatus === "Suspended") { type = "warning"; message = "Work on the report has been suspended."; }
       if (newStatus === "Resolved") { message = "Report successfully resolved!"; }
 
-      showToast(message, type); // Toast per successo
-      onHide();
+      showToast(message, type);
+      
+      // RIMOZIONE DI onHide(): La modale non si chiude dopo un cambio di stato
+      // if (newStatus === "Resolved") { onHide(); } // Se volessimo chiudere solo alla risoluzione
+      
     } catch (error) { 
-      showToast(error.message || `Failed to update status`, "error"); // Toast per errore
+      showToast(error.message || `Failed to update status`, "error");
     }
   };
 
@@ -157,7 +161,6 @@ const ReportMainContent = ({
         </div>
 
         {/* === COMMENTS COMPONENT === */}
-        {/* Passa showToast a ReportComments, se gestisce le sue API */}
         {showComments && (
           <ReportComments reportId={report.id} currentUserId={currentUserId} showToast={showToast} />
         )}
@@ -165,13 +168,11 @@ const ReportMainContent = ({
 
       {/* ACTION BUTTONS & FOOTER */}
       <div className="mt-3">
-        {/* Mantenuto assignmentWarning per il posizionamento */}
         {assignmentWarning && (
           <div className="rdm-alert rdm-alert-warning mb-2 py-2 px-3">
             <div className="d-flex align-items-center gap-2"><FaExclamationTriangle /><span className="small">{assignmentWarning}</span></div>
           </div>
         )}
-        {/* Usiamo validationError per il rifiuto in linea */}
         {validationError && (
           <div className="rdm-alert rdm-alert-error mb-2 py-2 px-3">
             <div className="d-flex align-items-center gap-2"><FaExclamationCircle /><span className="small">{validationError}</span></div>

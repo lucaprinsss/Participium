@@ -7,13 +7,13 @@ import { assignToExternalUser } from "../api/reportApi";
 const ReportSidebar = ({ 
   report, 
   currentUserId, 
-  onReportUpdated, 
-  onStatusUpdate,
+  onReportUpdated, // Mantenuta per la richiesta di aggiornamento report (e notifica al genitore)
+  onStatusUpdate, // Mantenuta per compatibilità, ma non usata per il re-fetch generale
   showMap, 
   setShowMap,
   mapCoordinates,
-  isCitizen,
-  showToast // NUOVA PROP RICEVUTA
+  isCitizen, 
+  showToast 
 }) => {
   const [externalUsers, setExternalUsers] = useState([]);
   const [loadingExternal, setLoadingExternal] = useState(false);
@@ -63,19 +63,25 @@ const ReportSidebar = ({
     try {
       await assignToExternalUser(report.id, externalUser.id);
       
+      // Aggiorna lo stato locale del report e notifica il genitore
       if (onReportUpdated) {
         onReportUpdated(report.id, {
           status: "Assigned",
           externalAssigneeId: externalUser.id,
+          // Aggiorna l'oggetto dell'assegnatario esterno per visualizzare il nome completo
+          externalAssignee: {
+            id: externalUser.id,
+            first_name: externalUser.first_name,
+            last_name: externalUser.last_name,
+            username: externalUser.username,
+          }
         });
       }
-      if (onStatusUpdate) await onStatusUpdate();
       
-      showToast(`Assigned to ${externalUser.first_name} ${externalUser.last_name} (${externalUser.id})`, "success");
+      showToast(`Assigned to ${externalUser.first_name} ${externalUser.last_name} (ID: ${externalUser.id})`, "success");
 
     } catch (err) {
       console.error("Failed to assign", err);
-      // SOSTITUZIONE: alert("Failed to assign to external user.");
       showToast("Failed to assign to external user. Report can't be reassigned if it is resolved or already in progress.", "error"); 
     }
   };
@@ -84,6 +90,29 @@ const ReportSidebar = ({
     if (mapCoordinates) return `${mapCoordinates[0].toFixed(5)}, ${mapCoordinates[1].toFixed(5)}`;
     return "N/A";
   };
+  
+  const getExternalAssigneeName = () => {
+      if (report.externalAssigneeId) {
+          // Il campo externalAssignee potrebbe essere un ID o un oggetto completo. 
+          // Se è un oggetto (aggiornato da onReportUpdated), usiamo quello.
+          if (report.externalAssignee && report.externalAssignee.first_name) {
+              return `${report.externalAssignee.first_name} ${report.externalAssignee.last_name}`;
+          }
+          return `ID #${report.externalAssigneeId}`;
+      }
+      return <span className="text-muted">Not assigned</span>;
+  };
+  
+  const getInternalAssigneeName = () => {
+      if (report.assignee) {
+          // Il campo assignee potrebbe essere un ID o un oggetto completo.
+          if (report.assignee.first_name) {
+              return `${report.assignee.first_name} ${report.assignee.last_name}`;
+          }
+          return `ID #${report.assignee.id}`;
+      }
+      return <span className="text-muted">Not assigned</span>;
+  }
 
   return (
     <div className="rdm-sidebar">
@@ -99,7 +128,21 @@ const ReportSidebar = ({
             <div className="rdm-value">{formatDate(report.createdAt)}</div>
           </div>
         </div>
+
+        {/* Info Updated (Placeholder) */}
+        {report.updatedAt && report.updatedAt !== report.createdAt && (
+            <div className="rdm-info-row mt-2 pt-2 border-top">
+                <div className="rdm-icon-box">
+                    <FaCalendarAlt />
+                </div>
+                <div>
+                    <span className="rdm-label">Last Updated</span>
+                    <div className="rdm-value">{formatDate(report.updatedAt)}</div>
+                </div>
+            </div>
+        )}
       </div>
+
 
       {/* Involved Parties */}
       <div className="rdm-info-card">
@@ -118,9 +161,9 @@ const ReportSidebar = ({
             <FaHardHat />
           </div>
           <div>
-            <span className="rdm-label">Technician ID:</span>
+            <span className="rdm-label">Technician:</span>
             <div className="rdm-value highlight">
-              {report.assignee ? report.assignee.id : <span className="text-muted">Not assigned</span>}
+              {getInternalAssigneeName()}
             </div>
           </div>
         </div>
@@ -129,9 +172,9 @@ const ReportSidebar = ({
             <FaBuilding />
           </div>
           <div>
-            <span className="rdm-label">External ID:</span>
+            <span className="rdm-label">External:</span>
             <div className="rdm-value highlight">
-              {report.externalAssigneeId ? report.externalAssigneeId : <span className="text-muted">Not assigned</span>}
+              {getExternalAssigneeName()}
             </div>
           </div>
         </div>
@@ -200,6 +243,7 @@ const ReportSidebar = ({
           </div>
         </div>
         
+        {/* MODIFICA: Mostra il pulsante solo se l'utente NON è un Citizen E le coordinate sono disponibili */}
         {!isCitizen && mapCoordinates && (
           <button
           className={`rdm-btn-map-toggle ${showMap ? "active" : ""}`}

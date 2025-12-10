@@ -52,10 +52,11 @@ const getStatusBadgeVariant = (status) => {
   const normalizedStatus = status?.replace("_", " ").toLowerCase();
   
   if (normalizedStatus === "pending approval") return "warning";
-  if (normalizedStatus === "assigned") return "primary";
-  if (normalizedStatus === "in progress") return "info";
+  if (normalizedStatus === "assigned") return "info";
+  if (normalizedStatus === "in progress") return "primary";
   if (normalizedStatus === "resolved") return "success";
   if (normalizedStatus === "rejected") return "danger";
+  if (normalizedStatus === "suspended") return "warning"; 
   return "secondary";
 };
 
@@ -139,8 +140,6 @@ export default function MunicipalityUserHome({ user }) {
     }
   }, [isStaffMember, userDepartmentCategory, userRole, statusFilter]);
 
-  // --- FETCHING LOGIC ---
-
   // 1. Fetch Categories
   useEffect(() => {
     const fetchCategories = async () => {
@@ -214,42 +213,46 @@ export default function MunicipalityUserHome({ user }) {
     setShowModal(true);
   };
 
+  // La logica di re-fetching viene spostata in ReportDetails, qui facciamo solo l'API call.
   const handleAcceptReport = async (reportId) => {
     try {
-      const result = await updateReportStatus(reportId, "Assigned"); // Backend probably expects "ASSIGNED" here too? Check your API logic.
-      await fetchReportsData();
-
+      const result = await updateReportStatus(reportId, "Assigned");
       if (result?.error) throw new Error(result.error);
       if (!result?.assignee) return { noOfficerFound: true };
-      return { success: true };
+      return { success: true, assignee: result.assignee };
     } catch (error) {
       console.error("Error approving report:", error);
       throw error;
     }
   };
 
+  // La logica di re-fetching viene spostata in ReportDetails, qui facciamo solo l'API call.
   const handleRejectReport = async (reportId, reason) => {
     try {
       await updateReportStatus(reportId, "Rejected", reason);
-      await fetchReportsData();
       return true;
     } catch (error) {
       console.error("Error rejecting report:", error);
       return false;
     }
   };
+  
+  // Questa funzione sarà passata a ReportDetails e richiamerà fetchReportsData()
+  const handleReportUpdateFromModal = async (reportId, updates) => {
+      // In ogni caso, forziamo il re-fetch della lista completa
+      await fetchReportsData();
+      
+      // OPTIONAL: Se selectedReport è ancora settato, aggiorna anche lui per mantenere la consistenza
+      setSelectedReport(prev => (
+          prev && prev.id === reportId ? { ...prev, ...updates } : prev
+      ));
+  };
+
 
   // --- RENDER CONTENT HELPER ---
   const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="text-center p-5">
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-2 text-muted">Loading reports...</p>
-        </div>
-      );
-    }
-
+    // Rimuoviamo il controllo isLoading da qui, perché viene gestito prima
+    
     if (reports.length === 0) {
       return (
         <div className="text-center p-5 text-muted">
@@ -406,8 +409,17 @@ export default function MunicipalityUserHome({ user }) {
       )}
 
       {/* Table Card */}
-      <Card className="mu-home-card border-0 shadow-sm">
-        <Card.Body className="p-0">{renderContent()}</Card.Body>
+      <Card className="mu-home-card border-0 shadow-sm" style={{ minHeight: '300px' }}> {/* Aggiunto minHeight */}
+        
+        {/* Nuovo blocco Caricamento (Visibile solo quando isLoading è true) */}
+        {isLoading ? (
+            <div className="text-center p-5 position-absolute top-50 start-50 translate-middle">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-2 text-muted">Loading reports...</p>
+            </div>
+        ) : (
+            <Card.Body className="p-0">{renderContent()}</Card.Body>
+        )}
       </Card>
 
       {/* Report Detail Modal */}
@@ -418,6 +430,8 @@ export default function MunicipalityUserHome({ user }) {
         user={user}
         onApprove={handleAcceptReport}
         onReject={handleRejectReport}
+        onReportUpdated={handleReportUpdateFromModal}
+        onStatusUpdate={fetchReportsData}
       />
     </Container>
   );

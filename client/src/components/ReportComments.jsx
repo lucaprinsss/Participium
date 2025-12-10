@@ -8,8 +8,8 @@ import "../css/ReportComments.css";
 // URL placeholder se manca la foto
 const DEFAULT_AVATAR = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png";
 
-const ReportComments = ({ reportId, currentUserId, showToast }) => { // NUOVA PROP RICEVUTA
-    // Stato per gestire l'apertura/chiusura (True = aperto all'inizio, False = chiuso)
+const ReportComments = ({ reportId, currentUserId, showToast }) => { 
+    // Stato per gestire l'apertura/chiusura
     const [isExpanded, setIsExpanded] = useState(false);
 
     const [comments, setComments] = useState([]);
@@ -23,50 +23,72 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => { // NUOVA PR
 
     const commentsEndRef = useRef(null);
 
+    const scrollToBottom = (behavior = "smooth") => {
+        commentsEndRef.current?.scrollIntoView({ behavior: behavior });
+    };
+
     const fetchComments = async () => {
         setLoadingComments(true);
         try {
             const data = await getAllReportComments(reportId);
+            const oldCommentsCount = comments.length; // Conto i vecchi commenti
             setComments(data || []);
-            // Scrolla solo se è aperto
-            if (isExpanded) {
-                setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300);
+            
+            // Logica: Scrolla solo se era già aperto O se sono stati aggiunti nuovi commenti
+            if (isExpanded || (data && data.length > oldCommentsCount && oldCommentsCount > 0)) {
+                // Scrolla subito 'auto' per un'esperienza più fluida
+                setTimeout(() => scrollToBottom("auto"), 50); 
+            } else if (isExpanded) {
+                // Scrolla 'auto' all'apertura iniziale se non ci sono commenti freschi
+                setTimeout(() => scrollToBottom("auto"), 300);
             }
+            
         } catch (error) {
             console.error("Failed to load comments", error);
-            // Non uso Toast qui, è un errore silente
         } finally {
             setLoadingComments(false);
         }
     };
 
-    // Carica i commenti all'avvio (o potresti farlo solo quando si apre la tendina)
+    // Carica i commenti all'avvio del componente
     useEffect(() => {
         if (reportId) fetchComments();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reportId]);
 
-    // Scrolla in basso quando si apre la tendina
+    // Scrolla in basso quando si apre la tendina (transizione da 0 a 1fr) O se la lista è stata inizializzata (caricamento iniziale)
     useEffect(() => {
-        if (isExpanded && commentsEndRef.current) {
-            setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300);
+        if (isExpanded && comments.length > 0 && commentsEndRef.current) {
+            // Un breve timeout per permettere all'animazione CSS di finire prima dello scroll
+            setTimeout(() => scrollToBottom("smooth"), 300);
         }
-    }, [isExpanded]);
+    }, [isExpanded]); 
 
     const handlePostComment = async (e) => {
         e.preventDefault();
         if (!newCommentText.trim()) return;
         setSubmittingComment(true);
         try {
+            // Aggiungi commento
             await addReportComment(reportId, { content: newCommentText });
-            await fetchComments();
             setNewCommentText("");
-            showToast("Comment added successfully!", "success"); // Toast per successo post
-            // Se scrivi un commento, assicurati che la tendina rimanga aperta e scrolli
+            
+            // Ricarica la lista per includere il nuovo commento
+            const data = await getAllReportComments(reportId);
+            setComments(data || []);
+            
+            // Forza lo scroll alla fine (risolve il glitch)
+            if (data && data.length > 0) {
+                 setTimeout(() => scrollToBottom("smooth"), 50);
+            }
+
+            showToast("Comment added successfully!", "success");
+            // Se si aggiunge un commento, assicurati che la tendina sia aperta
             if (!isExpanded) setIsExpanded(true);
+            
         } catch (error) { 
             console.error("Error posting comment:", error); 
-            showToast("Failed to post comment. Please try again.", "error"); // Toast per errore post
+            showToast("Failed to post comment. Please try again.", "error");
         }
         finally { setSubmittingComment(false); }
     };
@@ -95,7 +117,6 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => { // NUOVA PR
                 setCommentToDelete(null);
                 showToast("Comment deleted.", "success");
             } else {
-                // SOSTITUZIONE: alert("Error deleting comment. Please try again.");
                 showToast("Error deleting comment. Please try again.", "error"); 
             }
         } finally {
@@ -135,7 +156,7 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => { // NUOVA PR
                     <div className="rdm-comments-container">
                         {loadingComments ? (
                             <div className="text-center py-4 text-muted small">Loading conversation...</div>
-                        ) : comments.length === 0 ? (
+                        ) : comments.length === 0 && !loadingComments ? (
                             <div className="rdm-empty-comments">
                                 <FaRegCommentDots size={24} className="mb-2" />
                                 <p>No internal notes yet.</p>
@@ -150,15 +171,20 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => { // NUOVA PR
 
                                     const containerClass = isMyComment ? "my-message" : "other-message";
                                     const authorFullName = `${comment.author?.first_name || ''} ${comment.author?.last_name || ''}`.trim() || comment.author?.username || "Unknown";
+                                    
+                                    // LOGICA AGGIORNATA: Usa l'immagine specifica o il DEFAULT_AVATAR
                                     const avatarSrc = comment.author?.personalPhotoUrl || DEFAULT_AVATAR;
 
                                     return (
                                         <div key={comment.id} className={`rdm-comment-item ${containerClass}`}>
                                             <div className="rdm-comment-avatar">
+                                                {/* Mostra sempre l'immagine, con fallback a DEFAULT_AVATAR se l'URL non carica */}
                                                 <img 
                                                     src={avatarSrc} 
-                                                    alt="user avatar" 
+                                                    alt={`${authorFullName} avatar`} 
                                                     style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                                                    // Fallback: se l'immagine non carica, usiamo il DEFAULT_AVATAR.
+                                                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR; }}
                                                 />
                                             </div>
 
