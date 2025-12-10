@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
+  globalTeardown: '<rootDir>/src/test/teardown.ts',
   testMatch: [
     '**/test/**/*.test.ts',
     '**/test/**/*.spec.ts',

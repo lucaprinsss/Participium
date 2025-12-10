@@ -5,10 +5,11 @@ import { randomBytes } from 'node:crypto';
 
 /**
  * Storage Service
+ * Handles photo uploads to container filesystem
  */
 class StorageService {
   constructor() {
-    console.log('Storage initialized: Local filesystem');
+    console.log('Storage initialized: Container filesystem');
   }
 
   /**
@@ -21,14 +22,14 @@ class StorageService {
   async uploadPhoto(buffer: Buffer, mimeType: string, reportId: number): Promise<string> {
     const extension = this.getExtensionFromMimeType(mimeType);
     const filename = `${Date.now()}-${randomBytes(8).toString('hex')}.${extension}`;
-    return await this.uploadToLocal(buffer, filename, reportId);
+    return await this.savePhoto(buffer, filename, reportId);
   }
 
 
   /**
-   * Upload photo to local filesystem (container)
+   * Save photo to container filesystem
    */
-  private async uploadToLocal(buffer: Buffer, filename: string, reportId: number): Promise<string> {
+  private async savePhoto(buffer: Buffer, filename: string, reportId: number): Promise<string> {
     const uploadDir = path.join(
       process.cwd(),
       storageConfig.uploadDir,
@@ -53,7 +54,7 @@ class StorageService {
    * @param reportId - Report ID
    */
   async deleteReportPhotos(reportId: number): Promise<void> {
-    // Delete local directory
+    // Delete container directory
     const reportDir = path.join(
       process.cwd(),
       storageConfig.uploadDir,

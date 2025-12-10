@@ -157,7 +157,6 @@ class ReportService {
       const buffer = dataUriToBuffer(dataUri);
       const mimeType = extractMimeType(dataUri)!;
       
-      // Upload using storage service (handles both local and R2)
       const storagePath = await storageService.uploadPhoto(buffer, mimeType, reportId);
       storagePaths.push(storagePath);
     }

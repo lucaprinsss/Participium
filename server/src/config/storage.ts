@@ -1,8 +1,9 @@
 /**
- * Storage configuration
+ * Storage configuration for container filesystem
+ * Photos are stored in the container's /uploads directory
  * @module config/storage
  */
 export const storageConfig = {
-  uploadDir: process.env.UPLOAD_DIR || 'uploads',
+  uploadDir: 'uploads',
   reportsDir: 'reports',
 };
