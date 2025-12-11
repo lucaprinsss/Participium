@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # 1. Database (PostgreSQL + PostGIS)
   db:
-    image: scofield28/participium-team10:db-release-1
+    image: scofield28/participium-team10:db-demo-3
     build: ./server/src/database
     container_name: participium_db
     restart: unless-stopped
@@ -23,7 +23,7 @@ services:
 
   # 2. Backend (Node.js API)
   server:
-    image: scofield28/participium-team10:server-release-1
+    image: scofield28/participium-team10:server-demo-3
     build: ./server
     container_name: participium_server
     restart: unless-stopped
@@ -45,7 +45,7 @@ services:
 
   # 3. Frontend (Nginx + React)
   client:
-    image: scofield28/participium-team10:client-release-1
+    image: scofield28/participium-team10:client-demo-3
     build: ./client
     container_name: participium_client
     restart: unless-stopped

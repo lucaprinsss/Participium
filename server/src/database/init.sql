@@ -449,8 +449,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'user',
-    'Test',
-    'User',
+    'Giulio',
+    'Cesare',
     -- Password hash for 'password'
     '7020171912e5505c6f0f738d4ebef2ed:d9287860544ca95295a2941079f6531267fe2c3d85c6555d033c04a262ad44ffdcc4ef551f92f7000fc40a28a779839108b6b4e2b7b332ee2165c6b7d17b216a',
     
@@ -469,8 +469,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'user2',
-    'Test',
-    'User 2',
+    'Zlatan',
+    'Ibrahimovic',
     -- Password hash for 'password'
     '7020171912e5505c6f0f738d4ebef2ed:d9287860544ca95295a2941079f6531267fe2c3d85c6555d033c04a262ad44ffdcc4ef551f92f7000fc40a28a779839108b6b4e2b7b332ee2165c6b7d17b216a',
     
