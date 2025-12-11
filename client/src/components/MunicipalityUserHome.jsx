@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import PropTypes from "prop-types"; // Aggiunto per best practices
+import PropTypes from "prop-types";
 import {
     Container,
     Card,
@@ -8,7 +8,6 @@ import {
     Button,
     Alert,
     Dropdown,
-    //Spinner, // Rimosso se non usato
     InputGroup,
 } from "react-bootstrap";
 import { BsEye } from "react-icons/bs";
@@ -35,8 +34,9 @@ const ALL_STATUSES = [
     "Rejected",
     "Resolved",
 ];
-const STAFF_MEMBER_STATUSES = [
-    "All Statuses",
+
+// FIX: Rimosso "All Statuses" da qui per evitare la duplicazione nel Dropdown
+const STAFF_MEMBER_STATUSES_LIST = [
     "Assigned",
     "In Progress",
     "Suspended",
@@ -86,7 +86,7 @@ const ReportsTableBody = React.memo(({ reports, handleShow }) => {
     if (reports.length === 0) {
         return (
             <tr>
-                <td colSpan="5" className="text-center p-5 text-muted">
+                <td colSpan="6" className="text-center p-5 text-muted"> {/* Aumentato colSpan */}
                     <h5>Nessuna segnalazione trovata</h5>
                     <p className="mb-0">
                         Nessuna segnalazione corrisponde ai criteri di ricerca.
@@ -103,6 +103,12 @@ const ReportsTableBody = React.memo(({ reports, handleShow }) => {
             </td>
             <td>{report.title}</td>
             <td>{report.createdAt.toLocaleDateString()}</td>
+            <td>
+                {/* Colonna Aggiunta per l'Assegnatario */}
+                {report.assignee?.username || report.assignee?.id || (
+                    <span className="text-muted fst-italic">N/A</span>
+                )}
+            </td>
             <td>
                 <Badge
                     bg={getStatusBadgeVariant(report.status)}
@@ -133,6 +139,11 @@ ReportsTableBody.propTypes = {
         title: PropTypes.string.isRequired,
         createdAt: PropTypes.instanceOf(Date).isRequired,
         status: PropTypes.string.isRequired,
+        assignee: PropTypes.oneOfType([
+            PropTypes.shape({ username: PropTypes.string, id: PropTypes.number }),
+            PropTypes.number,
+            PropTypes.string,
+        ]),
     })).isRequired,
     handleShow: PropTypes.func.isRequired,
 };
@@ -153,7 +164,7 @@ const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, s
                     variant="light"
                     className="mu-filter-toggle"
                     id="category-filter"
-                    disabled={isCategoryFilterDisabled} // <--- MODIFICATO per usare la nuova prop
+                    disabled={isCategoryFilterDisabled}
                 >
                     <div className="d-flex align-items-center justify-content-between w-100">
                         <span className="text-truncate">
@@ -223,7 +234,7 @@ const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, s
 ));
 
 ReportsFilters.propTypes = {
-    isCategoryFilterDisabled: PropTypes.bool.isRequired, // <--- Aggiornato Proptype
+    isCategoryFilterDisabled: PropTypes.bool.isRequired,
     categoryFilter: PropTypes.string.isRequired,
     statusFilter: PropTypes.string.isRequired,
     allCategories: PropTypes.array.isRequired,
@@ -259,7 +270,7 @@ export default function MunicipalityUserHome({ user }) {
     }, [isStaffMember, user?.role_name]);
 
     const availableStatuses = useMemo(() => {
-        return isStaffMember ? STAFF_MEMBER_STATUSES : ALL_STATUSES;
+        return isStaffMember ? STAFF_MEMBER_STATUSES_LIST : ALL_STATUSES; // Aggiornato a LIST
     }, [isStaffMember]);
 
     // --- STATE ---
@@ -282,8 +293,6 @@ export default function MunicipalityUserHome({ user }) {
     const [selectedReport, setSelectedReport] = useState(null);
 
     // --- EFFECT: Sincronizzazione Iniziale Categoria Staff Member ---
-    // NOTA: Se l'utente è PR, userDepartmentCategory sarà null e quindi il filtro
-    // non verrà forzato, lasciando la possibilità di selezionare 'All Categories'.
     useEffect(() => {
         if (isStaffMember && !isPublicRelations && !isAdministrator) {
             // Aggiorna il filtro categoria in base al dipartimento dell'utente staff (SOLO se è un semplice StaffMember)
@@ -291,7 +300,7 @@ export default function MunicipalityUserHome({ user }) {
                 setCategoryFilter(userDepartmentCategory || "");
             }
             // Assicura che lo stato sia valido per lo staff (evita Pending Approval ecc.)
-            if (!STAFF_MEMBER_STATUSES.includes(statusFilter) && statusFilter !== "") {
+            if (!STAFF_MEMBER_STATUSES_LIST.includes(statusFilter) && statusFilter !== "") { // Aggiornato a LIST
                 setStatusFilter(""); // Reset a "All Statuses"
             }
         } else if (isAdministrator || isPublicRelations) {
@@ -416,6 +425,7 @@ export default function MunicipalityUserHome({ user }) {
                         <th className="ps-4">Category</th>
                         <th>Title</th>
                         <th>Date</th>
+                        <th>Assigned External </th> {/* COLONNA AGGIUNTA */}
                         <th>Status</th>
                         <th className="text-end pe-4">Action</th>
                     </tr>
@@ -441,7 +451,7 @@ export default function MunicipalityUserHome({ user }) {
 
                 {/* Filtri Estratti nel Componente ReportsFilters */}
                 <ReportsFilters
-                    isCategoryFilterDisabled={isCategoryFilterDisabled} // <--- PASSATA LA NUOVA PROP
+                    isCategoryFilterDisabled={isCategoryFilterDisabled}
                     categoryFilter={categoryFilter}
                     statusFilter={statusFilter}
                     allCategories={allCategories}
@@ -500,5 +510,6 @@ export default function MunicipalityUserHome({ user }) {
 MunicipalityUserHome.propTypes = {
     user: PropTypes.shape({
         role_name: PropTypes.string,
+        // Aggiungi qui altre props di user se necessarie, ma role_name è cruciale
     }).isRequired,
 };
