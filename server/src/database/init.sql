@@ -345,8 +345,8 @@ ON CONFLICT (category) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'admin',
-    'System',
-    'Administrator',
+    'Andrea',
+    'Bianchi',
     '455eb328698d8cb5c8956fa51027dd4b:a93a35cebfb7f7b59c8ebe7720eac36c4ef76ec6d7d19d5e4e179555e57d2695fbbfc34ad8931d6c985fdcf2492f6fe3fc87dc4e7ddc20b9f4c66caa50c36e4d',
     
     -- This subquery finds the ID for the 'Organization' / 'Administrator' position
@@ -385,8 +385,8 @@ INSERT INTO users (username, first_name, last_name, password_hash, department_ro
 VALUES
     -- Enel X - Specialized in public lighting
     ('enelx',
-     'Enel X',
-     'Support Team',
+     'Mario',
+     'Rossi',
      '7020171912e5505c6f0f738d4ebef2ed:d9287860544ca95295a2941079f6531267fe2c3d85c6555d033c04a262ad44ffdcc4ef551f92f7000fc40a28a779839108b6b4e2b7b332ee2165c6b7d17b216a',
      (SELECT dr.id FROM department_roles dr
       JOIN departments d ON dr.department_id = d.id
@@ -399,8 +399,8 @@ VALUES
     
     -- Acea - Specialized in water and sewer systems
     ('acea',
-     'Acea',
-     'Water Services',
+     'Luca',
+     'Gialli',
      '7020171912e5505c6f0f738d4ebef2ed:d9287860544ca95295a2941079f6531267fe2c3d85c6555d033c04a262ad44ffdcc4ef551f92f7000fc40a28a779839108b6b4e2b7b332ee2165c6b7d17b216a',
      (SELECT dr.id FROM department_roles dr
       JOIN departments d ON dr.department_id = d.id
@@ -413,8 +413,8 @@ VALUES
     
     -- Hera - Specialized in waste management
     ('hera',
-     'Hera',
-     'Waste Management',
+     'Christian',
+     'Bassi',
      '7020171912e5505c6f0f738d4ebef2ed:d9287860544ca95295a2941079f6531267fe2c3d85c6555d033c04a262ad44ffdcc4ef551f92f7000fc40a28a779839108b6b4e2b7b332ee2165c6b7d17b216a',
      (SELECT dr.id FROM department_roles dr
       JOIN departments d ON dr.department_id = d.id
@@ -427,8 +427,8 @@ VALUES
     
     -- ATM - Specialized in mobility and traffic
     ('atm',
-     'ATM',
-     'Traffic Management',
+     'Gianni',
+     'Maggi',
      '7020171912e5505c6f0f738d4ebef2ed:d9287860544ca95295a2941079f6531267fe2c3d85c6555d033c04a262ad44ffdcc4ef551f92f7000fc40a28a779839108b6b4e2b7b332ee2165c6b7d17b216a',
      (SELECT dr.id FROM department_roles dr
       JOIN departments d ON dr.department_id = d.id
@@ -450,7 +450,7 @@ INSERT INTO users (username, first_name, last_name, password_hash, department_ro
 VALUES (
     'user',
     'Giulio',
-    'Cesare',
+    'Coppi',
     -- Password hash for 'password'
     '7020171912e5505c6f0f738d4ebef2ed:d9287860544ca95295a2941079f6531267fe2c3d85c6555d033c04a262ad44ffdcc4ef551f92f7000fc40a28a779839108b6b4e2b7b332ee2165c6b7d17b216a',
     
@@ -469,8 +469,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'user2',
-    'Zlatan',
-    'Ibrahimovic',
+    'Alessia',
+    'Marroni',
     -- Password hash for 'password'
     '7020171912e5505c6f0f738d4ebef2ed:d9287860544ca95295a2941079f6531267fe2c3d85c6555d033c04a262ad44ffdcc4ef551f92f7000fc40a28a779839108b6b4e2b7b332ee2165c6b7d17b216a',
     
@@ -494,8 +494,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'officer',
-    'Public Relations',
-    'Officer',
+    'Giada',
+    'Grassi',
     -- Password hash for 'officer'
     '848572160c1563d131bc2aeeaf0517a7:abfae26e6a0caa22c33c4361e9f2ef71fbe0731e53edd6f508016745ac6d1ecbc8c36f2889c23ba10054fb37f65eb209648feb827bb38cf397aca2f49ce12be0',
     
@@ -522,8 +522,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'director_water',
-    'Water Services',
-    'Director',
+    'Lucia',
+    'Bianchi',
     -- Password hash for 'director'
     'f1e1121ec7ae66434c068e02a5c0a133:3226ff94b978b740dc230ce7ec7ea2ca61b0b43b156395175e225e1d9b8eb23404f5afc781213b43cd7608982dbc3082212891b67eec202dce55a0c2332a58c7',
     (SELECT dr.id FROM department_roles dr
@@ -540,8 +540,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'director_infra',
-    'Infrastructure',
-    'Director',
+    'Chiara',
+    'Rossi',
     -- Password hash for 'director'
     'f1e1121ec7ae66434c068e02a5c0a133:3226ff94b978b740dc230ce7ec7ea2ca61b0b43b156395175e225e1d9b8eb23404f5afc781213b43cd7608982dbc3082212891b67eec202dce55a0c2332a58c7',
     (SELECT dr.id FROM department_roles dr
@@ -558,8 +558,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'director_lighting',
-    'Lighting Services',
-    'Director',
+    'Mario',
+    'Grandi',
     -- Password hash for 'director'
     'f1e1121ec7ae66434c068e02a5c0a133:3226ff94b978b740dc230ce7ec7ea2ca61b0b43b156395175e225e1d9b8eb23404f5afc781213b43cd7608982dbc3082212891b67eec202dce55a0c2332a58c7',
     (SELECT dr.id FROM department_roles dr
@@ -576,8 +576,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'director_waste',
-    'Waste Management',
-    'Director',
+    'Luca',
+    'Bossi',
     -- Password hash for 'director'
     'f1e1121ec7ae66434c068e02a5c0a133:3226ff94b978b740dc230ce7ec7ea2ca61b0b43b156395175e225e1d9b8eb23404f5afc781213b43cd7608982dbc3082212891b67eec202dce55a0c2332a58c7',
     (SELECT dr.id FROM department_roles dr
@@ -594,8 +594,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'director_traffic',
-    'Traffic Management',
-    'Director',
+    'Andrea',
+    'Maini',
     -- Password hash for 'director'
     'f1e1121ec7ae66434c068e02a5c0a133:3226ff94b978b740dc230ce7ec7ea2ca61b0b43b156395175e225e1d9b8eb23404f5afc781213b43cd7608982dbc3082212891b67eec202dce55a0c2332a58c7',
     (SELECT dr.id FROM department_roles dr
@@ -612,8 +612,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'director_parks',
-    'Parks and Recreation',
-    'Director',
+    'Carola',
+    'Verdi',
     -- Password hash for 'director'
     'f1e1121ec7ae66434c068e02a5c0a133:3226ff94b978b740dc230ce7ec7ea2ca61b0b43b156395175e225e1d9b8eb23404f5afc781213b43cd7608982dbc3082212891b67eec202dce55a0c2332a58c7',
     (SELECT dr.id FROM department_roles dr
@@ -630,8 +630,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'director_services',
-    'General Services',
-    'Director',
+    'Pietro',
+    'Gialli',
     -- Password hash for 'director'
     'f1e1121ec7ae66434c068e02a5c0a133:3226ff94b978b740dc230ce7ec7ea2ca61b0b43b156395175e225e1d9b8eb23404f5afc781213b43cd7608982dbc3082212891b67eec202dce55a0c2332a58c7',
     (SELECT dr.id FROM department_roles dr
@@ -655,8 +655,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'staff_water',
-    'Water Network',
-    'Technician',
+    'Pietro',
+    'Verdi',
     -- Password hash for 'staff'
     '2334999626450f0e93bc7f37fb68fd21:8d094d332b9aac31eb603cce7adac984dd49a366f5e51ddeb4cb273549c6fa199b021091378438829fb1732a72a69f39dca1d90436185e07233e21214c2f2e41',
     (SELECT dr.id FROM department_roles dr
@@ -673,8 +673,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'staff_sewer',
-    'Sewer System',
-    'Technician',
+    'Angelo',
+    'Corradi',
     -- Password hash for 'staff'
     '2334999626450f0e93bc7f37fb68fd21:8d094d332b9aac31eb603cce7adac984dd49a366f5e51ddeb4cb273549c6fa199b021091378438829fb1732a72a69f39dca1d90436185e07233e21214c2f2e41',
     (SELECT dr.id FROM department_roles dr
@@ -691,8 +691,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'staff_access',
-    'Accessibility',
-    'Technician',
+    'Angelo',
+    'Rossi',
     -- Password hash for 'staff'
     '2334999626450f0e93bc7f37fb68fd21:8d094d332b9aac31eb603cce7adac984dd49a366f5e51ddeb4cb273549c6fa199b021091378438829fb1732a72a69f39dca1d90436185e07233e21214c2f2e41',
     (SELECT dr.id FROM department_roles dr
@@ -709,8 +709,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'staff_road',
-    'Road Maintenance',
-    'Technician',
+    'Filippo',
+    'Toscano',
     -- Password hash for 'staff'
     '2334999626450f0e93bc7f37fb68fd21:8d094d332b9aac31eb603cce7adac984dd49a366f5e51ddeb4cb273549c6fa199b021091378438829fb1732a72a69f39dca1d90436185e07233e21214c2f2e41',
     (SELECT dr.id FROM department_roles dr
@@ -727,8 +727,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'staff_lighting',
-    'Public Lighting',
-    'Technician',
+    'Andrea',
+    'Pugliese',
     -- Password hash for 'staff'
     '2334999626450f0e93bc7f37fb68fd21:8d094d332b9aac31eb603cce7adac984dd49a366f5e51ddeb4cb273549c6fa199b021091378438829fb1732a72a69f39dca1d90436185e07233e21214c2f2e41',
     (SELECT dr.id FROM department_roles dr
@@ -745,8 +745,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'staff_waste',
-    'Waste Management',
-    'Technician',
+    'Carolina',
+    'Lombardi',
     -- Password hash for 'staff'
     '2334999626450f0e93bc7f37fb68fd21:8d094d332b9aac31eb603cce7adac984dd49a366f5e51ddeb4cb273549c6fa199b021091378438829fb1732a72a69f39dca1d90436185e07233e21214c2f2e41',
     (SELECT dr.id FROM department_roles dr
@@ -763,8 +763,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'staff_traffic',
-    'Traffic Management',
-    'Technician',
+    'Luca',
+    'Angeleri',
     -- Password hash for 'staff'
     '2334999626450f0e93bc7f37fb68fd21:8d094d332b9aac31eb603cce7adac984dd49a366f5e51ddeb4cb273549c6fa199b021091378438829fb1732a72a69f39dca1d90436185e07233e21214c2f2e41',
     (SELECT dr.id FROM department_roles dr
@@ -781,8 +781,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'staff_parks',
-    'Parks Maintenance',
-    'Technician',
+    'Matteo',
+    'Re',
     -- Password hash for 'staff'
     '2334999626450f0e93bc7f37fb68fd21:8d094d332b9aac31eb603cce7adac984dd49a366f5e51ddeb4cb273549c6fa199b021091378438829fb1732a72a69f39dca1d90436185e07233e21214c2f2e41',
     (SELECT dr.id FROM department_roles dr
@@ -799,8 +799,8 @@ ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, first_name, last_name, password_hash, department_role_id, email, email_notifications_enabled, is_verified)
 VALUES (
     'staff_support',
-    'Support',
-    'Officer',
+    'Marco',
+    'Lolla',
     -- Password hash for 'staff'
     '2334999626450f0e93bc7f37fb68fd21:8d094d332b9aac31eb603cce7adac984dd49a366f5e51ddeb4cb273549c6fa199b021091378438829fb1732a72a69f39dca1d90436185e07233e21214c2f2e41',
     (SELECT dr.id FROM department_roles dr
