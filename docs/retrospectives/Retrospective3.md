@@ -1,11 +1,9 @@
 RETROSPECTIVE 3 (Team 10)
 =====================================
 
-The retrospective should include _at least_ the following
-sections:
-
 - [process measures](#process-measures)
 - [quality measures](#quality-measures)
+- [technical debt](#technical-debt)
 - [general assessment](#assessment)
 
 ## PROCESS MEASURES 
@@ -20,9 +18,9 @@ Our Definition of Done:
  
 - Unit Tests passing
 - Integration tests passing
+- End-to-End tests performed
 - Code review completed
 - Code present on VCS
-- End-to-End tests performed
 
 
 ### Detailed statistics
@@ -63,22 +61,29 @@ $$\text{Sample standard deviation }(s)=\sqrt{\frac{1}{n-1}\sum_{i=1}^n (x_i-\mu)
   - Total hours estimated : 6h
   - Total hours spent : 6h
   - Nr of automated unit test cases : 581
-  - Coverage :                    ????????????????????????????????????????????????
+
 - Integration testing:
   - Total hours estimated : 6h
   - Total hours spent : 6h
+  - Nr of automated unit test cases : 585
+
 - E2E testing:
   - Total hours estimated : 5h
   - Total hours spent : 6h
+  - Nr of automated unit test cases : 219
+
+- Total Test Coverage : 89.72%
+
 - Code review: 
   - Total hours estimated : 6h
   - Total hours spent : 5h 45min
+
 - Technical Debt management:
   - Strategy adopted : We gave priority to high impact issues, starting from the ones that require less effort.
   - Total hours estimated estimated at sprint planning : 9h (10% of total time)
   - Total hours spent : 9h
   
-## TECHNICAL DEPT
+## TECHNICAL DEBT
 - Goals: 
   - Maintainability rate: A
   - Security: B
@@ -86,10 +91,10 @@ $$\text{Sample standard deviation }(s)=\sqrt{\frac{1}{n-1}\sum_{i=1}^n (x_i-\mu)
   - Code duplication: below 5%
   - Test coverage: above 80%
 
-- Result optained:
+- Results obtained:
   - Maintainability rate: A
   - Security: A
-  - Reliability: B //before that it was D and we have managed to improve until level B
+  - Reliability: B (before that it was D and we have managed to improve until level B)
   - Code duplication: 4.3% (overall code), 3.02% (new code) 
   - Test coverage: 89.72%
 
@@ -98,22 +103,22 @@ $$\text{Sample standard deviation }(s)=\sqrt{\frac{1}{n-1}\sum_{i=1}^n (x_i-\mu)
 
 - What caused your errors in estimation (if any)?
   - We did a bit of overestimation on time for the code review.
-  - we had an extra task that was not needed.
+  - We had an extra task that was not needed.
 
 - What lessons did you learn (both positive and negative) in this sprint?
-  - we learned we are able to keep the pace in a balanced way as we had same story points done as previous.
-  - it's not necessary to rush the last day of the Sprint if we plan and respect internal deadlines
+  - We learned we are able to keep the pace in a balanced way as we had same story points done as previous.
+  - It's not necessary to rush the last day of the Sprint if we plan and respect internal deadlines
 
 - Which improvement goals set in the previous retrospective were you able to achieve? 
-  - we have set internal deadlines and we were on time
-  - we improve our Sprint Planning skills
+  - We have set internal deadlines and we were on time
+  - We improve our Sprint Planning skills
 
 - Which ones you were not able to achieve? Why?
-  - we had a little bit of overestimation in some tasks
+  - We had a little bit of overestimation in some tasks
 
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
-  - we still need to be more percise with the estimation of tasks so we would be able not to overestimate or underestimate it.
-  - even though we have managed to meet our planned technical debt thresholds, we can still improve our rates. 
+  - We still need to be more precise with the estimation of tasks so we would be able to not overestimate or underestimate them.
+  - Even though we have managed to meet our planned technical debt thresholds, we can still improve our rates. 
 
 - One thing you are proud of as a Team!!
-  - we believe in each other's work!
+  - We believe in each other's work!
