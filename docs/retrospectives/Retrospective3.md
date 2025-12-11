@@ -1,4 +1,4 @@
-RETROSPECTIVE 3 (Team 10)
+RETROSPECTIVE SPRINT 3 PARTICIPIUM (Team 10)
 =====================================
 
 - [process measures](#process-measures)
@@ -65,13 +65,14 @@ $$\text{Sample standard deviation }(s)=\sqrt{\frac{1}{n-1}\sum_{i=1}^n (x_i-\mu)
 - Integration testing:
   - Total hours estimated : 6h
   - Total hours spent : 6h
-  - Nr of automated unit test cases : 585
+  - Nr test cases : 585
 
 - E2E testing:
   - Total hours estimated : 5h
   - Total hours spent : 6h
-  - Nr of automated unit test cases : 219
+  - Nr of test cases : 219
 
+- Total Test Cases: 1385
 - Total Test Coverage : 89.72%
 
 - Code review: 
