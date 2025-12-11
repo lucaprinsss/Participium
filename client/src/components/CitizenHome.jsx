@@ -1,9 +1,9 @@
-//CitizenHome.jsx
 import React, { useState } from 'react';
+import PropTypes from 'prop-types'; // Importato per la validazione delle props
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaMapMarkedAlt, 
-  FaClipboardList, 
+import {
+  FaMapMarkedAlt,
+  FaClipboardList,
   FaBell,
   FaArrowRight,
   FaInfoCircle,
@@ -13,8 +13,28 @@ import '../css/CitizenHome.css';
 
 // Componente Modale per feature non implementata
 const NotImplementedModal = ({ onClose }) => (
-  <div className="ch-modal-overlay" onClick={onClose}>
-    <div className="ch-modal-content" onClick={(e) => e.stopPropagation()}>
+  // Correzione riga 16: Overlay. È interattivo (chiude la modale)
+  <div
+    className="ch-modal-overlay"
+    onClick={onClose}
+    role="button"
+    tabIndex={0}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === 'Escape') { // Aggiunta gestione ESC per accessibilità standard
+        onClose();
+      }
+    }}
+  >
+    {/* Correzione riga 17: Contenuto della Modale. NON è interattivo, serve solo a fermare la propagazione. */}
+    <div
+      className="ch-modal-content"
+      onClick={(e) => e.stopPropagation()}
+      role="presentation" 
+      tabIndex={-1} 
+    >
       <button className="ch-modal-close-btn" onClick={onClose} aria-label="Close">
         <FaTimes />
       </button>
@@ -23,7 +43,7 @@ const NotImplementedModal = ({ onClose }) => (
       </div>
       <h3 className="ch-modal-title">Feature Coming Soon</h3>
       <p className="ch-modal-desc">
-        We apologize, but the "My Reports" dashboard is currently under development. 
+        We apologize, but the "My Reports" dashboard is currently under development.
         <br /><br />
         Our team is working to bring you this feature as soon as possible to help you track your submissions effectively.
       </p>
@@ -33,6 +53,11 @@ const NotImplementedModal = ({ onClose }) => (
     </div>
   </div>
 );
+
+// Aggiunta validazione props (S6774 per riga 15)
+NotImplementedModal.propTypes = {
+  onClose: PropTypes.func.isRequired,
+};
 
 // Componente Card per Feature (Statica / Informativa)
 const FeatureCard = ({ icon: Icon, title, description }) => (
@@ -47,9 +72,28 @@ const FeatureCard = ({ icon: Icon, title, description }) => (
   </div>
 );
 
+// Aggiunta validazione props (S6774 per riga 38)
+FeatureCard.propTypes = {
+  icon: PropTypes.elementType.isRequired, // icon non usato direttamente ma come Icon
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+};
+
 // Componente Card per Azioni (Interattiva)
 const ActionCard = ({ title, description, onClick, icon: Icon }) => (
-  <div className="ch-action-card clickable" onClick={onClick} role="button" tabIndex={0}>
+  // Correzione S6848, S1082 (Riga 53): Aggiunta gestione tastiera per l'interazione
+  <div
+    className="ch-action-card clickable"
+    onClick={onClick}
+    role="button"
+    tabIndex={0}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onClick();
+      }
+    }}
+  >
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div>
         <h3 className="ch-action-title">{title}</h3>
@@ -62,6 +106,13 @@ const ActionCard = ({ title, description, onClick, icon: Icon }) => (
   </div>
 );
 
+ActionCard.propTypes = {
+  icon: PropTypes.elementType.isRequired,
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  onClick: PropTypes.func.isRequired,
+};
+
 // Componente Header
 const PageHeader = ({ userName }) => (
   <header className="ch-header">
@@ -73,7 +124,11 @@ const PageHeader = ({ userName }) => (
   </header>
 );
 
-// Componente Features Section
+PageHeader.propTypes = {
+  userName: PropTypes.string.isRequired,
+};
+
+// Componente Features Section (non ha props, non serve propTypes)
 const FeaturesSection = () => (
   <div className="ch-features-section">
     <h2 className="ch-section-title">How it works</h2>
@@ -116,26 +171,31 @@ const ActionsSection = ({ onNewReport, onMyReports }) => (
   </div>
 );
 
+ActionsSection.propTypes = {
+  onNewReport: PropTypes.func.isRequired,
+  onMyReports: PropTypes.func.isRequired,
+};
+
 // Main Component
 const CitizenHome = ({ user }) => {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
-  
+
   // Utilizzo first_name come da preferenza salvata
   const userName = user?.first_name || 'Citizen';
 
   const handleNewReport = () => navigate('/new-report');
-  
+
   // Modificato per aprire la modale invece di navigare
   const handleMyReports = () => setShowModal(true);
 
   return (
     <div className="ch-wrapper">
       <PageHeader userName={userName} />
-      
+
       <div className="ch-main-grid">
         <FeaturesSection />
-        <ActionsSection 
+        <ActionsSection
           onNewReport={handleNewReport}
           onMyReports={handleMyReports}
         />
@@ -144,6 +204,12 @@ const CitizenHome = ({ user }) => {
       {showModal && <NotImplementedModal onClose={() => setShowModal(false)} />}
     </div>
   );
+};
+
+CitizenHome.propTypes = {
+  user: PropTypes.shape({
+    first_name: PropTypes.string,
+  }).isRequired,
 };
 
 export default CitizenHome;

@@ -51,7 +51,7 @@ export default function AdminHome() {
 
               <Nav.Item>
                 <Nav.Link eventKey="add-user">
-                  <FaUserPlus className="me-2" /> Add Officer
+                  <FaUserPlus className="me-2" /> Create Accounts
                 </Nav.Link>
               </Nav.Item>
 

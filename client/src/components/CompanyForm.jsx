@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
+import PropTypes from "prop-types"; // Importato per la validazione delle props
 import { Row, Col, Form, Button, Alert, InputGroup, Dropdown } from "react-bootstrap";
 import { createCompany } from "../api/companyApi";
 import { FaBuilding, FaTag, FaSave, FaTimes, FaChevronDown } from "react-icons/fa";
-import "../css/MunicipalityUserForm.css"; 
+import "../css/MunicipalityUserForm.css";
 
 import { getAllCategories } from "../api/reportApi";
 
 const getLabelClass = (hasError) => hasError ? "muf-label text-danger" : "muf-label";
+
+// Aggiunta la validazione delle props per la funzione helper
+getLabelClass.propTypes = {
+    hasError: PropTypes.bool,
+};
 
 export default function CompanyForm({ onSuccess, onCancel }) {
     const initialFormState = { name: "", category: "" };
@@ -21,8 +27,8 @@ export default function CompanyForm({ onSuccess, onCancel }) {
         async function fetchCategories() {
             try {
                 const data = await getAllCategories();
-                if(mounted) setCategories(data);
-            } catch(e) { console.error(e); }
+                if (mounted) setCategories(data);
+            } catch (e) { console.error(e); }
         }
         fetchCategories();
         return () => { mounted = false; };
@@ -140,7 +146,7 @@ export default function CompanyForm({ onSuccess, onCancel }) {
                                     >
                                         <div className="d-flex align-items-center justify-content-between w-100">
                                             <span
-                                                className={`text-truncate ${!formData.category ? 'muf-placeholder-text' : ''}`}
+                                                className={`text-truncate ${formData.category ? '' : 'muf-placeholder-text'}`}
                                                 style={{ flex: 1, textAlign: 'left' }}
                                             >
                                                 {formData.category || "Select Category"}
@@ -149,9 +155,9 @@ export default function CompanyForm({ onSuccess, onCancel }) {
                                         </div>
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu className="muf-dropdown-menu">
-                                        {categories.map((cat, idx) => (
+                                        {categories.map((cat) => (
                                             <Dropdown.Item
-                                                key={idx}
+                                                key={cat}
                                                 eventKey={cat}
                                                 active={formData.category === cat}
                                                 className="muf-dropdown-item"
@@ -176,3 +182,9 @@ export default function CompanyForm({ onSuccess, onCancel }) {
         </div>
     );
 }
+
+// Aggiunta la validazione delle props per il componente principale
+CompanyForm.propTypes = {
+    onSuccess: PropTypes.func, // Funzione chiamata in caso di successo
+    onCancel: PropTypes.func.isRequired, // Funzione chiamata per annullare
+};
