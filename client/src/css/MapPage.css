@@ -51,7 +51,7 @@
   --radius-xl: 1.25rem;
    
   /* NUOVA VARIABILE: Altezza unificata per Input, Button e Dropdown */
-  --control-height: 3rem; /* Equivale a 48px */
+  --control-height: 2rem; /* Equivale a 48px */
 
   --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -263,7 +263,7 @@
 /* INPUTS */
 .mp-input {
   width: 100%; 
-  height: 2.75rem; /* Leggermente più bassi dei bottoni principali per gerarchia, o usa var(--control-height) se preferisci */
+  height: 2rem; /* Leggermente più bassi dei bottoni principali per gerarchia, o usa var(--control-height) se preferisci */
   padding: 0 0.75rem;
   border: 0.0625rem solid var(--border-light); border-radius: var(--radius-md);
   font-size: 0.95rem; background: var(--card-bg); transition: border-color 0.2s; color: var(--text-darker);
@@ -273,7 +273,7 @@
 
 .mp-textarea-wrapper { position: relative; width: 100%; }
 .mp-textarea.compact {
-  min-height: 6.25rem; resize: vertical; padding: 0.75rem; padding-bottom: 1.5rem; height: auto;
+  min-height: 5rem; resize: vertical; padding: 0.75rem; padding-bottom: 1.5rem; height: auto;
 }
 .mp-char-counter {
   position: absolute; bottom: 0.5rem; right: 0.75rem;
