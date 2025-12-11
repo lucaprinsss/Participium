@@ -67,10 +67,11 @@
 }
 
 .rdm-badge.category {
-  background: rgba(0, 0, 0, 0.15); 
+  background: rgba(0, 0, 0, 0.15);
   color: white;
   backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.4); /* Bordo più visibile */
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  /* Bordo più visibile */
 }
 
 /* Status Colors */
@@ -127,7 +128,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: rgba(0, 0, 0, 0.1); 
+  background: rgba(0, 0, 0, 0.1);
   border: none;
   color: white;
 }
@@ -198,13 +199,16 @@
   position: relative;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border: 2px solid white;
+  /* RIMOSSO: border: 2px solid white; */
+  background-color: transparent;
+  /* Aggiunto per massima sicurezza contro sfondo indesiderato */
 }
 
 .rdm-photo-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Mantiene questa proprietà, che è la chiave */
   transition: transform 0.4s ease;
 }
 
@@ -293,7 +297,8 @@
   border-color: var(--rdm-text-muted);
   cursor: not-allowed;
   background: transparent;
-  color: #4b5563; /* Gray 600 - Contrasto > 4.5:1 PASS */
+  color: #4b5563;
+  /* Gray 600 - Contrasto > 4.5:1 PASS */
   font-size: 0.9rem;
   letter-spacing: 0.5px;
 }
@@ -461,14 +466,14 @@
   justify-content: center;
   font-size: 1rem;
   flex-shrink: 0;
-  background: #f3e8ff; 
-  color: #7e22ce;      
+  background: #f3e8ff;
+  color: #7e22ce;
 }
 
 
 .rdm-icon-box.assignee {
-  background: #eff6ff; 
-  color: #1d4ed8; 
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .rdm-icon-box.location {
@@ -614,12 +619,14 @@
 }
 
 .rdm-dropdown-scroll-area::-webkit-scrollbar-thumb {
-  background-color: var(--rdm-brand); /* Era #d1d5db */
+  background-color: var(--rdm-brand);
+  /* Era #d1d5db */
   border-radius: 20px;
 }
 
 .rdm-dropdown-scroll-area::-webkit-scrollbar-thumb:hover {
-  background-color: var(--rdm-brand-dark); /* Aggiungi effetto hover */
+  background-color: var(--rdm-brand-dark);
+  /* Aggiungi effetto hover */
 }
 
 /* Items styling */
@@ -800,7 +807,8 @@
 
 
 .rdm-dropdown-id-badge {
-  font-family: 'Courier New', monospace; /* Font tecnico per i numeri */
+  font-family: 'Courier New', monospace;
+  /* Font tecnico per i numeri */
   font-size: 0.60rem;
   font-weight: 700;
   color: #6b7280;
@@ -808,8 +816,10 @@
   padding: 2px 8px;
   border-radius: 6px;
   border: 1px solid #e5e7eb;
-  white-space: nowrap; /* Impedisce che l'ID vada a capo */
-  flex-shrink: 0; /* Impedisce che l'ID si rimpicciolisca se il nome è lungo */
+  white-space: nowrap;
+  /* Impedisce che l'ID vada a capo */
+  flex-shrink: 0;
+  /* Impedisce che l'ID si rimpicciolisca se il nome è lungo */
   letter-spacing: -0.5px;
 }
 
@@ -865,7 +875,8 @@
 
 /* --- Animazione Smooth (Opzionale ma consigliata) --- */
 .rdm-collapsible-wrapper {
-  display: grid !important; /* Forza grid per sovrascrivere eventuali d-block/flex di Bootstrap */
+  display: grid !important;
+  /* Forza grid per sovrascrivere eventuali d-block/flex di Bootstrap */
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.3s ease-out, opacity 0.3s ease, margin-top 0.3s ease;
   opacity: 0;
@@ -876,10 +887,13 @@
 .rdm-collapsible-wrapper.open {
   grid-template-rows: 1fr;
   opacity: 1;
-  margin-top: 1.5rem; /* Aggiunge spazio solo quando è aperto */
+  margin-top: 1.5rem;
+  /* Aggiunge spazio solo quando è aperto */
 }
 
 .rdm-collapsible-inner {
-  min-height: 0; /* Essenziale per il funzionamento della grid transition */
-  overflow: hidden; /* Assicura che il contenuto non sbordi durante l'animazione */
+  min-height: 0;
+  /* Essenziale per il funzionamento della grid transition */
+  overflow: hidden;
+  /* Assicura che il contenuto non sbordi durante l'animazione */
 }

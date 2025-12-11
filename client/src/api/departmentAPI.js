@@ -3,7 +3,7 @@
  */
 const handleResponse = async (response) => {
   if (!response.ok) {
-    const error = new Error();
+    const error = new Error(` `);
     try {
       const data = await response.json();
       // FIX: Lo Swagger restituisce errori nel formato { message: "..." },

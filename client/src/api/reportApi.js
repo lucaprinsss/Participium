@@ -8,7 +8,7 @@ const handleResponse = async (response) => {
     return; // No Content, nothing to parse
   }
   if (!response.ok) {
-    const error = new Error();
+    const error = new Error(` `);
     try {
       const data = await response.json();
       error.message = data.message || data.error || `Request failed with status ${response.status}`;

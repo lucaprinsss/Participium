@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types"; // Importato per la validazione delle props
 import { Alert, InputGroup, Tooltip, OverlayTrigger } from "react-bootstrap";
-import { FaSearch, FaBuilding, FaTag, FaUndo } from "react-icons/fa"; 
+import { FaSearch, FaBuilding, FaTag, FaUndo } from "react-icons/fa";
 import { getAllCompanies } from "../api/companyApi";
-import "../css/MunicipalityUserList.css"; 
+import "../css/MunicipalityUserList.css";
 
 export default function CompanyList({ refreshTrigger }) {
   const [companies, setCompanies] = useState([]);
@@ -21,8 +22,8 @@ export default function CompanyList({ refreshTrigger }) {
         if (isMounted) setCompanies(data);
       } catch (err) {
         if (isMounted) {
-            console.error("Failed to fetch companies:", err);
-            setError("Failed to load company registry.");
+          console.error("Failed to fetch companies:", err);
+          setError("Failed to load company registry.");
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -35,17 +36,88 @@ export default function CompanyList({ refreshTrigger }) {
   }, [refreshTrigger]);
 
   const handleResetFilters = () => {
-      setSearchText("");
+    setSearchText("");
   };
 
   const filteredCompanies = companies.filter(company => {
     if (!searchText) return true;
     const lowerSearch = searchText.toLowerCase();
     return (
-        company.name.toLowerCase().includes(lowerSearch) ||
-        company.category.toLowerCase().includes(lowerSearch)
+      company.name.toLowerCase().includes(lowerSearch) ||
+      company.category.toLowerCase().includes(lowerSearch)
     );
   });
+
+  // Correzione S3358: Logica di rendering estratta in una funzione separata
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="mul-loading">
+          <div className="mul-loading-content">
+            <div className="mul-loading-spinner"></div>
+            <div>Loading companies...</div>
+          </div>
+        </div>
+      );
+    }
+
+    if (filteredCompanies.length === 0) {
+      const emptyMessage = searchText
+        ? "No companies match your search."
+        : "No companies found in the registry.";
+
+      return (
+        <div className="mul-empty">
+          <div className="mul-empty-content">
+            <div className="mul-empty-icon">🏢</div>
+            <div>
+              {emptyMessage}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mul-table-wrapper">
+        <table className="mul-table">
+          <thead>
+            <tr>
+              <th>Company Name</th>
+              <th>Category</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredCompanies.map((company) => (
+              <tr key={company.id || company.name}>
+                <td>
+                  <div className="d-flex align-items-center gap-2">
+                    <FaBuilding className="text-muted" />
+                    <strong>{company.name}</strong>
+                  </div>
+                </td>
+                <td>
+                  <span className="mul-role-badge">
+                    <FaTag className="me-1" style={{ fontSize: '0.7rem' }} />
+                    {company.category}
+                  </span>
+                </td>
+                <td>
+                  <div className="mul-actions">
+                    <button className="mul-btn mul-btn-edit" style={{ opacity: 0.5, cursor: 'not-allowed' }} disabled>
+                      Edit
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
 
   return (
     <div className="municipalityUserList-modern">
@@ -53,24 +125,24 @@ export default function CompanyList({ refreshTrigger }) {
         <h1 className="mul-title">Company Registry</h1>
         <div className="mul-filters">
           <InputGroup className="mul-filter-group">
-             <InputGroup.Text className="mul-filter-icon"><FaSearch/></InputGroup.Text>
-             <input 
-                type="text" 
-                className="form-control mul-filter-toggle"
-                placeholder="Search companies..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ borderLeft: 'none', boxShadow: 'none' }}
-             />
+            <InputGroup.Text className="mul-filter-icon"><FaSearch /></InputGroup.Text>
+            <input
+              type="text"
+              className="form-control mul-filter-toggle"
+              placeholder="Search companies..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ borderLeft: 'none', boxShadow: 'none' }}
+            />
           </InputGroup>
 
           <OverlayTrigger placement="top" overlay={<Tooltip>Reset Filters</Tooltip>}>
-            <button 
-                className="mul-btn-reset" 
-                onClick={handleResetFilters} 
-                disabled={!searchText}
+            <button
+              className="mul-btn-reset"
+              onClick={handleResetFilters}
+              disabled={!searchText}
             >
-                <FaUndo />
+              <FaUndo />
             </button>
           </OverlayTrigger>
         </div>
@@ -84,65 +156,19 @@ export default function CompanyList({ refreshTrigger }) {
 
       <div className="mul-card">
         <div className="mul-card-body">
-          {loading ? (
-            <div className="mul-loading">
-              <div className="mul-loading-content">
-                <div className="mul-loading-spinner"></div>
-                <div>Loading companies...</div>
-              </div>
-            </div>
-          ) : filteredCompanies.length === 0 ? (
-            <div className="mul-empty">
-              <div className="mul-empty-content">
-                <div className="mul-empty-icon">🏢</div>
-                <div>
-                  {searchText
-                    ? "No companies match your search."
-                    : "No companies found in the registry."
-                  }
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="mul-table-wrapper">
-              <table className="mul-table">
-                <thead>
-                  <tr>
-                    <th>Company Name</th>
-                    <th>Category</th>
-                    <th>Actions</th> 
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCompanies.map((company) => (
-                    <tr key={company.id || company.name}>
-                      <td>
-                        <div className="d-flex align-items-center gap-2">
-                            <FaBuilding className="text-muted" />
-                            <strong>{company.name}</strong>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="mul-role-badge">
-                            <FaTag className="me-1" style={{fontSize: '0.7rem'}}/>
-                            {company.category}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="mul-actions">
-                          <button className="mul-btn mul-btn-edit" style={{opacity: 0.5, cursor: 'not-allowed'}}>
-                            Edit
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {/* Chiamata alla funzione di rendering estratta */}
+          {renderContent()}
         </div>
       </div>
     </div>
   );
 }
+
+// Aggiunta la validazione delle props (S6774)
+CompanyList.propTypes = {
+  refreshTrigger: PropTypes.oneOfType([
+    PropTypes.bool,
+    PropTypes.number,
+    PropTypes.string,
+  ]).isRequired,
+};

@@ -3,12 +3,14 @@
  */
 const handleResponse = async (response) => {
   if (!response.ok) {
-    const error = new Error();
+    // Correzione S7722: Inizializza Error con un messaggio
+    const error = new Error(` `);
     try {
       const data = await response.json();
-      
+
+      // Aggiorna il messaggio con il dettaglio API
       error.message = data.message || data.error || `Request failed with status ${response.status}`;
-      
+
       error.status = response.status;
       error.data = data;
     } catch {
@@ -55,7 +57,7 @@ export async function verifyEmailCode(email, otpCode) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ email, otpCode }),
-    }); 
+    });
 
     return handleResponse(response);
   } catch (error) {

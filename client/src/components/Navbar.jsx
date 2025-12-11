@@ -1,47 +1,79 @@
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import PropTypes from "prop-types"; // Importato per la validazione delle prop
 import "../css/Navbar.css";
+
+// --- UTILITY E HELPER (ESTRATTE) ---
+
+// Funzione per ottenere le iniziali dell'utente in modo robusto
+const getInitials = (firstName, lastName) => {
+  const first = firstName?.charAt(0)?.toUpperCase() || '';
+  const last = lastName?.charAt(0)?.toUpperCase() || '';
+  // Se entrambi sono vuoti, restituisce 'U' (User)
+  return (first + last) || 'U'; 
+};
+getInitials.propTypes = {
+  firstName: PropTypes.string,
+  lastName: PropTypes.string,
+};
+
+// --- COMPONENTE PRINCIPALE ---
 
 export default function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
 
+  // 1. Logica dello scroll mantenuta
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const getInitials = (firstName, lastName) => {
-    const first = firstName?.charAt(0).toUpperCase() || '';
-    const last = lastName?.charAt(0).toUpperCase() || '';
-    return first + last || 'U'; 
-  };
+  // 2. Info Utente Derivate (uso useMemo per la stabilità)
+  const userRole = user?.role_name;
+  const isAdmin = userRole === 'Administrator';
 
-  const getDisplayRole = () => user?.role_name || 'User';
-  const isAdmin = user?.role_name === 'Administrator';
-
-  // Aggiornato per usare first_name e last_name
-  const getUsername = () => {
+  const isCitizen = useMemo(() => userRole === 'Citizen', [userRole]);
+  
+  // Utilizza useMemo per calcolare il nome utente completo e il ruolo di visualizzazione una sola volta
+  const displayUsername = useMemo(() => {
     if (user?.first_name && user?.last_name) {
       return `${user.first_name} ${user.last_name}`;
     }
     return user?.username || 'User'; 
-  };
+  }, [user?.first_name, user?.last_name, user?.username]);
 
-  const isCitizen = () => user?.role_name === 'Citizen';
+  const displayRole = useMemo(() => userRole || 'User', [userRole]);
+  
+  // Calcola le iniziali (richiede che first_name e last_name siano passati)
+  const avatarInitials = useMemo(() => {
+      // Garantisce che getInitials sia chiamato solo se l'oggetto user è presente
+      return getInitials(user?.first_name, user?.last_name);
+  }, [user?.first_name, user?.last_name]);
+
+
+  // 3. Gestore del Brand (Migliorata A11y)
+  const handleBrandClick = () => navigate("/");
 
   return (
     <nav className={`navbar-modern ${scrolled ? 'navbar-scrolled' : ''}`}>
       <div className="navbar-container">
         {/* Left Section */}
         <div className="navbar-left-section">
+          
+          {/* NAV BRAND: Usa una funzione singola per l'onClick e ha A11y già gestita */}
           <div 
             className="navbar-brand"
-            onClick={() => navigate("/")}
+            onClick={handleBrandClick} // Uso la funzione handler
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && navigate("/")}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') { // Aggiunto spazio per accessibilità standard
+                e.preventDefault(); 
+                handleBrandClick();
+              }
+            }}
           >
             <img
               src="/participium-circle.jpg"
@@ -61,9 +93,8 @@ export default function Navbar({ user, onLogout }) {
             </button>
           )}
 
-          {user && isCitizen() && (
+          {user && isCitizen && (
             <button className="home-btn-navbar" onClick={() => navigate("/new-report")}>
-              {/* NUOVA ICONA: Map Pin (Indicatore Mappa) */}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                 <circle cx="12" cy="10" r="3"></circle>
@@ -79,12 +110,12 @@ export default function Navbar({ user, onLogout }) {
           <div className="navbar-right-section">
             <div className="user-info-card">
               <div className="user-avatar">
-                {getInitials(user.first_name, user.last_name)}
+                {avatarInitials}
               </div>
               <div className="user-details">
-                <div className="user-name">{getUsername()}</div>
+                <div className="user-name">{displayUsername}</div>
                 <div className={`user-role ${isAdmin ? 'admin' : ''}`}>
-                  {getDisplayRole()}
+                  {displayRole}
                 </div>
               </div>
             </div>
@@ -103,3 +134,14 @@ export default function Navbar({ user, onLogout }) {
     </nav>
   );
 }
+
+// Validazione delle props
+Navbar.propTypes = {
+  user: PropTypes.shape({
+    role_name: PropTypes.string,
+    username: PropTypes.string,
+    first_name: PropTypes.string,
+    last_name: PropTypes.string,
+  }),
+  onLogout: PropTypes.func.isRequired,
+};
