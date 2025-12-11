@@ -91,13 +91,10 @@ export const updateMunicipalityUser = async (id, userData) => {
  * @returns {Promise<void>}
  */
 export const deleteMunicipalityUser = async (id) => {
-  console.log(`Calling DELETE /api/municipality/users/${id}`);
   const response = await fetch(`/api/municipality/users/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
-
-  console.log("Delete response status:", response.status);
   
   // Handle 204 No Content response
   if (response.status === 204) {

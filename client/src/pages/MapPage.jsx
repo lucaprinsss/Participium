@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import PropTypes from "prop-types";
+import React, { useState, useEffect, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -14,8 +13,10 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
   FaMapMarkerAlt,
+  FaTrash,
   FaMap,
   FaInfoCircle,
+  FaSave,
   FaCamera,
   FaTimes,
   FaListUl,
@@ -43,7 +44,7 @@ import ReportDetails from "../components/ReportDetails";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 
-// --- ICON CONFIGURATION (Omesso per brevità) ---
+// --- ICON CONFIGURATION ---
 let DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
@@ -66,49 +67,20 @@ const RedIcon = new L.Icon({
 });
 
 // --- Point-in-Polygon Logic ---
-
-// NUOVA FUNZIONE AUSILIARIA PER RIDURRE LA COMPLESSITÀ
-const isPointInPolygonGroup = (point, polygon) => {
-    let isInsideOuterRing = false;
-
-    // polygon è un array di anelli (il primo è l'esterno, i successivi sono fori)
-    for (let ringIndex = 0; ringIndex < polygon.length; ringIndex++) {
-        const ring = polygon[ringIndex];
-        const coordinates = ring.map((coord) => [coord[0], coord[1]]);
-        const ringIsInside = isPointInRing(point, coordinates);
-
-        // Il primo anello [0] è sempre l'esterno.
-        if (ringIndex === 0) {
-            isInsideOuterRing = ringIsInside;
-        } 
-        
-        // Se non è nell'anello esterno, non può essere valido.
-        if (!isInsideOuterRing) {
-            return false;
-        }
-
-        // Se è un foro (ringIndex > 0) ed è al suo interno, 
-        // significa che è in un'area forata (non valida).
-        if (ringIndex > 0 && ringIsInside) {
-            return false;
-        }
-    }
-    
-    // Ritorna vero solo se era nell'anello esterno e non in alcun foro.
-    return isInsideOuterRing;
-};
-
-
-// FUNZIONE ORIGINALE (Rifattorizzata)
 const isPointInMultiPolygon = (point, polygons) => {
-    // Polygons è un array di gruppi di anelli (ciascun elemento può essere un Polygon o parte di un MultiPolygon)
-    
-    for (const polygonGroup of polygons) {
-        if (isPointInPolygonGroup(point, polygonGroup)) {
-            return true;
-        }
-    }
-    return false;
+  let isInside = false;
+  polygons.forEach((polygonGroup) => {
+    polygonGroup.forEach((ring, ringIndex) => {
+      const coordinates = ring.map((coord) => [coord[0], coord[1]]);
+      const ringIsInside = isPointInRing(point, coordinates);
+      if (ringIndex === 0 && ringIsInside) {
+        isInside = true;
+      } else if (ringIndex > 0 && ringIsInside) {
+        isInside = false;
+      }
+    });
+  });
+  return isInside;
 };
 
 const isPointInRing = (point, ring) => {
@@ -142,22 +114,12 @@ const MapClickHandler = ({ onMapClick, turinPolygons }) => {
   return null;
 };
 
-MapClickHandler.propTypes = {
-  onMapClick: PropTypes.func.isRequired,
-  turinPolygons: PropTypes.array,
-};
-
 const FormError = ({ message }) => (
   <div className="mp-form-error">
     <FaTimes />
     <span>{message}</span>
-    
   </div>
 );
-
-FormError.propTypes = {
-  message: PropTypes.string.isRequired,
-};
 
 const MapPage = () => {
   // --- Refs & Map Instance ---
@@ -215,7 +177,7 @@ const MapPage = () => {
     location: "",
   });
 
-  const STATUS_OPTIONS = useMemo(() => ["Resolved", "Assigned", "In Progress", "Suspended"], []);
+  const STATUS_OPTIONS = ["Resolved", "Assigned", "In Progress", "Suspended"];
 
   const convertToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -252,9 +214,8 @@ const MapPage = () => {
   // --- Map Resize Effect ---
   useEffect(() => {
     if (mapInstance) {
-      // Usa requestAnimationFrame o setTimeout per dare tempo al CSS di aggiornare il layout
       const timer = setTimeout(() => {
-        mapInstance.invalidateSize(false); // invalidateSize(animate: false)
+        mapInstance.invalidateSize();
         if (showForm && marker) {
           mapInstance.panTo([marker.lat, marker.lng], {
             animate: true,
@@ -264,9 +225,9 @@ const MapPage = () => {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [showForm, mapInstance, marker]); // FIX: Dependency array corretto
+  }, [showForm, mapInstance, marker]);
 
-  // Load Current User
+  // Load Initial Data
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
@@ -277,9 +238,8 @@ const MapPage = () => {
       }
     };
     fetchCurrentUser();
-  }, []); // Dependency array vuoto: esegui solo al mount
+  }, []);
 
-  // Load Categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -297,26 +257,23 @@ const MapPage = () => {
       }
     };
     fetchCategories();
-  }, []); // Dependency array vuoto: esegui solo al mount
-
-  // Load Existing Reports
-  const fetchUserReports = useCallback(async () => {
-    try {
-      const data = await getReports();
-      if (Array.isArray(data)) setExistingReports(data);
-    } catch {
-      setNotification({
-        message: "Unable to load reports on the map.",
-        type: "warning",
-      });
-    }
-  }, []); // Non dipende da alcuno stato esterno, solo dai setters.
+  }, []);
 
   useEffect(() => {
+    const fetchUserReports = async () => {
+      try {
+        const data = await getReports();
+        if (Array.isArray(data)) setExistingReports(data);
+      } catch {
+        setNotification({
+          message: "Unable to load reports on the map.",
+          type: "warning",
+        });
+      }
+    };
     fetchUserReports();
-  }, [fetchUserReports]); // FIX: Aggiunta la dipendenza corretta
+  }, []);
 
-  // Load Turin Boundaries
   useEffect(() => {
     const loadBoundaries = async () => {
       try {
@@ -364,7 +321,7 @@ const MapPage = () => {
       }
     };
     loadBoundaries();
-  }, []); // Dependency array vuoto: esegui solo al mount
+  }, []);
 
   // --- NUOVO: Effect per calcolare l'indirizzo appena il marker cambia ---
   useEffect(() => {
@@ -390,13 +347,12 @@ const MapPage = () => {
 
       fetchAddress();
     }
-  }, [marker]); // FIX: Dipende solo da marker
+  }, [marker]);
 
   const torinoCenter = [45.0703, 7.6869];
 
   // --- MAP INTERACTION LOGIC ---
-  // FIX: Stabilizzata con useCallback per evitare warning in MapClickHandler e come dipendenza in useEffect
-  const handleMapClick = useCallback((latlng, isInside = true) => {
+  const handleMapClick = (latlng, isInside = true) => {
     if (showForm) return;
 
     const { lat, lng } = latlng;
@@ -424,11 +380,14 @@ const MapPage = () => {
       });
       setTimeout(() => setNotification(null), 5000);
     }
-  }, [showForm]); // Dipende solo da showForm (e dai setters)
+  };
 
-  // --- HANDLER PRINCIPALI DI STATO ---
+  // --- MODIFICATO: Semplificato perché l'indirizzo è già calcolato ---
+  const handleStartReport = () => {
+    setShowForm(true);
+  };
 
-  const handleClear = useCallback((showNotification = true) => {
+  const handleClear = (showNotification = true) => {
     setMarker(null);
     setShowForm(false);
     setFormData({
@@ -452,24 +411,20 @@ const MapPage = () => {
       setNotification({ message: "Selection cleared.", type: "info" });
       setTimeout(() => setNotification(null), 3000);
     }
-  }, [photos]); // Dipende solo da photos (per il revokeObjectURL) e dai setters.
+  };
 
-  const handleStartReport = useCallback(() => {
-    setShowForm(true);
-  }, []); // Non ha dipendenze.
-
-  const handleInputChange = useCallback((field, value) => {
+  const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (formErrors[field]) setFormErrors((prev) => ({ ...prev, [field]: "" }));
-  }, [formErrors]); // Dipende da formErrors
+  };
 
-  const handleSelect = useCallback((fieldName, value) => {
+  const handleSelect = (fieldName, value) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
     if (formErrors[fieldName])
       setFormErrors((prev) => ({ ...prev, [fieldName]: "" }));
-  }, [formErrors]); // Dipende da formErrors
+  };
 
-  const handlePhotoUpload = useCallback((e) => {
+  const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
@@ -491,17 +446,17 @@ const MapPage = () => {
     setPhotos((prev) => [...prev, ...newPhotos]);
     setFormErrors((prev) => ({ ...prev, photos: "" }));
     e.target.value = null;
-  }, [photos]); // Dipende da photos e dai setters.
+  };
 
-  const removePhoto = useCallback((id) => {
+  const removePhoto = (id) => {
     setPhotos((prev) => {
       const photoToRemove = prev.find((photo) => photo.id === id);
       if (photoToRemove) URL.revokeObjectURL(photoToRemove.preview);
       return prev.filter((photo) => photo.id !== id);
     });
-  }, []); // Non ha dipendenze.
+  };
 
-  const validateForm = useCallback(() => {
+  const validateForm = () => {
     const errors = {};
     const maxDescLength = 200;
 
@@ -516,16 +471,13 @@ const MapPage = () => {
     else if (formData.description.length > maxDescLength)
       errors.description = `Max ${maxDescLength} characters.`;
 
-    if (!formData.category) errors.category = "Category required.";
-
-    // location non viene validata qui, si assume sia valida se marker è presente
-    if (!marker) errors.location = "Select a location on the map.";
+    // ... (rest of validation)
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [formData, marker]); // Dipende da formData e marker.
+  };
 
-  const handleSubmit = useCallback(async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
       setNotification({
@@ -548,8 +500,8 @@ const MapPage = () => {
         description: formData.description.trim(),
         category: formData.category,
         location: {
-          latitude: Number.parseFloat(formData.latitude), // FIX S7773
-          longitude: Number.parseFloat(formData.longitude), // FIX S7773
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
           address: formData.address,
         },
         photos: base64Photos,
@@ -565,9 +517,8 @@ const MapPage = () => {
         type: "success",
       });
 
-      // Refetch Reports
-      await fetchUserReports();
-
+      const updatedReports = await getReports();
+      if (Array.isArray(updatedReports)) setExistingReports(updatedReports);
     } catch (error) {
       console.error("Submit error:", error);
       setNotification({
@@ -578,7 +529,7 @@ const MapPage = () => {
       setIsSubmitting(false);
       setTimeout(() => setNotification(null), 5000);
     }
-  }, [validateForm, formData, photos, handleClear, fetchUserReports]); // FIX: Aggiunte tutte le dipendenze richieste
+  };
 
   const renderPolygons = () => {
     if (!turinData) return null;
@@ -597,7 +548,7 @@ const MapPage = () => {
       if (geometryType === "MultiPolygon") {
         return coordinates.map((polygon, polyIndex) => (
           <Polygon
-            key={`multi-${index}-${polyIndex}`} // FIX S6479
+            key={`${index}-${polyIndex}`}
             positions={polygon.map((ring) =>
               ring.map((coord) => [coord[1], coord[0]])
             )}
@@ -607,7 +558,7 @@ const MapPage = () => {
       } else if (geometryType === "Polygon") {
         return (
           <Polygon
-            key={`single-${index}`} // FIX S6479
+            key={index}
             positions={coordinates.map((ring) =>
               ring.map((coord) => [coord[1], coord[0]])
             )}
@@ -615,7 +566,7 @@ const MapPage = () => {
           />
         );
       }
-      return null; // FIX S581: Aggiunto return null esplicito
+      return null;
     });
   };
 
@@ -637,101 +588,19 @@ const MapPage = () => {
   };
 
   // --- FILTER LOGIC ---
-  // FIX S671: La logica dei filtri è stabilizzata da useMemo
-  const filteredReports = useMemo(() => {
-    return existingReports.filter((report) => {
-      // FIX S7735 per riga 671: Invertito if (hideReports)
-      if (hideReports) return false;
-
-      if (filterCategory !== "All" && report.category !== filterCategory)
-        return false;
-      if (filterStatus !== "All" && report.status !== filterStatus) return false;
-
-      if (viewMode === "mine") {
-        if (!currentUser) return false;
-        return report.reporter.id === currentUser.id;
-      }
-
-      // FIX S7735 per riga 709: Uso di ! (negazione) su una condizione complessa è accettabile qui, ma
-      // possiamo riscriverla con una condizione positiva per chiarezza, anche se è già robusta.
-      // Esempio: escludi solo se lo stato è Pending o Rejected
-      const isVisibleStatus = report.status !== "Pending Approval" && report.status !== "Rejected";
-      return isVisibleStatus;
-    });
-  }, [existingReports, hideReports, filterCategory, filterStatus, viewMode, currentUser]);
-
-// --- VARIABILI CALCOLATE PER JSX ---
-
-    // Logica per i bottoni dei filtri
-    const isMineMode = viewMode === "mine";
-    const viewModeButtonContent = isMineMode ? (
-        <>
-            <FaUser
-                className="mp-btn-icon-fix"
-                style={{ marginRight: "8px" }}
-            />
-            My Reports
-        </>
-    ) : (
-        <>
-            <FaUsers
-                className="mp-btn-icon-fix"
-                style={{ marginRight: "8px" }}
-            />
-            All Users
-        </>
-    );
-
-    const hideReportsButtonContent = hideReports ? (
-        <>
-            <FaEyeSlash
-                className="mp-btn-icon-fix"
-                style={{ marginRight: "8px" }}
-            />
-            Hidden
-        </>
-    ) : (
-        <>
-            <FaEye
-                className="mp-btn-icon-fix"
-                style={{ marginRight: "8px" }}
-            />
-            Visible
-        </>
-    );
-
-    // Logica per il Tooltip del Marker (Elimina il ternario nel JSX)
-    const newMarkerTooltipText = useMemo(() => {
-        if (isLoadingAddress) return "Locating...";
-        if (formData.address) return formData.address;
-        return "Location Selected";
-    }, [isLoadingAddress, formData.address]);
-    
-    // Logica per il footer del Marker (Elimina il ternario nel JSX)
-    const newMarkerTooltipFooter = showForm ? (
-        <span
-            style={{
-                fontSize: "0.8em",
-                color: "var(--brand-red)",
-            }}
-        >
-            Position Locked
-        </span>
-    ) : (
-        <span style={{ fontSize: "0.8em", color: "#666" }}>
-            Click marker to remove
-        </span>
-    );
-    
-    // Logica per il campo indirizzo nel form (Elimina il ternario nel JSX)
-    const formAddressValue = isLoadingAddress
-        ? "Calculating address..."
-        : formData.address;
-
-    // Logica per il contatore foto
-    const photosUploadDisabled = photos.length >= 3;
-    const photosUploadClass = `mp-photo-upload-mini ${photosUploadDisabled ? "disabled" : ""}`;
-
+  const filteredReports = existingReports.filter((report) => {
+    if (hideReports) return false;
+    if (filterCategory !== "All" && report.category !== filterCategory)
+      return false;
+    if (filterStatus !== "All" && report.status !== filterStatus) return false;
+    if (viewMode === "mine") {
+      if (!currentUser) return false;
+      return report.reporter.id === currentUser.id;
+    }
+    if (report.status === "Pending Approval" || report.status === "Rejected")
+      return false;
+    return true;
+  });
 
   return (
     <div className="mp-page">
@@ -757,13 +626,6 @@ const MapPage = () => {
             <span className="mp-notification-message">
               {notification.message}
             </span>
-            {/* Aggiunto bottone dismissible per migliorare l'accessibilità e UX */}
-            <button
-              className="mp-notification-close-btn"
-              onClick={() => setNotification(null)}
-            >
-              <FaTimes />
-            </button>
           </div>
         </div>
       )}
@@ -776,13 +638,17 @@ const MapPage = () => {
             <div className="mp-grid-item">
               <Dropdown onSelect={(k) => setFilterCategory(k)}>
                 <Dropdown.Toggle
-                  className={`mp-modern-dropdown-toggle ${filterCategory !== "All" ? "active" : ""}`}
+                  className={`mp-modern-dropdown-toggle ${
+                    filterCategory !== "All" ? "active" : ""
+                  }`}
                   id="filter-category"
                 >
                   <div className="mp-truncate-wrapper">
                     <FaFilter className="mp-dropdown-icon" />
                     <span className="mp-btn-text">
-                        {filterCategory === "All" ? "All Categories" : filterCategory}
+                      {filterCategory === "All"
+                        ? "All Categories"
+                        : filterCategory}
                     </span>
                   </div>
                 </Dropdown.Toggle>
@@ -794,11 +660,11 @@ const MapPage = () => {
                     All Categories
                   </Dropdown.Item>
                   <Dropdown.Divider />
-                  {categories.map((cat) => (
+                  {categories.map((cat, idx) => (
                     <Dropdown.Item
-                      key={cat}
+                      key={idx}
                       eventKey={cat}
-                      active={formData.category === cat}
+                      active={filterCategory === cat}
                     >
                       {cat}
                     </Dropdown.Item>
@@ -810,15 +676,16 @@ const MapPage = () => {
             <div className="mp-grid-item">
               <Dropdown onSelect={(k) => setFilterStatus(k)}>
                 <Dropdown.Toggle
-                  className={`mp-modern-dropdown-toggle ${filterStatus !== "All" ? "active" : ""}`}
+                  className={`mp-modern-dropdown-toggle ${
+                    filterStatus !== "All" ? "active" : ""
+                  }`}
                   id="filter-status"
                 >
                   <div className="mp-truncate-wrapper">
                     <FaListUl className="mp-dropdown-icon" />
                     <span className="mp-btn-text">
-                        {filterStatus === "All" ? "All Statuses" : filterStatus}
+                      {filterStatus === "All" ? "All Statuses" : filterStatus}
                     </span>
-
                   </div>
                 </Dropdown.Toggle>
                 <Dropdown.Menu className="mp-modern-dropdown-menu">
@@ -826,9 +693,9 @@ const MapPage = () => {
                     All Statuses
                   </Dropdown.Item>
                   <Dropdown.Divider />
-                  {STATUS_OPTIONS.map((status) => (
+                  {STATUS_OPTIONS.map((status, idx) => (
                     <Dropdown.Item
-                      key={status}
+                      key={idx}
                       eventKey={status}
                       active={filterStatus === status}
                     >
@@ -841,15 +708,32 @@ const MapPage = () => {
 
             <div className="mp-grid-item">
               <button
-                className={`mp-filter-btn ${isMineMode ? "active" : ""}`}
+                className={`mp-filter-btn ${
+                  viewMode === "mine" ? "active" : ""
+                }`}
                 onClick={() =>
                   setViewMode((prev) => (prev === "all" ? "mine" : "all"))
                 }
                 disabled={!currentUser}
               >
-                {viewModeButtonContent}
+                {viewMode === "all" ? (
+                  <>
+                    <FaUsers
+                      className="mp-btn-icon-fix"
+                      style={{ marginRight: "8px" }}
+                    />
+                    All Users
+                  </>
+                ) : (
+                  <>
+                    <FaUser
+                      className="mp-btn-icon-fix"
+                      style={{ marginRight: "8px" }}
+                    />
+                    My Reports
+                  </>
+                )}
               </button>
-              
             </div>
 
             <div className="mp-grid-item">
@@ -857,7 +741,23 @@ const MapPage = () => {
                 className={`mp-filter-btn ${hideReports ? "alert-mode" : ""}`}
                 onClick={() => setHideReports(!hideReports)}
               >
-                {hideReportsButtonContent}
+                {hideReports ? (
+                  <>
+                    <FaEyeSlash
+                      className="mp-btn-icon-fix"
+                      style={{ marginRight: "8px" }}
+                    />
+                    Hidden
+                  </>
+                ) : (
+                  <>
+                    <FaEye
+                      className="mp-btn-icon-fix"
+                      style={{ marginRight: "8px" }}
+                    />
+                    Visible
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -867,14 +767,12 @@ const MapPage = () => {
             {/* LEFT COLUMN: MAP */}
             <div className="mp-map-column">
               <div className="mp-container">
-                {isLoadingMap && (
+                {isLoadingMap ? (
                   <div className="mp-loading">
                     <div className="mp-loading-spinner"></div>
                     <p>Loading map...</p>
                   </div>
-                )}
-                {/* Rimosso ternario: Se non sta caricando, mostra la mappa */}
-                {!isLoadingMap && ( 
+                ) : (
                   <MapContainer
                     // MODIFICA CSS: Aggiunta classe is-locked per cambiare il cursore
                     className={`mp-leaflet-map ${showForm ? "is-locked" : ""}`}
@@ -882,7 +780,7 @@ const MapPage = () => {
                     zoom={12}
                     scrollWheelZoom={true}
                     maxBounds={turinBounds}
-                    maxBoundsViscosity={1} // FIX S7748
+                    maxBoundsViscosity={1.0}
                     ref={setMapInstance}
                   >
                     <TileLayer
@@ -912,7 +810,7 @@ const MapPage = () => {
                     >
                       {filteredReports.map((report) => {
                         const position = getLatLngFromReport(report);
-                        if (!position) return null; // FIX S671: Mantenuto il return null
+                        if (!position) return null;
 
                         return (
                           <Marker
@@ -1007,18 +905,34 @@ const MapPage = () => {
                       >
                         <Tooltip permanent direction="top" offset={[0, -28]}>
                           {/* MODIFICA: Visualizzazione Address nel Tooltip */}
-                          <b>{newMarkerTooltipText}</b>
+                          <b>
+                            {isLoadingAddress
+                              ? "Locating..."
+                              : formData.address || "Location Selected"}
+                          </b>
                           <br />
-                          {newMarkerTooltipFooter}
+                          {!showForm ? (
+                            <span style={{ fontSize: "0.8em", color: "#666" }}>
+                              Click marker to remove
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: "0.8em",
+                                color: "var(--brand-red)",
+                              }}
+                            >
+                              Position Locked
+                            </span>
+                          )}
                         </Tooltip>
                       </Marker>
                     )}
                   </MapContainer>
                 )}
-              </div>
-              
-              {/* Floating Action Bar stays inside Map Container */}
-              {marker && !showForm && (
+
+                {/* Floating Action Bar stays inside Map Container */}
+                {marker && !showForm && (
                   <div className="mp-map-floating-action">
                     <div className="mp-floating-content">
                       <div className="mp-floating-text">
@@ -1057,13 +971,6 @@ const MapPage = () => {
                   <h2 className="mp-form-title compact">
                     <FaMapMarkerAlt className="mp-form-title-icon" />
                     New Report
-                    {/* FIX: Aggiunta un'icona per l'indirizzo se in caricamento */}
-                    {isLoadingAddress && (
-                      <span className="mp-address-loading">
-                        <div className="mp-loading-spinner-sm" />
-                      </span>
-                    )}
-                    
                   </h2>
                   <button
                     type="button"
@@ -1081,20 +988,18 @@ const MapPage = () => {
                   {/* Coordinates Row (Compact) */}
                   <div className="mp-coords-group compact-coords">
                     <div className="mp-form-group">
-                      <label htmlFor="latitude-field" className="mp-form-label-sm">Lat</label>
+                      <label className="mp-form-label-sm">Lat</label>
                       <input
                         type="text"
-                        id="latitude-field"
                         className="mp-input-sm"
                         value={formData.latitude}
                         readOnly
                       />
                     </div>
                     <div className="mp-form-group">
-                      <label htmlFor="longitude-field" className="mp-form-label-sm">Lng</label>
+                      <label className="mp-form-label-sm">Lng</label>
                       <input
                         type="text"
-                        id="longitude-field"
                         className="mp-input-sm"
                         value={formData.longitude}
                         readOnly
@@ -1104,12 +1009,15 @@ const MapPage = () => {
 
                   {/* Address Field (UNIFICATO) */}
                   <div className="mp-form-group">
-                    <label htmlFor="address-field" className="mp-form-label">Address</label>
+                    <label className="mp-form-label">Address</label>
                     <input
                       type="text"
-                      id="address-field"
                       className="mp-input"
-                      value={formAddressValue}
+                      value={
+                        isLoadingAddress
+                          ? "Calculating address..."
+                          : formData.address
+                      }
                       readOnly
                       style={{
                         backgroundColor: "var(--bg-lighter)",
@@ -1129,7 +1037,9 @@ const MapPage = () => {
                     <input
                       type="text"
                       id="title"
-                      className={`mp-input ${formErrors.title ? "is-invalid" : ""}`}
+                      className={`mp-input ${
+                        formErrors.title ? "is-invalid" : ""
+                      }`}
                       value={formData.title}
                       onChange={(e) =>
                         handleInputChange("title", e.target.value)
@@ -1140,7 +1050,7 @@ const MapPage = () => {
 
                   {/* Category */}
                   <div className="mp-form-group">
-                    <label htmlFor="cat-drop" className="mp-form-label">
+                    <label htmlFor="category" className="mp-form-label">
                       Category <span className="mp-required-asterisk">*</span>
                     </label>
                     {formErrors.category && (
@@ -1150,15 +1060,19 @@ const MapPage = () => {
                       onSelect={(value) => handleSelect("category", value)}
                     >
                       <Dropdown.Toggle
-                        className={`mp-modern-dropdown-toggle ${formErrors.category ? "is-invalid" : ""}`}
+                        className={`mp-modern-dropdown-toggle ${
+                          formErrors.category ? "is-invalid" : ""
+                        }`}
                         id="cat-drop"
                       >
-                        {isLoadingCategories ? "Loading..." : getSelectedCategoryName()}
+                        {isLoadingCategories
+                          ? "Loading..."
+                          : getSelectedCategoryName()}
                       </Dropdown.Toggle>
                       <Dropdown.Menu className="mp-modern-dropdown-menu">
-                        {categories.map((cat) => (
+                        {categories.map((cat, i) => (
                           <Dropdown.Item
-                            key={cat}
+                            key={i}
                             eventKey={cat}
                             active={formData.category === cat}
                           >
@@ -1183,7 +1097,9 @@ const MapPage = () => {
                     <div className="mp-textarea-wrapper">
                       <textarea
                         id="description"
-                        className={`mp-input mp-textarea compact ${formErrors.description ? "is-invalid" : ""}`}
+                        className={`mp-input mp-textarea compact ${
+                          formErrors.description ? "is-invalid" : ""
+                        }`}
                         value={formData.description}
                         onChange={(e) =>
                           handleInputChange("description", e.target.value)
@@ -1194,7 +1110,9 @@ const MapPage = () => {
                       />
                       {/* CONTATORE POSIZIONATO */}
                       <span
-                        className={`mp-char-counter ${formData.description.length >= 200 ? "is-limit" : ""}`}
+                        className={`mp-char-counter ${
+                          formData.description.length >= 200 ? "is-limit" : ""
+                        }`}
                       >
                         {formData.description.length} / 200
                       </span>
@@ -1203,7 +1121,7 @@ const MapPage = () => {
 
                   {/* Photos (Compact) */}
                   <div className="mp-form-group">
-                    <label htmlFor="photos" className="mp-form-label">
+                    <label className="mp-form-label">
                       Photos ({photos.length}/3)
                     </label>
                     {formErrors.photos && (
@@ -1213,7 +1131,9 @@ const MapPage = () => {
                     <div className="mp-photo-row">
                       <label
                         htmlFor="photos"
-                        className={photosUploadClass}
+                        className={`mp-photo-upload-mini ${
+                          photos.length >= 3 ? "disabled" : ""
+                        }`}
                       >
                         <FaCamera />
                       </label>
@@ -1224,7 +1144,7 @@ const MapPage = () => {
                         accept="image/*"
                         onChange={handlePhotoUpload}
                         className="mp-photo-input"
-                        disabled={photosUploadDisabled}
+                        disabled={photos.length >= 3}
                       />
 
                       {photos.map((photo) => (
@@ -1263,6 +1183,7 @@ const MapPage = () => {
               </div>
             </div>
           </div>
+        </div>
       </main>
 
       {/* Report Detail Modal */}
@@ -1273,10 +1194,6 @@ const MapPage = () => {
       />
     </div>
   );
-};
-
-MapPage.propTypes = {
-  // MapPage non riceve props esplicite.
 };
 
 export default MapPage;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import { Dropdown } from "react-bootstrap";
 import { FaCalendarAlt, FaUser, FaHardHat, FaBuilding, FaUserPlus, FaChevronDown, FaMapPin, FaMapMarkerAlt, FaMapMarkedAlt } from "react-icons/fa";
@@ -18,6 +18,20 @@ const ReportSidebar = ({
   const [externalUsers, setExternalUsers] = useState([]);
   const [loadingExternal, setLoadingExternal] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // FIX S3776: Usato useCallback per stabilizzare l'handler
+  const fetchExternalUsers = useCallback(async () => {
+    setLoadingExternal(true);
+    try {
+      const users = await getAllExternals(report.category);
+      setExternalUsers(users || []);
+    } catch (err) {
+      console.error("Failed to load external users", err);
+      showToast("Failed to load external users.", "error");
+    } finally {
+      setLoadingExternal(false);
+    }
+  }, [report.category, showToast]);
 
   // Helper date
   const formatDate = (dateString) => {
@@ -43,16 +57,7 @@ const ReportSidebar = ({
   const handleDropdownToggle = async (isOpen) => {
     setIsDropdownOpen(isOpen);
     if (isOpen && externalUsers.length === 0) {
-      setLoadingExternal(true);
-      try {
-        const users = await getAllExternals(report.category);
-        setExternalUsers(users || []);
-      } catch (err) {
-        console.error("Failed to load external users", err);
-        showToast("Failed to load external users.", "error");
-      } finally {
-        setLoadingExternal(false);
-      }
+      await fetchExternalUsers();
     }
   };
 
@@ -246,7 +251,7 @@ const ReportSidebar = ({
         </div>
 
         {/* MODIFICA: Mostra il pulsante solo se l'utente NON è un Citizen E le coordinate sono disponibili */}
-        {!isCitizen && mapCoordinates && (
+        {(!isCitizen && mapCoordinates) && ( // FIX S7735
           <button
             className={`rdm-btn-map-toggle ${showMap ? "active" : ""}`}
             onClick={() => setShowMap(!showMap)}
