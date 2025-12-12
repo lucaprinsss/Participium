@@ -2,19 +2,19 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import request from 'supertest';
 import { AppDataSource } from "@database/connection";
 import app from "../../../app";
-import { UserEntity } from "@models/entity/userEntity";
-import { ReportEntity } from "@models/entity/reportEntity";
+
+import { UserEntity } from "@entity/userEntity";
+import { ReportEntity } from "@entity/reportEntity";
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { companyRepository } from '@repositories/companyRepository';
 import { reportRepository } from '@repositories/reportRepository';
+
 import { In } from 'typeorm';
-
-
 import { Request, Response } from 'express';
-import { reportService } from '../../../services/reportService';
-import { ReportStatus } from '../../../models/dto/ReportStatus';
-import { ReportCategory } from '../../../models/dto/ReportCategory';
+import { reportService } from '@services/reportService';
+import { ReportStatus } from '@dto/ReportStatus';
+import { ReportCategory } from '@dto/ReportCategory';
 import { reportController } from '@controllers/reportController';
 
 const r = () => `_${Math.floor(Math.random() * 1000000)}`;
@@ -108,6 +108,7 @@ describe('ReportController Integration Tests', () => {
           latitude: 45.0703,
           longitude: 7.6869
         },
+        address: 'Via Roma 1, 10121 Torino TO, Italy',
         photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='],
         isAnonymous: false
       };
@@ -129,12 +130,53 @@ describe('ReportController Integration Tests', () => {
         title: 'Short', // Too short (min 5 usually, but check model)
         description: 'Desc',
         category: 'INVALID_CATEGORY',
-        // Missing location and photos
+        isAnonymous: false
       };
 
       const response = await agent
         .post('/api/reports')
         .send(invalidData);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should fail if isAnonymous is missing (400)', async () => {
+      const reportData = {
+        title: 'Integration Test Report',
+        description: 'This is a test report created by integration test',
+        category: ReportCategory.ROADS,
+        location: {
+          latitude: 45.0703,
+          longitude: 7.6869
+        },
+        address: 'Via Roma 1, 10121 Torino TO, Italy',
+        photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=']
+      };
+
+      const response = await agent
+        .post('/api/reports')
+        .send(reportData);
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should fail if isAnonymous is not a boolean value (400)', async () => {
+      const reportData = {
+        title: 'Integration Test Report',
+        description: 'This is a test report created by integration test',
+        category: ReportCategory.ROADS,
+        location: {
+          latitude: 45.0703,
+          longitude: 7.6869
+        },
+        address: 'Via Roma 1, 10121 Torino TO, Italy',
+        photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='],
+        isAnonymous: 7.6869
+      };
+
+      const response = await agent
+        .post('/api/reports')
+        .send(reportData);
 
       expect(response.status).toBe(400);
     });
@@ -146,7 +188,9 @@ describe('ReportController Integration Tests', () => {
         description: 'This should fail',
         category: ReportCategory.ROADS,
         location: { latitude: 45.0703, longitude: 7.6869 },
+        address: 'Via Roma 1, 10121 Torino TO, Italy',
         photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='],
+        isAnonymous: false
       };
 
       const response = await unauthAgent
@@ -165,7 +209,9 @@ describe('ReportController Integration Tests', () => {
         description: 'Description for get',
         category: ReportCategory.WASTE,
         location: { latitude: 45.0703, longitude: 7.6869 },
+        address: 'Via Roma 1, 10121 Torino TO, Italy',
         photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='],
+        isAnonymous: false
       };
       
       const createRes = await agent.post('/api/reports').send(reportData);
