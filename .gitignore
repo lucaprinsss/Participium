@@ -1,2 +1,4 @@
 .DS_Store
 server/src/docs/dockerization.md
+.vscode/
+**/settings.json

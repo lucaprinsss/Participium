@@ -1,6 +1,0 @@
-{
-    "sonarlint.connectedMode.project": {
-        "connectionId": "participium_sonarQube2",
-        "projectKey": "MauroC0l_Participium"
-    }
-}
