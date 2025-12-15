@@ -57,8 +57,14 @@ const ReportMainContent = ({
             const success = await onReject(report?.id, rejectionReason); // report?.id
             if (success) {
                 showToast("Report rejected successfully.", "success");
+                
+                // Aggiorna lo stato nel genitore
                 onReportUpdated(report?.id, { status: "Rejected", rejection_reason: rejectionReason }); // report?.id
-                onHide();
+                
+                // Chiudiamo la modalità di editing del rifiuto, ma NON il modale intero
+                setIsRejecting(false);
+                
+                // onHide(); // RIMOSSO: Mantiene il modale aperto
             } else {
                 showToast("Failed to reject report.", "error");
             }
@@ -75,8 +81,12 @@ const ReportMainContent = ({
                 return;
             }
             showToast("Report accepted and assigned!", "success");
+            
+            // Aggiorna lo stato nel genitore
             onReportUpdated(report?.id, { status: "Assigned", assignee: result?.assignee || report.assignee }); // report?.id
-            onHide();
+            
+            // onHide(); // RIMOSSO: Mantiene il modale aperto
+            
         } catch (error) {
             showToast(error.message || "Approval error.", "error");
         }
