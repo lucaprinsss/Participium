@@ -1,9 +1,12 @@
 -- ============================================
--- Test Data for E2E Testing - V4.2 (with email verification)
+-- Test Data for E2E Testing - V4.3 (with email verification)
 -- ============================================
+-- NOTE: This file assumes that seed.sql has already been executed
+--       to populate departments, roles, department_roles, and category_role_mapping
 
 -- Clear existing data (safety check)
 TRUNCATE TABLE users CASCADE;
+TRUNCATE TABLE companies CASCADE;
 
 -- ============================================
 -- INSERT TEST USERS
@@ -576,30 +579,37 @@ WHERE citizen.username = 'testcitizen'
 -- ============================================
 -- Le foto sono copiate nell'immagine Docker dal Dockerfile
 -- Percorsi relativi: /uploads/reports/{reportId}/{filename}
+-- NOTE: Using subqueries to get correct report IDs since seed.sql creates many reports before these
 
--- Foto per Report 1
+-- Foto per Report "Street light broken"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (1, '/uploads/reports/1/1.jpg', CURRENT_TIMESTAMP - INTERVAL '2 days');
+SELECT id, '/uploads/reports/1/1.jpg', CURRENT_TIMESTAMP - INTERVAL '2 days'
+FROM reports WHERE title = 'Street light broken';
 
--- Foto per Report 2
+-- Foto per Report "Broken sidewalk"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (2, '/uploads/reports/2/2.jpg', CURRENT_TIMESTAMP - INTERVAL '3 days');
+SELECT id, '/uploads/reports/2/2.jpg', CURRENT_TIMESTAMP - INTERVAL '3 days'
+FROM reports WHERE title = 'Broken sidewalk';
 
--- Foto per Report 3
+-- Foto per Report "Water leak on street"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (3, '/uploads/reports/3/2_2.jpg', CURRENT_TIMESTAMP - INTERVAL '4 days');
+SELECT id, '/uploads/reports/3/2_2.jpg', CURRENT_TIMESTAMP - INTERVAL '4 days'
+FROM reports WHERE title = 'Water leak on street';
 
--- Foto per Report 4
+-- Foto per Report "Trash overflow"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (4, '/uploads/reports/4/3.jpg', CURRENT_TIMESTAMP - INTERVAL '5 days');
+SELECT id, '/uploads/reports/4/3.jpg', CURRENT_TIMESTAMP - INTERVAL '5 days'
+FROM reports WHERE title = 'Trash overflow';
 
--- Foto per Report 5
+-- Foto per Report "Test rejected report"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (5, '/uploads/reports/5/4.jpg', CURRENT_TIMESTAMP - INTERVAL '6 days');
+SELECT id, '/uploads/reports/5/4.jpg', CURRENT_TIMESTAMP - INTERVAL '6 days'
+FROM reports WHERE title = 'Test rejected report';
 
--- Foto per Report 6
+-- Foto per Report "Wheelchair access blocked"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (6, '/uploads/reports/6/5.jpg', CURRENT_TIMESTAMP - INTERVAL '1 day');
+SELECT id, '/uploads/reports/6/5.jpg', CURRENT_TIMESTAMP - INTERVAL '1 day'
+FROM reports WHERE title = 'Wheelchair access blocked';
 
 
 -- ============================================
@@ -616,7 +626,7 @@ SELECT
   r.name AS role_name,
   d.name AS department_name,
   u.email_notifications_enabled,
-  u.company_name,
+  c.name AS company_name,
   u.is_verified,
   CASE 
     WHEN u.verification_code IS NOT NULL THEN 'HAS_CODE'
@@ -635,6 +645,7 @@ FROM users u
 JOIN department_roles dr ON u.department_role_id = dr.id
 JOIN roles r ON dr.role_id = r.id
 JOIN departments d ON dr.department_id = d.id
+LEFT JOIN companies c ON u.company_id = c.id
 ORDER BY u.id ASC;
 
 -- Display inserted test reports

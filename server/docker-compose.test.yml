@@ -15,8 +15,10 @@ services:
     volumes:
       # Carica lo schema SQL all'avvio
       - ./src/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      # Carica i dati di seed (departments, roles, ecc.)
+      - ./src/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
       # Carica dati di test
-      - ./src/database/test-data.sql:/docker-entrypoint-initdb.d/02-test-data.sql:ro
+      - ./src/database/test-data.sql:/docker-entrypoint-initdb.d/03-test-data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U participium_test -d participium_db_test"]
       interval: 5s
