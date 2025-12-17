@@ -52,7 +52,6 @@ export interface RegisterRequest {
     password: string;
     first_name: string;
     last_name: string;
-    role_name: string;
-    department_name?: string;
+    department_role_ids?: number[];
     company_name?: string;
 }

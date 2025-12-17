@@ -38,7 +38,10 @@ export interface UserResponse{
     email: string, 
     first_name: string, 
     last_name: string, 
-    department_name?: string,
-    role_name?: string,
+    roles: Array<{
+        department_role_id: number;
+        department_name: string;
+        role_name: string;
+    }>
     company_name?: string
 }
