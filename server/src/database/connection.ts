@@ -10,7 +10,7 @@ dotenv.config({ debug: false });
 /**
  * Custom naming strategy that converts camelCase property names to snake_case column names
  */
-class SnakeCaseNamingStrategy extends DefaultNamingStrategy implements NamingStrategyInterface {
+export class SnakeCaseNamingStrategy extends DefaultNamingStrategy implements NamingStrategyInterface {
   columnName(propertyName: string, customName: string, embeddedPrefixes: string[]): string {
     return customName || snakeCase(embeddedPrefixes.concat(propertyName).join("_"));
   }

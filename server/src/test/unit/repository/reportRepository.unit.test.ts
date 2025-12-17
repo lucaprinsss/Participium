@@ -192,6 +192,12 @@ describe('ReportRepository', () => {
         );
         expect(result.length).toBe(1);
       });
+
+      it('should filter by status and category', async () => {
+        jest.spyOn(reportRepository, 'findAllReports').mockResolvedValue([]);
+        await reportRepository.findAllReports(ReportStatus.RESOLVED, ReportCategory.GREEN_AREAS);
+        expect(reportRepository.findAllReports).toHaveBeenCalledWith(ReportStatus.RESOLVED, ReportCategory.GREEN_AREAS);
+    });
     });
   });
 
@@ -251,6 +257,12 @@ describe('ReportRepository', () => {
         await reportRepository.findByAssigneeId(50, ReportStatus.RESOLVED);
 
         expect(reportRepository.findByAssigneeId).toHaveBeenCalledWith(50, ReportStatus.RESOLVED);
+      });
+
+      it('should filter by status and category', async () => {
+        jest.spyOn(reportRepository, 'findByAssigneeId').mockResolvedValue([]);
+        await reportRepository.findByAssigneeId(50, ReportStatus.RESOLVED, ReportCategory.GREEN_AREAS);
+        expect(reportRepository.findByAssigneeId).toHaveBeenCalledWith(50, ReportStatus.RESOLVED, ReportCategory.GREEN_AREAS);
       });
     });
   });
@@ -365,137 +377,41 @@ describe('ReportRepository', () => {
       expect(result).toEqual([]);
       expect(result.length).toBe(0);
     });
+
+    it('should filter by status and category', async () => {
+      const queryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      jest.spyOn(reportRepository['repository'], 'createQueryBuilder').mockReturnValue(queryBuilder as any);
+
+      await reportRepository.findByExternalAssigneeId(externalMaintainerId, ReportStatus.IN_PROGRESS, ReportCategory.GREEN_AREAS);
+
+      expect(queryBuilder.where).toHaveBeenCalledWith('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('report.status = :status', { status: ReportStatus.IN_PROGRESS });
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('report.category = :category', { category: ReportCategory.GREEN_AREAS });
+    });
   });
 
   describe('save', () => {
-    it('should save a new report', async () => {
-      const newReport: Partial<ReportEntity> = {
-        title: 'New Report',
-        description: 'Test description',
-        status: ReportStatus.PENDING_APPROVAL,
-        category: ReportCategory.ROADS
-      };
+    it('should throw an error if reloading the report fails', async () => {
+        const reportToSave = { id: 1, title: 'Test' } as ReportEntity;
 
-      const savedReport = { ...newReport, id: 1 } as ReportEntity;
-      jest.spyOn(reportRepository, 'save').mockResolvedValue(savedReport);
+        // Mock the internal save to return the saved entity
+        const saveSpy = jest.spyOn(reportRepository['repository'], 'save').mockResolvedValue(reportToSave);
+        
+        // Mock the internal findReportById to return null
+        const findSpy = jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(null);
 
-      const result = await reportRepository.save(newReport as ReportEntity);
+        // Expect the save method to throw an error
+        await expect(reportRepository.save(reportToSave)).rejects.toThrow('Failed to reload report with id 1');
 
-      expect(reportRepository.save).toHaveBeenCalledWith(newReport);
-      expect(result).toEqual(savedReport);
-      expect(result.id).toBe(1);
-    });
-
-    it('should update an existing report', async () => {
-      const existingReport: Partial<ReportEntity> = {
-        id: 1,
-        title: 'Existing Report',
-        status: ReportStatus.PENDING_APPROVAL
-      };
-
-      const updatedReport = {
-        ...existingReport,
-        status: ReportStatus.ASSIGNED,
-        assigneeId: 50
-      } as ReportEntity;
-
-      jest.spyOn(reportRepository, 'save').mockResolvedValue(updatedReport);
-
-      const result = await reportRepository.save(updatedReport);
-
-      expect(reportRepository.save).toHaveBeenCalledWith(updatedReport);
-      expect(result.status).toBe(ReportStatus.ASSIGNED);
-      expect(result.assigneeId).toBe(50);
-    });
-
-    it('should update report status to REJECTED', async () => {
-      const report: Partial<ReportEntity> = {
-        id: 1,
-        status: ReportStatus.PENDING_APPROVAL
-      };
-
-      const rejectedReport = {
-        ...report,
-        status: ReportStatus.REJECTED,
-        rejectionReason: 'Invalid location'
-      } as ReportEntity;
-
-      jest.spyOn(reportRepository, 'save').mockResolvedValue(rejectedReport);
-
-      const result = await reportRepository.save(rejectedReport);
-
-      expect(result.status).toBe(ReportStatus.REJECTED);
-      expect(result.rejectionReason).toBe('Invalid location');
-    });
-
-    it('should clear rejection reason when approving', async () => {
-      const report: Partial<ReportEntity> = {
-        id: 1,
-        status: ReportStatus.REJECTED,
-        rejectionReason: 'Old reason'
-      };
-
-      const approvedReport = {
-        ...report,
-        status: ReportStatus.ASSIGNED,
-        rejectionReason: undefined,
-        assigneeId: 50
-      } as ReportEntity;
-
-      jest.spyOn(reportRepository, 'save').mockResolvedValue(approvedReport);
-
-      const result = await reportRepository.save(approvedReport);
-
-      expect(result.status).toBe(ReportStatus.ASSIGNED);
-      expect(result.rejectionReason).toBeUndefined();
-      expect(result.assigneeId).toBe(50);
-    });
-
-    it('should handle multiple field updates', async () => {
-      const originalReport: Partial<ReportEntity> = {
-        id: 1,
-        title: 'Original Title',
-        category: ReportCategory.ROADS,
-        status: ReportStatus.PENDING_APPROVAL
-      };
-
-      const updatedReport = {
-        ...originalReport,
-        title: 'Updated Title',
-        category: ReportCategory.PUBLIC_LIGHTING,
-        status: ReportStatus.ASSIGNED,
-        assigneeId: 50
-      } as ReportEntity;
-
-      jest.spyOn(reportRepository, 'save').mockResolvedValue(updatedReport);
-
-      const result = await reportRepository.save(updatedReport);
-
-      expect(result.title).toBe('Updated Title');
-      expect(result.category).toBe(ReportCategory.PUBLIC_LIGHTING);
-      expect(result.status).toBe(ReportStatus.ASSIGNED);
-      expect(result.assigneeId).toBe(50);
-    });
-
-    it('should update report status to RESOLVED and set updatedAt', async () => {
-      const report: Partial<ReportEntity> = {
-        id: 1,
-        status: ReportStatus.IN_PROGRESS,
-        assigneeId: 50
-      };
-
-      const resolvedReport = {
-        ...report,
-        status: ReportStatus.RESOLVED,
-        updatedAt: new Date(),
-      } as ReportEntity;
-
-      jest.spyOn(reportRepository, 'save').mockResolvedValue(resolvedReport);
-
-      const result = await reportRepository.save(report as ReportEntity);
-
-      expect(result.status).toBe(ReportStatus.RESOLVED);
-      expect(result.updatedAt).toBeInstanceOf(Date);
+        // Verify that both internal methods were called
+        expect(saveSpy).toHaveBeenCalledWith(reportToSave);
+        expect(findSpy).toHaveBeenCalledWith(1);
     });
   });
 

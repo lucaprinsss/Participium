@@ -112,6 +112,12 @@ describe('photoValidationUtils', () => {
       expect(result.isValid).toBe(true);
       expect(result.error).toBeUndefined();
     });
+
+    it('returns invalid data URI error for non-image mime type', () => {
+      const result = validatePhotos(['data:text/plain;base64,AAAA']);
+      expect(result.isValid).toBe(false);
+      expect(result.error).toMatch(/not a valid image data URI/i);
+    });
   });
 
   describe('dataUriToBuffer', () => {

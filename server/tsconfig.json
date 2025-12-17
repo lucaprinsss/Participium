@@ -17,6 +17,7 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": "./src",
     "paths": {
+      "@app": ["app"],
       "@config/*": ["config/*"],
       "@controllers/*": ["controllers/*"],
       "@middleware/*": ["middleware/*"],

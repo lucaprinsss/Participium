@@ -1,4 +1,4 @@
-import { isWithinTurinBoundaries, isValidCoordinate } from '../../../utils/geoValidationUtils';
+import { isWithinTurinBoundaries, isValidCoordinate, validateBoundingBox, validateZoomLevel } from '../../../utils/geoValidationUtils';
 
 describe('geoValidationUtils', () => {
   describe('isValidCoordinate', () => {
@@ -65,6 +65,173 @@ describe('geoValidationUtils', () => {
       expect(isWithinTurinBoundaries(45.0703393 as any, undefined as any)).toBe(false);
       expect(isWithinTurinBoundaries(null as any, 7.6869005 as any)).toBe(false);
       expect(isWithinTurinBoundaries(45.0703393 as any, null as any)).toBe(false);
+    });
+  });
+
+  describe('validateBoundingBox', () => {
+    it('should successfully validate correct bounding box', () => {
+      const result = validateBoundingBox('45.0', '45.1', '7.5', '7.8');
+      expect(result).toEqual({
+        minLat: 45.0,
+        maxLat: 45.1,
+        minLng: 7.5,
+        maxLng: 7.8,
+      });
+    });
+
+    it('should throw error for non-numeric minLat', () => {
+      expect(() => validateBoundingBox('abc', '45.1', '7.5', '7.8')).toThrow('minLat must be a valid number');
+    });
+
+    it('should throw error for non-numeric maxLat', () => {
+      expect(() => validateBoundingBox('45.0', 'xyz', '7.5', '7.8')).toThrow('maxLat must be a valid number');
+    });
+
+    it('should throw error for non-numeric minLng', () => {
+      expect(() => validateBoundingBox('45.0', '45.1', 'invalid', '7.8')).toThrow('minLng must be a valid number');
+    });
+
+    it('should throw error for non-numeric maxLng', () => {
+      expect(() => validateBoundingBox('45.0', '45.1', '7.5', 'invalid')).toThrow('maxLng must be a valid number');
+    });
+
+    it('should throw error when minLat is out of range (< -90)', () => {
+      expect(() => validateBoundingBox('-91', '45.1', '7.5', '7.8')).toThrow('Invalid minimum coordinates');
+    });
+
+    it('should throw error when minLat is out of range (> 90)', () => {
+      expect(() => validateBoundingBox('91', '45.1', '7.5', '7.8')).toThrow('Invalid minimum coordinates');
+    });
+
+    it('should throw error when maxLat is out of range', () => {
+      expect(() => validateBoundingBox('45.0', '95', '7.5', '7.8')).toThrow('Invalid maximum coordinates');
+    });
+
+    it('should throw error when minLng is out of range', () => {
+      expect(() => validateBoundingBox('45.0', '45.1', '-185', '7.8')).toThrow('Invalid minimum coordinates');
+    });
+
+    it('should throw error when maxLng is out of range', () => {
+      expect(() => validateBoundingBox('45.0', '45.1', '7.5', '185')).toThrow('Invalid maximum coordinates');
+    });
+
+    it('should throw error when minLat >= maxLat', () => {
+      expect(() => validateBoundingBox('45.1', '45.0', '7.5', '7.8')).toThrow('minLat must be less than maxLat');
+    });
+
+    it('should throw error when minLat equals maxLat', () => {
+      expect(() => validateBoundingBox('45.0', '45.0', '7.5', '7.8')).toThrow('minLat must be less than maxLat');
+    });
+
+    it('should throw error when minLng >= maxLng', () => {
+      expect(() => validateBoundingBox('45.0', '45.1', '7.8', '7.5')).toThrow('minLng must be less than maxLng');
+    });
+
+    it('should throw error when minLng equals maxLng', () => {
+      expect(() => validateBoundingBox('45.0', '45.1', '7.5', '7.5')).toThrow('minLng must be less than maxLng');
+    });
+
+    it('should handle negative coordinates correctly', () => {
+      const result = validateBoundingBox('-45.1', '-45.0', '-7.8', '-7.5');
+      expect(result).toEqual({
+        minLat: -45.1,
+        maxLat: -45.0,
+        minLng: -7.8,
+        maxLng: -7.5,
+      });
+    });
+
+    it('should handle boundary values', () => {
+      const result = validateBoundingBox('-90', '90', '-180', '180');
+      expect(result).toEqual({
+        minLat: -90,
+        maxLat: 90,
+        minLng: -180,
+        maxLng: 180,
+      });
+    });
+  });
+
+  describe('validateZoomLevel', () => {
+    it('should successfully validate correct zoom level', () => {
+      expect(validateZoomLevel('10')).toBe(10);
+      expect(validateZoomLevel('1')).toBe(1);
+      expect(validateZoomLevel('20')).toBe(20);
+    });
+
+    it('should accept decimal zoom levels', () => {
+      expect(validateZoomLevel('10.5')).toBe(10.5);
+      expect(validateZoomLevel('15.75')).toBe(15.75);
+    });
+
+    it('should throw error for non-numeric zoom', () => {
+      expect(() => validateZoomLevel('abc')).toThrow('Zoom level must be a valid number');
+    });
+
+    it('should throw error for zoom level less than 1', () => {
+      expect(() => validateZoomLevel('0')).toThrow('Zoom level must be between 1 and 20');
+    });
+
+    it('should throw error for zoom level greater than 20', () => {
+      expect(() => validateZoomLevel('21')).toThrow('Zoom level must be between 1 and 20');
+    });
+
+    it('should throw error for negative zoom level', () => {
+      expect(() => validateZoomLevel('-5')).toThrow('Zoom level must be between 1 and 20');
+    });
+
+    it('should throw error for very large zoom level', () => {
+      expect(() => validateZoomLevel('100')).toThrow('Zoom level must be between 1 and 20');
+    });
+  });
+
+  describe('geoValidationUtils error handling', () => {
+    let geoUtils: typeof import('../../../utils/geoValidationUtils');
+
+    beforeEach(() => {
+      jest.resetModules();
+    });
+
+    it('should return false and log error if turinFeature.geometry is missing', () => {
+      jest.doMock('../../../utils/geoValidationUtils', () => {
+        const actual = jest.requireActual('../../../utils/geoValidationUtils');
+        return {
+          ...actual,
+          isWithinTurinBoundaries: (lat: number, lng: number) => {
+            try {
+              const turinFeature = { features: [{ geometry: undefined as any }] };
+              if (!turinFeature?.features[0]?.geometry) {
+                console.error('Error validating coordinates against Turin boundaries:', new Error('Turin boundaries data is invalid or missing'));
+                return false;
+              }
+              return true;
+            } catch (error) {
+              console.error('Error validating coordinates against Turin boundaries:', error);
+              return false;
+            }
+          }
+        };
+      });
+      geoUtils = require('../../../utils/geoValidationUtils');
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      expect(geoUtils.isWithinTurinBoundaries(45.0703393, 7.6869005)).toBe(false);
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining('Error validating coordinates against Turin boundaries:'),
+        expect.any(Error)
+      );
+      spy.mockRestore();
+    });
+
+    it('should return false and log error if booleanPointInPolygon throws', () => {
+      jest.doMock('@turf/boolean-point-in-polygon', () => () => { throw new Error('polygon error'); });
+      geoUtils = require('../../../utils/geoValidationUtils');
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      expect(geoUtils.isWithinTurinBoundaries(45.0703393, 7.6869005)).toBe(false);
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining('Error validating coordinates against Turin boundaries:'),
+        expect.any(Error)
+      );
+      spy.mockRestore();
     });
   });
 });

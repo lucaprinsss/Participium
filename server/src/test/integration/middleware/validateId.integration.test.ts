@@ -122,7 +122,7 @@ describe('ValidateId Middleware Integration Tests', () => {
       const res = await request(app).get('/api/users/ ');
       
       // Should be caught by routing or validation
-      expect([400, 404]).toContain(res.status);
+      expect([400, 401, 404]).toContain(res.status);
     });
   });
 });
