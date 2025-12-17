@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMan
 import { DepartmentEntity } from "./departmentEntity";
 import { RoleEntity } from "./roleEntity";
 import { UserEntity } from "./userEntity";
+import { UserRoleEntity } from "./userRoleEntity";
 
 /**
  * DepartmentRole entity - represents the join table between departments and roles
@@ -31,6 +32,6 @@ export class DepartmentRoleEntity {
   @JoinColumn({ name: "role_id" })
   role!: RoleEntity;
 
-  @OneToMany(() => UserEntity, (user) => user.departmentRole)
-  users!: UserEntity[];
+  @OneToMany(() => UserRoleEntity, (userRole) => userRole.departmentRole)
+  userRoles!: UserRoleEntity[];
 }
