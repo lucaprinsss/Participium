@@ -63,10 +63,10 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       expect(error.message).toContain('newStatus');
     });
 
-    it('should reject when user has no role', () => {
+    it('should reject when user is undefined', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
-      mockRequest.user = { departmentRole: null };
+      mockRequest.user = undefined;
 
       // Act
       validateStatusUpdate(

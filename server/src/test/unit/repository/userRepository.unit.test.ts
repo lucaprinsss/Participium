@@ -223,6 +223,27 @@ describe('UserRepository Unit Tests', () => {
         userRepository.createUserWithPassword(validUserData)
       ).rejects.toThrow('Password hashing failed');
     });
+
+    it('should throw error when user cannot be reloaded with relations', async () => {
+      // Arrange
+      const mockCreatedUser = createMockCitizen({
+        id: 1,
+        username: validUserData.username,
+        email: validUserData.email,
+        firstName: validUserData.firstName,
+        lastName: validUserData.lastName,
+      });
+      mockCreatedUser.passwordHash = 'mocksalt:mockhash';
+
+      mockRepository.create.mockReturnValue(mockCreatedUser);
+      mockRepository.save.mockResolvedValue(mockCreatedUser);
+      mockQueryBuilder.getOne.mockResolvedValue(null); // Simulate failure to reload
+
+      // Act & Assert
+      await expect(
+        userRepository.createUserWithPassword(validUserData)
+      ).rejects.toThrow('Failed to load user with relations after creation');
+    });
   });
 
   describe('existsUserByUsername', () => {
@@ -1250,6 +1271,56 @@ describe('UserRepository Unit Tests', () => {
 
       // Act & Assert
       await expect(userRepository.deleteUnverifiedUsers()).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('findUsersByDepartmentRoleIds', () => {
+    it('should return users for given department role IDs', async () => {
+      // Arrange
+      const departmentRoleIds = [1, 2, 3];
+      const mockUsers = [
+        { id: 1, username: 'user1', departmentRoleId: 1 },
+        { id: 2, username: 'user2', departmentRoleId: 2 },
+      ];
+      mockQueryBuilder.getMany.mockResolvedValue(mockUsers as any);
+
+      // Act
+      const result = await userRepository.findUsersByDepartmentRoleIds(departmentRoleIds);
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('user.departmentRole', 'departmentRole');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.department', 'department');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('user.departmentRoleId IN (:...ids)', { ids: departmentRoleIds });
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('user.createdAt', 'DESC');
+      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+      expect(result).toEqual(mockUsers);
+    });
+
+    it('should return empty array when no users found', async () => {
+      // Arrange
+      const departmentRoleIds = [999];
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      // Act
+      const result = await userRepository.findUsersByDepartmentRoleIds(departmentRoleIds);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+
+    it('should handle empty department role IDs array', async () => {
+      // Arrange
+      const departmentRoleIds: number[] = [];
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      // Act
+      const result = await userRepository.findUsersByDepartmentRoleIds(departmentRoleIds);
+
+      // Assert
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('user.departmentRoleId IN (:...ids)', { ids: departmentRoleIds });
+      expect(result).toEqual([]);
     });
   });
 });
