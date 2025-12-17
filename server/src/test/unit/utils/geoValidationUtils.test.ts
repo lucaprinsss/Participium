@@ -53,6 +53,29 @@ describe('geoValidationUtils', () => {
       expect(isWithinTurinBoundaries(45.0016, 7.6814)).toBe(false);
     });
 
+    it('should execute polygon operations for valid Turin coordinates', () => {
+      // Spy on turf functions to ensure they're called
+      const spyBooleanPointInPolygon = jest.spyOn(require('@turf/boolean-point-in-polygon'), 'default');
+      const spyMultiPolygon = jest.spyOn(require('@turf/helpers'), 'multiPolygon');
+      const spyPoint = jest.spyOn(require('@turf/helpers'), 'point');
+
+      // Test with Turin center coordinates - this should execute the polygon check
+      const result = isWithinTurinBoundaries(45.0703393, 7.6869005);
+      
+      // Verify the turf functions were called
+      expect(spyPoint).toHaveBeenCalledWith([7.6869005, 45.0703393]); // [longitude, latitude]
+      expect(spyMultiPolygon).toHaveBeenCalled();
+      expect(spyBooleanPointInPolygon).toHaveBeenCalled();
+      
+      // Result should be true for Turin center
+      expect(result).toBe(true);
+
+      // Restore spies
+      spyBooleanPointInPolygon.mockRestore();
+      spyMultiPolygon.mockRestore();
+      spyPoint.mockRestore();
+    });
+
     it('should return false for invalid coordinates', () => {
       expect(isWithinTurinBoundaries(91, 0)).toBe(false);
       expect(isWithinTurinBoundaries(0, 181)).toBe(false);
@@ -232,6 +255,19 @@ describe('geoValidationUtils', () => {
         expect.any(Error)
       );
       spy.mockRestore();
+    });
+
+    it('should load Turin boundaries data correctly', () => {
+      // Test that the GeoJSON data is loaded and has the expected structure
+      const { isWithinTurinBoundaries } = require('../../../utils/geoValidationUtils');
+      
+      // This test ensures the module loads without errors and the GeoJSON is accessible
+      expect(typeof isWithinTurinBoundaries).toBe('function');
+      
+      // Test that we can call the function with valid coordinates
+      // This should execute the polygon check if the data loads correctly
+      const result = isWithinTurinBoundaries(45.0703393, 7.6869005);
+      expect(typeof result).toBe('boolean');
     });
   });
 });

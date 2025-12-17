@@ -45,8 +45,10 @@ describe('photoValidationUtils', () => {
     it('returns false for invalid base64 or missing comma', () => {
       const invalidBase64 = 'data:image/png;base64,***';
       const missingComma = 'data:image/png;base64';
+      const emptyBase64 = 'data:image/png;base64,';
       expect(isValidImageDataUri(invalidBase64)).toBe(false);
       expect(isValidImageDataUri(missingComma)).toBe(false);
+      expect(isValidImageDataUri(emptyBase64)).toBe(false);
     });
 
     it('returns false when estimated size exceeds max', () => {

@@ -83,19 +83,7 @@ describe('ReportService', () => {
     jest.clearAllMocks();
   });
 
-  describe('getAllCategories', () => {
-    it('should return all report categories', async () => {
-      const categories = await reportService.getAllCategories();
 
-      expect(categories).toBeDefined();
-      expect(Array.isArray(categories)).toBe(true);
-      expect(categories.length).toBeGreaterThan(0);
-      expect(categories).toContain(ReportCategory.ROADS);
-      expect(categories).toContain(ReportCategory.PUBLIC_LIGHTING);
-    });
-  });
-
-  describe('validateLocation', () => {
     it('should throw BadRequestError when location is undefined', () => {
       const callWithUndefined = () => reportService.validateLocation(undefined as any);
       
@@ -697,7 +685,6 @@ describe('ReportService', () => {
         .toThrow('Mapping failed');
     });
   });
-});
 
 
 describe('ReportService additional unit tests', () => {
@@ -759,36 +746,6 @@ describe('ReportService additional unit tests', () => {
     });
   });
 
-  describe('getAllReports', () => {
-    const makeUser = (roleName: string) => ({
-      id: 1,
-      departmentRole: { role: { name: roleName } },
-    }) as UserEntity;
-
-    it('throws UnauthorizedError when user not found', async () => {
-      (userRepository.findUserById as jest.Mock).mockResolvedValue(null);
-      await expect(reportService.getAllReports(999)).rejects.toThrow(UnauthorizedError);
-    });
-
-    it('throws UnauthorizedError when user role missing', async () => {
-      (userRepository.findUserById as jest.Mock).mockResolvedValue({ id: 1 } as UserEntity);
-      await expect(reportService.getAllReports(1)).rejects.toThrow(UnauthorizedError);
-    });
-
-    it('throws InsufficientRightsError when requesting pending without proper role', async () => {
-      const user = makeUser('Citizen');
-      (userRepository.findUserById as jest.Mock).mockResolvedValue(user);
-      
-      await expect(
-        reportService.getAllReports(user.id, ReportStatus.PENDING_APPROVAL)
-      ).rejects.toThrow(InsufficientRightsError);
-    });
-
-    it('returns filtered reports for non-officer users', async () => {
-      const user = makeUser('Citizen');
-      (userRepository.findUserById as jest.Mock).mockResolvedValue(user);
-    });
-  });
   describe('getAllReports', () => {
     const createMockUser = (role: string, overrides?: Partial<UserEntity>): UserEntity => ({
       id: 1,

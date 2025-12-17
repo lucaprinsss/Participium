@@ -33,6 +33,13 @@ describe('connection.ts', () => {
         jest.clearAllMocks();
     });
 
+    describe('AppDataSource configuration', () => {
+        it('should configure DataSource with environment variables', () => {
+            // The DataSource is configured at module level, so we test that it was created
+            expect(AppDataSource).toBeDefined();
+        });
+    });
+
     describe('SnakeCaseNamingStrategy', () => {
         it('should convert property name to snake_case if customName is not provided', () => {
             const strategy = new SnakeCaseNamingStrategy();

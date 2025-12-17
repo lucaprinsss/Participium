@@ -1323,4 +1323,41 @@ describe('UserRepository Unit Tests', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('findUsersByRoleName', () => {
+    it('should return users for given role name', async () => {
+      // Arrange
+      const roleName = 'Road Maintenance Staff';
+      const mockUsers = [
+        { id: 1, username: 'user1', departmentRoleId: 1 },
+        { id: 2, username: 'user2', departmentRoleId: 2 },
+      ];
+      mockQueryBuilder.getMany.mockResolvedValue(mockUsers as any);
+
+      // Act
+      const result = await userRepository.findUsersByRoleName(roleName);
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('user.departmentRole', 'departmentRole');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.department', 'department');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('role.name = :roleName', { roleName });
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('user.createdAt', 'DESC');
+      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+      expect(result).toEqual(mockUsers);
+    });
+
+    it('should return empty array when no users found', async () => {
+      // Arrange
+      const roleName = 'Non-existent Role';
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      // Act
+      const result = await userRepository.findUsersByRoleName(roleName);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+  });
 });
