@@ -32,7 +32,6 @@ export const getAllCategories = async () => {
     method: "GET",
     credentials: "include",
   });
-  console.log("CATEGORIE: ", response);
   return handleResponse(response);
 };
 
@@ -197,3 +196,21 @@ export const deleteReportComment = async (reportId, commentId) => {
   
   return handleResponse(response);
 }
+
+/**
+ * Retrieve reports located near a specific address
+ * @param {string} address - The human-readable address (e.g., "Via Roma 10, Torino")
+ */
+export const getReportsByAddress = async (address) => {
+  
+  // Codifica l'indirizzo per l'URL
+  const encodedAddress = encodeURIComponent(address);
+  
+  // CORREZIONE: Aggiunto '/search?address='
+  const response = await fetch(`/api/reports/search?address=${encodedAddress}`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  return handleResponse(response);
+};

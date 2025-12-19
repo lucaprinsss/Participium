@@ -24,6 +24,7 @@ import {
   getAllCategories,
   getReports,
   getAddressFromCoordinates,
+  getReportsByAddress,
 } from "../api/reportApi";
 import { getCurrentUser } from "../api/authApi";
 
@@ -148,6 +149,19 @@ const MapPage = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
+  // --- AUTO DISMISS NOTIFICATION EFFECT ---
+  // Questa logica assicura che QUALSIASI notifica scompaia dopo 4 secondi
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 4000); // 4 secondi fissi per tutti i messaggi
+
+      // Cleanup: se la notifica cambia prima dei 4 secondi, resetta il timer
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   // --- LOGICA COLORE MARKER ---
   const getMarkerIcon = (status) => {
     switch (status) {
@@ -234,6 +248,7 @@ const MapPage = () => {
 
   const refreshReports = async () => {
     try {
+      // Se stiamo "resettando" o caricando all'inizio
       const data = await getReports();
       if (Array.isArray(data)) setExistingReports(data);
     } catch {
@@ -247,6 +262,43 @@ const MapPage = () => {
   useEffect(() => {
     refreshReports();
   }, []);
+
+  // --- HANDLER RICERCA INDIRIZZO ---
+  const handleAddressSearch = async (searchText) => {
+    // Se la barra di ricerca è vuota, ricarichiamo tutti i report
+    if (!searchText || searchText.trim() === "") {
+      await refreshReports();
+      return;
+    }
+
+    try {
+      setIsLoadingMap(true);
+      const results = await getReportsByAddress(searchText);
+      
+      if (Array.isArray(results)) {
+        setExistingReports(results);
+        
+        // Notifica per risultati vuoti
+        if (results.length === 0) {
+          setNotification({
+            message: `No reports found for "${searchText}".`,
+            type: "info",
+          });
+        } else {
+           // Opzionale: Se volessimo centrare la mappa sul primo risultato
+           // servirebbe estrarre le coordinate e usare mapInstance.flyTo
+        }
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      setNotification({
+        message: "Error searching for reports.",
+        type: "error",
+      });
+    } finally {
+      setIsLoadingMap(false);
+    }
+  };
 
   useEffect(() => {
     const loadBoundaries = async () => {
@@ -344,7 +396,7 @@ const MapPage = () => {
         message: "You can only report issues within the boundaries of Turin.",
         type: "error",
       });
-      setTimeout(() => setNotification(null), 5000);
+      // Il setTimeout manuale è stato rimosso, gestito dall'useEffect
     }
   };
 
@@ -361,7 +413,7 @@ const MapPage = () => {
 
     if (showInfoNotification) {
       setNotification({ message: "Selection cleared.", type: "info" });
-      setTimeout(() => setNotification(null), 3000);
+      // Il setTimeout manuale è stato rimosso, gestito dall'useEffect
     }
   };
 
@@ -480,6 +532,7 @@ const MapPage = () => {
             setViewMode={setViewMode}
             hideReports={hideReports}
             setHideReports={setHideReports}
+            onSearch={handleAddressSearch} // Passata la funzione di ricerca
           />
 
           {/* --- SPLIT LAYOUT CONTAINER --- */}

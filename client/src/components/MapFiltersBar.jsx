@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Dropdown } from "react-bootstrap";
 import {
   FaFilter,
@@ -7,16 +7,16 @@ import {
   FaUser,
   FaEye,
   FaEyeSlash,
+  FaSearch,
+  FaTimes,
 } from "react-icons/fa";
 import "../css/MapFiltersBar.css";
 
-// Logica statica delle opzioni spostata qui
 const STATUS_OPTIONS = ["Resolved", "Assigned", "In Progress", "Suspended"];
 
 const MapFiltersBar = ({
   categories,
   currentUser,
-  // Props di stato ricevute dal genitore
   filterCategory,
   setFilterCategory,
   filterStatus,
@@ -25,9 +25,55 @@ const MapFiltersBar = ({
   setViewMode,
   hideReports,
   setHideReports,
+  onSearch, // Nuova prop
 }) => {
+  const [searchText, setSearchText] = useState("");
+
+  const handleSearchSubmit = () => {
+    // Invia la ricerca al genitore
+    if (onSearch) {
+      onSearch(searchText);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearchSubmit();
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchText("");
+    if (onSearch) {
+      onSearch(""); // Una stringa vuota resetta la ricerca nel genitore
+    }
+  };
+
   return (
     <div className="mp-filters-bar">
+      {/* 0. Search Bar (NUOVO) */}
+      <div className="mp-grid-item search-item">
+        <div className="mp-search-wrapper">
+          <input
+            type="text"
+            className="mp-search-input"
+            placeholder="Search address..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          {searchText ? (
+            <button className="mp-search-btn clear" onClick={clearSearch}>
+              <FaTimes />
+            </button>
+          ) : (
+            <button className="mp-search-btn" onClick={handleSearchSubmit}>
+              <FaSearch />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* 1. Category Filter */}
       <div className="mp-grid-item">
         <Dropdown onSelect={(k) => setFilterCategory(k)}>

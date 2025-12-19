@@ -240,7 +240,7 @@ router.get('/', isLoggedIn, validateReportStatus, validateReportCategory, report
 
 /**
  * @swagger
- * /api/reports:
+ * /api/reports/search:
  *   get: 
  *     summary: Get all reports located in a specific area near the given address
  *     description: |
@@ -282,7 +282,7 @@ router.get('/', isLoggedIn, validateReportStatus, validateReportCategory, report
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-//router.get('/:address', isLoggedIn, reportController.getReportByAddress);
+router.get('/search', reportController.getReportByAddress);
 
 /**
  * @swagger
