@@ -180,7 +180,109 @@ const router = express.Router();
  *               message: "An unexpected error occurred"
  */
 router.post('/', requireRole(SystemRoles.CITIZEN), validateCreateReport, reportController.createReport);
+
+/**
+ * @swagger
+ * /api/reports:
+ *   get: 
+ *     summary: Get all reports
+ *     description: |
+ *       Returns the list of all reports with their geographic coordinates.
+ *       Coordinates are provided in WGS84 format (OpenStreetMap standard).
+ *       
+ *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           $ref: '#/components/schemas/ReportStatus'
+ *         description: Filter by report status
+ *         required: false
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           $ref: '#/components/schemas/ReportCategory'
+ *         description: Filter by category
+ *         required: false
+ *     responses:
+ *       200:
+ *         description: List of reports
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ReportResponse'
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "User not authenticated"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "An unexpected error occurred"
+ */
 router.get('/', isLoggedIn, validateReportStatus, validateReportCategory, reportController.getAllReports);
+
+/**
+ * @swagger
+ * /api/reports:
+ *   get: 
+ *     summary: Get all reports located in a specific area near the given address
+ *     description: |
+ *       Returns the list of all reports near a specific area defined by the given address.
+ *       
+ *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           $ref: '#/components/schemas/ReportStatus'
+ *         description: Filter by report status
+ *         required: false
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           $ref: '#/components/schemas/ReportCategory'
+ *         description: Filter by category
+ *         required: false
+ *     responses:
+ *       200:
+ *         description: List of reports
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ReportResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "An unexpected error occurred"
+ */
+//router.get('/:address', isLoggedIn, reportController.getReportByAddress);
 
 /**
  * @swagger
@@ -418,7 +520,6 @@ router.get('/assigned/me', isLoggedIn, validateReportStatus, reportController.ge
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-
 router.put('/:id/status', isLoggedIn, validateId('id', 'report'), validateStatusUpdate, reportController.updateReportStatus);
 
 /**
@@ -634,8 +735,7 @@ router.patch('/:id/assign-external', isLoggedIn, validateId('id', 'report'), rep
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-router.get(
-  '/assigned/external/:externalMaintainerId',
+router.get('/assigned/external/:externalMaintainerId',
   requireTechnicalStaffOrRole([SystemRoles.PUBLIC_RELATIONS_OFFICER, SystemRoles.EXTERNAL_MAINTAINER]),
   validateId('externalMaintainerId', 'external maintainer'),
   reportController.getAssignedReportsToExternalMaintainer

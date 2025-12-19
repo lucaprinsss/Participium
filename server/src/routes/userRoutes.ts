@@ -540,11 +540,11 @@ router.get(
 /**
  * @swagger
  * /api/users/username/{username}:
- *   get: 
+ *   get:
  *     summary: Find user by username
- *     description: |
- *       Returns user data based on the provided username.
- *     tags: [Citizens]
+ *     description: Returns user data based on the provided username.
+ *     tags:
+ *       - Citizens
  *     parameters:
  *       - in: path
  *         name: username
@@ -552,7 +552,7 @@ router.get(
  *         schema:
  *           type: string
  *         description: Username of the user to find
- *         example: "johndoe"
+ *         example: johndoe
  *     responses:
  *       200:
  *         description: User found successfully
@@ -562,10 +562,10 @@ router.get(
  *               $ref: '#/components/schemas/UserResponse'
  *             example:
  *               id: 5
- *               username: "johndoe"
- *               email: "john@example.com"
+ *               username: johndoe
+ *               email: john@example.com
  *               is_verified: true
- *               role: "citizen"
+ *               role: citizen
  *               created_at: "2024-01-10T12:00:00.000Z"
  *       404:
  *         description: User not found
@@ -575,18 +575,18 @@ router.get(
  *               $ref: '#/components/schemas/ErrorResponse'
  *             example:
  *               code: 404
- *               name: "NotFoundError"
- *               message: "User not found"
- *      500:
- *        description: Internal server error
- *        content:
- *          application/json:
- *            schema:
- *              $ref: '#/components/schemas/ErrorResponse'
- *            example:
- *              code: 500
- *              name: "InternalServerError"
- *              message: "Failed to find user by username"
+ *               name: NotFoundError
+ *               message: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: InternalServerError
+ *               message: Failed to find user by username
  */
 router.get("/username/:username", UserController.findUserByUsername);
 

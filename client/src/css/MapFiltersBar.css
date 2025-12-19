@@ -1,0 +1,164 @@
+/* MapFiltersBar.css */
+
+/* --- CONTAINER GRID --- */
+.mp-filters-bar {
+  display: grid; 
+  grid-template-columns: 1.5fr 1.5fr 1fr 1fr; 
+  gap: 0.625rem; /* 10px */
+  width: 100%;
+  margin-bottom: 1rem; 
+  align-items: center; 
+  overflow: visible; 
+  z-index: 100; 
+  position: relative;
+}
+
+@media (max-width: 768px) { 
+  .mp-filters-bar { 
+    grid-template-columns: 1fr 1fr; 
+  } 
+}
+
+.mp-grid-item { 
+  width: 100%; 
+  min-width: 0; 
+}
+
+/* --- BUTTONS & TOGGLES --- */
+.mp-filter-btn {
+  width: 100%; 
+  height: 2rem; /* --control-height hardcoded per indipendenza */
+  padding: 0 0.75rem; 
+  border-radius: 0.75rem !important; /* --radius-md */
+  font-weight: 600 !important; 
+  font-size: 0.9rem !important; 
+  border: 0.0625rem solid rgba(161, 43, 50, 0.1) !important; /* --border-light */
+  background-color: #ffffff !important; /* --card-bg */
+  color: #1a1a1a !important; /* --text-darker */
+  transition: all 0.2s ease-in-out; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  box-shadow: 0 0.125rem 1.25rem rgba(161, 43, 50, 0.08); /* --shadow-soft */
+  cursor: pointer;
+}
+
+.mp-filter-btn:hover:not(:disabled) { 
+  border-color: #A12B32 !important; /* --brand-red */
+  transform: translateY(-0.0625rem); 
+}
+
+.mp-filter-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mp-filter-btn.active { 
+  background-color: #A12B32 !important; /* --brand-red */
+  color: white !important; 
+  border-color: #A12B32 !important; 
+}
+
+.mp-filter-btn.alert-mode { 
+  background-color: #1a1a1a !important; /* --text-darker */
+  color: white !important; 
+  border-color: #1a1a1a !important; 
+}
+
+/* --- CONTENT WRAPPERS --- */
+.mp-truncate-wrapper { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem; 
+  width: 100%; 
+  overflow: hidden; 
+}
+
+.mp-btn-icon-fix { 
+  flex-shrink: 0; 
+  font-size: 1rem; 
+  margin-right: 8px; 
+}
+
+.mp-btn-text { 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  flex-grow: 1; 
+  text-align: left; 
+}
+
+/* --- DROPDOWNS CUSTOM STYLE --- */
+.dropdown-toggle.mp-modern-dropdown-toggle {
+  background: white !important; 
+  border: 0.0625rem solid rgba(161, 43, 50, 0.1) !important; 
+  border-radius: 0.75rem !important;
+  height: 2rem !important; 
+  padding: 0 0.75rem !important;
+  color: #1e293b !important; /* --brand-navy */
+  font-weight: 500 !important; 
+  font-size: 0.9rem !important;
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  box-shadow: 0 0.125rem 1.25rem rgba(161, 43, 50, 0.08); 
+  width: 100%;
+  cursor: pointer;
+}
+
+.dropdown-toggle.mp-modern-dropdown-toggle::after { display: none; }
+
+.dropdown-toggle.mp-modern-dropdown-toggle .mp-dropdown-icon { 
+  margin-right: 0.5rem; 
+  font-size: 1rem; 
+}
+
+.dropdown-toggle.mp-modern-dropdown-toggle:hover:not(:disabled), 
+.dropdown-toggle.mp-modern-dropdown-toggle:focus {
+  border-color: #A12B32 !important; 
+  box-shadow: 0 0 0 0.25rem rgba(161, 43, 50, 0.08) !important; 
+  transform: translateY(-0.0625rem);
+}
+
+.dropdown-toggle.mp-modern-dropdown-toggle.active {
+    background-color: #A12B32 !important;
+    color: white !important;
+    border-color: #A12B32 !important;
+}
+
+/* Bootstrap Override per stato 'show' */
+.show > .dropdown-toggle.mp-modern-dropdown-toggle {
+    border-color: #A12B32 !important;
+    box-shadow: 0 0 0 0.25rem rgba(161, 43, 50, 0.08) !important;
+}
+
+.mp-modern-dropdown-menu { 
+  border: 0.0625rem solid rgba(161, 43, 50, 0.1) !important; 
+  border-radius: 0.75rem !important; 
+  box-shadow: 0 0.5rem 2.5rem rgba(161, 43, 50, 0.12) !important; 
+  padding: 0.3125rem !important; 
+  min-width: 13.75rem; 
+  background-color: white; 
+  margin-top: 0.25rem; 
+  max-height: 15.625rem; 
+  overflow-y: auto; 
+}
+
+.mp-modern-dropdown-menu .dropdown-item { 
+  border-radius: 0.5rem; 
+  padding: 0.5rem 1rem; 
+  font-size: 0.9rem; 
+  font-weight: 500; 
+  color: #1e293b; 
+  cursor: pointer;
+}
+
+.mp-modern-dropdown-menu .dropdown-item:hover { 
+  background-color: #f8fafc; 
+  color: #A12B32; 
+}
+
+.mp-modern-dropdown-menu .dropdown-item.active { 
+  background-color: #A12B32 !important; 
+  color: white !important; 
+}

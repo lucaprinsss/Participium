@@ -32,6 +32,7 @@ export const getAllCategories = async () => {
     method: "GET",
     credentials: "include",
   });
+  console.log("CATEGORIE: ", response);
   return handleResponse(response);
 };
 

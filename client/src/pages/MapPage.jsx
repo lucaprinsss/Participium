@@ -12,34 +12,26 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
-  FaMapMarkerAlt,
   FaMap,
   FaInfoCircle,
-  FaCamera,
-  FaTimes,
-  FaListUl,
-  FaExternalLinkAlt,
-  FaFilter,
-  FaUser,
-  FaUsers,
-  FaEye,
-  FaEyeSlash,
   FaArrowRight,
-  FaUserSecret, // Nuova icona per anonimato
+  FaExternalLinkAlt,
+  FaTimes,
 } from "react-icons/fa";
-import { Dropdown } from "react-bootstrap";
 
 // IMPORT API
 import {
   getAllCategories,
-  createReport,
   getReports,
   getAddressFromCoordinates,
 } from "../api/reportApi";
 import { getCurrentUser } from "../api/authApi";
 
+// IMPORT CUSTOM COMPONENTS & CSS
 import "../css/MapPage.css";
 import ReportDetails from "../components/ReportDetails";
+import MapFiltersBar from "../components/MapFiltersBar";
+import MapReportForm from "../components/MapReportForm"; 
 
 // --- ICON CONFIGURATION ---
 const createIcon = (colorUrl) => {
@@ -147,61 +139,26 @@ const MapPage = () => {
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isLoadingMap, setIsLoadingMap] = useState(true);
-  const [photos, setPhotos] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Logic for address calculation kept here as it depends on marker
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+  const [currentAddress, setCurrentAddress] = useState("");
+  const [locationError, setLocationError] = useState("");
 
   const [selectedReport, setSelectedReport] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    is_anonymous: false, // Default false
-    latitude: "",
-    longitude: "",
-    address: "",
-  });
-
-  const [formErrors, setFormErrors] = useState({
-    title: "",
-    description: "",
-    category: "",
-    photos: "",
-    location: "",
-  });
-
-  const STATUS_OPTIONS = ["Resolved", "Assigned", "In Progress", "Suspended"];
-
   // --- LOGICA COLORE MARKER ---
   const getMarkerIcon = (status) => {
     switch (status) {
-      case "Resolved":
-        return Icons.green;
-      case "Assigned":
-        return Icons.blue;
-      case "In Progress":
-        return Icons.orange;
-      case "Pending Approval":
-        return Icons.yellow;
-      case "Suspended":
-        return Icons.grey;
-      case "Rejected":
-        return Icons.black;
-      case "Open":
-      default:
-        return Icons.blue;
+      case "Resolved": return Icons.green;
+      case "Assigned": return Icons.blue;
+      case "In Progress": return Icons.orange;
+      case "Pending Approval": return Icons.yellow;
+      case "Suspended": return Icons.grey;
+      case "Rejected": return Icons.black;
+      case "Open": default: return Icons.blue;
     }
-  };
-
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
   };
 
   const getLatLngFromReport = (report) => {
@@ -275,19 +232,20 @@ const MapPage = () => {
     fetchCategories();
   }, []);
 
+  const refreshReports = async () => {
+    try {
+      const data = await getReports();
+      if (Array.isArray(data)) setExistingReports(data);
+    } catch {
+      setNotification({
+        message: "Unable to load reports on the map.",
+        type: "warning",
+      });
+    }
+  };
+
   useEffect(() => {
-    const fetchUserReports = async () => {
-      try {
-        const data = await getReports();
-        if (Array.isArray(data)) setExistingReports(data);
-      } catch {
-        setNotification({
-          message: "Unable to load reports on the map.",
-          type: "warning",
-        });
-      }
-    };
-    fetchUserReports();
+    refreshReports();
   }, []);
 
   useEffect(() => {
@@ -344,20 +302,17 @@ const MapPage = () => {
     if (marker) {
       const fetchAddress = async () => {
         setIsLoadingAddress(true);
-        setFormData((prev) => ({ ...prev, address: "" }));
+        setCurrentAddress("");
 
         try {
           const addressFound = await getAddressFromCoordinates(
             marker.lat,
             marker.lng
           );
-          setFormData((prev) => ({ ...prev, address: addressFound }));
+          setCurrentAddress(addressFound);
         } catch (error) {
           console.error("Failed to retrieve address", error);
-          setFormData((prev) => ({
-            ...prev,
-            address: "Address not found",
-          }));
+          setCurrentAddress("Address not found");
         } finally {
           setIsLoadingAddress(false);
         }
@@ -383,13 +338,7 @@ const MapPage = () => {
       };
 
       setMarker(newMarker);
-      setFormData((prev) => ({
-        ...prev,
-        latitude: lat.toFixed(6),
-        longitude: lng.toFixed(6),
-      }));
-
-      setFormErrors((prev) => ({ ...prev, location: "" }));
+      setLocationError("");
     } else {
       setNotification({
         message: "You can only report issues within the boundaries of Turin.",
@@ -403,147 +352,22 @@ const MapPage = () => {
     setShowForm(true);
   };
 
-  const handleClear = (showNotification = true) => {
+  const handleClear = (showInfoNotification = true) => {
     setMarker(null);
     setShowForm(false);
-    setFormData({
-      title: "",
-      description: "",
-      category: "",
-      is_anonymous: false,
-      latitude: "",
-      longitude: "",
-      address: "",
-    });
-    setFormErrors({});
-    photos.forEach((photo) => URL.revokeObjectURL(photo.preview));
-    setPhotos([]);
+    setCurrentAddress("");
     setIsLoadingAddress(false);
+    setLocationError("");
 
-    const fileInput = document.getElementById("photos");
-    if (fileInput) fileInput.value = "";
-
-    if (showNotification) {
+    if (showInfoNotification) {
       setNotification({ message: "Selection cleared.", type: "info" });
       setTimeout(() => setNotification(null), 3000);
     }
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (formErrors[field]) setFormErrors((prev) => ({ ...prev, [field]: "" }));
-  };
-
-  const handleSelect = (fieldName, value) => {
-    setFormData((prev) => ({ ...prev, [fieldName]: value }));
-    if (formErrors[fieldName])
-      setFormErrors((prev) => ({ ...prev, [fieldName]: "" }));
-  };
-
-  const handlePhotoUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    if (photos.length + files.length > 3) {
-      setFormErrors((prev) => ({
-        ...prev,
-        photos: "Maximum 3 photos allowed.",
-      }));
-      e.target.value = null;
-      return;
-    }
-
-    const newPhotos = files.map((file) => ({
-      id: Date.now() + Math.random(),
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-
-    setPhotos((prev) => [...prev, ...newPhotos]);
-    setFormErrors((prev) => ({ ...prev, photos: "" }));
-    e.target.value = null;
-  };
-
-  const removePhoto = (id) => {
-    setPhotos((prev) => {
-      const photoToRemove = prev.find((photo) => photo.id === id);
-      if (photoToRemove) URL.revokeObjectURL(photoToRemove.preview);
-      return prev.filter((photo) => photo.id !== id);
-    });
-  };
-
-  const validateForm = () => {
-    const errors = {};
-    const maxDescLength = 200;
-
-    if (!formData.title.trim()) errors.title = "Title required.";
-    else if (formData.title.trim().length < 5)
-      errors.title = "Minimum 5 characters.";
-
-    if (!formData.description.trim())
-      errors.description = "Description required.";
-    else if (formData.description.trim().length < 10)
-      errors.description = "Minimum 10 characters.";
-    else if (formData.description.length > maxDescLength)
-      errors.description = `Max ${maxDescLength} characters.`;
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) {
-      setNotification({
-        message: "Correct errors before submitting.",
-        type: "error",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const base64Photos = await Promise.all(
-        photos.map((photo) => convertToBase64(photo.file))
-      );
-
-      const reportData = {
-        address: formData.address,
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        category: formData.category,
-        location: {
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-          address: formData.address,
-        },
-        photos: base64Photos,
-        // Mapping esplicito per compatibilità API
-        is_anonymous: formData.is_anonymous,
-        isAnonymous: formData.is_anonymous,
-      };
-
-      await createReport(reportData);
-
-      handleClear(false);
-      setNotification({
-        message: "Report submitted successfully!",
-        type: "success",
-      });
-
-      const updatedReports = await getReports();
-      if (Array.isArray(updatedReports)) setExistingReports(updatedReports);
-    } catch (error) {
-      console.error("Submit error:", error);
-      setNotification({
-        message: error.message || "Error during submission.",
-        type: "error",
-      });
-    } finally {
-      setIsSubmitting(false);
-      setTimeout(() => setNotification(null), 5000);
-    }
+  const handleReportCreated = () => {
+    handleClear(false);
+    refreshReports();
   };
 
   const renderPolygons = () => {
@@ -584,9 +408,6 @@ const MapPage = () => {
       return null;
     });
   };
-
-  const getSelectedCategoryName = () =>
-    formData.category || "Select Category";
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -648,142 +469,18 @@ const MapPage = () => {
       <main className="mp-main">
         <div className="mp-section">
           {/* --- FILTER BAR --- */}
-          <div className="mp-filters-bar">
-            <div className="mp-grid-item">
-              <Dropdown onSelect={(k) => setFilterCategory(k)}>
-                <Dropdown.Toggle
-                  className={`mp-modern-dropdown-toggle ${
-                    filterCategory !== "All" ? "active" : ""
-                  }`}
-                  id="filter-category"
-                >
-                  <div className="mp-truncate-wrapper">
-                    <FaFilter className="mp-dropdown-icon" />
-                    <span className="mp-btn-text">
-                      {filterCategory === "All"
-                        ? "All Categories"
-                        : filterCategory}
-                    </span>
-                  </div>
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="mp-modern-dropdown-menu">
-                  <Dropdown.Item
-                    eventKey="All"
-                    active={filterCategory === "All"}
-                  >
-                    All Categories
-                  </Dropdown.Item>
-                  <Dropdown.Divider />
-                  {categories.map((cat, idx) => (
-                    <Dropdown.Item
-                      key={idx}
-                      eventKey={cat}
-                      active={filterCategory === cat}
-                    >
-                      {cat}
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
-            </div>
-
-            <div className="mp-grid-item">
-              <Dropdown onSelect={(k) => setFilterStatus(k)}>
-                <Dropdown.Toggle
-                  className={`mp-modern-dropdown-toggle ${
-                    filterStatus !== "All" ? "active" : ""
-                  }`}
-                  id="filter-status"
-                >
-                  <div className="mp-truncate-wrapper">
-                    <FaListUl className="mp-dropdown-icon" />
-                    <span className="mp-btn-text">
-                      {filterStatus === "All"
-                        ? "All Statuses"
-                        : filterStatus}
-                    </span>
-                  </div>
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="mp-modern-dropdown-menu">
-                  <Dropdown.Item
-                    eventKey="All"
-                    active={filterStatus === "All"}
-                  >
-                    All Statuses
-                  </Dropdown.Item>
-                  <Dropdown.Divider />
-                  {STATUS_OPTIONS.map((status, idx) => (
-                    <Dropdown.Item
-                      key={idx}
-                      eventKey={status}
-                      active={filterStatus === status}
-                    >
-                      {status}
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
-            </div>
-
-            <div className="mp-grid-item">
-              <button
-                className={`mp-filter-btn ${
-                  viewMode === "mine" ? "active" : ""
-                }`}
-                onClick={() =>
-                  setViewMode((prev) =>
-                    prev === "all" ? "mine" : "all"
-                  )
-                }
-                disabled={!currentUser}
-              >
-                {viewMode === "all" ? (
-                  <>
-                    <FaUsers
-                      className="mp-btn-icon-fix"
-                      style={{ marginRight: "8px" }}
-                    />
-                    All Users
-                  </>
-                ) : (
-                  <>
-                    <FaUser
-                      className="mp-btn-icon-fix"
-                      style={{ marginRight: "8px" }}
-                    />
-                    My Reports
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="mp-grid-item">
-              <button
-                className={`mp-filter-btn ${
-                  hideReports ? "alert-mode" : ""
-                }`}
-                onClick={() => setHideReports(!hideReports)}
-              >
-                {hideReports ? (
-                  <>
-                    <FaEyeSlash
-                      className="mp-btn-icon-fix"
-                      style={{ marginRight: "8px" }}
-                    />
-                    Hidden
-                  </>
-                ) : (
-                  <>
-                    <FaEye
-                      className="mp-btn-icon-fix"
-                      style={{ marginRight: "8px" }}
-                    />
-                    Visible
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+          <MapFiltersBar
+            categories={categories}
+            currentUser={currentUser}
+            filterCategory={filterCategory}
+            setFilterCategory={setFilterCategory}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            hideReports={hideReports}
+            setHideReports={setHideReports}
+          />
 
           {/* --- SPLIT LAYOUT CONTAINER --- */}
           <div
@@ -938,7 +635,7 @@ const MapPage = () => {
                           <b>
                             {isLoadingAddress
                               ? "Locating..."
-                              : formData.address || "Location Selected"}
+                              : currentAddress || "Location Selected"}
                           </b>
                           <br />
                           {!showForm ? (
@@ -994,244 +691,25 @@ const MapPage = () => {
                   </div>
                 )}
               </div>
-              {formErrors.location && (
+              {locationError && (
                 <div className="mp-map-error">
-                  <FormError message={formErrors.location} />
+                  <FormError message={locationError} />
                 </div>
               )}
             </div>
 
             {/* RIGHT COLUMN: FORM */}
             <div className="mp-form-column" ref={formSectionRef}>
-              <div className="mp-form-card side-panel">
-                <div className="mp-form-header-row">
-                  <h2 className="mp-form-title compact">
-                    <FaMapMarkerAlt className="mp-form-title-icon" />
-                    New Report
-                  </h2>
-                  <button
-                    type="button"
-                    className="mp-close-panel-btn"
-                    onClick={() => handleClear()}
-                  >
-                    <FaTimes />
-                  </button>
-                </div>
-
-                <form
-                  onSubmit={handleSubmit}
-                  className="mp-location-form compact"
-                >
-                  {/* Address Field */}
-                  <div className="mp-form-group">
-                    <label className="mp-form-label">Address</label>
-                    <input
-                      type="text"
-                      className="mp-input"
-                      value={
-                        isLoadingAddress
-                          ? "Calculating address..."
-                          : formData.address
-                      }
-                      readOnly
-                      style={{
-                        backgroundColor: "var(--bg-lighter)",
-                        color: "var(--text-muted)",
-                      }}
-                    />
-                  </div>
-
-                  {/* Title */}
-                  <div className="mp-form-group">
-                    <label htmlFor="title" className="mp-form-label">
-                      Title{" "}
-                      <span className="mp-required-asterisk">*</span>
-                    </label>
-                    {formErrors.title && (
-                      <FormError message={formErrors.title} />
-                    )}
-                    <input
-                      type="text"
-                      id="title"
-                      className={`mp-input ${
-                        formErrors.title ? "is-invalid" : ""
-                      }`}
-                      value={formData.title}
-                      onChange={(e) =>
-                        handleInputChange("title", e.target.value)
-                      }
-                      placeholder="Title..."
-                    />
-                  </div>
-
-                  {/* Category */}
-                  <div className="mp-form-group">
-                    <label htmlFor="category" className="mp-form-label">
-                      Category{" "}
-                      <span className="mp-required-asterisk">*</span>
-                    </label>
-                    {formErrors.category && (
-                      <FormError message={formErrors.category} />
-                    )}
-                    <Dropdown
-                      onSelect={(value) =>
-                        handleSelect("category", value)
-                      }
-                    >
-                      <Dropdown.Toggle
-                        className={`mp-modern-dropdown-toggle ${
-                          formErrors.category ? "is-invalid" : ""
-                        }`}
-                        id="cat-drop"
-                      >
-                        {isLoadingCategories
-                          ? "Loading..."
-                          : getSelectedCategoryName()}
-                      </Dropdown.Toggle>
-                      <Dropdown.Menu className="mp-modern-dropdown-menu">
-                        {categories.map((cat, i) => (
-                          <Dropdown.Item
-                            key={i}
-                            eventKey={cat}
-                            active={formData.category === cat}
-                          >
-                            {cat}
-                          </Dropdown.Item>
-                        ))}
-                      </Dropdown.Menu>
-                    </Dropdown>
-                  </div>
-
-                  {/* Description */}
-                  <div className="mp-form-group">
-                    <label
-                      htmlFor="description"
-                      className="mp-form-label"
-                    >
-                      Description{" "}
-                      <span className="mp-required-asterisk">*</span>
-                    </label>
-                    {formErrors.description && (
-                      <FormError message={formErrors.description} />
-                    )}
-
-                    <div className="mp-textarea-wrapper">
-                      <textarea
-                        id="description"
-                        className={`mp-input mp-textarea compact ${
-                          formErrors.description ? "is-invalid" : ""
-                        }`}
-                        value={formData.description}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "description",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Describe the problem in detail..."
-                        rows="3"
-                        maxLength={200}
-                      />
-                      <span
-                        className={`mp-char-counter ${
-                          formData.description.length >= 200
-                            ? "is-limit"
-                            : ""
-                        }`}
-                      >
-                        {formData.description.length} / 200
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Photos */}
-                  <div className="mp-form-group">
-                    <label className="mp-form-label">
-                      Photos ({photos.length}/3)
-                    </label>
-                    {formErrors.photos && (
-                      <FormError message={formErrors.photos} />
-                    )}
-
-                    <div className="mp-photo-row">
-                      <label
-                        htmlFor="photos"
-                        className={`mp-photo-upload-mini ${
-                          photos.length >= 3 ? "disabled" : ""
-                        }`}
-                      >
-                        <FaCamera />
-                      </label>
-                      <input
-                        type="file"
-                        id="photos"
-                        multiple
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        className="mp-photo-input"
-                        disabled={photos.length >= 3}
-                      />
-
-                      {photos.map((photo) => (
-                        <div
-                          key={photo.id}
-                          className="mp-photo-mini-preview"
-                        >
-                          <img src={photo.preview} alt="Preview" />
-                          <button
-                            type="button"
-                            onClick={() => removePhoto(photo.id)}
-                          >
-                            <FaTimes />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* MODERN ANONYMOUS SWITCH TOGGLE */}
-                  <div className="mp-toggle-group">
-                    <div className="mp-toggle-info">
-                      <FaUserSecret className={`mp-toggle-icon-visual ${formData.is_anonymous ? 'active' : ''}`} />
-                      <div className="mp-toggle-text">
-                        <span className="mp-toggle-title">Anonymous Report</span>
-                        <span className="mp-toggle-subtitle">
-                          {formData.is_anonymous ? "Your name will be hidden" : "Your name will be visible"}
-                        </span>
-                      </div>
-                    </div>
-                    <label className="mp-toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={formData.is_anonymous}
-                        onChange={(e) => handleInputChange("is_anonymous", e.target.checked)}
-                      />
-                      <span className="mp-toggle-slider"></span>
-                    </label>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="mp-form-actions compact">
-                    <button
-                      type="button"
-                      className="mp-btn secondary sm"
-                      onClick={() => handleClear()}
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="mp-btn primary sm"
-                      disabled={!marker || isSubmitting}
-                    >
-                      {isSubmitting
-                        ? "Submitting..."
-                        : "Submit Report"}
-                    </button>
-                  </div>
-                </form>
-              </div>
+              <MapReportForm 
+                marker={marker}
+                address={currentAddress}
+                isLoadingAddress={isLoadingAddress}
+                categories={categories}
+                isLoadingCategories={isLoadingCategories}
+                onClose={() => handleClear(true)}
+                onReportCreated={handleReportCreated}
+                setNotification={setNotification}
+              />
             </div>
           </div>
         </div>
