@@ -7,6 +7,8 @@ import { ReportStatus } from '../models/dto/ReportStatus';
 import { Repository } from "typeorm";
 import { photoRepository } from "./photoRepository";
 
+import { ILike } from "typeorm"; // Importante: aggiungi ILike agli import
+
 /**
  * Report Repository
  * Handles database operations for reports with PostGIS support
@@ -315,6 +317,28 @@ class ReportRepository {
             throw new Error(`Failed to reload report with id ${savedReport.id}`);
         }
         return reloadedReport;
+    }
+
+    /**
+     * Retrieve reports located near a specific address
+     * @param address 
+     * @returns 
+     */
+    public async findReportsByAddress(address: string): Promise<ReportEntity[]> {
+        return await this.repository.find({
+            where: { 
+                address: ILike(`%${address}%`) // Cerca qualsiasi indirizzo che CONTIENE la stringa
+            },
+            relations: [
+                'reporter', 
+                'assignee', 
+                'externalAssignee',
+                'photos'
+            ],
+            order: {
+                createdAt: 'DESC'
+            }
+        });
     }
 }
 

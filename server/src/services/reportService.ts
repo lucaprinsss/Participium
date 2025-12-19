@@ -602,6 +602,20 @@ class ReportService {
       createdAt: comment.createdAt
     };
   }
+
+  /**
+   * Retrieve reports located near a specific address
+   * @param address 
+   * @returns 
+   */
+  async getReportByAddress(address: string): Promise<ReportResponse[]> {
+    // Cerchiamo i report tramite il repository
+    const reports = await reportRepository.findReportsByAddress(address);
+    
+    // Mappiamo i risultati aggiungendo i nomi delle aziende se necessario
+    return await this.mapReportsWithCompanyNames(reports);
+  }
+
 }
 
 export const reportService = new ReportService();

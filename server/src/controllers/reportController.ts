@@ -261,6 +261,30 @@ class ReportController {
       next(error);
     }
   }
+
+  /**
+   * Retrieve reports located near a specific address
+   * @param req 
+   * @param res 
+   * @param next 
+   */
+  async getReportByAddress(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Leggiamo 'address' dai query params, non dai params del path
+      const address = req.query.address as string;
+
+      if (!address) {
+         throw new BadRequestError("Address query parameter is required");
+      }
+
+      const reports = await reportService.getReportByAddress(address);
+      res.status(200).json(reports);
+
+    } catch (error) {
+      next(error);
+    }
+  }
+  
 }
 
 export const reportController = new ReportController();
