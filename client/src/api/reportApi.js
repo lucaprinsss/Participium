@@ -123,10 +123,22 @@ export const getReportsAssignedToMe = async (status, category) => {
  * @returns {Promise<string>} The formatted address or coordinates fallback
  */
 export const getAddressFromCoordinates = async (latitude, longitude) => {
-    // Utilizza direttamente la logica già definita in retriveAddressUtilis
-    // Non è necessario usare handleResponse qui perché calculateAddress 
-    // gestisce già il try/catch e restituisce una stringa pulita.
+    // Uses the logic defined in retriveAddressUtils
+    // No need for handleResponse as calculateAddress handles try/catch internally
     return await calculateAddress(latitude, longitude);
+};
+
+/**
+ * Get coordinates from address (forward geocoding)
+ * @param {string} address - The address to search for
+ * @returns {Promise<{lat: number, lng: number, display_name: string}>}
+ */
+export const getCoordinatesFromAddress = async (address) => {
+  const response = await fetch(`/api/proxy/coordinates?address=${encodeURIComponent(address)}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return handleResponse(response);
 };
 
 /**

@@ -24,6 +24,7 @@ import {
   getAllCategories,
   getReports,
   getAddressFromCoordinates,
+  getCoordinatesFromAddress,
   getReportsByAddress,
 } from "../api/reportApi";
 import { getCurrentUser } from "../api/authApi";
@@ -117,6 +118,8 @@ const FormError = ({ message }) => (
 const MapPage = () => {
   // --- Refs & Map Instance ---
   const [mapInstance, setMapInstance] = useState(null);
+  const [isMapReady, setIsMapReady] = useState(false);
+  const [pendingZoom, setPendingZoom] = useState(null);
   const formSectionRef = useRef(null);
 
   // --- States ---
@@ -214,6 +217,28 @@ const MapPage = () => {
     }
   }, [showForm, mapInstance, marker]);
 
+  // Mark when map is ready
+  useEffect(() => {
+    if (mapInstance && !isMapReady) {
+      const timer = setTimeout(() => setIsMapReady(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [mapInstance, isMapReady]);
+
+  // Execute pending zoom when map is ready
+  useEffect(() => {
+    if (isMapReady && pendingZoom && mapInstance) {
+      const timer = setTimeout(() => {
+        try {
+          mapInstance.setView([pendingZoom.lat, pendingZoom.lng], 17);
+        } finally {
+          setPendingZoom(null);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isMapReady, pendingZoom, mapInstance]);
+
   // Load Initial Data
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -263,37 +288,33 @@ const MapPage = () => {
     refreshReports();
   }, []);
 
-  // --- HANDLER RICERCA INDIRIZZO ---
+  // Address search handler
   const handleAddressSearch = async (searchText) => {
-    // Se la barra di ricerca è vuota, ricarichiamo tutti i report
-    if (!searchText || searchText.trim() === "") {
-      await refreshReports();
+    if (!searchText || searchText.trim() === "") return;
+
+    if (!mapInstance || !isMapReady) {
+      setNotification({
+        message: "Map is loading, please wait...",
+        type: "warning",
+      });
       return;
     }
 
     try {
       setIsLoadingMap(true);
-      const results = await getReportsByAddress(searchText);
+      const coordinates = await getCoordinatesFromAddress(searchText);
       
-      if (Array.isArray(results)) {
-        setExistingReports(results);
-        
-        // Notifica per risultati vuoti
-        if (results.length === 0) {
-          setNotification({
-            message: `No reports found for "${searchText}".`,
-            type: "info",
-          });
-        } else {
-           // Opzionale: Se volessimo centrare la mappa sul primo risultato
-           // servirebbe estrarre le coordinate e usare mapInstance.flyTo
-        }
+      if (coordinates && coordinates.lat && coordinates.lng) {
+        setPendingZoom({ lat: coordinates.lat, lng: coordinates.lng });
+        setNotification({
+          message: `Showing location: ${searchText}`,
+          type: "info",
+        });
       }
     } catch (error) {
-      console.error("Search error:", error);
       setNotification({
-        message: "Error searching for reports.",
-        type: "error",
+        message: `Address "${searchText}" not found.`,
+        type: "warning",
       });
     } finally {
       setIsLoadingMap(false);
