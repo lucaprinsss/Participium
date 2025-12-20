@@ -16,8 +16,8 @@
     "test:unit": "jest --testPathPatterns=unit --runInBand --silent",
     "test:integration": "run-s test:db:up test:wait test:integration:run test:db:down",
     "test:integration:run": "jest --testPathPatterns=integration --runInBand --silent",
-    "test:db:up": "docker-compose -f docker-compose.test.yml up -d",
-    "test:db:down": "docker-compose -f docker-compose.test.yml down -v",
+    "test:db:up": "docker compose -f docker-compose.test.yml up -d",
+    "test:db:down": "docker compose -f docker-compose.test.yml down -v",
     "storage:local": "node scripts/switch-storage.js local",
     "storage:r2": "node scripts/switch-storage.js r2",
     "storage:status": "node scripts/switch-storage.js status"
