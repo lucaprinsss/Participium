@@ -1,9 +1,9 @@
-
 import express from 'express';
 import UserController from '@controllers/userController';
 import { validateRegisterInput } from '../middleware/registerUserMiddleware';
 import { isLoggedIn } from '@middleware/authMiddleware';
 import { isTechnicalStaff, isAdmin } from '@dto/UserRole';
+import { validateId } from '@middleware/validateId';
 
 const router = express.Router();
 
@@ -409,7 +409,7 @@ router.get(
  *               name: "InternalServerError"
  *               message: "Failed to retrieve notifications"
  */
-// router.get('/notifications', isLoggedIn, UserController.getNotifications);
+router.get('/notifications', isLoggedIn, UserController.getNotifications);
 
 /**
  * @swagger
@@ -533,8 +533,7 @@ router.get(
  *               name: "InternalServerError"
  *               message: "Failed to update notification"
  */
-// router.patch('/notifications/:id', isLoggedIn, validateId, UserController.markNotificationAsRead);
-
+router.patch('/notifications/:id', isLoggedIn, validateId('id', 'notification'), UserController.markNotificationAsRead);
 
 
 /**
@@ -591,4 +590,3 @@ router.get(
 router.get("/username/:username", UserController.findUserByUsername);
 
 export default router;
-

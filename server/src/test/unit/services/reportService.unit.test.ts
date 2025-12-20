@@ -26,6 +26,7 @@ jest.mock('@services/storageService');
 jest.mock('@services/mapperService');
 jest.mock('@repositories/categoryRoleRepository');
 jest.mock('@utils/photoValidationUtils');
+jest.mock('@repositories/notificationRepository');
 
 
 // Helper function to create mock report entities

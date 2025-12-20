@@ -8,8 +8,12 @@ import { NotFoundError } from '@models/errors/NotFoundError'; // Assunto che esi
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { AppError } from '@models/errors/AppError';
+import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
+
 import { sendVerificationEmail } from '@utils/emailSender';
 import crypto from 'crypto';
+import { notificationRepository } from '../repositories/notificationRepository';
+import { NotFoundError } from '@models/errors/NotFoundError';
 
 /**
  * Service for user-related business logic
@@ -197,6 +201,30 @@ class UserService {
         return mapUserEntityToUserResponse(user, companyName);
       })
       .filter((user): user is UserResponse => user !== null);
+  }
+
+  async getUserNotifications(userId: number, isRead?: boolean) {
+    const where: any = { userId };
+    if (typeof isRead !== 'undefined') {
+      where.isRead = isRead;
+    }
+    return await notificationRepository.find({
+      where,
+      order: { createdAt: 'DESC' }
+    });
+  }
+
+  async markNotificationAsRead(userId: number, notificationId: number, isRead: boolean) {
+    const notification = await notificationRepository.findOneBy({ id: notificationId });
+    if (!notification) {
+      throw new NotFoundError('Notification not found');
+    }
+    if (notification.userId !== userId) {
+      // Forbidden: trying to update someone else's notification
+      throw new InsufficientRightsError('You can only update your own notifications');
+    }
+    notification.isRead = isRead;
+    return await notificationRepository.save(notification);
   }
 }
 

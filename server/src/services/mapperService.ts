@@ -1,3 +1,5 @@
+import { MessageEntity } from '@models/entity/messageEntity';
+import { MessageResponse } from '@models/dto/output/MessageResponse';
 import { ErrorDTO } from "@models/errors/ErrorDTO";
 import { UserResponse } from "@models/dto/output/UserResponse";
 import { ReportResponse, PhotoResponse } from "@models/dto/output/ReportResponse";
@@ -273,4 +275,23 @@ function removeNullAttributes<T extends Record<string, any>>(
   );
   
   return Object.fromEntries(filtered) as Partial<T>;
+}
+
+/**
+ * Maps a MessageEntity to MessageResponse DTO
+ */
+export function mapMessageToResponse(message: MessageEntity): MessageResponse {
+  return {
+    id: message.id,
+    reportId: message.reportId,
+    author: {
+      id: message.sender.id,
+      username: message.sender.username,
+      firstName: message.sender.firstName,
+      lastName: message.sender.lastName,
+      role: message.sender.departmentRole?.role?.name || 'Unknown',
+    },
+    content: message.content,
+    createdAt: message.createdAt,
+  };
 }

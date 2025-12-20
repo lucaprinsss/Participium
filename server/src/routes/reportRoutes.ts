@@ -1408,16 +1408,16 @@ router.delete('/:reportId/internal-comments/:commentId',
  * @swagger
  * /api/reports/{id}/messages:
  *   get:
- *     summary: Get public messages for a report
+ *     summary: Get messages for a report
  *     description: |
- *       Retrieve all public messages sent by municipal staff to the citizen reporter.
+ *       Retrieve all messages sent by municipal staff to the citizen reporter.
  *       
- *       **Public Access:** This endpoint does NOT require authentication and is accessible to anyone.
+ *       **Access restriction:** Only the technical staff assigned to the report and the citizen who created the report can view these messages.
  *       
- *       **Message thread:** Messages are communications from staff to inform the reporter about
- *       updates, progress, or request additional information. These messages are visible to anyone
- *       viewing the report.
+ *       **Message thread:** Messages are communications from staff to inform the reporter about updates, progress, or request additional information. These messages are visible only to the assigned staff and the report author.
  *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -1477,6 +1477,8 @@ router.delete('/:reportId/internal-comments/:commentId',
  *                   first_name: "Giulia"
  *                   last_name: "Bianchi"
  *                 created_at: "2025-12-10T15:45:00Z"
+ *       403:
+ *         description: Forbidden. Only the assigned staff or the report author can view messages.
  *       404:
  *         description: Report not found
  *         content:
@@ -1627,8 +1629,145 @@ router.delete('/:reportId/internal-comments/:commentId',
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-//router.post('/:id/messages',isLoggedIn,validateId('id', 'report'),reportController.sendMessage);
+router.get('/:id/messages', isLoggedIn, requireTechnicalStaffOrRole([SystemRoles.CITIZEN]), validateId('id', 'report'), reportController.getMessages);
+
+/**
+ * @swagger
+ * /api/reports/{id}/messages:
+ *   post:
+ *     summary: Send a message about a report
+ *     description: |
+ *       Send a public message that will be visible to the citizen reporter.
+ *       
+ *       **Access restriction:** Only Technical Office Staff Members who are assigned to work on the report can send messages.
+ *       
+ *       **Notification:** A notification is automatically created for the citizen reporter when a message is sent.
+ *       
+ *       **Use case:** This allows technical staff working on a report to communicate directly with the citizen
+ *       about updates, progress, or to request additional information.
+ *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Report ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 description: The message content
+ *                 example: "We need additional information about the exact location. Could you provide more details?"
+ *           examples:
+ *             staffMessage:
+ *               summary: Staff sending update to citizen
+ *               value:
+ *                 content: "We have scheduled the intervention for next Monday at 9:00 AM. No need for you to be present."
+ *     responses:
+ *       201:
+ *         description: Message sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   example: 3
+ *                 content:
+ *                   type: string
+ *                   example: "We have scheduled the intervention for next Monday at 9:00 AM."
+ *                 author:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 5
+ *                     username:
+ *                       type: string
+ *                       example: "m.rossi"
+ *                     first_name:
+ *                       type: string
+ *                       example: "Mario"
+ *                     last_name:
+ *                       type: string
+ *                       example: "Rossi"
+ *                 created_at:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2025-12-11T10:15:00Z"
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               missingMessage:
+ *                 summary: Missing message content
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "content field is required"
+ *               emptyMessage:
+ *                 summary: Empty message content
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "content cannot be empty"
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
+ *       403:
+ *         description: Access denied - Only Technical Office Staff Members can send messages
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "Access denied. Only Technical Office Staff Members assigned to this report can send messages"
+ *       404:
+ *         description: Report not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Report not found"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+  '/:id/messages',
+  isLoggedIn,
+  requireTechnicalStaffOrRole(),
+  validateId('id', 'report'),
+  reportController.sendMessage
+);
 
 export default router;
-
-

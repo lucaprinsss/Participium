@@ -4,6 +4,7 @@ import { snakeCase } from "typeorm/util/StringUtils";
 import * as dotenv from 'dotenv';
 import { logger } from "@services/loggingService";
 import { CategoryRoleEntity } from "../models/entity/categoryRoleEntity";
+import { NotificationEntity } from '../models/entity/notificationEntity';
 
 dotenv.config({ debug: false });
 
@@ -31,7 +32,9 @@ export const AppDataSource = new DataSource({
     logging: false,
     entities: [
       CategoryRoleEntity,
-      __dirname + '/../models/entity/**/*.{ts,js}'],
+      NotificationEntity,
+      __dirname + '/../models/entity/**/*.{ts,js}'
+    ],
     migrations: [],
     subscribers: [],
     namingStrategy: new SnakeCaseNamingStrategy(),

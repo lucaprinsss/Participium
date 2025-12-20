@@ -1,3 +1,5 @@
+
+import { notificationRepository, createNotification } from '../repositories/notificationRepository';
 import { ReportCategory } from '../models/dto/ReportCategory';
 import { MapReportResponse } from '../models/dto/output/MapReportResponse';
 import { ClusteredReportResponse } from '../models/dto/output/ClusteredReportResponse';
@@ -20,10 +22,11 @@ import { ReportResponse } from '../models/dto/output/ReportResponse';
 import { SystemRoles, isTechnicalStaff, isCitizen } from '@models/dto/UserRole';
 import { ReportEntity } from '../models/entity/reportEntity';
 import { Report } from '@models/dto/Report'; 
-import { mapReportEntityToResponse, mapReportEntityToDTO, mapReportEntityToReportResponse } from './mapperService';
+import { mapReportEntityToResponse, mapReportEntityToDTO, mapReportEntityToReportResponse, mapMessageToResponse } from './mapperService';
 import { commentRepository } from '../repositories/commentRepository';
 import { CommentResponse } from '../models/dto/output/CommentResponse';
 import { CommentEntity } from '../models/entity/commentEntity';
+import { messageRepository } from '../repositories/messageRepository';
 
 /**
  * Report Service
@@ -343,6 +346,8 @@ class ReportService {
     const userRole = user.departmentRole?.role?.name;
 
     const currentStatus = report.status;
+    // save previous status for notification message
+    const previousStatus = report.status;
 
     switch (newStatus) {
       case ReportStatus.ASSIGNED:
@@ -428,6 +433,23 @@ class ReportService {
     report.status = newStatus;
     report.updatedAt = new Date();
     const updatedReport = await reportRepository.save(report);
+
+    // Create notification for reporter about status change
+    if (report.reporterId) {
+      let statusMessage = `Your report "${report.title}" has changed status: ${previousStatus} → ${newStatus}.`;
+      if (body.resolutionNotes && newStatus === ReportStatus.RESOLVED) {
+        statusMessage += ` Resolution notes: ${body.resolutionNotes}`;
+      }
+      if (body.rejectionReason && newStatus === ReportStatus.REJECTED) {
+        statusMessage += ` Rejection reason: ${body.rejectionReason}`;
+      }
+      await createNotification({
+        userId: report.reporterId,
+        reportId: report.id,
+        content: statusMessage
+      });
+    }
+
     return mapReportEntityToDTO(updatedReport);
   }
 
@@ -604,6 +626,64 @@ class ReportService {
   }
 
   /**
+   * Send a message from technical staff to the citizen reporter and notify the citizen
+   * @param reportId - The ID of the report
+   * @param senderId - The ID of the staff sending the message
+   * @param content - The message content
+   * @returns The created message with sender info
+   */
+  async sendMessage(reportId: number, senderId: number, content: string) {
+
+    // Validate content
+    if (!content || content.trim().length === 0) {
+      throw new BadRequestError('content cannot be empty');
+    }
+    if (content.length > 2000) {
+      throw new BadRequestError('content cannot exceed 2000 characters');
+    }
+
+    // Find the report
+    const report = await reportRepository.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundError('Report not found');
+    }
+
+    // Only technical staff assigned to the report can send messages
+    if (report.assigneeId !== senderId) {
+      throw new InsufficientRightsError('Only assigned technical staff can send messages');
+    }
+
+    // Save the message
+    const message = await messageRepository.createMessage(reportId, senderId, content.trim());
+
+    // Notify the citizen (report.reporterId)
+    if (report.reporterId) {
+      await createNotification({
+        userId: report.reporterId,
+        reportId: report.id,
+        content: `You have a new message about your report: "${report.title}"`,
+      });
+    }
+
+    return mapMessageToResponse(message);
+  }
+
+    /**
+   * Get all public messages for a report
+   * @param reportId - The ID of the report
+   * @returns Array of messages (MessageResponse[])
+   */
+  async getMessages(reportId: number, userId: number) {
+    const report = await reportRepository.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundError('Report not found');
+    }
+    if (report.assigneeId !== userId && report.reporterId !== userId) {
+      throw new InsufficientRightsError('Only the assigned staff or the report author can view messages');
+    }
+    const messages = await messageRepository.getMessagesByReportId(reportId);
+    return messages.map(mapMessageToResponse);
+  }
    * Retrieve reports located near a specific address
    * @param address 
    * @returns 
