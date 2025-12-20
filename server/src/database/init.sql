@@ -1,6 +1,7 @@
 /*
  * ====================================
- * INITIALIZATION SCRIPT FOR THE DATABASE - V4.3
+ * INITIALIZATION SCRIPT FOR THE DATABASE - V5.0
+ * Multi-Role Support (PT10)
  * ====================================
  */
 
@@ -99,7 +100,8 @@ CREATE TABLE companies (
 
 /*
  * Users table (users)
- * MODIFIED: Replaced ENUM 'role' with 'department_role_id' FK
+ * V5.0: Roles are now managed via user_roles table (many-to-many)
+ * Supports multiple roles per user (PT10)
  */
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -107,11 +109,6 @@ CREATE TABLE users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    
-    -- ADDED: Links to the user's "position" (Department + Role).
-    -- Application logic will assign the 'Citizen' role to new users.
-    department_role_id INT NOT NULL REFERENCES department_roles(id),
-    
     email VARCHAR(255) NOT NULL UNIQUE,
     personal_photo_url TEXT,
     telegram_username VARCHAR(100) UNIQUE,
@@ -212,4 +209,18 @@ CREATE TABLE category_role_mapping (
     role_id INT NOT NULL REFERENCES roles(id),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Crea una nuova tabella di join many-to-many
+CREATE TABLE user_roles (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    department_role_id INT NOT NULL REFERENCES department_roles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Evita duplicati: uno user non può avere lo stesso ruolo due volte
+    CONSTRAINT uq_user_department_role UNIQUE (user_id, department_role_id)
+);
+
+CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX idx_user_roles_department_role_id ON user_roles(department_role_id);
 
