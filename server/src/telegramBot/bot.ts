@@ -17,7 +17,7 @@ export const initBot = () => {
 
   botInstance.start((ctx) => {
     ctx.reply(
-      '🏟️ *Welcome to Participium!*\n\n' +
+      '🏛 *Welcome to Participium!*\n\n' +
       'Thank you for joining the official channel to improve the city of Turin!\n\n' +
       'With this bot you can:\n' +
       '• Quickly report issues in the city\n' +
@@ -37,15 +37,12 @@ export const initBot = () => {
       '📝 /newreport\n' +
       'Create a new report about an issue in the city.\n' +
       'You will be guided through the process step by step.\n\n' +
-      '🔄 /updateusername\n' +
-      'Update your Telegram username if you changed it.\n' +
-      'This keeps your account properly linked.\n\n' +
-      '🔓 /unlink\n' +
+      ' /unlink\n' +
       'Unlink your Telegram account from Participium.\n' +
       'You can link again anytime with /link\n\n' +
       '❓ /help\n' +
       'Display this help message.\n\n' +
-      '━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+      '━━━━━━━━━━━━━\n\n' +
       '*How to Report an Issue:*\n' +
       '1️⃣ Use /newreport command\n' +
       '2️⃣ Send the location or address\n' +
@@ -62,7 +59,6 @@ export const initBot = () => {
 
   botInstance.command('newreport', (ctx) => reportHandler!.startReport(ctx));
   botInstance.command('link', (ctx) => reportHandler!.linkAccount(ctx));
-  botInstance.command('updateusername', (ctx) => reportHandler!.updateUsername(ctx));
   botInstance.command('unlink', (ctx) => reportHandler!.unlinkAccount(ctx));
   botInstance.on(message('location'), (ctx) => reportHandler!.handleLocation(ctx));
   botInstance.on(message('photo'), (ctx) => reportHandler!.handlePhotos(ctx));

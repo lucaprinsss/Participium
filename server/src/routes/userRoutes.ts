@@ -265,52 +265,6 @@ router.get('/telegram-status', isLoggedIn, UserController.getTelegramStatus);
 
 /**
  * @swagger
- * /api/users/telegram-username:
- *   put:
- *     summary: Update Telegram username
- *     description: Update the Telegram username linked to the account
- *     tags: [Users]
- *     security:
- *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               telegramUsername:
- *                 type: string
- *                 example: "newusername"
- *     responses:
- *       200:
- *         description: Username updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 telegramUsername:
- *                   type: string
- *       400:
- *         description: Bad request
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       401:
- *         description: User not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.put('/telegram-username', isLoggedIn, UserController.updateTelegramUsername);
-
-/**
- * @swagger
  * /api/users/telegram-unlink:
  *   delete:
  *     summary: Unlink Telegram account

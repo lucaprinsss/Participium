@@ -120,44 +120,6 @@ class UserController {
   }
 
   /**
-   * Update Telegram username
-   * Allows user to update their Telegram username
-   */
-  async updateTelegramUsername(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const user = req.user as any;
-      const { telegramUsername } = req.body;
-
-      if (!telegramUsername || typeof telegramUsername !== 'string') {
-        res.status(400).json({
-          code: 400,
-          name: 'BadRequestError',
-          message: 'Telegram username is required'
-        });
-        return;
-      }
-
-      const result = await userService.updateTelegramUsername(user.id, telegramUsername);
-
-      if (!result.success) {
-        res.status(400).json({
-          code: 400,
-          name: 'BadRequestError',
-          message: result.message
-        });
-        return;
-      }
-
-      res.status(200).json({
-        message: result.message,
-        telegramUsername
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
    * Unlink Telegram account
    * Removes the Telegram username from the user's account
    */

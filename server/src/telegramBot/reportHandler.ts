@@ -148,55 +148,6 @@ export class ReportHandler {
     }
   }
 
-  async updateUsername(ctx: Context) {
-    const oldTelegramUsername = ctx.from?.username;
-    if (!oldTelegramUsername) {
-      return ctx.reply(
-        '⚠️ *Username Required*\n\n' +
-        'You need a Telegram username to use this command.\n\n' +
-        'Please set a username in your Telegram settings and try again.',
-        { parse_mode: 'Markdown' }
-      );
-    }
-
-    try {
-      // Find user by current telegram username
-      const user = await userRepository.findUserByTelegramUsername(oldTelegramUsername);
-      if (!user) {
-        return ctx.reply(
-          '❌ *Account Not Linked*\n\n' +
-          'Your Telegram account is not linked to any Participium account.\n\n' +
-          'Use /link to connect your account first.',
-          { parse_mode: 'Markdown' }
-        );
-      }
-
-      // Update the telegram username
-      const result = await userRepository.updateTelegramUsername(user.id, oldTelegramUsername);
-      
-      if (!result.success) {
-        return ctx.reply(
-          `❌ *Update Failed*\n\n${result.message}`,
-          { parse_mode: 'Markdown' }
-        );
-      }
-
-      ctx.reply(
-        '✅ *Username Updated*\n\n' +
-        `Your Telegram username has been updated to: @${oldTelegramUsername}\n\n` +
-        'You can continue using all bot features.',
-        { parse_mode: 'Markdown' }
-      );
-    } catch (error) {
-      console.error('Failed to update Telegram username:', error);
-      ctx.reply(
-        '❌ *Update Failed*\n\n' +
-        'Unable to update your username. Please try again later.',
-        { parse_mode: 'Markdown' }
-      );
-    }
-  }
-
   async unlinkAccount(ctx: Context) {
     const telegramUsername = ctx.from?.username;
     if (!telegramUsername) {

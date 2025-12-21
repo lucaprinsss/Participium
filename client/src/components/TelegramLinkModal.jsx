@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { FaTelegram, FaTimes, FaCopy, FaCheck, FaClock, FaEdit, FaUnlink, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTelegram, FaTimes, FaCopy, FaCheck, FaClock, FaUnlink, FaExclamationTriangle } from 'react-icons/fa';
 import { generateTelegramLinkCode, getTelegramStatus, updateTelegramUsername, unlinkTelegramAccount } from '../api/authApi';
 import '../css/TelegramLinkModal.css';
 
@@ -13,9 +13,6 @@ const TelegramLinkModal = ({ onClose }) => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [newUsername, setNewUsername] = useState('');
-  const [updating, setUpdating] = useState(false);
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -93,29 +90,6 @@ const TelegramLinkModal = ({ onClose }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleUpdateUsername = async () => {
-    if (!newUsername || !newUsername.trim()) {
-      setError('Please enter a valid Telegram username');
-      return;
-    }
-
-    try {
-      setUpdating(true);
-      setError(null);
-      await updateTelegramUsername(newUsername.trim());
-      setSuccessMessage('Telegram username updated successfully!');
-      setIsEditing(false);
-      setNewUsername('');
-      await loadTelegramStatus();
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      setError(err.message || 'Error updating Telegram username');
-      console.error('Error updating username:', err);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
   const handleUnlinkAccount = async () => {
     try {
       setUnlinking(true);
@@ -123,6 +97,11 @@ const TelegramLinkModal = ({ onClose }) => {
       await unlinkTelegramAccount();
       setSuccessMessage('Telegram account unlinked successfully!');
       setShowUnlinkConfirm(false);
+      
+      // Resetta il codice esistente così l'utente deve generarne uno nuovo manualmente
+      setCode(null);
+      setExpiresAt(null);
+      
       await loadTelegramStatus();
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -168,79 +147,30 @@ const TelegramLinkModal = ({ onClose }) => {
               </div>
             )}
 
-            {!isEditing && !showUnlinkConfirm && (
+            {!showUnlinkConfirm && (
               <>
-                <div className="status-success">
-                  <FaCheck className="status-icon" />
-                  <p>Account linked to <strong>{status.telegramUsername}</strong></p>
-                </div>
-                <p className="telegram-desc">
-                  Now you can create reports directly from the Telegram bot!
-                </p>
-
-                <div className="telegram-actions">
-                  <button
-                    className="telegram-action-btn secondary"
-                    onClick={() => {
-                      setIsEditing(true);
-                      setNewUsername(status.telegramUsername?.replace('@', '') || '');
-                    }}
-                  >
-                    <FaEdit /> Update Username
-                  </button>
-                  <button
-                    className="telegram-action-btn danger"
-                    onClick={() => setShowUnlinkConfirm(true)}
-                  >
-                    <FaUnlink /> Unlink Account
-                  </button>
-                </div>
-              </>
-            )}
-
-            {isEditing && (
-              <div className="edit-username-section">
-                <h4>Update Telegram Username</h4>
-                <p className="edit-desc">
-                  Enter your new Telegram username (without @)
-                </p>
-                {error && (
-                  <div className="error-message">
-                    {error}
+                <div className="linked-account-card">
+                  <div className="linked-header">
+                    <div className="linked-icon">
+                      <FaCheck />
+                    </div>
+                    <div className="linked-info">
+                      <span className="linked-label">Connected Account</span>
+                      <span className="linked-username">@{status.telegramUsername}</span>
+                    </div>
                   </div>
-                )}
-                <div className="input-group">
-                  <span className="input-prefix">@</span>
-                  <input
-                    type="text"
-                    className="telegram-input"
-                    placeholder="username"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value)}
-                    disabled={updating}
-                  />
+                  <p className="linked-desc">
+                    Your account is linked! You can now create reports and receive notifications via Telegram.
+                  </p>
                 </div>
-                <div className="action-buttons">
-                  <button
-                    className="telegram-action-btn secondary"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setNewUsername('');
-                      setError(null);
-                    }}
-                    disabled={updating}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="telegram-action-btn primary"
-                    onClick={handleUpdateUsername}
-                    disabled={updating}
-                  >
-                    {updating ? 'Updating...' : 'Update'}
-                  </button>
-                </div>
-              </div>
+
+                <button
+                  className="telegram-action-btn danger full-width"
+                  onClick={() => setShowUnlinkConfirm(true)}
+                >
+                  <FaUnlink /> Unlink Account
+                </button>
+              </>
             )}
 
             {showUnlinkConfirm && (

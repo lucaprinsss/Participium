@@ -137,16 +137,6 @@ class UserService {
     return userRepository.generateTelegramLinkCode(userId);
   }
   /**
-   * Update Telegram username
-   * @param userId User ID
-   * @param newTelegramUsername New Telegram username
-   * @returns Result with success status and message
-   */
-  async updateTelegramUsername(userId: number, newTelegramUsername: string): Promise<{ success: boolean; message: string }> {
-    return userRepository.updateTelegramUsername(userId, newTelegramUsername);
-  }
-
-  /**
    * Unlink Telegram account
    * @param userId User ID
    * @returns Result with success status and message

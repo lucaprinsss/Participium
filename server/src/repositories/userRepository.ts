@@ -493,30 +493,6 @@ class UserRepository {
   }
 
   /**
-   * Updates the Telegram username for a user.
-   * @param userId The ID of the user.
-   * @param newTelegramUsername The new Telegram username.
-   * @returns Object with success status and message.
-   */
-  public async updateTelegramUsername(userId: number, newTelegramUsername: string): Promise<{ success: boolean; message: string }> {
-    const user = await this.repository.findOne({ where: { id: userId } });
-    if (!user) {
-      return { success: false, message: 'User not found.' };
-    }
-
-    // Check if another user already has this telegram username
-    const existingUser = await this.repository.findOne({ where: { telegramUsername: newTelegramUsername } });
-    if (existingUser && existingUser.id !== userId) {
-      return { success: false, message: 'This Telegram username is already linked to another account.' };
-    }
-
-    user.telegramUsername = newTelegramUsername;
-    await this.repository.save(user);
-    
-    return { success: true, message: 'Telegram username updated successfully.' };
-  }
-
-  /**
    * Unlinks the Telegram account for a user.
    * @param userId The ID of the user.
    * @returns Object with success status and message.
@@ -531,9 +507,9 @@ class UserRepository {
       return { success: false, message: 'No Telegram account linked.' };
     }
 
-    user.telegramUsername = undefined;
-    user.telegramLinkCode = undefined;
-    user.telegramLinkCodeExpiresAt = undefined;
+    user.telegramUsername = null as any;
+    user.telegramLinkCode = null as any;
+    user.telegramLinkCodeExpiresAt = null as any;
     
     await this.repository.save(user);
     
