@@ -570,13 +570,12 @@ afterAll(async () => {
       }
     });
 
-    it('should require authentication', async () => {
+    it('should allow public access without authentication', async () => {
       const response = await request(app)
         .get('/api/reports/map')
-        .expect(401);
+        .expect(200);
 
-      expect(response.body).toHaveProperty('name');
-      expect(response.body.name).toBe('UnauthorizedError');
+      expect(Array.isArray(response.body)).toBe(true);
     });
   });
 

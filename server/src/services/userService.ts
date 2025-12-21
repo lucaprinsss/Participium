@@ -225,6 +225,22 @@ class UserService {
     notification.isRead = isRead;
     return await notificationRepository.save(notification);
   }
-}
+
+  /**
+   * Generate Telegram link code
+   * @param userId User ID
+   * @returns Generated verification code
+   */
+  async generateTelegramLinkCode(userId: number): Promise<string | null> {
+    return userRepository.generateTelegramLinkCode(userId);
+  }
+  /**
+   * Unlink Telegram account
+   * @param userId User ID
+   * @returns Result with success status and message
+   */
+  async unlinkTelegramAccount(userId: number): Promise<{ success: boolean; message: string }> {
+    return userRepository.unlinkTelegramAccount(userId);
+  }}
 
 export const userService = new UserService();

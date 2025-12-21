@@ -9,9 +9,6 @@ coverage/
 # Swagger
 openapi.json
 
-# Build output
-dist/
-
 # Uploads - Completely ignore uploads folder (seed photos are in seed-data/)
 # This folder only exists in the container, not in local development
 uploads/

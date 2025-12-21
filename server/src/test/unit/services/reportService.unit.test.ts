@@ -823,7 +823,7 @@ describe('ReportService additional unit tests', () => {
       const created = { id: 1, status: ReportStatus.PENDING_APPROVAL } as any;
       jest.spyOn(reportRepository, 'createReport').mockResolvedValue(created);
       jest.spyOn(photoRepository, 'savePhotosForReport').mockResolvedValue(undefined as any);
-      const photos = [{ id: 1, storageUrl: 'uploads/reports/1/photo1.png' } as any];
+      const photos = [{ id: 1, storage_url: 'uploads/reports/1/photo1.png' } as any];
       jest.spyOn(photoRepository, 'getPhotosByReportId').mockResolvedValue(photos as any);
       const expected = { id: 1 } as any;
       jest.spyOn(mapperService, 'mapReportEntityToResponse').mockReturnValue(expected);

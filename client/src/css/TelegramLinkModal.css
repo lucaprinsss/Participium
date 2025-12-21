@@ -1,0 +1,518 @@
+/* Telegram Link Modal Styles */
+.telegram-modal {
+  max-width: 540px;
+  width: 90vw;
+}
+
+/* Linked Account Card */
+.linked-account-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #28a745;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.linked-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.linked-icon {
+  width: 48px;
+  height: 48px;
+  background: #28a745;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.linked-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.linked-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.linked-username {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-darker);
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linked-desc {
+  color: var(--text-dark);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.telegram-desc {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.telegram-setup {
+  text-align: left;
+}
+
+.code-display {
+  background: var(--bg-card-static);
+  border: 1px solid var(--border-light);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.code-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-darker);
+}
+
+.time-left {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #dc3545;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.code-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 2px solid var(--brand-red);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.code-text {
+  font-family: 'Courier New', monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--brand-red);
+  letter-spacing: 0.2rem;
+}
+
+.copy-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.3rem;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: rgba(161, 43, 50, 0.1);
+  color: var(--brand-red);
+}
+
+.code-instructions {
+  margin-bottom: 1.5rem;
+}
+
+.code-instructions p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.code-instructions code {
+  background: var(--bg-card-static);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.3rem;
+  font-family: 'Courier New', monospace;
+  color: var(--brand-red);
+}
+
+.generate-section {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.code-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+.telegram-action-btn {
+  background: var(--brand-red);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 0.5rem;
+}
+
+.telegram-action-btn:hover:not(:disabled) {
+  background: var(--brand-red-hover);
+}
+
+.telegram-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.telegram-action-btn.primary {
+  width: 100%;
+}
+
+.telegram-benefits {
+  background: var(--bg-card-static);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.telegram-benefits h4 {
+  margin: 0 0 1rem 0;
+  color: var(--text-darker);
+  font-size: 1rem;
+}
+
+.telegram-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.telegram-benefits li {
+  padding: 0.3rem 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 0.5rem;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 0.5rem;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.success-icon {
+  color: #28a745;
+}
+
+/* Telegram Actions */
+.telegram-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.telegram-action-btn.secondary {
+  background: white;
+  color: var(--text-dark);
+  border: 2px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1;
+  font-weight: 600;
+}
+
+.telegram-action-btn.secondary:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.telegram-action-btn.outline-danger {
+  background: white;
+  color: #dc3545;
+  border: 2px solid #dc3545;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1;
+  font-weight: 600;
+}
+
+.telegram-action-btn.outline-danger:hover:not(:disabled) {
+  background: #dc3545;
+  color: white;
+}
+
+.telegram-action-btn.danger {
+  background: #dc3545;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1;
+  font-weight: 600;
+}
+
+.telegram-action-btn.danger:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.telegram-action-btn.primary {
+  background: var(--brand-red);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1;
+  font-weight: 600;
+}
+
+.telegram-action-btn.primary:hover:not(:disabled) {
+  background: var(--brand-red-hover);
+}
+
+.telegram-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.telegram-action-btn.outline {
+  background: white;
+  color: var(--text-dark);
+  border: 2px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1;
+  font-weight: 600;
+}
+
+.telegram-action-btn.outline:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.telegram-action-btn.full-width {
+  width: 100%;
+}
+
+.code-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.code-actions button {
+  flex: 1;
+}
+
+/* Edit Username Section */
+.edit-username-section {
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.edit-username-section h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-darker);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.edit-desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.form-label .req {
+  color: var(--brand-red);
+  margin-left: 2px;
+}
+
+/* Input Group - stile uniforme al MunicipalityUserForm */
+.input-wrapper {
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: nowrap;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.input-wrapper:focus-within .input-prefix {
+  border-color: var(--brand-red);
+  color: var(--brand-red);
+  background-color: #fff;
+}
+
+.input-prefix {
+  background-color: #f8f9fa;
+  border: 2px solid #e2e8f0;
+  border-right: none;
+  color: #6c757d;
+  font-size: 0.9rem;
+  padding-left: 1rem;
+  padding-right: 0.75rem;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+.form-input {
+  border: 2px solid #e2e8f0;
+  border-left: none;
+  background-color: #ffffff;
+  color: #1a1a1a;
+  font-size: 0.9rem;
+  padding: 0.75rem 0.75rem 0.75rem 0.5rem;
+  height: auto;
+  font-weight: 500;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+  transition: all 0.3s ease;
+  width: 100%;
+  outline: none;
+  font-family: 'Courier New', monospace;
+}
+
+.form-input:focus {
+  border-color: var(--brand-red);
+  box-shadow: none;
+  background-color: #fff;
+}
+
+.form-input:disabled {
+  background: #f8f9fa;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.input-wrapper:hover .input-prefix {
+  background-color: #fff;
+}
+
+.input-wrapper:hover .form-input {
+  background-color: #fff;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.action-buttons button {
+  flex: 1;
+}
+
+/* Unlink Confirm Section */
+.unlink-confirm-section {
+  background: white;
+  border: 2px solid #ffc107;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.warning-box {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.warning-icon {
+  font-size: 3.5rem;
+  color: #ffc107;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 2px 4px rgba(255, 193, 7, 0.3));
+}
+
+.warning-box h4 {
+  margin: 0 0 1rem 0;
+  color: var(--text-darker);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.warning-box p {
+  color: var(--text-dark);
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.warning-text {
+  color: #dc3545 !important;
+  font-weight: 600;
+  font-size: 0.9rem;
+}

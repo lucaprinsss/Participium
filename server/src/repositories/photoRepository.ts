@@ -32,16 +32,17 @@ class PhotoRepository {
 
     /**
      * Retrieves all photos associated with a specific report,
-     * returning both the server path and the client-accessible URL.
+     * returning photo data in snake_case format.
      * @param reportId The ID of the report.
-     * @returns Array of photo objects with storageUrl and publicUrl.
+     * @returns Array of photo objects with storage_url and other fields.
      */
-    public async getPhotosByReportId(reportId: number): Promise<Array<{ storageUrl: string, publicUrl: string }>> {
+    public async getPhotosByReportId(reportId: number): Promise<Array<{ id: number, report_id: number, storage_url: string, created_at: Date }>> {
         const photos = await this.photoRepository.find({ where: { reportId } });
-        const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3001';
         return photos.map(photo => ({
-            storageUrl: photo.storageUrl,
-            publicUrl: `${baseUrl}${photo.storageUrl}`
+            id: photo.id,
+            report_id: photo.reportId,
+            storage_url: photo.storageUrl,
+            created_at: photo.createdAt
         }));
     }
 }

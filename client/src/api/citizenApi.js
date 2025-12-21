@@ -3,7 +3,6 @@
  */
 const handleResponse = async (response) => {
   if (!response.ok) {
-    // Correzione S7722: Inizializza Error con un messaggio
     const error = new Error(` `);
     try {
       const data = await response.json();

@@ -9,6 +9,7 @@ jest.mock('node-cron', () => ({
 jest.mock('../../../repositories/userRepository', () => ({
   userRepository: {
     deleteUnverifiedUsers: jest.fn(),
+    clearExpiredTelegramLinkCodes: jest.fn(),
   },
 }));
 
@@ -29,13 +30,17 @@ describe('deleteUnverifiedAccounts cron job', () => {
   it('should call deleteUnverifiedUsers and log completion', async () => {
     const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
     
-    // Mock the repository method to resolve successfully
+    // Mock the repository methods to resolve successfully
     (userRepository.deleteUnverifiedUsers as jest.Mock).mockResolvedValue(undefined);
+    (userRepository.clearExpiredTelegramLinkCodes as jest.Mock).mockResolvedValue(undefined);
 
     await scheduledTask();
 
-    expect(console.log).toHaveBeenCalledWith('Deleting unverified users...');
+    expect(console.log).toHaveBeenCalledWith('Running cleanup tasks...');
     expect(userRepository.deleteUnverifiedUsers).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledWith('Deleted unverified users.');
+    expect(userRepository.clearExpiredTelegramLinkCodes).toHaveBeenCalledTimes(1);
+    expect(console.log).toHaveBeenCalledWith('Cleared expired Telegram link codes.');
     expect(console.log).toHaveBeenCalledWith('Cleanup completed.');
     
     consoleLogSpy.mockRestore();
@@ -45,8 +50,9 @@ describe('deleteUnverifiedAccounts cron job', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
     const mockError = new Error('Database error');
     
-    // Mock the repository method to reject with an error
+    // Mock the repository methods
     (userRepository.deleteUnverifiedUsers as jest.Mock).mockRejectedValue(mockError);
+    (userRepository.clearExpiredTelegramLinkCodes as jest.Mock).mockResolvedValue(undefined);
 
     await scheduledTask();
 

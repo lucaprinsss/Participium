@@ -2,6 +2,7 @@ import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point, multiPolygon } from '@turf/helpers';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import axios from 'axios';
 
 // Load Turin boundaries GeoJSON
 // In development with ts-node, __dirname is the compiled path
@@ -133,4 +134,90 @@ export function validateZoomLevel(zoom: string): number {
     throw new Error('Zoom level must be between 1 and 20');
   }
   return zoomLevel;
+}
+
+/**
+ * Parses a coordinate string in the format "latitude, longitude" and validates the coordinates
+ * @param text - The coordinate string to parse (e.g., "45.0703, 7.6869")
+ * @returns Parsed coordinates object or null if parsing fails
+ */
+export function parseCoordinates(text: string): { latitude: number; longitude: number } | null {
+  const regex = new RegExp(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
+  const match = regex.exec(text.trim());
+  if (!match) return null;
+
+  const lat = Number.parseFloat(match[1]);
+  const lng = Number.parseFloat(match[3]);
+
+  // Validazione base
+  if (!isValidCoordinate(lat, lng)) return null;
+
+  return { latitude: lat, longitude: lng };
+}
+
+/**
+ * Geocodes an address to coordinates using Nominatim
+ * @param address - The address string to geocode
+ * @returns Object containing location coordinates and formatted address
+ * @throws Error if geocoding fails
+ */
+export async function geocodeAddress(address: string): Promise<{ location: { latitude: number; longitude: number }; address: string }> {
+  try {
+    const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+      params: {
+        q: address + ', Torino, Italia',
+        format: 'jsonv2',
+        limit: 1,
+        addressdetails: 1
+      },
+      headers: {
+        'User-Agent': 'Partecipium-App-Dev/1.0 (admin@tuo-dominio.com)',
+        'Referer': 'http://localhost'
+      }
+    });
+
+    if (!response.data || response.data.length === 0) {
+      throw new Error('Indirizzo non trovato');
+    }
+
+    const result = response.data[0];
+    return {
+      location: {
+        latitude: Number.parseFloat(result.lat),
+        longitude: Number.parseFloat(result.lon)
+      },
+      address: result.display_name || address
+    };
+  } catch (error) {
+    console.error('Errore geocoding:', error);
+    throw new Error('Indirizzo non trovato');
+  }
+}
+
+/**
+ * Reverse geocodes coordinates to an address using Nominatim
+ * @param location - The coordinates to reverse geocode
+ * @returns Formatted address string
+ */
+export async function reverseGeocode(location: { latitude: number; longitude: number }): Promise<string> {
+  try {
+    const response = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+      params: {
+        lat: location.latitude,
+        lon: location.longitude,
+        format: 'jsonv2',
+        zoom: 18,
+        addressdetails: 1
+      },
+      headers: {
+        'User-Agent': 'Partecipium-App-Dev/1.0 (admin@tuo-dominio.com)',
+        'Referer': 'http://localhost'
+      }
+    });
+
+    return response.data?.display_name || `${location.latitude}, ${location.longitude}`;
+  } catch (error) {
+    console.error('Errore reverse geocoding:', error);
+    return `${location.latitude}, ${location.longitude}`;
+  }
 }

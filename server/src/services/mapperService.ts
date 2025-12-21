@@ -116,10 +116,10 @@ export function mapUserEntityToUserResponse(entity: UserEntity | null | undefine
 
 /**
  * Maps a Photo DTO (snake_case) to API response format (camelCase)
- * @param photo - Photo DTO from database
+ * @param photo - Photo DTO from database or repository
  * @returns PhotoResponse for API
  */
-export function mapPhotoToResponse(photo: Photo): PhotoResponse {
+export function mapPhotoToResponse(photo: any): PhotoResponse {
   return {
     id: photo.id,
     reportId: photo.report_id,

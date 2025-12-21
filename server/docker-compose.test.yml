@@ -17,6 +17,8 @@ services:
       - ./src/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       # Carica i dati di seed (departments, roles, ecc.)
       - ./src/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      # Migrations are already included in init.sql
+      # - ./migrations/add_telegram_link_columns.sql:/docker-entrypoint-initdb.d/025-migrations.sql:ro
       # Carica dati di test
       - ./src/database/test-data.sql:/docker-entrypoint-initdb.d/03-test-data.sql:ro
     healthcheck:

@@ -589,4 +589,116 @@ router.patch('/notifications/:id', isLoggedIn, validateId('id', 'notification'),
  */
 router.get("/username/:username", UserController.findUserByUsername);
 
+/**
+ * @swagger
+ * /api/users/telegram-link-code:
+ *   post:
+ *     summary: Generate Telegram link code
+ *     description: Generate a verification code to link the user's Telegram account
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Code generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 code:
+ *                   type: string
+ *                   example: "123456"
+ *                 expiresAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2023-12-20T10:15:00Z"
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post('/telegram-link-code', isLoggedIn, UserController.generateTelegramLinkCode);
+
+/**
+ * @swagger
+ * /api/users/telegram-status:
+ *   get:
+ *     summary: Get Telegram link status
+ *     description: Check if the user's account is linked to Telegram
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Status retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isLinked:
+ *                   type: boolean
+ *                   example: true
+ *                 telegramUsername:
+ *                   type: string
+ *                   nullable: true
+ *                   example: "@username"
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get('/telegram-status', isLoggedIn, UserController.getTelegramStatus);
+
+/**
+ * @swagger
+ * /api/users/telegram-unlink:
+ *   delete:
+ *     summary: Unlink Telegram account
+ *     description: Remove the Telegram link from the user account
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Account unlinked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.delete('/telegram-unlink', isLoggedIn, UserController.unlinkTelegramAccount);
+
 export default router;
