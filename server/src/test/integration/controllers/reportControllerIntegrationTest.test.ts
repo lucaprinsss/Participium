@@ -202,7 +202,7 @@ describe('ReportController Integration Tests', () => {
   });
 
   describe('GET /api/reports', () => {
-    it('should return all reports for the user (200)', async () => {
+    it('should return all reports (200)', async () => {
        // Create a report first via API to ensure it exists
        const reportData = {
         title: 'Report for Get',
@@ -218,7 +218,7 @@ describe('ReportController Integration Tests', () => {
       expect(createRes.status).toBe(201);
       createdReportIds.push(createRes.body.id);
 
-      // Manually update status to allow Citizen to see it (Citizen cannot see PENDING_APPROVAL)
+      // Manually update status to allow viewing (PENDING_APPROVAL not visible to public)
       await AppDataSource.getRepository(ReportEntity).update(createRes.body.id, { status: ReportStatus.ASSIGNED });
 
       const response = await agent.get('/api/reports');
@@ -230,10 +230,11 @@ describe('ReportController Integration Tests', () => {
       expect(found.title).toBe(reportData.title);
     });
 
-    it('should fail if not authenticated (401)', async () => {
-      const unauthAgent = request.agent(app);
+    it('should work without authentication (200)', async () => {
+      const unauthAgent = request(app);
       const response = await unauthAgent.get('/api/reports');
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
     });
   });
 });

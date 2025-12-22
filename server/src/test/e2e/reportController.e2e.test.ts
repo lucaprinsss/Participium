@@ -353,10 +353,9 @@ afterAll(async () => {
       );
     });
 
-    it('should return all reports for authenticated user', async () => {
+    it('should return all reports', async () => {
       const response = await request(app)
         .get('/api/reports')
-        .set('Cookie', citizenCookies)
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
@@ -367,7 +366,6 @@ afterAll(async () => {
     it('should filter reports by status', async () => {
       const response = await request(app)
         .get('/api/reports')
-        .set('Cookie', citizenCookies)
         .query({ status: ReportStatus.ASSIGNED })
         .expect(200);
 
@@ -378,7 +376,6 @@ afterAll(async () => {
     it('should filter reports by category', async () => {
       const response = await request(app)
         .get('/api/reports')
-        .set('Cookie', citizenCookies)
         .query({ category: ReportCategory.ROADS })
         .expect(200);
 
@@ -389,17 +386,18 @@ afterAll(async () => {
     it('should filter reports by status and category', async () => {
       const response = await request(app)
         .get('/api/reports')
-        .set('Cookie', citizenCookies)
         .query({ status: ReportStatus.ASSIGNED, category: ReportCategory.ROADS })
         .expect(200);
 
       expect(response.body.length).toBe(1);
     });
 
-    it('should return 401 if user is not authenticated', async () => {
-      await request(app)
+    it('should work without authentication', async () => {
+      const response = await request(app)
         .get('/api/reports')
-        .expect(401);
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
     });
   });
 

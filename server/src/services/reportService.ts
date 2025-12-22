@@ -232,25 +232,29 @@ class ReportService {
    * Enforces authorization: pending reports only for public relations officers
    */
   async getAllReports(
-    userId: number, 
+    userId: number | undefined, 
     status?: ReportStatus,
     category?: ReportCategory
   ): Promise<ReportResponse[]> {
     
-    const userEntity = await userRepository.findUserById(userId);
+    let userRole: string | undefined;
     
-    if (!userEntity) {
-      throw new UnauthorizedError('User not found');
-    }
-    
-    const userRole = userEntity.departmentRole?.role?.name;
-    
-    if (!userRole) {
-      throw new UnauthorizedError('User role not found');
+    if (userId) {
+      const userEntity = await userRepository.findUserById(userId);
+      
+      if (!userEntity) {
+        throw new UnauthorizedError('User not found');
+      }
+      
+      userRole = userEntity.departmentRole?.role?.name;
+      
+      if (!userRole) {
+        throw new UnauthorizedError('User role not found');
+      }
     }
     
     if (status === ReportStatus.PENDING_APPROVAL) {
-      if (userRole !== 'Municipal Public Relations Officer') {
+      if (!userRole || userRole !== 'Municipal Public Relations Officer') {
         throw new InsufficientRightsError(
           'Only Municipal Public Relations Officers can view pending reports'
         );

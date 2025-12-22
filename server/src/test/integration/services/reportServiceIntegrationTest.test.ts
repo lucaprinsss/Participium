@@ -228,6 +228,38 @@ describe('ReportService Integration Tests', () => {
             expect(results.some(r => r.id === r1.id)).toBe(true);
             expect(results.some(r => r.id === r2.id)).toBe(false);
         });
+
+        it('should return reports visible to public users (excluding Pending)', async () => {
+            // Create a pending report
+            const r1 = await reportService.createReport({
+                title: 'Pending Report',
+                description: 'Desc',
+                category: ReportCategory.ROADS,
+                location: { latitude: 45.0703, longitude: 7.6869 },
+                photos: [VALID_PHOTO],
+                isAnonymous: false
+            }, citizenUser.id);
+            createdReportIds.push(r1.id);
+
+            // Create an assigned report
+            const r2 = await reportService.createReport({
+                title: 'Assigned Report',
+                description: 'Desc',
+                category: ReportCategory.WASTE,
+                location: { latitude: 45.0703, longitude: 7.6869 },
+                photos: [VALID_PHOTO],
+                isAnonymous: false
+            }, citizenUser.id);
+            createdReportIds.push(r2.id);
+            await reportRepository['repository'].update(r2.id, { status: ReportStatus.ASSIGNED });
+
+            // Act - call with undefined userId (public access)
+            const results = await reportService.getAllReports(undefined);
+
+            // Assert
+            expect(results.some(r => r.id === r2.id)).toBe(true);
+            expect(results.some(r => r.id === r1.id)).toBe(false); // Public can't see Pending
+        });
     });
 });
 

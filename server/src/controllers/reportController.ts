@@ -81,11 +81,7 @@ class ReportController {
    */
   async getAllReports(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (!req.user) {
-        throw new UnauthorizedError('Not authenticated');
-      }
-
-      const userId = (req.user as User).id;
+      const userId = req.user ? (req.user as User).id : undefined;
       const { status, category } = req.query;
 
       const reports = await reportService.getAllReports(

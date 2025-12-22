@@ -190,9 +190,9 @@ router.post('/', requireRole(SystemRoles.CITIZEN), validateCreateReport, reportC
  *       Returns the list of all reports with their geographic coordinates.
  *       Coordinates are provided in WGS84 format (OpenStreetMap standard).
  *       
+ *       **Public Access:** This endpoint does NOT require authentication and is accessible to unregistered users.
+ *       
  *     tags: [Reports]
- *     security:
- *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -215,16 +215,6 @@ router.post('/', requireRole(SystemRoles.CITIZEN), validateCreateReport, reportC
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/ReportResponse'
- *       401:
- *         description: User not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               code: 401
- *               name: "UnauthorizedError"
- *               message: "User not authenticated"
  *       500:
  *         description: Internal server error
  *         content:
@@ -236,7 +226,7 @@ router.post('/', requireRole(SystemRoles.CITIZEN), validateCreateReport, reportC
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred"
  */
-router.get('/', isLoggedIn, validateReportStatus, validateReportCategory, reportController.getAllReports);
+router.get('/', validateReportStatus, validateReportCategory, reportController.getAllReports);
 
 /**
  * @swagger
