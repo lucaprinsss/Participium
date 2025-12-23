@@ -17,7 +17,10 @@ class DepartmentService {
   public async getMunicipalityDepartments(): Promise<Department[]> {
     const allDepartments = await departmentRepository.findAll();
 
-    return allDepartments.map(dept => mapDepartmentEntityToDTO(dept));
+    // Filter out "Organization" department as it's not a municipality department
+    const municipalityDepartments = allDepartments.filter(dept => dept.name !== 'Organization');
+
+    return municipalityDepartments.map(dept => mapDepartmentEntityToDTO(dept));
   }
 
   /**
@@ -70,7 +73,7 @@ class DepartmentService {
    * Get all available department roles (positions) for municipality staff
    * @returns Array of department role objects with id, department, and role
    */
-  public async getAllMunicipalityDepartmentRoles(): Promise<Array<{id: number, department: string, role: string}>> {
+  public async getAllMunicipalityDepartmentRoles(): Promise<Array<{ id: number, department: string, role: string }>> {
     const departmentRoles = await departmentRoleRepository.findMunicipalityDepartmentRoles();
     return departmentRoles.map(dr => ({
       id: dr.id,
