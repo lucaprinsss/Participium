@@ -26,20 +26,26 @@ describe('AuthController Unit Tests', () => {
     passwordHash: 'salt:hash',
     firstName: 'Test',
     lastName: 'User',
-    departmentRoleId: 1,
-    departmentRole: {
+    // V5.0: Use userRoles array instead of departmentRoleId/departmentRole
+    userRoles: [{
       id: 1,
-      departmentId: 1,
-      roleId: 1,
-      department: {} as any,
-      role: {
+      userId: 1,
+      departmentRoleId: 1,
+      departmentRole: {
         id: 1,
-        name: 'Citizen',
-        description: 'Regular citizen user',
-        departmentRoles: []
+        departmentId: 1,
+        roleId: 1,
+        department: { id: 1, name: 'Organization', departmentRoles: [] },
+        role: {
+          id: 1,
+          name: 'Citizen',
+          description: 'Regular citizen user',
+          departmentRoles: []
+        },
+        userRoles: []
       },
-      users: []
-    },
+      createdAt: new Date()
+    }] as any,
     personalPhotoUrl: undefined,
     telegramUsername: undefined,
     emailNotificationsEnabled: true,
@@ -53,7 +59,8 @@ describe('AuthController Unit Tests', () => {
     email: 'test@example.com',
     first_name: 'Test',
     last_name: 'User',
-    role_name: 'citizen',
+    // V5.0: roles is now an array
+    roles: [{ department_role_id: 1, department_name: 'Organization', role_name: 'Citizen' }],
   };
 
   beforeEach(() => {

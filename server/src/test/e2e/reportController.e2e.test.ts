@@ -78,16 +78,16 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     citizenCookies = await loginAs(CITIZEN_USERNAME, CITIZEN_PASSWORD);
   });
 
-afterAll(async () => {
-  await AppDataSource.query(
-    `DELETE FROM reports WHERE assignee_id = $1`,
-    [technicianId]
-  );
-  await teardownTestDatabase();
-  if (AppDataSource.isInitialized) {
-    await AppDataSource.destroy();
-  }
-});
+  afterAll(async () => {
+    await AppDataSource.query(
+      `DELETE FROM reports WHERE assignee_id = $1`,
+      [technicianId]
+    );
+    await teardownTestDatabase();
+    if (AppDataSource.isInitialized) {
+      await AppDataSource.destroy();
+    }
+  });
 
   afterEach(async () => {
     await cleanDatabase();
@@ -220,12 +220,12 @@ afterAll(async () => {
         description: 'This is a valid test description with sufficient length',
         category: ReportCategory.ROADS,
         location: {
-            latitude: 45.0703393,
-            longitude: 7.6869005
-          },
-          address: 'Via Roma 1, Torino',
-          isAnonymous: false,
-          photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD86P8Ag5t/4Lpftzf8E4v+CwnxO+DPwH+P3/Cvfht4e8N/D2+0vQf+FZeBNc+zz6j4C0PUL2T7XrPhu+vJvMvLu4l2vcuqbyqKqKqqP6PP+CL3/BVD4+f8FMP2DPDnxp+P3wz+Gfwy8U69r2uaReeG/h1qniG/0q1i026WCKZJvEum6ddmR1BLAwBQRwSea/zsP+D3X/lM98Z/+xJ+F/8A6qfRK/0Gf+Dbf/lBF+zJ/wBhzx1/6l7ygD/9k=']
+          latitude: 45.0703393,
+          longitude: 7.6869005
+        },
+        address: 'Via Roma 1, Torino',
+        isAnonymous: false,
+        photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD86P8Ag5t/4Lpftzf8E4v+CwnxO+DPwH+P3/Cvfht4e8N/D2+0vQf+FZeBNc+zz6j4C0PUL2T7XrPhu+vJvMvLu4l2vcuqbyqKqKqqP6PP+CL3/BVD4+f8FMP2DPDnxp+P3wz+Gfwy8U69r2uaReeG/h1qniG/0q1i026WCKZJvEum6ddmR1BLAwBQRwSea/zsP+D3X/lM98Z/+xJ+F/8A6qfRK/0Gf+Dbf/lBF+zJ/wBhzx1/6l7ygD/9k=']
       };
 
       const response = await request(app)
@@ -463,7 +463,7 @@ afterAll(async () => {
       const response = await request(app)
         .get('/api/reports/map')
         .set('Cookie', citizenCookies)
-        .query({ 
+        .query({
           category: ReportCategory.PUBLIC_LIGHTING
         })
         .expect(200);
@@ -476,7 +476,7 @@ afterAll(async () => {
       const response = await request(app)
         .get('/api/reports/map')
         .set('Cookie', citizenCookies)
-        .query({ 
+        .query({
           category: ReportCategory.ARCHITECTURAL_BARRIERS
         })
         .expect(200);
@@ -556,15 +556,6 @@ afterAll(async () => {
       const response = await request(app)
         .get(`/api/reports/assigned/external/${externalMaintainerId}`)
         .set('Cookie', techManagerCookies)
-        .expect(200);
-
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should return 200 for TECHNICAL_ASSISTANT', async () => {
-      const response = await request(app)
-        .get(`/api/reports/assigned/external/${externalMaintainerId}`)
-        .set('Cookie', techAssstCookies)
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
@@ -662,16 +653,6 @@ afterAll(async () => {
       const response = await request(app)
         .put(`/api/reports/${reportId}/status`)
         .set('Cookie', techManagerCookies)
-        .send({ newStatus: ReportStatus.RESOLVED })
-        .expect(200);
-
-      expect(response.body.status).toBe(ReportStatus.RESOLVED);
-    });
-
-    it('should return 200 when TECHNICAL_ASSISTANT resolves a report', async () => {
-      const response = await request(app)
-        .put(`/api/reports/${reportId}/status`)
-        .set('Cookie', techAssstCookies)
         .send({ newStatus: ReportStatus.RESOLVED })
         .expect(200);
 
@@ -859,98 +840,98 @@ afterAll(async () => {
       // Clean up test report and its comments (CASCADE should handle comments)
       await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [testReportId]);
     });
-      it('should allow technical staff to add internal comment', async () => {
-        const response = await request(app)
-          .post(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', technicianCookies)
-          .send({ content: 'This is an internal note from technical staff' })
-          .expect(201);
+    it('should allow technical staff to add internal comment', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', technicianCookies)
+        .send({ content: 'This is an internal note from technical staff' })
+        .expect(201);
 
-        expect(response.body).toHaveProperty('id');
-        expect(response.body.content).toBe('This is an internal note from technical staff');
-        expect(response.body.author).toHaveProperty('id', technicianId);
-        expect(response.body.author).toHaveProperty('username', TECHNICIAN_USERNAME);
-        expect(response.body).toHaveProperty('createdAt');
-      });
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.content).toBe('This is an internal note from technical staff');
+      expect(response.body.author).toHaveProperty('id', technicianId);
+      expect(response.body.author).toHaveProperty('username', TECHNICIAN_USERNAME);
+      expect(response.body).toHaveProperty('createdAt');
+    });
 
-      it('should allow PRO to add internal comment', async () => {
-        const response = await request(app)
-          .post(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', proCookies)
-          .send({ content: 'PRO coordination note' })
-          .expect(201);
+    it('should allow PRO to add internal comment', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', proCookies)
+        .send({ content: 'PRO coordination note' })
+        .expect(201);
 
-        expect(response.body.content).toBe('PRO coordination note');
-      });
+      expect(response.body.content).toBe('PRO coordination note');
+    });
 
-      it('should allow external maintainer to add internal comment', async () => {
-        // Login as external maintainer
-        const externalCookies = await loginAs('testexternal', 'StaffPass123!');
-        
-        const response = await request(app)
-          .post(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', externalCookies)
-          .send({ content: 'External maintainer update' })
-          .expect(201);
+    it('should allow external maintainer to add internal comment', async () => {
+      // Login as external maintainer
+      const externalCookies = await loginAs('testexternal', 'StaffPass123!');
 
-        expect(response.body.content).toBe('External maintainer update');
-      });
+      const response = await request(app)
+        .post(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', externalCookies)
+        .send({ content: 'External maintainer update' })
+        .expect(201);
 
-      it('should fail when citizen tries to add internal comment (403)', async () => {
-        await request(app)
-          .post(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', citizenCookies)
-          .send({ content: 'Citizen should not see this' })
-          .expect(403);
-      });
+      expect(response.body.content).toBe('External maintainer update');
+    });
 
-      it('should fail without authentication (401)', async () => {
-        await request(app)
-          .post(`/api/reports/${testReportId}/internal-comments`)
-          .send({ content: 'Unauthenticated comment' })
-          .expect(401);
-      });
+    it('should fail when citizen tries to add internal comment (403)', async () => {
+      await request(app)
+        .post(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', citizenCookies)
+        .send({ content: 'Citizen should not see this' })
+        .expect(403);
+    });
 
-      it('should fail with empty content (400)', async () => {
-        await request(app)
-          .post(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', technicianCookies)
-          .send({ content: '' })
-          .expect(400);
-      });
+    it('should fail without authentication (401)', async () => {
+      await request(app)
+        .post(`/api/reports/${testReportId}/internal-comments`)
+        .send({ content: 'Unauthenticated comment' })
+        .expect(401);
+    });
 
-      it('should fail with missing content field (400)', async () => {
-        await request(app)
-          .post(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', technicianCookies)
-          .send({})
-          .expect(400);
-      });
+    it('should fail with empty content (400)', async () => {
+      await request(app)
+        .post(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', technicianCookies)
+        .send({ content: '' })
+        .expect(400);
+    });
 
-      it('should fail with content exceeding max length (400)', async () => {
-        const longContent = 'a'.repeat(2001);
-        await request(app)
-          .post(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', technicianCookies)
-          .send({ content: longContent })
-          .expect(400);
-      });
+    it('should fail with missing content field (400)', async () => {
+      await request(app)
+        .post(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', technicianCookies)
+        .send({})
+        .expect(400);
+    });
 
-      it('should fail with non-existent report (404)', async () => {
-        await request(app)
-          .post('/api/reports/99999/internal-comments')
-          .set('Cookie', technicianCookies)
-          .send({ content: 'Comment on non-existent report' })
-          .expect(404);
-      });
+    it('should fail with content exceeding max length (400)', async () => {
+      const longContent = 'a'.repeat(2001);
+      await request(app)
+        .post(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', technicianCookies)
+        .send({ content: longContent })
+        .expect(400);
+    });
 
-      it('should fail with invalid report ID (400)', async () => {
-        await request(app)
-          .post('/api/reports/invalid/internal-comments')
-          .set('Cookie', technicianCookies)
-          .send({ content: 'Invalid ID' })
-          .expect(400);
-      });
+    it('should fail with non-existent report (404)', async () => {
+      await request(app)
+        .post('/api/reports/99999/internal-comments')
+        .set('Cookie', technicianCookies)
+        .send({ content: 'Comment on non-existent report' })
+        .expect(404);
+    });
+
+    it('should fail with invalid report ID (400)', async () => {
+      await request(app)
+        .post('/api/reports/invalid/internal-comments')
+        .set('Cookie', technicianCookies)
+        .send({ content: 'Invalid ID' })
+        .expect(400);
+    });
   });
 
   describe('GET /api/reports/:id/internal-comments - Read Internal Comments', () => {
@@ -999,86 +980,86 @@ afterAll(async () => {
       await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [testReportId]);
     });
 
-      it('should allow technical staff to view internal comments', async () => {
-        const response = await request(app)
-          .get(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', technicianCookies)
-          .expect(200);
+    it('should allow technical staff to view internal comments', async () => {
+      const response = await request(app)
+        .get(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', technicianCookies)
+        .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.body.length).toBe(2);
-        expect(response.body[0].content).toBe('First internal comment');
-        expect(response.body[1].content).toBe('Second comment from PRO');
-      });
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(2);
+      expect(response.body[0].content).toBe('First internal comment');
+      expect(response.body[1].content).toBe('Second comment from PRO');
+    });
 
-      it('should allow PRO to view internal comments', async () => {
-        const response = await request(app)
-          .get(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', proCookies)
-          .expect(200);
+    it('should allow PRO to view internal comments', async () => {
+      const response = await request(app)
+        .get(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', proCookies)
+        .expect(200);
 
-        expect(response.body.length).toBe(2);
-      });
+      expect(response.body.length).toBe(2);
+    });
 
-      it('should allow external maintainer to view internal comments', async () => {
-        const externalCookies = await loginAs('testexternal', 'StaffPass123!');
-        
-        const response = await request(app)
-          .get(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', externalCookies)
-          .expect(200);
+    it('should allow external maintainer to view internal comments', async () => {
+      const externalCookies = await loginAs('testexternal', 'StaffPass123!');
 
-        expect(response.body.length).toBe(2);
-      });
+      const response = await request(app)
+        .get(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', externalCookies)
+        .expect(200);
 
-      it('should return empty array when no comments exist', async () => {
-        // Clean up existing comments
-        await AppDataSource.query(`DELETE FROM comments WHERE report_id = $1`, [testReportId]);
+      expect(response.body.length).toBe(2);
+    });
 
-        const response = await request(app)
-          .get(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', technicianCookies)
-          .expect(200);
+    it('should return empty array when no comments exist', async () => {
+      // Clean up existing comments
+      await AppDataSource.query(`DELETE FROM comments WHERE report_id = $1`, [testReportId]);
 
-        expect(response.body).toEqual([]);
-      });
+      const response = await request(app)
+        .get(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', technicianCookies)
+        .expect(200);
 
-      it('should fail when citizen tries to view internal comments (403)', async () => {
-        await request(app)
-          .get(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', citizenCookies)
-          .expect(403);
-      });
+      expect(response.body).toEqual([]);
+    });
 
-      it('should fail without authentication (401)', async () => {
-        await request(app)
-          .get(`/api/reports/${testReportId}/internal-comments`)
-          .expect(401);
-      });
+    it('should fail when citizen tries to view internal comments (403)', async () => {
+      await request(app)
+        .get(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', citizenCookies)
+        .expect(403);
+    });
 
-      it('should fail with non-existent report (404)', async () => {
-        await request(app)
-          .get('/api/reports/99999/internal-comments')
-          .set('Cookie', technicianCookies)
-          .expect(404);
-      });
+    it('should fail without authentication (401)', async () => {
+      await request(app)
+        .get(`/api/reports/${testReportId}/internal-comments`)
+        .expect(401);
+    });
 
-      it('should fail with invalid report ID (400)', async () => {
-        await request(app)
-          .get('/api/reports/invalid/internal-comments')
-          .set('Cookie', technicianCookies)
-          .expect(400);
-      });
+    it('should fail with non-existent report (404)', async () => {
+      await request(app)
+        .get('/api/reports/99999/internal-comments')
+        .set('Cookie', technicianCookies)
+        .expect(404);
+    });
 
-      it('should return comments ordered by creation date (oldest first)', async () => {
-        const response = await request(app)
-          .get(`/api/reports/${testReportId}/internal-comments`)
-          .set('Cookie', technicianCookies)
-          .expect(200);
+    it('should fail with invalid report ID (400)', async () => {
+      await request(app)
+        .get('/api/reports/invalid/internal-comments')
+        .set('Cookie', technicianCookies)
+        .expect(400);
+    });
 
-        expect(response.body[0].content).toBe('First internal comment');
-        expect(response.body[1].content).toBe('Second comment from PRO');
-      });
+    it('should return comments ordered by creation date (oldest first)', async () => {
+      const response = await request(app)
+        .get(`/api/reports/${testReportId}/internal-comments`)
+        .set('Cookie', technicianCookies)
+        .expect(200);
+
+      expect(response.body[0].content).toBe('First internal comment');
+      expect(response.body[1].content).toBe('Second comment from PRO');
+    });
   });
 
   describe('DELETE /api/reports/:reportId/internal-comments/:commentId - Delete Internal Comments', () => {
@@ -1133,113 +1114,113 @@ afterAll(async () => {
       await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [testReportId]);
     });
 
-      it('should allow author to delete their own comment', async () => {
-        await request(app)
-          .delete(`/api/reports/${testReportId}/internal-comments/${commentId}`)
-          .set('Cookie', technicianCookies)
-          .expect(204);
+    it('should allow author to delete their own comment', async () => {
+      await request(app)
+        .delete(`/api/reports/${testReportId}/internal-comments/${commentId}`)
+        .set('Cookie', technicianCookies)
+        .expect(204);
 
-        // Verify comment was deleted
-        const result = await AppDataSource.query(
-          `SELECT * FROM comments WHERE id = $1`,
-          [commentId]
-        );
-        expect(result.length).toBe(0);
-      });
+      // Verify comment was deleted
+      const result = await AppDataSource.query(
+        `SELECT * FROM comments WHERE id = $1`,
+        [commentId]
+      );
+      expect(result.length).toBe(0);
+    });
 
-      it('should fail when trying to delete another user\'s comment (403)', async () => {
-        await request(app)
-          .delete(`/api/reports/${testReportId}/internal-comments/${otherUserCommentId}`)
-          .set('Cookie', technicianCookies)
-          .expect(403);
+    it('should fail when trying to delete another user\'s comment (403)', async () => {
+      await request(app)
+        .delete(`/api/reports/${testReportId}/internal-comments/${otherUserCommentId}`)
+        .set('Cookie', technicianCookies)
+        .expect(403);
 
-        // Verify comment was NOT deleted
-        const result = await AppDataSource.query(
-          `SELECT * FROM comments WHERE id = $1`,
-          [otherUserCommentId]
-        );
-        expect(result.length).toBe(1);
-      });
+      // Verify comment was NOT deleted
+      const result = await AppDataSource.query(
+        `SELECT * FROM comments WHERE id = $1`,
+        [otherUserCommentId]
+      );
+      expect(result.length).toBe(1);
+    });
 
-      it('should fail when citizen tries to delete comment (403)', async () => {
-        await request(app)
-          .delete(`/api/reports/${testReportId}/internal-comments/${commentId}`)
-          .set('Cookie', citizenCookies)
-          .expect(403);
-      });
+    it('should fail when citizen tries to delete comment (403)', async () => {
+      await request(app)
+        .delete(`/api/reports/${testReportId}/internal-comments/${commentId}`)
+        .set('Cookie', citizenCookies)
+        .expect(403);
+    });
 
-      it('should fail without authentication (401)', async () => {
-        await request(app)
-          .delete(`/api/reports/${testReportId}/internal-comments/${commentId}`)
-          .expect(401);
-      });
+    it('should fail without authentication (401)', async () => {
+      await request(app)
+        .delete(`/api/reports/${testReportId}/internal-comments/${commentId}`)
+        .expect(401);
+    });
 
-      it('should fail with non-existent comment (404)', async () => {
-        await request(app)
-          .delete(`/api/reports/${testReportId}/internal-comments/99999`)
-          .set('Cookie', technicianCookies)
-          .expect(404);
-      });
+    it('should fail with non-existent comment (404)', async () => {
+      await request(app)
+        .delete(`/api/reports/${testReportId}/internal-comments/99999`)
+        .set('Cookie', technicianCookies)
+        .expect(404);
+    });
 
-      it('should fail with non-existent report (404)', async () => {
-        await request(app)
-          .delete(`/api/reports/99999/internal-comments/${commentId}`)
-          .set('Cookie', technicianCookies)
-          .expect(404);
-      });
+    it('should fail with non-existent report (404)', async () => {
+      await request(app)
+        .delete(`/api/reports/99999/internal-comments/${commentId}`)
+        .set('Cookie', technicianCookies)
+        .expect(404);
+    });
 
-      it('should fail when comment does not belong to report (400)', async () => {
-        // Create another report
-        const anotherReportResult = await AppDataSource.query(
-          `INSERT INTO reports (reporter_id, title, description, category, location, status, created_at, updated_at)
+    it('should fail when comment does not belong to report (400)', async () => {
+      // Create another report
+      const anotherReportResult = await AppDataSource.query(
+        `INSERT INTO reports (reporter_id, title, description, category, location, status, created_at, updated_at)
            VALUES ($1, $2, $3, $4, ST_GeomFromText($5, 4326), $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
            RETURNING id`,
-          [
-            citizenId,
-            'Another Report',
-            'Another test report',
-            ReportCategory.PUBLIC_LIGHTING,
-            'POINT(9.1950 45.4700)',
-            ReportStatus.ASSIGNED
-          ]
-        );
-        const anotherReportId = anotherReportResult[0].id;
+        [
+          citizenId,
+          'Another Report',
+          'Another test report',
+          ReportCategory.PUBLIC_LIGHTING,
+          'POINT(9.1950 45.4700)',
+          ReportStatus.ASSIGNED
+        ]
+      );
+      const anotherReportId = anotherReportResult[0].id;
 
-        await request(app)
-          .delete(`/api/reports/${anotherReportId}/internal-comments/${commentId}`)
-          .set('Cookie', technicianCookies)
-          .expect(400);
+      await request(app)
+        .delete(`/api/reports/${anotherReportId}/internal-comments/${commentId}`)
+        .set('Cookie', technicianCookies)
+        .expect(400);
 
-        // Clean up
-        await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [anotherReportId]);
-      });
+      // Clean up
+      await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [anotherReportId]);
+    });
 
-      it('should fail with invalid report ID (400)', async () => {
-        await request(app)
-          .delete(`/api/reports/invalid/internal-comments/${commentId}`)
-          .set('Cookie', technicianCookies)
-          .expect(400);
-      });
+    it('should fail with invalid report ID (400)', async () => {
+      await request(app)
+        .delete(`/api/reports/invalid/internal-comments/${commentId}`)
+        .set('Cookie', technicianCookies)
+        .expect(400);
+    });
 
-      it('should fail with invalid comment ID (400)', async () => {
-        await request(app)
-          .delete(`/api/reports/${testReportId}/internal-comments/invalid`)
-          .set('Cookie', technicianCookies)
-          .expect(400);
-      });
+    it('should fail with invalid comment ID (400)', async () => {
+      await request(app)
+        .delete(`/api/reports/${testReportId}/internal-comments/invalid`)
+        .set('Cookie', technicianCookies)
+        .expect(400);
+    });
 
-      it('should allow PRO to delete their own comment', async () => {
-        await request(app)
-          .delete(`/api/reports/${testReportId}/internal-comments/${otherUserCommentId}`)
-          .set('Cookie', proCookies)
-          .expect(204);
+    it('should allow PRO to delete their own comment', async () => {
+      await request(app)
+        .delete(`/api/reports/${testReportId}/internal-comments/${otherUserCommentId}`)
+        .set('Cookie', proCookies)
+        .expect(204);
 
-        // Verify comment was deleted
-        const result = await AppDataSource.query(
-          `SELECT * FROM comments WHERE id = $1`,
-          [otherUserCommentId]
-        );
-        expect(result.length).toBe(0);
-      });
+      // Verify comment was deleted
+      const result = await AppDataSource.query(
+        `SELECT * FROM comments WHERE id = $1`,
+        [otherUserCommentId]
+      );
+      expect(result.length).toBe(0);
+    });
   });
 });

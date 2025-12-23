@@ -5,20 +5,21 @@ import { NotFoundError } from '@errors/NotFoundError';
 import { DepartmentEntity } from '@models/entity/departmentEntity';
 import { DepartmentRoleEntity } from '@models/entity/departmentRoleEntity';
 import { RoleEntity } from '@models/entity/roleEntity';
+import { createMockUserRole } from '@test/utils/mockEntities';
 
 // Mock dei repository
 jest.mock('@repositories/departmentRepository');
 jest.mock('@repositories/departmentRoleRepository');
 
 describe('DepartmentService Unit Tests', () => {
-  
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   // --- Test per getMunicipalityDepartments() ---
   describe('getMunicipalityDepartments', () => {
-    
+
     it('should return all departments', async () => {
       // Arrange
       const mockDepartments: DepartmentEntity[] = [
@@ -70,7 +71,7 @@ describe('DepartmentService Unit Tests', () => {
 
   // --- Test per getRolesByDepartment() ---
   describe('getRolesByDepartment', () => {
-    
+
     it('should return roles for existing department', async () => {
       // Arrange
       const departmentId = 2;
@@ -92,7 +93,7 @@ describe('DepartmentService Unit Tests', () => {
           roleId: 4,
           department: mockDepartment,
           role: mockRoles[0],
-          users: [],
+          userRoles: [createMockUserRole(1, 1, 'Manager', 'Public Works')]
         },
         {
           id: 2,
@@ -100,7 +101,7 @@ describe('DepartmentService Unit Tests', () => {
           roleId: 10,
           department: mockDepartment,
           role: mockRoles[1],
-          users: [],
+          userRoles: [createMockUserRole(2, 2, 'Technician', 'Public Works')]
         },
       ];
 
@@ -175,7 +176,7 @@ describe('DepartmentService Unit Tests', () => {
       // Assert
       const findByIdCall = (departmentRepository.findById as jest.Mock).mock.calls[0];
       const findByDeptCall = (departmentRoleRepository.findByDepartment as jest.Mock).mock.calls[0];
-      
+
       expect(typeof findByIdCall[0]).toBe('number');
       expect(typeof findByDeptCall[0]).toBe('number');
       expect(findByIdCall[0]).toBe(departmentId);

@@ -7,7 +7,7 @@ import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { companyRepository } from '@repositories/companyRepository';
-import { In } from 'typeorm'; 
+import { In } from 'typeorm';
 
 const random = () => Math.floor(Math.random() * 1000000);
 const buildRegisterPayload = (overrides: Partial<Omit<RegisterRequest, 'role'>> = {}) => ({
@@ -64,16 +64,18 @@ describe('UserController Integration Tests', () => {
       expect(response.status).toBe(201);
       expect(response.body).toBeDefined();
       expect(response.body.id).toBeGreaterThan(0);
-      
-      createdUserIds.push(response.body.id); 
-      
+
+      createdUserIds.push(response.body.id);
+
       expect(response.body.username).toBe(newCitizenData.username);
       expect(response.body.email).toBe(newCitizenData.email);
-      
+
       expect(response.body.first_name).toBe(newCitizenData.first_name);
       expect(response.body.last_name).toBe(newCitizenData.last_name);
 
-      expect(response.body.role_name).toBe('Citizen');
+      expect(response.body.roles).toBeDefined();
+      expect(Array.isArray(response.body.roles)).toBe(true);
+      expect(response.body.roles.some((r: any) => r.role_name === 'Citizen')).toBe(true);
 
       expect(response.body.password).toBeUndefined();
       expect(response.body.passwordHash).toBeUndefined();
@@ -104,10 +106,10 @@ describe('UserController Integration Tests', () => {
       const response = await request(app)
         .post('/api/users')
         .send({});
-      
+
       expect(response.status).toBe(400);
       expect(response.body.message).toBeDefined();
-    });    it('should return 409 if username already exists', async () => {
+    }); it('should return 409 if username already exists', async () => {
       const dynamicUsername = `duplicateUser_${random()}`;
       const existingUserData = buildRegisterPayload({ username: dynamicUsername });
 
@@ -123,7 +125,7 @@ describe('UserController Integration Tests', () => {
         .send(newUserData);
 
       expect(response.status).toBe(409);
-      
+
       expect(response.body.message || response.body.error).toBe('Username already exists');
     });
 
@@ -198,11 +200,16 @@ describe('UserController Integration Tests - Get External Maintainers', () => {
       email: `techstaff${r()}@test.com`,
       firstName: 'Tech',
       lastName: 'Staff',
-      departmentRoleId: techStaffRole.id,
       emailNotificationsEnabled: true,
       isVerified: true
     });
     createdUserIds.push(techStaffUser.id);
+
+    // Assign tech staff role using user_roles table (V5.0 multi-role support)
+    await AppDataSource.getRepository('user_roles').save({
+      userId: techStaffUser.id,
+      departmentRoleId: techStaffRole.id
+    });
 
     techStaffAgent = request.agent(app);
     await techStaffAgent.post('/api/sessions').send({
@@ -220,11 +227,16 @@ describe('UserController Integration Tests - Get External Maintainers', () => {
       email: `citizen${r()}@test.com`,
       firstName: 'Citizen',
       lastName: 'User',
-      departmentRoleId: citizenRole.id,
       emailNotificationsEnabled: true,
       isVerified: true
     });
     createdUserIds.push(citizenUser.id);
+
+    // Assign citizen role using user_roles table (V5.0 multi-role support)
+    await AppDataSource.getRepository('user_roles').save({
+      userId: citizenUser.id,
+      departmentRoleId: citizenRole.id
+    });
 
     citizenAgent = request.agent(app);
     await citizenAgent.post('/api/sessions').send({
@@ -253,13 +265,18 @@ describe('UserController Integration Tests - Get External Maintainers', () => {
         email: `maintainer${r()}@test.com`,
         firstName: 'External',
         lastName: 'Maintainer',
-        departmentRoleId: externalMaintainerRole.id,
         emailNotificationsEnabled: true,
         companyId: companyId,
         isVerified: true
       });
       createdUserIds.push(externalMaintainer.id);
       externalMaintainerId = externalMaintainer.id;
+
+      // Assign external maintainer role using user_roles table (V5.0 multi-role support)
+      await AppDataSource.getRepository('user_roles').save({
+        userId: externalMaintainer.id,
+        departmentRoleId: externalMaintainerRole.id
+      });
     });
 
     it('should get external maintainers by category as technical staff (200)', async () => {
@@ -269,7 +286,7 @@ describe('UserController Integration Tests - Get External Maintainers', () => {
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
-      
+
       const maintainer = response.body.find((m: any) => m.id === externalMaintainerId);
       expect(maintainer).toBeDefined();
       expect(maintainer.company_name).toBeTruthy();

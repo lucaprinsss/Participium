@@ -1,17 +1,19 @@
 import request from 'supertest';
 import app from '../../app';
+import { AppDataSource } from '@database/connection';
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
-import { 
-  setupTestDatabase, 
-  teardownTestDatabase, 
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
   cleanDatabase,
-  ensureTestDatabase 
+  ensureTestDatabase
 } from '../utils/dbTestUtils';
+import { UserRoleEntity } from '@models/entity/userRoleEntity';
 
 
- // E2E Tests for Authentication Controller
- // Uses real PostgreSQL test database with Docker
+// E2E Tests for Authentication Controller
+// Uses real PostgreSQL test database with Docker
 describe('AuthController E2E Tests', () => {
   // Setup database before all tests
   beforeAll(async () => {
@@ -50,7 +52,8 @@ describe('AuthController E2E Tests', () => {
       expect(response.body).toHaveProperty('email', 'testcitizen@example.com');
       expect(response.body).toHaveProperty('first_name', 'Test');
       expect(response.body).toHaveProperty('last_name', 'Citizen');
-      expect(response.body).toHaveProperty('role_name', 'Citizen');
+      expect(response.body).toHaveProperty('roles');
+      expect(response.body.roles.some((r: any) => r.role_name === 'Citizen')).toBe(true);
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).not.toHaveProperty('passwordHash');
       expect(response.headers['set-cookie']).toBeDefined();
@@ -66,7 +69,7 @@ describe('AuthController E2E Tests', () => {
         .expect(200);
 
       expect(response.body.username).toBe('testmunicipality');
-      expect(response.body.role_name).toBe('Department Director');
+      expect(response.body.roles.some((r: any) => r.role_name === 'Department Director')).toBe(true);
     });
 
     it('should login successfully with testadmin user', async () => {
@@ -79,7 +82,7 @@ describe('AuthController E2E Tests', () => {
         .expect(200);
 
       expect(response.body.username).toBe('testadmin');
-      expect(response.body.role_name).toBe('Administrator');
+      expect(response.body.roles.some((r: any) => r.role_name === 'Administrator')).toBe(true);
     });
 
     it('should return 401 with invalid username', async () => {
@@ -135,14 +138,18 @@ describe('AuthController E2E Tests', () => {
         last_name: 'User',
       };
 
-      await userRepository.createUserWithPassword({
+      const createdUser = await userRepository.createUserWithPassword({
         username: dynamicUser.username,
         email: dynamicUser.email,
         password: dynamicUser.password,
         firstName: dynamicUser.first_name,
         lastName: dynamicUser.last_name,
-        departmentRoleId: citizenDeptRole.id,
         isVerified: true,
+      });
+
+      await AppDataSource.getRepository(UserRoleEntity).save({
+        userId: createdUser.id,
+        departmentRoleId: citizenDeptRole.id
       });
     });
 
@@ -186,7 +193,8 @@ describe('AuthController E2E Tests', () => {
       expect(response.body).toHaveProperty('email', 'testcitizen@example.com');
       expect(response.body).toHaveProperty('first_name', 'Test');
       expect(response.body).toHaveProperty('last_name', 'Citizen');
-      expect(response.body).toHaveProperty('role_name', 'Citizen');
+      expect(response.body).toHaveProperty('roles');
+      expect(response.body.roles.some((r: any) => r.role_name === 'Citizen')).toBe(true);
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).not.toHaveProperty('passwordHash');
     });
@@ -435,16 +443,20 @@ describe('AuthController E2E Tests', () => {
         verificationCode: testCode,
       };
 
-      await userRepository.createUserWithPassword({
+      const createdUser = await userRepository.createUserWithPassword({
         username: unverifiedUser.username,
         email: unverifiedUser.email,
         password: unverifiedUser.password,
         firstName: 'Unverified',
         lastName: 'User',
-        departmentRoleId: citizenDeptRole.id,
         isVerified: false,
         verificationCode: testCode,
         verificationCodeExpiresAt: expiresAt,
+      });
+
+      await AppDataSource.getRepository(UserRoleEntity).save({
+        userId: createdUser.id,
+        departmentRoleId: citizenDeptRole.id
       });
     });
 
@@ -600,16 +612,20 @@ describe('AuthController E2E Tests', () => {
       const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
       const expiredDate = new Date(Date.now() - 60 * 1000); // 1 minute ago (expired)
 
-      await userRepository.createUserWithPassword({
+      const createdUser = await userRepository.createUserWithPassword({
         username: expiredCodeUser.username,
         email: expiredCodeUser.email,
         password: expiredCodeUser.password,
         firstName: 'Expired',
         lastName: 'User',
-        departmentRoleId: citizenDeptRole!.id,
         isVerified: false,
         verificationCode: expiredCodeUser.verificationCode,
         verificationCodeExpiresAt: expiredDate,
+      });
+
+      await AppDataSource.getRepository(UserRoleEntity).save({
+        userId: createdUser.id,
+        departmentRoleId: citizenDeptRole!.id
       });
 
       // Act

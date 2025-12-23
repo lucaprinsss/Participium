@@ -22,7 +22,7 @@ class CommentRepository {
   async getCommentsByReportId(reportId: number): Promise<CommentEntity[]> {
     return this.repository.find({
       where: { reportId },
-      relations: ['author', 'author.departmentRole', 'author.departmentRole.role'],
+      relations: ['author', 'author.userRoles', 'author.userRoles.departmentRole', 'author.userRoles.departmentRole.role'],
       order: { createdAt: 'ASC' }
     });
   }
@@ -46,7 +46,7 @@ class CommentRepository {
     // Fetch the complete comment with relations
     const completeComment = await this.repository.findOne({
       where: { id: savedComment.id },
-      relations: ['author', 'author.departmentRole', 'author.departmentRole.role']
+      relations: ['author', 'author.userRoles', 'author.userRoles.departmentRole', 'author.userRoles.departmentRole.role']
     });
 
     if (!completeComment) {
@@ -64,7 +64,7 @@ class CommentRepository {
   async getCommentById(commentId: number): Promise<CommentEntity | null> {
     return this.repository.findOne({
       where: { id: commentId },
-      relations: ['author', 'author.departmentRole', 'author.departmentRole.role']
+      relations: ['author', 'author.userRoles', 'author.userRoles.departmentRole', 'author.userRoles.departmentRole.role']
     });
   }
 

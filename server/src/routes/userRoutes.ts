@@ -171,9 +171,14 @@ router.get(
   (req, res, next) => {
 
     const user = req.user as any;
-    const roleName = user?.departmentRole?.role?.name;
-    
-    if (!roleName || (!isTechnicalStaff(roleName) && !isAdmin(roleName))) {
+    // V5.0 multi-role support: check all user roles
+    const userRoleNames = user?.userRoles?.map((ur: any) => ur.departmentRole?.role?.name) || [];
+
+    const hasAccess = userRoleNames.some((roleName: string) =>
+      isTechnicalStaff(roleName) || isAdmin(roleName)
+    );
+
+    if (!hasAccess) {
       return res.status(403).json({
         code: 403,
         name: 'ForbiddenError',

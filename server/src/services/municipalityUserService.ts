@@ -456,14 +456,20 @@ class MunicipalityUserService {
     }
 
     // Add new role to existing ones
-    const newUserRole = new UserRoleEntity();
-    newUserRole.userId = userId;
-    newUserRole.departmentRoleId = matchingDepartmentRole.id;
-    newUserRole.departmentRole = matchingDepartmentRole;
+    await AppDataSource.createQueryBuilder()
+      .insert()
+      .into('user_roles')
+      .values({
+        userId: userId,
+        departmentRoleId: matchingDepartmentRole.id
+      })
+      .execute();
 
-    user.userRoles = [...(user.userRoles || []), newUserRole];
-
-    const updatedUser = await userRepository.updateUser(userId, user);
+    // Reload user to get updated roles
+    const updatedUser = await userRepository.findUserById(userId);
+    if (!updatedUser) {
+      throw new NotFoundError('User not found after role assignment');
+    }
 
     logInfo(`Role assigned to user ${user.username}: ${roleName} (ID: ${userId})`);
 

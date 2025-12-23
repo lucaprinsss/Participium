@@ -28,6 +28,26 @@ jest.mock('@models/dto/UserRole', () => ({
   }),
 }));
 
+/**
+ * Helper to create userRoles array for mock user (V5.0 multi-role support)
+ */
+const createMockUserRoles = (roles: Array<{ roleName: string; departmentName?: string }>) => {
+  return roles.map((role, index) => ({
+    id: index + 1,
+    userId: 1,
+    departmentRoleId: index + 1,
+    departmentRole: {
+      id: index + 1,
+      departmentId: index + 1,
+      roleId: index + 1,
+      department: { id: index + 1, name: role.departmentName || 'Organization', departmentRoles: [] },
+      role: { id: index + 1, name: role.roleName, description: '', departmentRoles: [] },
+      userRoles: []
+    },
+    createdAt: new Date()
+  }));
+};
+
 describe('validateStatusUpdate Middleware Unit Tests', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
@@ -47,7 +67,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = {};
       mockRequest.user = {
-        departmentRole: { role: { name: 'Road Maintenance Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Road Maintenance Staff' }]),
       };
 
       // Act
@@ -63,10 +83,10 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       expect(error.message).toContain('newStatus');
     });
 
-    it('should reject when user has no role', () => {
+    it('should reject when user has no roles', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
-      mockRequest.user = { departmentRole: null };
+      mockRequest.user = { userRoles: [] };
 
       // Act
       validateStatusUpdate(
@@ -87,9 +107,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
       mockRequest.user = {
-        departmentRole: {
-          role: { name: SystemRoles.PUBLIC_RELATIONS_OFFICER },
-        },
+        userRoles: createMockUserRoles([{ roleName: SystemRoles.PUBLIC_RELATIONS_OFFICER }]),
       };
 
       // Act
@@ -107,7 +125,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
       mockRequest.user = {
-        departmentRole: { role: { name: 'Road Maintenance Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Road Maintenance Staff' }]),
       };
 
       // Act
@@ -125,7 +143,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
       mockRequest.user = {
-        departmentRole: { role: { name: SystemRoles.CITIZEN } },
+        userRoles: createMockUserRoles([{ roleName: SystemRoles.CITIZEN }]),
       };
 
       // Act
@@ -145,9 +163,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.REJECTED };
       mockRequest.user = {
-        departmentRole: {
-          role: { name: SystemRoles.PUBLIC_RELATIONS_OFFICER },
-        },
+        userRoles: createMockUserRoles([{ roleName: SystemRoles.PUBLIC_RELATIONS_OFFICER }]),
       };
 
       // Act
@@ -165,7 +181,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.REJECTED };
       mockRequest.user = {
-        departmentRole: { role: { name: 'Water Network Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Water Network Staff' }]),
       };
 
       // Act
@@ -185,7 +201,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.RESOLVED };
       mockRequest.user = {
-        departmentRole: { role: { name: 'Sewer System Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Sewer System Staff' }]),
       };
 
       // Act
@@ -203,9 +219,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.RESOLVED };
       mockRequest.user = {
-        departmentRole: {
-          role: { name: SystemRoles.EXTERNAL_MAINTAINER },
-        },
+        userRoles: createMockUserRoles([{ roleName: SystemRoles.EXTERNAL_MAINTAINER }]),
       };
 
       // Act
@@ -223,7 +237,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.RESOLVED };
       mockRequest.user = {
-        departmentRole: { role: { name: SystemRoles.CITIZEN } },
+        userRoles: createMockUserRoles([{ roleName: SystemRoles.CITIZEN }]),
       };
 
       // Act
@@ -243,9 +257,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.RESOLVED };
       mockRequest.user = {
-        departmentRole: {
-          role: { name: SystemRoles.PUBLIC_RELATIONS_OFFICER },
-        },
+        userRoles: createMockUserRoles([{ roleName: SystemRoles.PUBLIC_RELATIONS_OFFICER }]),
       };
 
       // Act
@@ -265,7 +277,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.IN_PROGRESS };
       mockRequest.user = {
-        departmentRole: { role: { name: 'Road Maintenance Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Road Maintenance Staff' }]),
       };
 
       // Act
@@ -283,7 +295,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.IN_PROGRESS };
       mockRequest.user = {
-        departmentRole: { role: { name: SystemRoles.CITIZEN } },
+        userRoles: createMockUserRoles([{ roleName: SystemRoles.CITIZEN }]),
       };
 
       // Act
@@ -301,9 +313,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.IN_PROGRESS };
       mockRequest.user = {
-        departmentRole: {
-          role: { name: SystemRoles.PUBLIC_RELATIONS_OFFICER },
-        },
+        userRoles: createMockUserRoles([{ roleName: SystemRoles.PUBLIC_RELATIONS_OFFICER }]),
       };
 
       // Act
@@ -323,7 +333,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.SUSPENDED };
       mockRequest.user = {
-        departmentRole: { role: { name: 'Water Network Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Water Network Staff' }]),
       };
 
       // Act
@@ -341,7 +351,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.SUSPENDED };
       mockRequest.user = {
-        departmentRole: { role: { name: SystemRoles.CITIZEN } },
+        userRoles: createMockUserRoles([{ roleName: SystemRoles.CITIZEN }]),
       };
 
       // Act
@@ -361,7 +371,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: 'INVALID_STATUS' };
       mockRequest.user = {
-        departmentRole: { role: { name: 'Road Maintenance Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Road Maintenance Staff' }]),
       };
 
       // Act
@@ -381,7 +391,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: null };
       mockRequest.user = {
-        departmentRole: { role: { name: 'Road Maintenance Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Road Maintenance Staff' }]),
       };
 
       // Act
@@ -399,7 +409,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: undefined };
       mockRequest.user = {
-        departmentRole: { role: { name: 'Road Maintenance Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Road Maintenance Staff' }]),
       };
 
       // Act
@@ -417,7 +427,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       // Arrange
       mockRequest.body = { newStatus: '' };
       mockRequest.user = {
-        departmentRole: { role: { name: 'Road Maintenance Staff' } },
+        userRoles: createMockUserRoles([{ roleName: 'Road Maintenance Staff' }]),
       };
 
       // Act
@@ -445,7 +455,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       for (const role of technicalRoles) {
         mockNext.mockClear();
         mockRequest.body = { newStatus: ReportStatus.IN_PROGRESS };
-        mockRequest.user = { departmentRole: { role: { name: role } } };
+        mockRequest.user = { userRoles: createMockUserRoles([{ roleName: role }]) };
 
         // Act
         validateStatusUpdate(
@@ -470,7 +480,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       for (const role of nonAllowedRoles) {
         mockNext.mockClear();
         mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
-        mockRequest.user = { departmentRole: { role: { name: role } } };
+        mockRequest.user = { userRoles: createMockUserRoles([{ roleName: role }]) };
 
         // Act
         validateStatusUpdate(
@@ -494,7 +504,7 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       for (const role of allowedRoles) {
         mockNext.mockClear();
         mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
-        mockRequest.user = { departmentRole: { role: { name: role } } };
+        mockRequest.user = { userRoles: createMockUserRoles([{ roleName: role }]) };
 
         // Act
         validateStatusUpdate(
@@ -507,10 +517,31 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
         expect(mockNext).toHaveBeenCalledWith();
       }
     });
+
+    it('should allow user with multiple roles if any role is authorized (multi-role support)', () => {
+      // Arrange - User has both Citizen and Technical Staff roles
+      mockRequest.body = { newStatus: ReportStatus.IN_PROGRESS };
+      mockRequest.user = {
+        userRoles: createMockUserRoles([
+          { roleName: SystemRoles.CITIZEN },
+          { roleName: 'Road Maintenance Staff' }
+        ]),
+      };
+
+      // Act
+      validateStatusUpdate(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert - Should be allowed because one of the roles is authorized
+      expect(mockNext).toHaveBeenCalledWith();
+    });
   });
 
   describe('User object variations', () => {
-    it('should handle user without departmentRole property', () => {
+    it('should handle user without userRoles property', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
       mockRequest.user = {};
@@ -526,10 +557,10 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       expect(mockNext).toHaveBeenCalledWith(expect.any(InsufficientRightsError));
     });
 
-    it('should handle user with null role', () => {
+    it('should handle user with null userRoles', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
-      mockRequest.user = { departmentRole: { role: null } };
+      mockRequest.user = { userRoles: null };
 
       // Act
       validateStatusUpdate(
@@ -542,10 +573,10 @@ describe('validateStatusUpdate Middleware Unit Tests', () => {
       expect(mockNext).toHaveBeenCalledWith(expect.any(InsufficientRightsError));
     });
 
-    it('should handle user with undefined role name', () => {
+    it('should handle user with empty userRoles array', () => {
       // Arrange
       mockRequest.body = { newStatus: ReportStatus.ASSIGNED };
-      mockRequest.user = { departmentRole: { role: { name: undefined } } };
+      mockRequest.user = { userRoles: [] };
 
       // Act
       validateStatusUpdate(

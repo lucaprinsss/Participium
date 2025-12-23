@@ -2,26 +2,31 @@ import { authService } from '../../../services/authService';
 import { userRepository } from '@repositories/userRepository';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { UserEntity } from '@models/entity/userEntity';
+import { createMockCitizen } from '@test/utils/mockEntities';
 
 jest.mock('@repositories/userRepository');
 
 // Helper to create mock user entity
-const createMockUserEntity = (overrides?: Partial<UserEntity>): UserEntity => {
-  const mockUser = new UserEntity();
-  mockUser.id = 1;
-  mockUser.username = 'testuser';
-  mockUser.email = 'test@example.com';
-  mockUser.firstName = 'Test';
-  mockUser.lastName = 'User';
-  mockUser.passwordHash = 'hashed_password';
-  mockUser.departmentRoleId = 1;
-  mockUser.isVerified = false;
-  mockUser.emailNotificationsEnabled = true;
-  mockUser.createdAt = new Date();
-  mockUser.verificationCode = '123456';
-  mockUser.verificationCodeExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
-  return { ...mockUser, ...overrides };
-};
+// const createMockUserEntity = (overrides?: Partial<UserEntity>): UserEntity => {
+//   const mockUser = new UserEntity();
+//   mockUser.id = 1;
+//   mockUser.username = 'testuser';
+//   mockUser.email = 'test@example.com';
+//   mockUser.firstName = 'Test';
+//   mockUser.lastName = 'User';
+//   mockUser.passwordHash = 'hashed_password';
+//   mockUser.userRoles = [{
+//     id: 1,
+//     departmentRoleId: 1,
+//     departmentRole: { id: 1, name: 'Organization', departmentRoles: [] }
+//   }];
+//   mockUser.isVerified = false;
+//   mockUser.emailNotificationsEnabled = true;
+//   mockUser.createdAt = new Date();
+//   mockUser.verificationCode = '123456';
+//   mockUser.verificationCodeExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
+//   return { ...mockUser, ...overrides };
+// };
 
 describe('AuthService Unit Tests', () => {
   beforeEach(() => {
@@ -110,21 +115,29 @@ describe('AuthService Unit Tests', () => {
   describe('createUserResponse', () => {
     it('should map user entity to UserResponse correctly', () => {
       // Arrange
-      const mockUser = createMockUserEntity({
+      // const mockUser = createMockUserEntity({
+      //   id: 5,
+      //   username: 'mario.rossi',
+      //   email: 'mario@example.com',
+      //   firstName: 'Mario',
+      //   lastName: 'Rossi',
+      // });
+      // mockUser.departmentRole = {
+      //   id: 1,
+      //   departmentId: 1,
+      //   roleId: 1,
+      //   department: { id: 1, name: 'Organization', departmentRoles: [] },
+      //   role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
+      //   users: [],
+      // };
+
+      const mockUser = createMockCitizen({
         id: 5,
         username: 'mario.rossi',
         email: 'mario@example.com',
         firstName: 'Mario',
-        lastName: 'Rossi',
-      });
-      mockUser.departmentRole = {
-        id: 1,
-        departmentId: 1,
-        roleId: 1,
-        department: { id: 1, name: 'Organization', departmentRoles: [] },
-        role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
-        users: [],
-      };
+        lastName: 'Rossi'
+      })
 
       // Act
       const result = authService.createUserResponse(mockUser as Express.User);

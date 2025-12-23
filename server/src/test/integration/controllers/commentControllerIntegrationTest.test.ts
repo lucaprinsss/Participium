@@ -64,14 +64,17 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       password: 'Password123!',
       email: `tech${r()}@test.com`,
       firstName: 'Tech',
-      lastName: 'Staff',
-      departmentRoleId: techRole!.id
+      lastName: 'Staff'
     };
     techStaffUser = await userRepository.createUserWithPassword({
       ...techStaffCredentials,
       isVerified: true
     });
     createdUserIds.push(techStaffUser.id);
+    await AppDataSource.getRepository('user_roles').save({
+      userId: techStaffUser.id,
+      departmentRoleId: techRole!.id
+    });
 
     // Create PRO user
     const proRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Municipal Public Relations Officer');
@@ -80,14 +83,17 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       password: 'Password123!',
       email: `pro${r()}@test.com`,
       firstName: 'PRO',
-      lastName: 'User',
-      departmentRoleId: proRole!.id
+      lastName: 'User'
     };
     proUser = await userRepository.createUserWithPassword({
       ...proCredentials,
       isVerified: true
     });
     createdUserIds.push(proUser.id);
+    await AppDataSource.getRepository('user_roles').save({
+      userId: proUser.id,
+      departmentRoleId: proRole!.id
+    });
 
     // Create external maintainer
     const externalRole = await departmentRoleRepository.findByDepartmentAndRole('External Service Providers', 'External Maintainer');
@@ -96,14 +102,17 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       password: 'Password123!',
       email: `external${r()}@test.com`,
       firstName: 'External',
-      lastName: 'User',
-      departmentRoleId: externalRole!.id
+      lastName: 'User'
     };
     externalUser = await userRepository.createUserWithPassword({
       ...externalCredentials,
       isVerified: true
     });
     createdUserIds.push(externalUser.id);
+    await AppDataSource.getRepository('user_roles').save({
+      userId: externalUser.id,
+      departmentRoleId: externalRole!.id
+    });
 
     // Create citizen user
     const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
@@ -112,14 +121,17 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       password: 'Password123!',
       email: `citizen${r()}@test.com`,
       firstName: 'Citizen',
-      lastName: 'User',
-      departmentRoleId: citizenRole!.id
+      lastName: 'User'
     };
     citizenUser = await userRepository.createUserWithPassword({
       ...citizenCredentials,
       isVerified: true
     });
     createdUserIds.push(citizenUser.id);
+    await AppDataSource.getRepository('user_roles').save({
+      userId: citizenUser.id,
+      departmentRoleId: citizenRole!.id
+    });
 
     // Create test report
     testReport = await reportRepository.createReport({

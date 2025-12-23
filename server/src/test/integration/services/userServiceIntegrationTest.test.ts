@@ -12,11 +12,15 @@ import { In } from 'typeorm';
 describe('UserService Integration Tests', () => {
   const createdUserIds: number[] = [];
   const createdCompanyIds: number[] = [];
+  let citizenRoleId: number;
 
   beforeAll(async () => {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
     }
+    const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    if (!citizenRole) throw new Error('Citizen role not found');
+    citizenRoleId = citizenRole.id;
   });
 
   afterAll(async () => {
@@ -24,7 +28,7 @@ describe('UserService Integration Tests', () => {
     if (createdUserIds.length > 0) {
       await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
     }
-    
+
     if (createdCompanyIds.length > 0) {
       await AppDataSource.query('DELETE FROM companies WHERE id = ANY($1)', [createdCompanyIds]);
     }
@@ -43,7 +47,7 @@ describe('UserService Integration Tests', () => {
         first_name: 'Test',
         last_name: 'Citizen',
         password: 'Password123!',
-        role_name: 'Citizen',
+        department_role_ids: [citizenRoleId],
       };
 
       const result = await userService.registerCitizen(registerRequest);
@@ -54,12 +58,13 @@ describe('UserService Integration Tests', () => {
       expect(result.email).toBe(registerRequest.email);
       expect(result.first_name).toBe(registerRequest.first_name);
       expect(result.last_name).toBe(registerRequest.last_name);
-      expect(result.role_name).toBe('Citizen');
+      expect(result.roles.length).toBeGreaterThan(0);
+      expect(result.roles[0].role_name).toBe('Citizen');
     });
 
     it('should use fallback role CITIZEN if role is not provided', async () => {
       const timestamp = Date.now();
-      const registerRequest: Omit<RegisterRequest, 'role_name'> = {
+      const registerRequest: Omit<RegisterRequest, 'department_role_ids'> = {
         username: `testcitizen2_${timestamp}`,
         email: `testcitizen2_${timestamp}@test.com`,
         first_name: 'Test',
@@ -70,7 +75,7 @@ describe('UserService Integration Tests', () => {
       const result = await userService.registerCitizen(registerRequest as RegisterRequest);
       createdUserIds.push(result.id);
 
-      expect(result.role_name).toBe('Citizen');
+      expect(result.roles[0].role_name).toBe('Citizen');
     });
 
     it('should throw ConflictError if username already exists', async () => {
@@ -81,7 +86,7 @@ describe('UserService Integration Tests', () => {
         first_name: 'Test',
         last_name: 'User',
         password: 'Password123!',
-        role_name: 'Citizen',
+        department_role_ids: [citizenRoleId],
       };
 
       const firstUser = await userService.registerCitizen(registerRequest);
@@ -105,7 +110,7 @@ describe('UserService Integration Tests', () => {
         first_name: 'Test',
         last_name: 'User',
         password: 'Password123!',
-        role_name: 'Citizen',
+        department_role_ids: [citizenRoleId],
       };
 
       const firstUser = await userService.registerCitizen(registerRequest);
@@ -131,7 +136,7 @@ describe('UserService Integration Tests', () => {
         first_name: 'Get',
         last_name: 'ById',
         password: 'Password123!',
-        role_name: 'Citizen',
+        department_role_ids: [citizenRoleId],
       };
 
       const created = await userService.registerCitizen(registerRequest);
@@ -194,9 +199,12 @@ describe('UserService Integration Tests', () => {
         password: 'Password123!',
         firstName: 'Lighting',
         lastName: 'Maintainer1',
-        departmentRoleId: externalRole.id,
         companyId: lightingCompanyId,
         isVerified: true,
+      });
+      await AppDataSource.getRepository('user_roles').save({
+        userId: lightingMaintainer1.id,
+        departmentRoleId: externalRole.id
       });
       lightingMaintainer1Id = lightingMaintainer1.id;
       createdUserIds.push(lightingMaintainer1Id);
@@ -207,9 +215,12 @@ describe('UserService Integration Tests', () => {
         password: 'Password123!',
         firstName: 'Lighting',
         lastName: 'Maintainer2',
-        departmentRoleId: externalRole.id,
         companyId: lightingCompanyId,
         isVerified: true,
+      });
+      await AppDataSource.getRepository('user_roles').save({
+        userId: lightingMaintainer2.id,
+        departmentRoleId: externalRole.id
       });
       lightingMaintainer2Id = lightingMaintainer2.id;
       createdUserIds.push(lightingMaintainer2Id);
@@ -221,9 +232,12 @@ describe('UserService Integration Tests', () => {
         password: 'Password123!',
         firstName: 'Roads',
         lastName: 'Maintainer',
-        departmentRoleId: externalRole.id,
         companyId: roadsCompanyId,
         isVerified: true,
+      });
+      await AppDataSource.getRepository('user_roles').save({
+        userId: roadsMaintainer.id,
+        departmentRoleId: externalRole.id
       });
       roadsMaintainerId = roadsMaintainer.id;
       createdUserIds.push(roadsMaintainerId);
@@ -233,7 +247,7 @@ describe('UserService Integration Tests', () => {
       const result = await userService.getExternalMaintainersByCategory('Public Lighting');
 
       expect(result.length).toBeGreaterThanOrEqual(2);
-      
+
       const ids = result.map(u => u.id);
       expect(ids).toContain(lightingMaintainer1Id);
       expect(ids).toContain(lightingMaintainer2Id);
@@ -244,7 +258,7 @@ describe('UserService Integration Tests', () => {
       const result = await userService.getExternalMaintainersByCategory('Public Lighting');
 
       expect(result.length).toBeGreaterThan(0);
-      
+
       const maintainer = result.find(u => u.id === lightingMaintainer1Id);
       expect(maintainer).toBeDefined();
       expect(maintainer!.company_name).toBeDefined();
@@ -256,7 +270,7 @@ describe('UserService Integration Tests', () => {
 
       const testMaintainerIds = new Set([lightingMaintainer1Id, lightingMaintainer2Id, roadsMaintainerId]);
       const hasTestMaintainers = result.some(u => testMaintainerIds.has(u.id));
-      
+
       expect(hasTestMaintainers).toBe(false);
     });
 
@@ -265,7 +279,7 @@ describe('UserService Integration Tests', () => {
 
       expect(result.length).toBeGreaterThan(0);
       for (const user of result) {
-        expect(user.role_name).toBe('External Maintainer');
+        expect(user.roles[0].role_name).toBe('External Maintainer');
       }
     });
 
@@ -317,7 +331,7 @@ describe('UserService Integration Tests', () => {
       const result = await userService.getExternalMaintainersByCategory('Public Lighting');
 
       expect(result.length).toBeGreaterThan(0);
-      
+
       const maintainer = result.find(u => u.id === lightingMaintainer1Id);
       expect(maintainer).toBeDefined();
       expect(maintainer).toHaveProperty('id');
@@ -325,8 +339,9 @@ describe('UserService Integration Tests', () => {
       expect(maintainer).toHaveProperty('email');
       expect(maintainer).toHaveProperty('first_name');
       expect(maintainer).toHaveProperty('last_name');
-      expect(maintainer).toHaveProperty('role_name');
-      expect(maintainer).toHaveProperty('department_name');
+      expect(maintainer).toHaveProperty('roles');
+      expect(maintainer!.roles[0]).toHaveProperty('role_name');
+      expect(maintainer!.roles[0]).toHaveProperty('department_name');
       expect(maintainer).toHaveProperty('company_name');
     });
 
@@ -334,7 +349,7 @@ describe('UserService Integration Tests', () => {
       const result = await userService.getExternalMaintainersByCategory('Public Lighting');
 
       expect(result.length).toBeGreaterThanOrEqual(2);
-      
+
       // All maintainers should have company_name populated
       for (const maintainer of result) {
         expect(maintainer.company_name).toBeDefined();

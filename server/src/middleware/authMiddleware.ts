@@ -12,7 +12,7 @@ import { RoleUtils } from "@utils/roleUtils";
  */
 function getUserRoleNames(user: any): string[] {
   if (!user) return [];
-  
+
   const userEntityData = user as UserEntity;
   return RoleUtils.getUserRoleNames(userEntityData);
 }
@@ -25,7 +25,7 @@ function getUserRoleNames(user: any): string[] {
  */
 function userHasRole(user: any, roleName: string): boolean {
   if (!user) return false;
-  
+
   const userEntityData = user as UserEntity;
   return RoleUtils.userHasRole(userEntityData, roleName);
 }
@@ -34,8 +34,8 @@ function userHasRole(user: any, roleName: string): boolean {
  * Middleware to check if the user is logged in
  */
 export const isLoggedIn: RequestHandler = (
-  req: Request, 
-  res: Response, 
+  req: Request,
+  res: Response,
   next: NextFunction
 ): void => {
   if (req.isAuthenticated()) {
@@ -52,8 +52,8 @@ export const isLoggedIn: RequestHandler = (
  */
 export const requireRole = (requiredRole: string | string[]): RequestHandler => {
   return (
-    req: Request, 
-    res: Response, 
+    req: Request,
+    res: Response,
     next: NextFunction
   ): void => {
     // First check authentication using isLoggedIn
@@ -68,11 +68,11 @@ export const requireRole = (requiredRole: string | string[]): RequestHandler => 
       // Check if user has at least one of the required roles
       const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
       const hasRequiredRole = userRoles.some(role => requiredRoles.includes(role));
-      
+
       if (!hasRequiredRole) {
         return next(new InsufficientRightsError(`Access denied. Required role: ${requiredRole}`));
       }
-      
+
       next();
     });
   };
@@ -87,8 +87,8 @@ export const requireRole = (requiredRole: string | string[]): RequestHandler => 
  */
 export const requireTechnicalStaffOrRole = (additionalRoles: string[] = []): RequestHandler => {
   return (
-    req: Request, 
-    res: Response, 
+    req: Request,
+    res: Response,
     next: NextFunction
   ): void => {
     // First check authentication using isLoggedIn
@@ -101,14 +101,14 @@ export const requireTechnicalStaffOrRole = (additionalRoles: string[] = []): Req
       }
 
       // Check if user has at least one technical staff role OR one of the additional roles
-      const hasAccess = userRoles.some(role => 
+      const hasAccess = userRoles.some(role =>
         isTechnicalStaff(role) || additionalRoles.includes(role)
       );
-      
+
       if (!hasAccess) {
-        return next(new InsufficientRightsError('Access denied. Technical staff or specific role required'));
+        return next(new InsufficientRightsError(`Access denied. Technical staff or specific role required. Found roles: ${JSON.stringify(userRoles)}`));
       }
-      
+
       next();
     });
   };

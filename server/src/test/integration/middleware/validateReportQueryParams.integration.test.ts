@@ -1,5 +1,6 @@
 import request from 'supertest';
 import app from '../../../app';
+import { AppDataSource } from '@database/connection';
 import {
   setupTestDatabase,
   teardownTestDatabase,
@@ -28,9 +29,13 @@ describe('ValidateReportQueryParams Middleware Integration Tests', () => {
       email: `queryparams_${Date.now()}@test.com`,
       firstName: 'QueryParams',
       lastName: 'Test',
-      departmentRoleId: citizenDeptRole.id,
       emailNotificationsEnabled: true,
       isVerified: true
+    });
+
+    await AppDataSource.getRepository('user_roles').save({
+      userId: testUser.id,
+      departmentRoleId: citizenDeptRole.id
     });
 
     agent = request.agent(app);

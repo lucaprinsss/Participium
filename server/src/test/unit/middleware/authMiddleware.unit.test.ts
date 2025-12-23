@@ -3,6 +3,26 @@ import { UnauthorizedError } from '@errors/UnauthorizedError';
 import { InsufficientRightsError } from '@errors/InsufficientRightsError';
 import type { Request, Response } from 'express';
 
+/**
+ * Helper to create userRoles array for mock user (V5.0 multi-role support)
+ */
+const createMockUserRoles = (roles: Array<{ roleName: string; departmentName?: string }>) => {
+  return roles.map((role, index) => ({
+    id: index + 1,
+    userId: 1,
+    departmentRoleId: index + 1,
+    departmentRole: {
+      id: index + 1,
+      departmentId: index + 1,
+      roleId: index + 1,
+      department: { id: index + 1, name: role.departmentName || 'Organization', departmentRoles: [] },
+      role: { id: index + 1, name: role.roleName, description: '', departmentRoles: [] },
+      userRoles: []
+    },
+    createdAt: new Date()
+  }));
+};
+
 describe('authMiddleware Unit Tests', () => {
   let mockRequest: any;
   let mockResponse: any;
@@ -58,10 +78,9 @@ describe('authMiddleware Unit Tests', () => {
       const requiredRole = 'Administrator';
       const middleware = requireRole(requiredRole);
       mockRequest.isAuthenticated.mockReturnValue(true);
+      // V5.0: Use userRoles array instead of departmentRole
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Administrator' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Administrator' }]),
       };
 
       // Act
@@ -81,9 +100,31 @@ describe('authMiddleware Unit Tests', () => {
       const middleware = requireRole(requiredRoles);
       mockRequest.isAuthenticated.mockReturnValue(true);
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Citizen' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Citizen' }]),
+      };
+
+      // Act
+      middleware(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith();
+    });
+
+    it('should allow access when user has multiple roles and one matches required role', () => {
+      // Arrange
+      const requiredRole = 'Administrator';
+      const middleware = requireRole(requiredRole);
+      mockRequest.isAuthenticated.mockReturnValue(true);
+      // V5.0: User with multiple roles
+      mockRequest.user = {
+        userRoles: createMockUserRoles([
+          { roleName: 'Citizen' },
+          { roleName: 'Administrator' }
+        ]),
       };
 
       // Act
@@ -103,9 +144,7 @@ describe('authMiddleware Unit Tests', () => {
       const middleware = requireRole(requiredRole);
       mockRequest.isAuthenticated.mockReturnValue(true);
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Citizen' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Citizen' }]),
       };
 
       // Act
@@ -136,12 +175,12 @@ describe('authMiddleware Unit Tests', () => {
       expect(mockNext).toHaveBeenCalledWith(expect.any(UnauthorizedError));
     });
 
-    it('should deny access when user has no role assigned', () => {
+    it('should deny access when user has no roles assigned', () => {
       // Arrange
       const requiredRole = 'Administrator';
       const middleware = requireRole(requiredRole);
       mockRequest.isAuthenticated.mockReturnValue(true);
-      mockRequest.user = { departmentRole: null };
+      mockRequest.user = { userRoles: [] };
 
       // Act
       middleware(
@@ -160,9 +199,7 @@ describe('authMiddleware Unit Tests', () => {
       const middleware = requireRole(requiredRoles);
       mockRequest.isAuthenticated.mockReturnValue(true);
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Citizen' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Citizen' }]),
       };
 
       // Act
@@ -193,6 +230,24 @@ describe('authMiddleware Unit Tests', () => {
       // Assert
       expect(mockNext).toHaveBeenCalledWith(expect.any(InsufficientRightsError));
     });
+
+    it('should deny access when userRoles is null', () => {
+      // Arrange
+      const requiredRole = 'Administrator';
+      const middleware = requireRole(requiredRole);
+      mockRequest.isAuthenticated.mockReturnValue(true);
+      mockRequest.user = { userRoles: null };
+
+      // Act
+      middleware(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(expect.any(InsufficientRightsError));
+    });
   });
 
   describe('requireTechnicalStaffOrRole', () => {
@@ -201,9 +256,7 @@ describe('authMiddleware Unit Tests', () => {
       const middleware = requireTechnicalStaffOrRole();
       mockRequest.isAuthenticated.mockReturnValue(true);
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Road Maintenance Staff' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Road Maintenance Staff' }]),
       };
 
       // Act
@@ -223,9 +276,30 @@ describe('authMiddleware Unit Tests', () => {
       const middleware = requireTechnicalStaffOrRole(additionalRoles);
       mockRequest.isAuthenticated.mockReturnValue(true);
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Public Relations Officer' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Public Relations Officer' }]),
+      };
+
+      // Act
+      middleware(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith();
+    });
+
+    it('should allow user with multiple roles including technical staff', () => {
+      // Arrange
+      const middleware = requireTechnicalStaffOrRole();
+      mockRequest.isAuthenticated.mockReturnValue(true);
+      // V5.0: User with multiple roles including technical staff
+      mockRequest.user = {
+        userRoles: createMockUserRoles([
+          { roleName: 'Citizen' },
+          { roleName: 'Road Maintenance Staff' }
+        ]),
       };
 
       // Act
@@ -245,9 +319,7 @@ describe('authMiddleware Unit Tests', () => {
       const middleware = requireTechnicalStaffOrRole(additionalRoles);
       mockRequest.isAuthenticated.mockReturnValue(true);
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Citizen' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Citizen' }]),
       };
 
       // Act
@@ -277,11 +349,11 @@ describe('authMiddleware Unit Tests', () => {
       expect(mockNext).toHaveBeenCalledWith(expect.any(UnauthorizedError));
     });
 
-    it('should deny access when user has no role assigned', () => {
+    it('should deny access when user has no roles assigned', () => {
       // Arrange
       const middleware = requireTechnicalStaffOrRole();
       mockRequest.isAuthenticated.mockReturnValue(true);
-      mockRequest.user = { departmentRole: null };
+      mockRequest.user = { userRoles: [] };
 
       // Act
       middleware(
@@ -300,9 +372,7 @@ describe('authMiddleware Unit Tests', () => {
       const middleware = requireTechnicalStaffOrRole(additionalRoles);
       mockRequest.isAuthenticated.mockReturnValue(true);
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Public Relations Officer' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Public Relations Officer' }]),
       };
 
       // Act
@@ -321,9 +391,7 @@ describe('authMiddleware Unit Tests', () => {
       const middleware = requireTechnicalStaffOrRole([]);
       mockRequest.isAuthenticated.mockReturnValue(true);
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Sewer System Staff' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Sewer System Staff' }]),
       };
 
       // Act
@@ -343,9 +411,7 @@ describe('authMiddleware Unit Tests', () => {
       const middleware = requireTechnicalStaffOrRole(additionalRoles);
       mockRequest.isAuthenticated.mockReturnValue(true);
       mockRequest.user = {
-        departmentRole: {
-          role: { name: 'Administrator' },
-        },
+        userRoles: createMockUserRoles([{ roleName: 'Administrator' }]),
       };
 
       // Act

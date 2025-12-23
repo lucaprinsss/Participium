@@ -18,7 +18,7 @@ export function loadTestEnvironment(): void {
  */
 export async function cleanDatabase(): Promise<void> {
   const queryRunner = AppDataSource.createQueryRunner();
-  
+
   try {
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -33,7 +33,7 @@ export async function cleanDatabase(): Promise<void> {
     await queryRunner.query('TRUNCATE TABLE photos CASCADE;');
     await queryRunner.query('TRUNCATE TABLE notifications CASCADE;');
     await queryRunner.query('TRUNCATE TABLE messages CASCADE;');
-    
+
     // Pulisci solo utenti creati durante i test (non quelli di test-data.sql)
     await queryRunner.query(
       'DELETE FROM users WHERE username NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);',
@@ -70,13 +70,13 @@ export async function cleanDatabase(): Promise<void> {
  */
 export async function cleanDatabaseCompletely(): Promise<void> {
   const queryRunner = AppDataSource.createQueryRunner();
-  
+
   try {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     await queryRunner.query('SET session_replication_role = replica;');
-    
+
     // Pulisci TUTTE le tabelle
     const tables = [
       'notifications',
@@ -118,6 +118,25 @@ export async function resetSequences(): Promise<void> {
 }
 
 /**
+ * Carica i dati di test da test-data.sql
+ */
+export async function loadTestData(): Promise<void> {
+  console.log('Loading test data from test-data.sql...');
+  try {
+    const fs = await import('node:fs/promises');
+    const testDataPath = path.resolve(__dirname, '../../database/test-data.sql');
+    const sql = await fs.readFile(testDataPath, 'utf8');
+
+    // Execute SQL file
+    await AppDataSource.query(sql);
+    console.log('Test data loaded successfully');
+  } catch (error) {
+    console.error('Failed to load test data:', error);
+    throw error;
+  }
+}
+
+/**
  * Setup completo database di test
  */
 export async function setupTestDatabase(): Promise<void> {
@@ -127,7 +146,7 @@ export async function setupTestDatabase(): Promise<void> {
     try {
       await AppDataSource.initialize();
       console.log('Test database connected successfully');
-      
+
       // Verifica connessione con una query semplice
       const result = await AppDataSource.query('SELECT NOW()');
       console.log('Database connection verified:', result[0]);
@@ -143,7 +162,17 @@ export async function setupTestDatabase(): Promise<void> {
     }
   }
 
-  // Non pulire: i dati di test sono già presenti da test-data.sql
+  // Check if test users exist - if not, load test data
+  const testUsers = await AppDataSource.query(
+    "SELECT COUNT(*) as count FROM users WHERE username = 'testcitizen'"
+  );
+
+  if (testUsers[0].count === '0') {
+    await loadTestData();
+  } else {
+    console.log('Test data already loaded');
+  }
+
   console.log('Test database ready');
 }
 
@@ -162,7 +191,7 @@ export async function teardownTestDatabase(): Promise<void> {
  */
 export async function ensureTestDatabase(): Promise<void> {
   const dbName = process.env.DB_NAME;
-  
+
   if (dbName !== 'participium_db_test') {
     throw new Error(
       `DANGER: Not connected to test database! Current: ${dbName}\n` +

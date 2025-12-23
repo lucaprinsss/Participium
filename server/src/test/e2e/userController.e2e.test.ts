@@ -1,18 +1,18 @@
 import request from 'supertest';
 import app from '../../app';
 import { userRepository } from '@repositories/userRepository';
-import { 
-  setupTestDatabase, 
-  teardownTestDatabase, 
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
   cleanDatabase,
-  ensureTestDatabase 
+  ensureTestDatabase
 } from '../utils/dbTestUtils';
 
- // E2E Tests for User Controller
- // Uses real PostgreSQL test database with Docker
- // Tests the complete user registration flow
+// E2E Tests for User Controller
+// Uses real PostgreSQL test database with Docker
+// Tests the complete user registration flow
 
- describe('UserController E2E Tests', () => {
+describe('UserController E2E Tests', () => {
   // Setup database before all tests
   beforeAll(async () => {
     await setupTestDatabase();
@@ -52,7 +52,8 @@ import {
       expect(response.body).toHaveProperty('email', validRegistrationData.email);
       expect(response.body).toHaveProperty('first_name', validRegistrationData.first_name);
       expect(response.body).toHaveProperty('last_name', validRegistrationData.last_name);
-      expect(response.body).toHaveProperty('role_name', 'Citizen');
+      expect(response.body).toHaveProperty('roles');
+      expect(response.body.roles.some((r: any) => r.role_name === 'Citizen')).toBe(true);
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).not.toHaveProperty('passwordHash');
 
@@ -74,7 +75,7 @@ import {
       expect(user?.passwordHash).toBeDefined();
       expect(user?.passwordHash).not.toBe(validRegistrationData.password);
       expect(user?.passwordHash).toContain(':'); // salt:hash format
-      
+
       // Verify hash format: salt(32 hex chars) : hash(128 hex chars)
       const [salt, hash] = user!.passwordHash.split(':');
       expect(salt).toHaveLength(32); // 16 bytes = 32 hex chars
@@ -89,11 +90,12 @@ import {
         .expect(201);
 
       // Assert
-      expect(response.body.role_name).toBe('Citizen');
+      expect(response.body.roles.some((r: any) => r.role_name === 'Citizen')).toBe(true);
 
       // Verify in database
       const user = await userRepository.findUserByUsername(validRegistrationData.username);
-      expect(user?.departmentRole?.role?.name).toBe('Citizen');
+      const roleNames = user?.userRoles?.map(ur => ur.departmentRole?.role?.name) || [];
+      expect(roleNames).toContain('Citizen');
     });
 
     it('should allow user to login after registration', async () => {
@@ -502,16 +504,16 @@ import {
       expect(response.body).toHaveProperty('email');
       expect(response.body).toHaveProperty('first_name');
       expect(response.body).toHaveProperty('last_name');
-      expect(response.body).toHaveProperty('role_name');
-      
+      expect(response.body).toHaveProperty('roles');
+
       // Verify types
       expect(typeof response.body.id).toBe('number');
       expect(typeof response.body.username).toBe('string');
       expect(typeof response.body.email).toBe('string');
       expect(typeof response.body.first_name).toBe('string');
       expect(typeof response.body.last_name).toBe('string');
-      expect(typeof response.body.role_name).toBe('string');
-      
+      expect(Array.isArray(response.body.roles)).toBe(true);
+
       // Verify values match input
       expect(response.body.username).toBe(validRegistrationData.username);
       expect(response.body.email).toBe(validRegistrationData.email);
@@ -894,8 +896,16 @@ import {
       return Array.isArray(cookies) ? cookies : [cookies];
     };
 
-    beforeAll(async () => {
-      // Login users
+    beforeEach(async () => {
+      // Verify test users exist, if not reload test data
+      const userExists = await userRepository.existsUserByUsername(TECH_STAFF_USERNAME);
+      if (!userExists) {
+        console.log('Test users not found, reloading test data...');
+        const { loadTestData } = await import('../utils/dbTestUtils');
+        await loadTestData();
+      }
+
+      // Login users before each test to ensure fresh cookies
       techStaffCookies = await loginAs(TECH_STAFF_USERNAME, TECH_STAFF_PASSWORD);
       citizenCookies = await loginAs(CITIZEN_USERNAME, CITIZEN_PASSWORD);
     });
@@ -918,7 +928,7 @@ import {
         expect(maintainer).toHaveProperty('email');
         expect(maintainer).toHaveProperty('first_name');
         expect(maintainer).toHaveProperty('last_name');
-        expect(maintainer.role_name).toBe('External Maintainer');
+        expect(maintainer.roles.some((r: any) => r.role_name === 'External Maintainer')).toBe(true);
         expect(maintainer.company_name).toBe('Lighting Solutions SRL');
       }
 

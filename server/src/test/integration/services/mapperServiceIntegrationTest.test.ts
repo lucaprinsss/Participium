@@ -9,7 +9,7 @@ import { createMockMunicipalityUser } from '@test/utils/mockEntities';
 
 describe('Mapper Service', () => {
   describe('mapUserEntityToUserResponse', () => {
-    
+
     it('should return null if the entity is null', () => {
       // Act
       const result = mapUserEntityToUserResponse(null as any);
@@ -35,15 +35,20 @@ describe('Mapper Service', () => {
         telegramUsername: 'tele_user',
       });
       mockEntity.passwordHash = 'hash_segreto';
-      
+
       const expectedResponse: UserResponse = {
         id: 123,
         username: 'testuser',
         email: 'test@example.com',
         first_name: 'Mario',
-        last_name: 'Rossi', 
-        role_name: 'Administrator',
-        department_name: 'Administration',
+        last_name: 'Rossi',
+        roles: [
+          {
+            department_role_id: 1,
+            department_name: "Administration",
+            role_name: "Administrator",
+          },
+        ],
       };
 
       // Act
@@ -51,7 +56,7 @@ describe('Mapper Service', () => {
 
       // Assert
       expect(result).toEqual(expectedResponse);
-      
+
       expect(result).not.toHaveProperty('passwordHash');
       expect(result).not.toHaveProperty('createdAt');
       expect(result).not.toHaveProperty('telegramUsername');
@@ -59,7 +64,7 @@ describe('Mapper Service', () => {
   });
 
   describe('createErrorDTO', () => {
-    
+
     it('should create a full ErrorDTO with all properties', () => {
       // Arrange
       const expectedDTO: ErrorDTO = {
@@ -67,10 +72,10 @@ describe('Mapper Service', () => {
         name: 'NotFound',
         message: 'Resource not found',
       };
-      
+
       // Act
       const result = createErrorDTO(404, 'Resource not found', 'NotFound');
-      
+
       // Assert
       expect(result).toEqual(expectedDTO);
     });
@@ -83,7 +88,7 @@ describe('Mapper Service', () => {
 
       // Act
       const result = createErrorDTO(500);
-      
+
       // Assert
       expect(result).toEqual(expectedDTO);
       expect(result).not.toHaveProperty('name');
@@ -96,10 +101,10 @@ describe('Mapper Service', () => {
         code: 401,
         name: 'AuthError',
       };
-      
+
       // Act
       const result = createErrorDTO(401, null as any, 'AuthError');
-      
+
       // Assert
       expect(result).toEqual(expectedDTO);
       expect(result).not.toHaveProperty('message');

@@ -38,9 +38,14 @@ class UserService {
       throw new ConflictError('Email already exists');
     }
 
-    // Validate department_role_ids
-    if (!department_role_ids || department_role_ids.length === 0) {
-      throw new AppError('Citizen role IDs must be provided', 400);
+    // Validate department_role_ids - if missing, default to Citizen
+    let targetRoleIds = department_role_ids;
+    if (!targetRoleIds || targetRoleIds.length === 0) {
+      const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+      if (!citizenRole) {
+        throw new AppError('Default Citizen role not found', 500);
+      }
+      targetRoleIds = [citizenRole.id];
     }
 
     // Genera un intero tra 100000 (incluso) e 1000000 (escluso)
@@ -65,9 +70,9 @@ class UserService {
       .insert()
       .into('user_roles')
       .values(
-        department_role_ids.map(roleId => ({
-          user_id: newUser.id,
-          department_role_id: roleId
+        targetRoleIds.map(roleId => ({
+          userId: newUser.id,
+          departmentRoleId: roleId
         }))
       )
       .execute();
@@ -79,7 +84,7 @@ class UserService {
     }
 
     logInfo(`New citizen registered: ${username} (ID: ${newUser.id})`);
-    
+
     const userResponse = mapUserEntityToUserResponse(userWithRoles);
 
     if (!userResponse) {
@@ -99,7 +104,7 @@ class UserService {
    */
   async getUserById(userId: number): Promise<UserResponse | null> {
     const user = await userRepository.findUserById(userId);
-    
+
     if (!user) {
       return null;
     }
@@ -115,7 +120,7 @@ class UserService {
   async getExternalMaintainersByCategory(category: string | undefined): Promise<UserResponse[]> {
 
     const externalMaintainers = await userRepository.findExternalMaintainersByCategory(category);
-    
+
     // Batch query companies for all external maintainers
     const companyIds = [...new Set(
       externalMaintainers

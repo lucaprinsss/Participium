@@ -9,6 +9,10 @@ import { ReportCategory } from '@models/dto/ReportCategory';
 import { UserEntity } from '@models/entity/userEntity';
 import { ReportEntity } from '@models/entity/reportEntity';
 import { CommentEntity } from '@models/entity/commentEntity';
+import { UserRoleEntity } from '@models/entity/userRoleEntity';
+import { DepartmentEntity } from '@models/entity/departmentEntity';
+import { RoleEntity } from '@models/entity/roleEntity';
+import { DepartmentRoleEntity } from '@models/entity/departmentRoleEntity';
 import { NotFoundError } from '@models/errors/NotFoundError';
 
 const r = () => `_${Math.floor(Math.random() * 1000000)}`;
@@ -57,17 +61,40 @@ describe('CommentRepository Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Create test user
-    const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    // Ensure dependencies exist
+    let orgDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'Organization' });
+    if (!orgDept) {
+      orgDept = await AppDataSource.getRepository(DepartmentEntity).save({ name: 'Organization' });
+    }
+
+    let citizenRoleEnt = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Citizen' });
+    if (!citizenRoleEnt) {
+      citizenRoleEnt = await AppDataSource.getRepository(RoleEntity).save({ name: 'Citizen' });
+    }
+
+    let citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    if (!citizenRole) {
+      await AppDataSource.getRepository(DepartmentRoleEntity).save({
+        departmentId: orgDept.id,
+        roleId: citizenRoleEnt.id
+      });
+      citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    }
     testUser = await userRepository.createUserWithPassword({
       username: `user${r()}`,
       password: 'Password123!',
       email: `user${r()}@test.com`,
       firstName: 'Test',
       lastName: 'User',
-      departmentRoleId: citizenRole!.id,
       isVerified: true
     });
+
+    const userRoleRepo = AppDataSource.getRepository(UserRoleEntity);
+    await userRoleRepo.save({
+      userId: testUser.id,
+      departmentRoleId: citizenRole!.id
+    });
+
     createdUserIds.push(testUser.id);
 
     // Create test report
@@ -177,9 +204,11 @@ describe('CommentRepository Integration Tests', () => {
 
       const comments = await commentRepository.getCommentsByReportId(testReport.id);
 
-      expect(comments[0].author.departmentRole).toBeDefined();
-      expect(comments[0].author.departmentRole.role).toBeDefined();
-      expect(comments[0].author.departmentRole.role.name).toBe('Citizen');
+      expect(comments[0].author.userRoles).toBeDefined();
+      expect(comments[0].author.userRoles!.length).toBeGreaterThan(0);
+      expect(comments[0].author.userRoles![0].departmentRole).toBeDefined();
+      expect(comments[0].author.userRoles![0].departmentRole.role).toBeDefined();
+      expect(comments[0].author.userRoles![0].departmentRole.role.name).toBe('Citizen');
     });
   });
 

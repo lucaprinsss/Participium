@@ -9,6 +9,9 @@ import { departmentRoleRepository } from '@repositories/departmentRoleRepository
 import { companyRepository } from '@repositories/companyRepository';
 import { reportRepository } from '@repositories/reportRepository';
 import { In } from 'typeorm';
+import { DepartmentEntity } from "@models/entity/departmentEntity";
+import { DepartmentRoleEntity } from "@models/entity/departmentRoleEntity";
+import { RoleEntity } from "@models/entity/roleEntity";
 
 
 import { Request, Response } from 'express';
@@ -32,6 +35,39 @@ describe('ReportController Integration Tests', () => {
   beforeAll(async () => {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
+    }
+
+    // Ensure Public Lighting Department exists
+    let lightingDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'Public Lighting Department' });
+    if (!lightingDept) {
+      lightingDept = await AppDataSource.getRepository(DepartmentEntity).save({
+        name: 'Public Lighting Department',
+        description: 'Handles street lights'
+      });
+    }
+
+    // Ensure Electrical staff member role exists
+    let staffRoleName = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Electrical staff member' });
+    if (!staffRoleName) {
+      staffRoleName = await AppDataSource.getRepository(RoleEntity).save({
+        name: 'Electrical staff member',
+        description: 'Staff dealing with electrical issues'
+      });
+    }
+
+    // Ensure link exists
+    let staffRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({
+      departmentId: lightingDept.id,
+      roleId: staffRoleName.id
+    });
+
+    if (!staffRole) {
+      await AppDataSource.getRepository(DepartmentRoleEntity).save({
+        departmentId: lightingDept.id,
+        roleId: staffRoleName.id,
+        department: lightingDept,
+        role: staffRoleName
+      });
     }
   });
 
@@ -72,19 +108,28 @@ describe('ReportController Integration Tests', () => {
       throw new Error('Citizen role not found in database');
     }
 
+    const username = `report_test_user${r()}`;
+    const password = 'Password123!';
     TEST_USER_CREDENTIALS = {
-      username: `report_test_user${r()}`,
-      password: 'Password123!',
+      username,
+      password
+    };
+
+    // Create citizen user first (without role)
+    const user = await userRepository.createUserWithPassword({
+      username,
+      password,
       email: `report${r()}@test.com`,
       firstName: 'Report',
       lastName: 'Test',
-      departmentRoleId: citizenDeptRole.id
-    };
-
-    const user = await userRepository.createUserWithPassword({
-      ...TEST_USER_CREDENTIALS,
       emailNotificationsEnabled: true,
       isVerified: true
+    });
+
+    // Manually assign Citizen role
+    await AppDataSource.getRepository('user_roles').save({
+      userId: user.id,
+      departmentRoleId: citizenDeptRole.id
     });
 
     createdUserIds.push(user.id);
@@ -125,7 +170,7 @@ describe('ReportController Integration Tests', () => {
     });
 
     it('should fail with invalid data (400)', async () => {
-       const invalidData = {
+      const invalidData = {
         title: 'Short', // Too short (min 5 usually, but check model)
         description: 'Desc',
         category: 'INVALID_CATEGORY',
@@ -138,7 +183,7 @@ describe('ReportController Integration Tests', () => {
 
       expect(response.status).toBe(400);
     });
-    
+
     it('should fail if not authenticated (401)', async () => {
       const unauthAgent = request.agent(app);
       const reportData = {
@@ -152,22 +197,22 @@ describe('ReportController Integration Tests', () => {
       const response = await unauthAgent
         .post('/api/reports')
         .send(reportData);
-        
+
       expect(response.status).toBe(401);
     });
   });
 
   describe('GET /api/reports', () => {
     it('should return all reports for the user (200)', async () => {
-       // Create a report first via API to ensure it exists
-       const reportData = {
+      // Create a report first via API to ensure it exists
+      const reportData = {
         title: 'Report for Get',
         description: 'Description for get',
         category: ReportCategory.WASTE,
         location: { latitude: 45.0703, longitude: 7.6869 },
         photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='],
       };
-      
+
       const createRes = await agent.post('/api/reports').send(reportData);
       expect(createRes.status).toBe(201);
       createdReportIds.push(createRes.body.id);
@@ -651,9 +696,12 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
       email: `techstaff${r()}@test.com`,
       firstName: 'Tech',
       lastName: 'Staff',
-      departmentRoleId: techStaffRole.id,
       emailNotificationsEnabled: true,
       isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: techStaffUser.id,
+      departmentRoleId: techStaffRole.id
     });
     createdUserIds.push(techStaffUser.id);
 
@@ -673,9 +721,12 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
       email: `citizen${r()}@test.com`,
       firstName: 'Citizen',
       lastName: 'User',
-      departmentRoleId: citizenRole.id,
       emailNotificationsEnabled: true,
       isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: citizenUser.id,
+      departmentRoleId: citizenRole.id
     });
     createdUserIds.push(citizenUser.id);
 
@@ -706,10 +757,12 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
         email: `extmaint${r()}@test.com`,
         firstName: 'External',
         lastName: 'Maintainer',
-        departmentRoleId: externalMaintainerRole.id,
-        emailNotificationsEnabled: true,
         companyId: companyId,
         isVerified: true
+      });
+      await AppDataSource.getRepository('user_roles').save({
+        userId: externalMaintainer.id,
+        departmentRoleId: externalMaintainerRole.id
       });
       createdUserIds.push(externalMaintainer.id);
       externalMaintainerId = externalMaintainer.id;
@@ -724,9 +777,12 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
         email: `reporter${r()}@test.com`,
         firstName: 'Report',
         lastName: 'Creator',
-        departmentRoleId: citizenRole.id,
         emailNotificationsEnabled: true,
         isVerified: true
+      });
+      await AppDataSource.getRepository('user_roles').save({
+        userId: reportCreator.id,
+        departmentRoleId: citizenRole.id
       });
       createdUserIds.push(reportCreator.id);
 
@@ -742,13 +798,13 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
         },
         [] // No photos
       );
-      
+
       // Update status to ASSIGNED (createReport sets it to PENDING_APPROVAL)
       await AppDataSource.query(
         'UPDATE reports SET status = $1 WHERE id = $2',
         [ReportStatus.ASSIGNED, report.id]
       );
-      
+
       reportId = report.id;
       createdReportIds.push(reportId);
     });
@@ -765,8 +821,8 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
     });
 
     it('should fail if report is not in Assigned status (400)', async () => {
-      await AppDataSource.getRepository(ReportEntity).update(reportId, { 
-        status: ReportStatus.PENDING_APPROVAL 
+      await AppDataSource.getRepository(ReportEntity).update(reportId, {
+        status: ReportStatus.PENDING_APPROVAL
       });
 
       const response = await techStaffAgent
@@ -787,9 +843,12 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
         email: `regular${r()}@test.com`,
         firstName: 'Regular',
         lastName: 'User',
-        departmentRoleId: citizenRole.id,
         emailNotificationsEnabled: true,
         isVerified: true
+      });
+      await AppDataSource.getRepository('user_roles').save({
+        userId: regularUser.id,
+        departmentRoleId: citizenRole.id
       });
       createdUserIds.push(regularUser.id);
 
@@ -815,10 +874,13 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
         email: `wrongmaint${r()}@test.com`,
         firstName: 'Wrong',
         lastName: 'Maintainer',
-        departmentRoleId: externalMaintainerRole.id,
         emailNotificationsEnabled: true,
         companyId: wrongCompanyId,
         isVerified: true
+      });
+      await AppDataSource.getRepository('user_roles').save({
+        userId: wrongMaintainer.id,
+        departmentRoleId: externalMaintainerRole.id
       });
       createdUserIds.push(wrongMaintainer.id);
 

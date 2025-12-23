@@ -1,9 +1,112 @@
 -- ============================================
--- Test Data for E2E Testing - V4.2 (with email verification)
+-- Test Data for E2E Testing - V5.0 (Multi-Role Support)
 -- ============================================
 
 -- Clear existing data (safety check)
 TRUNCATE TABLE users CASCADE;
+
+-- Reset sequences to ensure consistent IDs
+ALTER SEQUENCE users_id_seq RESTART WITH 1;
+ALTER SEQUENCE companies_id_seq RESTART WITH 1;
+ALTER SEQUENCE reports_id_seq RESTART WITH 1;
+ALTER SEQUENCE photos_id_seq RESTART WITH 1;
+
+-- ============================================
+-- INSERT REFERENCE DATA (Extracted from seed.sql)
+-- ============================================
+
+-- 1. Populate the Departments table
+INSERT INTO departments (name)
+VALUES
+    ('Organization'),
+    ('Water and Sewer Services Department'),
+    ('Public Infrastructure and Accessibility Department'),
+    ('Public Lighting Department'),
+    ('Waste Management Department'),
+    ('Mobility and Traffic Management Department'),
+    ('Parks, Green Areas and Recreation Department'),
+    ('General Services Department'),
+    ('External Service Providers')
+ON CONFLICT (name) DO NOTHING;
+
+-- 2. Populate the Roles table
+INSERT INTO roles (name, description)
+VALUES
+    ('Citizen', 'Standard citizen user'),
+    ('Administrator', 'System Administrator with full access'),
+    ('Municipal Public Relations Officer', 'Reviews and approves/rejects citizen reports'),
+    ('Department Director', 'Director of a department'),
+    ('Water Network staff member', 'Manages water network maintenance'),
+    ('Sewer System staff member', 'Manages sewer system maintenance'),
+    ('Road Maintenance staff member', 'Maintains road infrastructure'),
+    ('Accessibility staff member', 'Ensures accessibility compliance'),
+    ('Electrical staff member', 'Manages electrical systems'),
+    ('Recycling Program staff member', 'Coordinates recycling programs'),
+    ('Traffic management staff member', 'Manages traffic systems'),
+    ('Parks Maintenance staff member', 'Maintains parks and green areas'),
+    ('Customer Service staff member', 'Provides customer service'),
+    ('Building Maintenance staff member', 'Maintains building facilities'),
+    ('Support Officer', 'Provides general support services'),
+    ('External Maintainer', 'External company contractor specialized in specific report categories')
+ON CONFLICT (name) DO NOTHING;
+
+-- 3. Link Departments and Roles to create "Positions"
+INSERT INTO department_roles (department_id, role_id)
+VALUES
+    -- System roles (Organization)
+    ((SELECT id FROM departments WHERE name = 'Organization'), (SELECT id FROM roles WHERE name = 'Citizen')),
+    ((SELECT id FROM departments WHERE name = 'Organization'), (SELECT id FROM roles WHERE name = 'Administrator')),
+    ((SELECT id FROM departments WHERE name = 'Organization'), (SELECT id FROM roles WHERE name = 'Municipal Public Relations Officer')),
+
+    -- Water and Sewer Services Department
+    ((SELECT id FROM departments WHERE name = 'Water and Sewer Services Department'), (SELECT id FROM roles WHERE name = 'Department Director')),
+    ((SELECT id FROM departments WHERE name = 'Water and Sewer Services Department'), (SELECT id FROM roles WHERE name = 'Water Network staff member')),
+    ((SELECT id FROM departments WHERE name = 'Water and Sewer Services Department'), (SELECT id FROM roles WHERE name = 'Sewer System staff member')),
+
+    -- Public Infrastructure and Accessibility Department
+    ((SELECT id FROM departments WHERE name = 'Public Infrastructure and Accessibility Department'), (SELECT id FROM roles WHERE name = 'Department Director')),
+    ((SELECT id FROM departments WHERE name = 'Public Infrastructure and Accessibility Department'), (SELECT id FROM roles WHERE name = 'Road Maintenance staff member')),
+    ((SELECT id FROM departments WHERE name = 'Public Infrastructure and Accessibility Department'), (SELECT id FROM roles WHERE name = 'Accessibility staff member')),
+
+    -- Public Lighting Department
+    ((SELECT id FROM departments WHERE name = 'Public Lighting Department'), (SELECT id FROM roles WHERE name = 'Department Director')),
+    ((SELECT id FROM departments WHERE name = 'Public Lighting Department'), (SELECT id FROM roles WHERE name = 'Electrical staff member')),
+
+    -- Waste Management Department
+    ((SELECT id FROM departments WHERE name = 'Waste Management Department'), (SELECT id FROM roles WHERE name = 'Department Director')),
+    ((SELECT id FROM departments WHERE name = 'Waste Management Department'), (SELECT id FROM roles WHERE name = 'Recycling Program staff member')),
+
+    -- Mobility and Traffic Management Department
+    ((SELECT id FROM departments WHERE name = 'Mobility and Traffic Management Department'), (SELECT id FROM roles WHERE name = 'Department Director')),
+    ((SELECT id FROM departments WHERE name = 'Mobility and Traffic Management Department'), (SELECT id FROM roles WHERE name = 'Traffic management staff member')),
+
+    -- Parks, Green Areas and Recreation Department
+    ((SELECT id FROM departments WHERE name = 'Parks, Green Areas and Recreation Department'), (SELECT id FROM roles WHERE name = 'Department Director')),
+    ((SELECT id FROM departments WHERE name = 'Parks, Green Areas and Recreation Department'), (SELECT id FROM roles WHERE name = 'Parks Maintenance staff member')),
+
+    -- General Services Department
+    ((SELECT id FROM departments WHERE name = 'General Services Department'), (SELECT id FROM roles WHERE name = 'Department Director')),
+    ((SELECT id FROM departments WHERE name = 'General Services Department'), (SELECT id FROM roles WHERE name = 'Customer Service staff member')),
+    ((SELECT id FROM departments WHERE name = 'General Services Department'), (SELECT id FROM roles WHERE name = 'Building Maintenance staff member')),
+    ((SELECT id FROM departments WHERE name = 'General Services Department'), (SELECT id FROM roles WHERE name = 'Support Officer')),
+
+    -- External Service Providers Department
+    ((SELECT id FROM departments WHERE name = 'External Service Providers'), (SELECT id FROM roles WHERE name = 'External Maintainer'))
+ON CONFLICT (department_id, role_id) DO NOTHING;
+
+-- 4. Populate the category-role mapping table
+INSERT INTO category_role_mapping (category, role_id)
+VALUES
+    ('Water Supply - Drinking Water', (SELECT id FROM roles WHERE name = 'Water Network staff member')),
+    ('Sewer System', (SELECT id FROM roles WHERE name = 'Sewer System staff member')),
+    ('Architectural Barriers', (SELECT id FROM roles WHERE name = 'Accessibility staff member')),
+    ('Roads and Urban Furnishings', (SELECT id FROM roles WHERE name = 'Road Maintenance staff member')),
+    ('Public Lighting', (SELECT id FROM roles WHERE name = 'Electrical staff member')),
+    ('Waste', (SELECT id FROM roles WHERE name = 'Recycling Program staff member')),
+    ('Road Signs and Traffic Lights', (SELECT id FROM roles WHERE name = 'Traffic management staff member')),
+    ('Public Green Areas and Playgrounds', (SELECT id FROM roles WHERE name = 'Parks Maintenance staff member')),
+    ('Other', (SELECT id FROM roles WHERE name = 'Support Officer'))
+ON CONFLICT (category) DO NOTHING;
 
 -- ============================================
 -- INSERT TEST USERS
@@ -18,7 +121,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   email_notifications_enabled,
   is_verified,
   created_at
@@ -28,10 +130,6 @@ INSERT INTO users (
   '06823ad32eca25e900d651552cbab5d3:5a565be83f11375d46478da34a525b902bd83974501f229db2baff163a5ab7a397ef440214f0558a1c120f511e7307547577151ca17ac10263d8ab521e8307eb',
   'Test',
   'Citizen',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Organization' AND r.name = 'Citizen'),
   true,
   true,
   CURRENT_TIMESTAMP
@@ -46,7 +144,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   email_notifications_enabled,
   is_verified,
   created_at
@@ -56,12 +153,8 @@ INSERT INTO users (
   'a8157c4cbabc7231d0c471354393d547:86e29403471520224daaec377dfc9c814141708e551957077843fa26cb7a4eabc0da62e82ef6cc204e304da61c12131bbba843319193e275bb79c74ac5cca442',
   'Test',
   'Municipality',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Public Infrastructure and Accessibility Department' AND r.name = 'Department Director'),
   true,
-  true,  -- Test users are pre-verified
+  true,
   CURRENT_TIMESTAMP
 );
 
@@ -74,7 +167,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   email_notifications_enabled,
   is_verified,
   created_at
@@ -84,10 +176,6 @@ INSERT INTO users (
   '8fe97f776b7ee432bc26b59685766dde:0a98fd0c723f3ea46e8216ea964d35502e423f7e030329027876931fc26325f0557ae2f6701f8f179fcdf1bbdb44897654e2a7cffb5e87c0d100094b791c3e83',
   'Test',
   'Admin',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Organization' AND r.name = 'Administrator'),
   true,
   true,
   CURRENT_TIMESTAMP
@@ -102,7 +190,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   email_notifications_enabled,
   is_verified,
   created_at
@@ -112,10 +199,6 @@ INSERT INTO users (
   '4c2c3c54743456758e61a087dd614843:f6058f47f69fe0ee4c617bb96d79209727e1f41905f841bb39271ea295bb90294809bddac0651b065f1082d512bc045009a3246220e3b3105606dbf7e3d9e5e7',
   'No',
   'Notifications',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Organization' AND r.name = 'Citizen'),
   false,
   true,
   CURRENT_TIMESTAMP
@@ -130,7 +213,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   email_notifications_enabled,
   is_verified,
   created_at
@@ -140,15 +222,12 @@ INSERT INTO users (
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
   'Test',
   'StaffMember',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Water and Sewer Services Department' AND r.name = 'Water Network staff member'),
   true,
   true,
   CURRENT_TIMESTAMP
 );
 
+-- Test User 6: Road Staff
 -- Username: testroadstaff
 -- Password: StaffPass123!
 INSERT INTO users (
@@ -157,7 +236,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   email_notifications_enabled,
   is_verified,
   created_at
@@ -167,15 +245,12 @@ INSERT INTO users (
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
   'Test',
   'RoadStaff',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Public Infrastructure and Accessibility Department' AND r.name = 'Road Maintenance staff member'),
   true,
   true,
   CURRENT_TIMESTAMP
 );
 
+-- Test User 7: Sewer Staff
 -- Username: testsewerstaff
 -- Password: StaffPass123!
 INSERT INTO users (
@@ -184,7 +259,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   email_notifications_enabled,
   is_verified,
   created_at
@@ -194,15 +268,12 @@ INSERT INTO users (
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
   'Test',
   'SewerStaff',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Water and Sewer Services Department' AND r.name = 'Sewer System staff member'),
   true,
   true,
   CURRENT_TIMESTAMP
 );
 
+-- Test User 8: PRO
 -- Username: testpro
 -- Password: StaffPass123!
 INSERT INTO users (
@@ -211,7 +282,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   email_notifications_enabled,
   is_verified,
   created_at
@@ -221,15 +291,12 @@ INSERT INTO users (
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
   'Test',
   'PRO',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'Organization' AND r.name = 'Municipal Public Relations Officer'),
   true,
   true,
   CURRENT_TIMESTAMP
 );
 
+-- Test User 9: External Maintainer
 -- Username: testexternal
 -- Password: StaffPass123!
 INSERT INTO users (
@@ -238,7 +305,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   email_notifications_enabled,
   is_verified,
   created_at
@@ -248,10 +314,6 @@ INSERT INTO users (
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
   'Test',
   'External',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
   true,
   true,
   CURRENT_TIMESTAMP
@@ -273,6 +335,137 @@ VALUES ('EcoWaste Management', 'Waste', CURRENT_TIMESTAMP);
 -- Company 3: Roads Maintenance company
 INSERT INTO companies (name, category, created_at)
 VALUES ('Road Repair Co.', 'Roads and Urban Furnishings', CURRENT_TIMESTAMP);
+
+
+-- ============================================
+-- ASSIGN ROLES TO USERS (V5.0 Multi-Role)
+-- ============================================
+
+-- Assign Citizen role to testcitizen
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testcitizen'
+  AND d.name = 'Organization' 
+  AND r.name = 'Citizen';
+
+-- Assign Department Director role to testmunicipality
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testmunicipality'
+  AND d.name = 'Public Infrastructure and Accessibility Department' 
+  AND r.name = 'Department Director';
+
+-- Assign Administrator role to testadmin
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testadmin'
+  AND d.name = 'Organization' 
+  AND r.name = 'Administrator';
+
+-- Assign Citizen role to testuser_nonotif
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testuser_nonotif'
+  AND d.name = 'Organization' 
+  AND r.name = 'Citizen';
+
+-- Assign Water Network staff member role to teststaffmember
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'teststaffmember'
+  AND d.name = 'Water and Sewer Services Department' 
+  AND r.name = 'Water Network staff member';
+
+-- Assign Road Maintenance staff member role to testroadstaff
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testroadstaff'
+  AND d.name = 'Public Infrastructure and Accessibility Department' 
+  AND r.name = 'Road Maintenance staff member';
+
+-- Assign Sewer System staff member role to testsewerstaff
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testsewerstaff'
+  AND d.name = 'Water and Sewer Services Department' 
+  AND r.name = 'Sewer System staff member';
+
+-- Assign PRO role to testpro
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testpro'
+  AND d.name = 'Organization' 
+  AND r.name = 'Municipal Public Relations Officer';
+
+-- Assign External Maintainer role to testexternal
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testexternal'
+  AND d.name = 'External Service Providers' 
+  AND r.name = 'External Maintainer';
 
 
 -- ============================================
@@ -298,7 +491,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   company_id,
   email_notifications_enabled,
   is_verified,
@@ -309,15 +501,24 @@ INSERT INTO users (
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
   'Mario',
   'Rossi',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
   (SELECT id FROM companies WHERE name = 'Lighting Solutions SRL'),
   true,
   true,
   CURRENT_TIMESTAMP
 );
+
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testexternal2'
+  AND d.name = 'External Service Providers' 
+  AND r.name = 'External Maintainer';
 
 -- External Maintainer 3: Waste
 -- Username: testexternal3
@@ -328,7 +529,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   company_id,
   email_notifications_enabled,
   is_verified,
@@ -339,15 +539,24 @@ INSERT INTO users (
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
   'Giuseppe',
   'Verdi',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
   (SELECT id FROM companies WHERE name = 'EcoWaste Management'),
   true,
   true,
   CURRENT_TIMESTAMP
 );
+
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testexternal3'
+  AND d.name = 'External Service Providers' 
+  AND r.name = 'External Maintainer';
 
 -- External Maintainer 4: Roads and Urban Furnishings
 -- Username: testexternal4
@@ -358,7 +567,6 @@ INSERT INTO users (
   password_hash, 
   first_name, 
   last_name, 
-  department_role_id,
   company_id,
   email_notifications_enabled,
   is_verified,
@@ -369,15 +577,24 @@ INSERT INTO users (
   'e997619942c87f77eee0c8efbe26f0c2:c8bc8cce60ee1dbacbaed68218a1e341622a7a3591e3b1d9b8f432110d2dfc6f25b9b3868b5fbc30f8bd98f6e4341a344113491cd28602652ce91ba07ac45469',
   'Luigi',
   'Bianchi',
-  (SELECT dr.id FROM department_roles dr
-   JOIN departments d ON dr.department_id = d.id
-   JOIN roles r ON dr.role_id = r.id
-   WHERE d.name = 'External Service Providers' AND r.name = 'External Maintainer'),
   (SELECT id FROM companies WHERE name = 'Road Repair Co.'),
   true,
   true,
   CURRENT_TIMESTAMP
 );
+
+INSERT INTO user_roles (user_id, department_role_id, created_at)
+SELECT 
+  u.id,
+  dr.id,
+  CURRENT_TIMESTAMP
+FROM users u
+CROSS JOIN department_roles dr
+INNER JOIN departments d ON dr.department_id = d.id
+INNER JOIN roles r ON dr.role_id = r.id
+WHERE u.username = 'testexternal4'
+  AND d.name = 'External Service Providers' 
+  AND r.name = 'External Maintainer';
 
 
 -- ============================================
@@ -574,8 +791,6 @@ WHERE citizen.username = 'testcitizen'
 -- ============================================
 -- INSERT PHOTOS FOR TEST REPORTS
 -- ============================================
--- Le foto sono copiate nell'immagine Docker dal Dockerfile
--- Percorsi relativi: /uploads/reports/{reportId}/{filename}
 
 -- Foto per Report 1
 INSERT INTO photos (report_id, storage_url, created_at)
@@ -603,38 +818,29 @@ VALUES (6, '/uploads/reports/6/5.jpg', CURRENT_TIMESTAMP - INTERVAL '1 day');
 
 
 -- ============================================
--- VERIFY DATA
+-- VERIFY DATA (V5.0 Multi-Role)
 -- ============================================
 
--- Display inserted test users (excluding password hash and verification code)
+-- Display inserted test users with their roles
 SELECT 
   u.id,
   u.username,
   u.email,
   u.first_name,
   u.last_name,
-  r.name AS role_name,
-  d.name AS department_name,
+  STRING_AGG(DISTINCT r.name, ', ') AS roles,
+  STRING_AGG(DISTINCT d.name, ', ') AS departments,
   u.email_notifications_enabled,
-  u.company_name,
+  c.name AS company_name,
   u.is_verified,
-  CASE 
-    WHEN u.verification_code IS NOT NULL THEN 'HAS_CODE'
-    ELSE NULL
-  END AS verification_status,
-  CASE 
-    WHEN u.verification_code_expires_at IS NOT NULL THEN 
-      CASE 
-        WHEN u.verification_code_expires_at > CURRENT_TIMESTAMP THEN 'VALID'
-        ELSE 'EXPIRED'
-      END
-    ELSE NULL
-  END AS code_validity,
   u.created_at
 FROM users u
-JOIN department_roles dr ON u.department_role_id = dr.id
-JOIN roles r ON dr.role_id = r.id
-JOIN departments d ON dr.department_id = d.id
+LEFT JOIN user_roles ur ON u.id = ur.user_id
+LEFT JOIN department_roles dr ON ur.department_role_id = dr.id
+LEFT JOIN roles r ON dr.role_id = r.id
+LEFT JOIN departments d ON dr.department_id = d.id
+LEFT JOIN companies c ON u.company_id = c.id
+GROUP BY u.id, u.username, u.email, u.first_name, u.last_name, u.email_notifications_enabled, c.name, u.is_verified, u.created_at
 ORDER BY u.id ASC;
 
 -- Display inserted test reports
