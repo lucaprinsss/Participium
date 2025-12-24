@@ -16,8 +16,9 @@ import { storageService } from '@services/storageService';
 import * as photoValidationUtils from '@utils/photoValidationUtils';
 import * as mapperService from '@services/mapperService';
 import { mapReportEntityToReportResponse } from '../../../services/mapperService';
-import { createMockMunicipalityUser, createMockRole, createMockUserWithRole } from '@test/utils/mockEntities';
-import { RoleEntity } from '@models/entity/roleEntity';
+import { createMockMunicipalityUser, createMockUser, createMockUserWithRole } from '@test/utils/mockEntities';
+import { messageRepository } from '@repositories/messageRepository';
+import { createNotification } from '@repositories/notificationRepository';
 
 jest.mock('@repositories/userRepository');
 jest.mock('@repositories/reportRepository');
@@ -27,6 +28,9 @@ jest.mock('@services/storageService');
 jest.mock('@services/mapperService');
 jest.mock('@repositories/categoryRoleRepository');
 jest.mock('@utils/photoValidationUtils');
+jest.mock('@repositories/notificationRepository');
+jest.mock('@repositories/messageRepository');
+jest.mock('@repositories/messageRepository');
 
 
 // Helper function to create mock report entities
@@ -84,19 +88,7 @@ describe('ReportService', () => {
     jest.clearAllMocks();
   });
 
-  describe('getAllCategories', () => {
-    it('should return all report categories', async () => {
-      const categories = await reportService.getAllCategories();
 
-      expect(categories).toBeDefined();
-      expect(Array.isArray(categories)).toBe(true);
-      expect(categories.length).toBeGreaterThan(0);
-      expect(categories).toContain(ReportCategory.ROADS);
-      expect(categories).toContain(ReportCategory.PUBLIC_LIGHTING);
-    });
-  });
-
-  describe('validateLocation', () => {
     it('should throw BadRequestError when location is undefined', () => {
       const callWithUndefined = () => reportService.validateLocation(undefined as any);
 
@@ -698,7 +690,6 @@ describe('ReportService', () => {
         .toThrow('Mapping failed');
     });
   });
-});
 
 
 describe('ReportService additional unit tests', () => {
@@ -706,10 +697,86 @@ describe('ReportService additional unit tests', () => {
     jest.clearAllMocks();
   });
 
+  describe('getMapReports', () => {
+    it('should return individual reports when zoom is greater than threshold', async () => {
+      const params = { zoom: 15, minLat: 45, maxLat: 46, minLng: 7, maxLng: 8, category: 'Waste' };
+      const mockReports = [{ id: 1, title: 'Report 1' }];
+      jest.spyOn(reportRepository, 'getApprovedReportsForMap').mockResolvedValue(mockReports as any);
+
+      const result = await reportService.getMapReports(params);
+
+      expect(reportRepository.getApprovedReportsForMap).toHaveBeenCalledWith({
+        minLat: 45,
+        maxLat: 46,
+        minLng: 7,
+        maxLng: 8,
+        category: ReportCategory.WASTE
+      });
+      expect(result).toBe(mockReports);
+    });
+
+    it('should return individual reports when no zoom is provided', async () => {
+      const params = { minLat: 45, maxLat: 46, minLng: 7, maxLng: 8 };
+      const mockReports = [{ id: 1, title: 'Report 1' }];
+      jest.spyOn(reportRepository, 'getApprovedReportsForMap').mockResolvedValue(mockReports as any);
+
+      const result = await reportService.getMapReports(params);
+
+      expect(reportRepository.getApprovedReportsForMap).toHaveBeenCalledWith({
+        minLat: 45,
+        maxLat: 46,
+        minLng: 7,
+        maxLng: 8,
+        category: undefined
+      });
+      expect(result).toBe(mockReports);
+    });
+
+    it('should return clustered reports when zoom is less than or equal to threshold', async () => {
+      const params = { zoom: 10, minLat: 45, maxLat: 46, minLng: 7, maxLng: 8 };
+      const mockClusters = [{ id: 1, count: 5 }];
+      jest.spyOn(reportRepository, 'getClusteredReports').mockResolvedValue(mockClusters as any);
+
+      const result = await reportService.getMapReports(params);
+
+      expect(reportRepository.getClusteredReports).toHaveBeenCalledWith(10, {
+        minLat: 45,
+        maxLat: 46,
+        minLng: 7,
+        maxLng: 8,
+        category: undefined
+      });
+      expect(result).toBe(mockClusters);
+    });
+
+    it('should return clustered reports when zoom equals threshold', async () => {
+      const params = { zoom: 12, minLat: 45, maxLat: 46, minLng: 7, maxLng: 8 };
+      const mockClusters = [{ id: 1, count: 5 }];
+      jest.spyOn(reportRepository, 'getClusteredReports').mockResolvedValue(mockClusters as any);
+
+      const result = await reportService.getMapReports(params);
+
+      expect(reportRepository.getClusteredReports).toHaveBeenCalledWith(12, {
+        minLat: 45,
+        maxLat: 46,
+        minLng: 7,
+        maxLng: 8,
+        category: undefined
+      });
+      expect(result).toBe(mockClusters);
+    });
+  });
+
   describe('getAllCategories', () => {
     it('returns all enum values', async () => {
       const result = await reportService.getAllCategories();
       expect(result).toEqual(Object.values(ReportCategory));
+    });
+  });
+
+  describe('getReportById', () => {
+    it('should throw Not implemented yet error', async () => {
+      await expect(reportService.getReportById()).rejects.toThrow('Not implemented yet');
     });
   });
 
@@ -729,7 +796,7 @@ describe('ReportService additional unit tests', () => {
       const created = { id: 1, status: ReportStatus.PENDING_APPROVAL } as any;
       jest.spyOn(reportRepository, 'createReport').mockResolvedValue(created);
       jest.spyOn(photoRepository, 'savePhotosForReport').mockResolvedValue(undefined as any);
-      const photos = [{ id: 1, storageUrl: 'uploads/reports/1/photo1.png' } as any];
+      const photos = [{ id: 1, storage_url: 'uploads/reports/1/photo1.png' } as any];
       jest.spyOn(photoRepository, 'getPhotosByReportId').mockResolvedValue(photos as any);
       const expected = { id: 1 } as any;
       jest.spyOn(mapperService, 'mapReportEntityToResponse').mockReturnValue(expected);
@@ -1891,6 +1958,200 @@ describe('ReportService additional unit tests', () => {
 
         expect(commentRepository.deleteComment).not.toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('getReportByAddress', () => {
+    it('should return reports found by address', async () => {
+      const mockReports = [createMockReport()];
+      const mockMappedReports = [mapReportEntityToReportResponse(createMockReport())];
+
+      jest.spyOn(reportRepository, 'findReportsByAddress').mockResolvedValue(mockReports);
+      (reportService as any).mapReportsWithCompanyNames = jest.fn().mockResolvedValue(mockMappedReports);
+
+      const result = await reportService.getReportByAddress('Via Roma 1');
+
+      expect(reportRepository.findReportsByAddress).toHaveBeenCalledWith('Via Roma 1');
+      expect((reportService as any).mapReportsWithCompanyNames).toHaveBeenCalledWith(mockReports);
+      expect(result).toEqual(mockMappedReports);
+    });
+
+    it('should return empty array when no reports found', async () => {
+      jest.spyOn(reportRepository, 'findReportsByAddress').mockResolvedValue([]);
+      (reportService as any).mapReportsWithCompanyNames = jest.fn().mockResolvedValue([]);
+
+      const result = await reportService.getReportByAddress('Nonexistent Address');
+
+      expect(reportRepository.findReportsByAddress).toHaveBeenCalledWith('Nonexistent Address');
+      expect((reportService as any).mapReportsWithCompanyNames).toHaveBeenCalledWith([]);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('sendMessage', () => {
+    const mockMessage = {
+      id: 1,
+      reportId: 1,
+      senderId: 1,
+      content: 'Test message',
+      createdAt: new Date(),
+      report: {} as any,
+      sender: {} as any,
+    };
+
+    const mockMessageResponse = {
+      id: 1,
+      reportId: 1,
+      author: {
+        id: 1,
+        username: 'testuser',
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'TECHNICAL_STAFF',
+      },
+      content: 'Test message',
+      createdAt: new Date(),
+    };
+
+    beforeEach(() => {
+      jest.spyOn(messageRepository, 'createMessage').mockResolvedValue(mockMessage);
+      jest.spyOn(mapperService, 'mapMessageToResponse').mockReturnValue(mockMessageResponse);
+    });
+
+    it('should send message successfully', async () => {
+      const mockReport = createMockReport({ assigneeId: 1, reporterId: 2 });
+
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      (createNotification as jest.MockedFunction<typeof createNotification>).mockResolvedValue({} as any);
+
+      const result = await reportService.sendMessage(1, 1, 'Test message content');
+
+      expect(reportRepository.findReportById).toHaveBeenCalledWith(1);
+      expect(messageRepository.createMessage).toHaveBeenCalledWith(1, 1, 'Test message content');
+      expect(createNotification).toHaveBeenCalledWith({
+        userId: 2,
+        reportId: 1,
+        content: 'You have a new message about your report: "Test Report"',
+      });
+      expect(mapperService.mapMessageToResponse).toHaveBeenCalledWith(mockMessage);
+      expect(result).toEqual(mockMessageResponse);
+    });
+
+    it('should throw BadRequestError for empty content', async () => {
+      await expect(reportService.sendMessage(1, 1, ''))
+        .rejects
+        .toThrow(BadRequestError);
+      await expect(reportService.sendMessage(1, 1, '   '))
+        .rejects
+        .toThrow(BadRequestError);
+    });
+
+    it('should throw BadRequestError for content exceeding 2000 characters', async () => {
+      const longContent = 'a'.repeat(2001);
+      await expect(reportService.sendMessage(1, 1, longContent))
+        .rejects
+        .toThrow(BadRequestError);
+    });
+
+    it('should throw NotFoundError when report not found', async () => {
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(null);
+
+      await expect(reportService.sendMessage(1, 1, 'Test message'))
+        .rejects
+        .toThrow(NotFoundError);
+    });
+
+    it('should throw InsufficientRightsError when sender is not the assignee', async () => {
+      const mockReport = createMockReport({ assigneeId: 2 }); // Different assignee
+
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+
+      await expect(reportService.sendMessage(1, 1, 'Test message'))
+        .rejects
+        .toThrow(InsufficientRightsError);
+    });
+
+    it('should trim content before saving', async () => {
+      const mockReport = createMockReport({ assigneeId: 1, reporterId: 2 });
+
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+      (createNotification as jest.MockedFunction<typeof createNotification>).mockResolvedValue({} as any);
+
+      await reportService.sendMessage(1, 1, '  Test message with spaces  ');
+
+      expect(messageRepository.createMessage).toHaveBeenCalledWith(1, 1, 'Test message with spaces');
+    });
+  });
+
+  describe('getMessages', () => {
+    const mockMessage = {
+      id: 1,
+      reportId: 1,
+      senderId: 1,
+      content: 'Test message',
+      createdAt: new Date(),
+      report: {} as any,
+      sender: {} as any,
+    };
+
+    const mockMessageResponse = {
+      id: 1,
+      reportId: 1,
+      author: {
+        id: 1,
+        username: 'testuser',
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'TECHNICAL_STAFF',
+      },
+      content: 'Test message',
+      createdAt: new Date(),
+    };
+
+    beforeEach(() => {
+      jest.spyOn(messageRepository, 'getMessagesByReportId').mockResolvedValue([mockMessage]);
+      (mapperService.mapMessageToResponse as jest.Mock).mockReturnValue(mockMessageResponse);
+    });
+
+    it('should return messages for assignee', async () => {
+      const mockReport = createMockReport({ assigneeId: 1, reporterId: 2 });
+
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+
+      const result = await reportService.getMessages(1, 1); // userId = assigneeId
+
+      expect(reportRepository.findReportById).toHaveBeenCalledWith(1);
+      expect(messageRepository.getMessagesByReportId).toHaveBeenCalledWith(1);
+      expect(mapperService.mapMessageToResponse).toHaveBeenCalled();
+      expect(result).toEqual([mockMessageResponse]);
+    });
+
+    it('should return messages for reporter', async () => {
+      const mockReport = createMockReport({ assigneeId: 1, reporterId: 2 });
+
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+
+      const result = await reportService.getMessages(1, 2); // userId = reporterId
+
+      expect(result).toEqual([mockMessageResponse]);
+    });
+
+    it('should throw NotFoundError when report not found', async () => {
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(null);
+
+      await expect(reportService.getMessages(1, 1))
+        .rejects
+        .toThrow(NotFoundError);
+    });
+
+    it('should throw InsufficientRightsError when user is neither assignee nor reporter', async () => {
+      const mockReport = createMockReport({ assigneeId: 1, reporterId: 2 });
+
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(mockReport);
+
+      await expect(reportService.getMessages(1, 3)) // userId = 3 (neither assignee nor reporter)
+        .rejects
+        .toThrow(InsufficientRightsError);
     });
   });
 });

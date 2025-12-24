@@ -1,9 +1,9 @@
-
 import express from 'express';
 import UserController from '@controllers/userController';
 import { validateRegisterInput } from '../middleware/registerUserMiddleware';
 import { isLoggedIn } from '@middleware/authMiddleware';
 import { isTechnicalStaff, isAdmin } from '@dto/UserRole';
+import { validateId } from '@middleware/validateId';
 
 const router = express.Router();
 
@@ -70,6 +70,143 @@ const router = express.Router();
  *               message: "Internal server error"
  */
 router.post('/', validateRegisterInput, UserController.register);
+
+/**
+ * @swagger
+ * /api/users/me:
+ *   patch:
+ *     summary: Update current user profile settings
+ *     description: |
+ *       Allows a citizen to configure their account settings.
+ *       
+ *       **Configurable settings:**
+ *       - Personal photo (base64 encoded image)
+ *       - Telegram username (for notifications)
+ *       - Email notifications (enable/disable)
+ *       
+ *       **Access:** Only authenticated citizens can update their own profile.
+ *       All fields are optional - only provided fields will be updated.
+ *     tags: [Citizens]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               personalPhoto:
+ *                 type: string
+ *                 format: byte
+ *                 description: Personal photo in base64 format (data URI). Optional field.
+ *                 example: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+ *               telegramUsername:
+ *                 type: string
+ *                 maxLength: 100
+ *                 description: Telegram username (without @) for receiving notifications. Optional field.
+ *                 example: "mario_rossi"
+ *               emailNotificationsEnabled:
+ *                 type: boolean
+ *                 description: Enable or disable email notifications. Optional field.
+ *                 example: true
+ *           examples:
+ *             updatePhoto:
+ *               summary: Update personal photo
+ *               value:
+ *                 personalPhoto: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+ *             updateTelegram:
+ *               summary: Add Telegram username
+ *               value:
+ *                 telegramUsername: "mario_rossi"
+ *             disableEmailNotifications:
+ *               summary: Disable email notifications
+ *               value:
+ *                 emailNotificationsEnabled: false
+ *             updateAll:
+ *               summary: Update all settings
+ *               value:
+ *                 personalPhoto: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+ *                 telegramUsername: "mario_rossi"
+ *                 emailNotificationsEnabled: true
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   example: 15
+ *                 username:
+ *                   type: string
+ *                   example: "m.rossi"
+ *                 email:
+ *                   type: string
+ *                   example: "mario.rossi@email.com"
+ *                 first_name:
+ *                   type: string
+ *                   example: "Mario"
+ *                 last_name:
+ *                   type: string
+ *                   example: "Rossi"
+ *                 personal_photo_url:
+ *                   type: string
+ *                   nullable: true
+ *                   example: "/uploads/photos/user_15_profile.jpg"
+ *                 telegram_username:
+ *                   type: string
+ *                   nullable: true
+ *                   example: "mario_rossi"
+ *                 email_notifications_enabled:
+ *                   type: boolean
+ *                   example: true
+ *                 role_name:
+ *                   type: string
+ *                   example: "Citizen"
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               invalidPhoto:
+ *                 summary: Invalid photo format
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "Invalid photo format. Must be a valid base64 encoded image"
+ *               telegramTaken:
+ *                 summary: Telegram username already in use
+ *                 value:
+ *                   code: 400
+ *                   name: "BadRequestError"
+ *                   message: "Telegram username already in use by another user"
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Not authenticated"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "An unexpected error occurred while updating profile"
+ */
+//router.patch('/me', isLoggedIn, UserController.updateProfile);
 
 /**
  * @swagger
@@ -194,5 +331,383 @@ router.get(
   UserController.getExternalMaintainersByCategory
 );
 
-export default router;
+/**
+ * @swagger
+ * /api/users/notifications:
+ *   get:
+ *     summary: Get notifications for current user
+ *     description: |
+ *       Returns a list of all notifications for the authenticated user.
+ *       Notifications are automatically created when:
+ *       - A report's status is changed
+ *       - A technical staff member sends a message on a report
+ *       
+ *       Results can be filtered by read/unread status.
+ *     tags: [Citizens]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: is_read
+ *         schema:
+ *           type: boolean
+ *         description: Filter by read status. If omitted, returns all notifications.
+ *         example: false
+ *     responses:
+ *       200:
+ *         description: List of notifications retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     description: Unique notification ID
+ *                     example: 1
+ *                   user_id:
+ *                     type: integer
+ *                     description: ID of the user receiving the notification
+ *                     example: 5
+ *                   type:
+ *                     type: string
+ *                     enum: [status_change, new_message, report_assigned]
+ *                     description: Type of notification
+ *                     example: "status_change"
+ *                   title:
+ *                     type: string
+ *                     description: Notification title
+ *                     example: "Report status updated"
+ *                   message:
+ *                     type: string
+ *                     description: Notification message content
+ *                     example: "Your report #123 has been updated to 'In Progress'"
+ *                   report_id:
+ *                     type: integer
+ *                     description: Related report ID
+ *                     example: 123
+ *                   is_read:
+ *                     type: boolean
+ *                     description: Whether the notification has been read
+ *                     example: false
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ *                     description: When the notification was created
+ *                     example: "2024-01-15T10:30:00.000Z"
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Authentication required"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Failed to retrieve notifications"
+ */
+router.get('/notifications', isLoggedIn, UserController.getNotifications);
 
+/**
+ * @swagger
+ * /api/users/notifications/{id}:
+ *   patch:
+ *     summary: Mark notification as read/unread
+ *     description: |
+ *       Updates the read status of a notification.
+ *       Users can only update their own notifications.
+ *       
+ *       **Access:** Only the notification owner can mark it as read/unread.
+ *     tags: [Citizens]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Notification ID
+ *         example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - is_read
+ *             properties:
+ *               is_read:
+ *                 type: boolean
+ *                 description: New read status
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Notification updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   description: Notification ID
+ *                   example: 1
+ *                 user_id:
+ *                   type: integer
+ *                   description: User ID
+ *                   example: 5
+ *                 type:
+ *                   type: string
+ *                   enum: [status_change, new_message, report_assigned]
+ *                   example: "status_change"
+ *                 title:
+ *                   type: string
+ *                   example: "Report status updated"
+ *                 message:
+ *                   type: string
+ *                   example: "Your report #123 has been updated to 'In Progress'"
+ *                 report_id:
+ *                   type: integer
+ *                   example: 123
+ *                 is_read:
+ *                   type: boolean
+ *                   description: Updated read status
+ *                   example: true
+ *                 created_at:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2024-01-15T10:30:00.000Z"
+ *       400:
+ *         description: Invalid request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 400
+ *               name: "BadRequestError"
+ *               message: "is_read field is required and must be a boolean"
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 401
+ *               name: "UnauthorizedError"
+ *               message: "Authentication required"
+ *       403:
+ *         description: Not authorized to update this notification
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 403
+ *               name: "ForbiddenError"
+ *               message: "You can only update your own notifications"
+ *       404:
+ *         description: Notification not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 404
+ *               name: "NotFoundError"
+ *               message: "Notification not found"
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: "InternalServerError"
+ *               message: "Failed to update notification"
+ */
+router.patch('/notifications/:id', isLoggedIn, validateId('id', 'notification'), UserController.markNotificationAsRead);
+
+
+/**
+ * @swagger
+ * /api/users/username/{username}:
+ *   get:
+ *     summary: Find user by username
+ *     description: Returns user data based on the provided username.
+ *     tags:
+ *       - Citizens
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Username of the user to find
+ *         example: johndoe
+ *     responses:
+ *       200:
+ *         description: User found successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserResponse'
+ *             example:
+ *               id: 5
+ *               username: johndoe
+ *               email: john@example.com
+ *               is_verified: true
+ *               role: citizen
+ *               created_at: "2024-01-10T12:00:00.000Z"
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 404
+ *               name: NotFoundError
+ *               message: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               code: 500
+ *               name: InternalServerError
+ *               message: Failed to find user by username
+ */
+router.get("/username/:username", UserController.findUserByUsername);
+
+/**
+ * @swagger
+ * /api/users/telegram-link-code:
+ *   post:
+ *     summary: Generate Telegram link code
+ *     description: Generate a verification code to link the user's Telegram account
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Code generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 code:
+ *                   type: string
+ *                   example: "123456"
+ *                 expiresAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2023-12-20T10:15:00Z"
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post('/telegram-link-code', isLoggedIn, UserController.generateTelegramLinkCode);
+
+/**
+ * @swagger
+ * /api/users/telegram-status:
+ *   get:
+ *     summary: Get Telegram link status
+ *     description: Check if the user's account is linked to Telegram
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Status retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isLinked:
+ *                   type: boolean
+ *                   example: true
+ *                 telegramUsername:
+ *                   type: string
+ *                   nullable: true
+ *                   example: "@username"
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get('/telegram-status', isLoggedIn, UserController.getTelegramStatus);
+
+/**
+ * @swagger
+ * /api/users/telegram-unlink:
+ *   delete:
+ *     summary: Unlink Telegram account
+ *     description: Remove the Telegram link from the user account
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Account unlinked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: User not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.delete('/telegram-unlink', isLoggedIn, UserController.unlinkTelegramAccount);
+
+export default router;

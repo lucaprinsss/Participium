@@ -22,12 +22,19 @@ describe('UserRepository Unit Tests', () => {
       getOne: jest.fn(),
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       innerJoin: jest.fn().mockReturnThis(),
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn(),
       update: jest.fn().mockReturnThis(),
       set: jest.fn().mockReturnThis(),
       execute: jest.fn(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      from: jest.fn().mockReturnThis(),
     };
 
     // Setup mock del repository TypeORM
@@ -37,6 +44,8 @@ describe('UserRepository Unit Tests', () => {
       findOne: jest.fn(),
       exists: jest.fn(),
       createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+      update: jest.fn(),
+      delete: jest.fn(),
     };
 
     // Mock del repository interno di userRepository
@@ -220,6 +229,27 @@ describe('UserRepository Unit Tests', () => {
       await expect(
         userRepository.createUserWithPassword(validUserData)
       ).rejects.toThrow('Password hashing failed');
+    });
+
+    it('should throw error when user cannot be reloaded with relations', async () => {
+      // Arrange
+      const mockCreatedUser = createMockCitizen({
+        id: 1,
+        username: validUserData.username,
+        email: validUserData.email,
+        firstName: validUserData.firstName,
+        lastName: validUserData.lastName,
+      });
+      mockCreatedUser.passwordHash = 'mocksalt:mockhash';
+
+      mockRepository.create.mockReturnValue(mockCreatedUser);
+      mockRepository.save.mockResolvedValue(mockCreatedUser);
+      mockQueryBuilder.getOne.mockResolvedValue(null); // Simulate failure to reload
+
+      // Act & Assert
+      await expect(
+        userRepository.createUserWithPassword(validUserData)
+      ).rejects.toThrow('Failed to load user with relations after creation');
     });
   });
 
@@ -1249,6 +1279,570 @@ describe('UserRepository Unit Tests', () => {
 
       // Act & Assert
       await expect(userRepository.deleteUnverifiedUsers()).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('findUsersByDepartmentRoleIds', () => {
+    it('should return users for given department role IDs', async () => {
+      // Arrange
+      const departmentRoleIds = [1, 2, 3];
+      const mockUsers = [
+        { id: 1, username: 'user1', departmentRoleId: 1 },
+        { id: 2, username: 'user2', departmentRoleId: 2 },
+      ];
+      mockQueryBuilder.getMany.mockResolvedValue(mockUsers as any);
+
+      // Act
+      const result = await userRepository.findUsersByDepartmentRoleIds(departmentRoleIds);
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('user.departmentRole', 'departmentRole');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.department', 'department');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('user.departmentRoleId IN (:...ids)', { ids: departmentRoleIds });
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('user.createdAt', 'DESC');
+      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+      expect(result).toEqual(mockUsers);
+    });
+
+    it('should return empty array when no users found', async () => {
+      // Arrange
+      const departmentRoleIds = [999];
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      // Act
+      const result = await userRepository.findUsersByDepartmentRoleIds(departmentRoleIds);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+
+    it('should handle empty department role IDs array', async () => {
+      // Arrange
+      const departmentRoleIds: number[] = [];
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      // Act
+      const result = await userRepository.findUsersByDepartmentRoleIds(departmentRoleIds);
+
+      // Assert
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('user.departmentRoleId IN (:...ids)', { ids: departmentRoleIds });
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findUsersByRoleName', () => {
+    it('should return users for given role name', async () => {
+      // Arrange
+      const roleName = 'Road Maintenance Staff';
+      const mockUsers = [
+        { id: 1, username: 'user1', departmentRoleId: 1 },
+        { id: 2, username: 'user2', departmentRoleId: 2 },
+      ];
+      mockQueryBuilder.getMany.mockResolvedValue(mockUsers as any);
+
+      // Act
+      const result = await userRepository.findUsersByRoleName(roleName);
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('user.departmentRole', 'departmentRole');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.department', 'department');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('role.name = :roleName', { roleName });
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('user.createdAt', 'DESC');
+      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+      expect(result).toEqual(mockUsers);
+    });
+
+    it('should return empty array when no users found', async () => {
+      // Arrange
+      const roleName = 'Non-existent Role';
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      // Act
+      const result = await userRepository.findUsersByRoleName(roleName);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findUserByTelegramUsername', () => {
+    const telegramUsername = 'testuser_telegram';
+
+    it('should return user when found by telegram username', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        telegramUsername,
+      });
+      mockQueryBuilder.getOne.mockResolvedValue(mockUser);
+
+      // Act
+      const result = await userRepository.findUserByTelegramUsername(telegramUsername);
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('user.departmentRole', 'departmentRole');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.department', 'department');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('user.telegram_username = :telegramUsername', { telegramUsername });
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith('user.passwordHash');
+      expect(mockQueryBuilder.getOne).toHaveBeenCalled();
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should return null when user not found', async () => {
+      // Arrange
+      mockQueryBuilder.getOne.mockResolvedValue(null);
+
+      // Act
+      const result = await userRepository.findUserByTelegramUsername(telegramUsername);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('clearExpiredTelegramLinkCodes', () => {
+    it('should clear expired telegram link codes', async () => {
+      // Arrange
+      mockQueryBuilder.update.mockReturnThis();
+      mockQueryBuilder.set.mockReturnThis();
+      mockQueryBuilder.where.mockReturnThis();
+      mockQueryBuilder.andWhere.mockReturnThis();
+
+      // Act
+      await userRepository.clearExpiredTelegramLinkCodes();
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.update).toHaveBeenCalledWith(UserEntity);
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        telegramLinkCode: null,
+        telegramLinkCodeExpiresAt: null,
+      });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('telegramLinkCodeExpiresAt < NOW()');
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('telegramLinkCode IS NOT NULL');
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+    });
+
+    it('should handle database errors', async () => {
+      // Arrange
+      mockQueryBuilder.update.mockReturnThis();
+      mockQueryBuilder.set.mockReturnThis();
+      mockQueryBuilder.where.mockReturnThis();
+      mockQueryBuilder.andWhere.mockReturnThis();
+      mockQueryBuilder.execute.mockRejectedValue(new Error('Database error'));
+
+      // Act & Assert
+      await expect(userRepository.clearExpiredTelegramLinkCodes()).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('findAvailableStaffByRoleId', () => {
+    const roleId = 1;
+
+    it('should return available staff member for given role', async () => {
+      // Arrange
+      const mockStaff = createMockCitizen({
+        id: 1,
+        username: 'staff1',
+        departmentRoleId: 1,
+      });
+      mockQueryBuilder.innerJoinAndSelect.mockReturnThis();
+      mockQueryBuilder.leftJoin.mockReturnThis();
+      mockQueryBuilder.where.mockReturnThis();
+      mockQueryBuilder.groupBy.mockReturnThis();
+      mockQueryBuilder.addGroupBy.mockReturnThis();
+      mockQueryBuilder.addSelect.mockReturnThis();
+      mockQueryBuilder.orderBy.mockReturnThis();
+      mockQueryBuilder.addOrderBy.mockReturnThis();
+      mockQueryBuilder.getOne.mockResolvedValue(mockStaff);
+
+      // Act
+      const result = await userRepository.findAvailableStaffByRoleId(roleId);
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+      expect(mockQueryBuilder.innerJoinAndSelect).toHaveBeenCalledWith('user.departmentRole', 'dr');
+      expect(mockQueryBuilder.innerJoinAndSelect).toHaveBeenCalledWith('dr.role', 'role');
+      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+        'reports',
+        'r',
+        'r.assignee_id = user.id AND r.status IN (:...statuses)',
+        { statuses: ['Assigned', 'In Progress', 'Suspended'] }
+      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('dr.role_id = :roleId', { roleId });
+      expect(mockQueryBuilder.groupBy).toHaveBeenCalledWith('user.id');
+      expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith('dr.id');
+      expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith('role.id');
+      expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith('COUNT(r.id)', 'report_count');
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('report_count', 'ASC');
+      expect(mockQueryBuilder.addOrderBy).toHaveBeenCalledWith('user.id', 'ASC');
+      expect(mockQueryBuilder.getOne).toHaveBeenCalled();
+      expect(result).toEqual(mockStaff);
+    });
+
+    it('should return null when no available staff found', async () => {
+      // Arrange
+      mockQueryBuilder.innerJoinAndSelect.mockReturnThis();
+      mockQueryBuilder.leftJoin.mockReturnThis();
+      mockQueryBuilder.where.mockReturnThis();
+      mockQueryBuilder.groupBy.mockReturnThis();
+      mockQueryBuilder.addGroupBy.mockReturnThis();
+      mockQueryBuilder.addSelect.mockReturnThis();
+      mockQueryBuilder.orderBy.mockReturnThis();
+      mockQueryBuilder.addOrderBy.mockReturnThis();
+      mockQueryBuilder.getOne.mockResolvedValue(null);
+
+      // Act
+      const result = await userRepository.findAvailableStaffByRoleId(roleId);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findUsersExcludingRoles', () => {
+    const excludedRoleNames = ['Admin', 'Super Admin'];
+
+    it('should return users excluding specified roles', async () => {
+      // Arrange
+      const mockUsers = [
+        { id: 1, username: 'user1', departmentRoleId: 1 },
+        { id: 2, username: 'user2', departmentRoleId: 2 },
+      ];
+      mockQueryBuilder.getMany.mockResolvedValue(mockUsers as any);
+
+      // Act
+      const result = await userRepository.findUsersExcludingRoles(excludedRoleNames);
+
+      // Assert
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('user');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('user.departmentRole', 'departmentRole');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.department', 'department');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('role.name NOT IN (:...excludedRoleNames)', { excludedRoleNames });
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('user.createdAt', 'DESC');
+      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+      expect(result).toEqual(mockUsers);
+    });
+
+    it('should return empty array when no users found', async () => {
+      // Arrange
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      // Act
+      const result = await userRepository.findUsersExcludingRoles(excludedRoleNames);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('updateVerificationData', () => {
+    const userId = 1;
+    const verificationData = {
+      verificationCode: '123456',
+      verificationCodeExpiresAt: new Date(Date.now() + 30 * 60 * 1000),
+    };
+
+    it('should update verification data successfully', async () => {
+      // Arrange
+      mockRepository.update.mockResolvedValue({ affected: 1 });
+
+      // Act
+      await userRepository.updateVerificationData(userId, verificationData);
+
+      // Assert
+      expect(mockRepository.update).toHaveBeenCalledWith(userId, {
+        verificationCode: verificationData.verificationCode,
+        verificationCodeExpiresAt: verificationData.verificationCodeExpiresAt,
+      });
+    });
+
+    it('should handle database errors', async () => {
+      // Arrange
+      mockRepository.update.mockRejectedValue(new Error('Database error'));
+
+      // Act & Assert
+      await expect(userRepository.updateVerificationData(userId, verificationData)).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('linkTelegramUsername', () => {
+    const username = 'testuser';
+    const telegramUsername = 'testuser_telegram';
+
+    it('should link telegram username successfully', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        id: 1,
+        username,
+        telegramUsername: undefined,
+      });
+      mockRepository.findOne.mockResolvedValue(mockUser);
+      mockRepository.save.mockResolvedValue({ ...mockUser, telegramUsername });
+
+      // Act
+      const result = await userRepository.linkTelegramUsername(username, telegramUsername);
+
+      // Assert
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { username } });
+      expect(mockRepository.save).toHaveBeenCalledWith({ ...mockUser, telegramUsername });
+      expect(result).toBe(true);
+    });
+
+    it('should return false when user not found', async () => {
+      // Arrange
+      mockRepository.findOne.mockResolvedValue(null);
+
+      // Act
+      const result = await userRepository.linkTelegramUsername(username, telegramUsername);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    it('should throw error when telegram username already linked to another user', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({ id: 1, username });
+      const existingUser = createMockCitizen({ id: 2, username: 'otheruser', telegramUsername });
+      mockRepository.findOne
+        .mockResolvedValueOnce(mockUser) // First call for username lookup
+        .mockResolvedValueOnce(existingUser); // Second call for telegram username check
+
+      // Act & Assert
+      await expect(userRepository.linkTelegramUsername(username, telegramUsername)).rejects.toThrow(
+        'This Telegram username is already linked to another account.'
+      );
+    });
+  });
+
+  describe('generateTelegramLinkCode', () => {
+    const userId = 1;
+
+    it('should generate and save telegram link code', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({ id: userId });
+      const expectedCode = '211110'; // 100000 + (0.123456 * 900000) = 211110.456 -> 211110
+
+      // Mock Math.random and Date
+      const originalRandom = Math.random;
+      const originalDate = Date;
+      const mockNow = 1734870000000; // Fixed timestamp for testing
+      Math.random = jest.fn(() => 0.123456); // Will generate 211110
+      global.Date = jest.fn(() => new originalDate(mockNow)) as any;
+      (global.Date as any).now = jest.fn(() => mockNow);
+
+      mockRepository.findOne.mockResolvedValue(mockUser);
+      mockRepository.save.mockResolvedValue(mockUser);
+
+      // Act
+      const result = await userRepository.generateTelegramLinkCode(userId);
+
+      // Assert
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: userId } });
+      expect(mockRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          telegramLinkCode: '211110',
+          telegramLinkCodeExpiresAt: expect.anything(), // Accept any Date object since Date is mocked
+        })
+      );
+      expect(result).toBe(expectedCode);
+
+      // Restore mocks
+      Math.random = originalRandom;
+      global.Date = originalDate;
+    });
+
+    it('should return null when user not found', async () => {
+      // Arrange
+      mockRepository.findOne.mockResolvedValue(null);
+
+      // Act
+      const result = await userRepository.generateTelegramLinkCode(userId);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('verifyAndLinkTelegram', () => {
+    const telegramUsername = 'testuser_telegram';
+    const code = '123456';
+
+    it('should successfully verify and link telegram account', async () => {
+      // Arrange
+      const telegramUsername = 'testuser_telegram';
+      const code = '123456';
+      const futureDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes in the future
+      const mockUser = createMockCitizen({
+        id: 1,
+        username: 'testuser',
+        telegramUsername: undefined,
+        telegramLinkCode: code,
+        telegramLinkCodeExpiresAt: futureDate,
+      });
+
+      // Mock the query builder chain
+      const mockQueryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(mockUser),
+      };
+      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+      mockRepository.findOne.mockResolvedValue(null); // No existing telegram user
+      mockRepository.save.mockResolvedValue({
+        ...mockUser,
+        telegramUsername,
+        telegramLinkCode: undefined,
+        telegramLinkCodeExpiresAt: undefined,
+      });
+
+      // Act
+      const result = await userRepository.verifyAndLinkTelegram(telegramUsername, code);
+
+      // Assert
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { telegramUsername } });
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith("user");
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith("user.telegram_link_code = :code", { code });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        "user.telegram_link_code_expires_at > :now", 
+        expect.objectContaining({ now: expect.any(Date) })
+      );
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Account linked successfully');
+      expect(mockRepository.save).toHaveBeenCalledWith({
+        ...mockUser,
+        telegramUsername,
+        telegramLinkCode: undefined,
+        telegramLinkCodeExpiresAt: undefined,
+      });
+    });
+
+    it('should return error when telegram username already linked', async () => {
+      // Arrange
+      const existingUser = createMockCitizen({
+        id: 2,
+        username: 'otheruser',
+        telegramUsername,
+      });
+
+      mockRepository.findOne.mockResolvedValue(existingUser);
+
+      // Act
+      const result = await userRepository.verifyAndLinkTelegram(telegramUsername, code);
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('already linked to an account');
+    });
+
+    it('should return error when code is invalid', async () => {
+      // Arrange
+      mockRepository.findOne
+        .mockResolvedValueOnce(null) // No existing telegram user
+        .mockResolvedValueOnce(null); // No user with code
+
+      // Act
+      const result = await userRepository.verifyAndLinkTelegram(telegramUsername, code);
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Invalid or expired code');
+    });
+
+    it('should return error when code is expired', async () => {
+      // Arrange
+      const telegramUsername = 'testuser_telegram';
+      const code = '123456';
+      const mockNow = 1734870000000; // Fixed timestamp for testing
+      const mockUser = createMockCitizen({
+        id: 1,
+        telegramLinkCode: code,
+        telegramLinkCodeExpiresAt: new Date(mockNow - 60 * 1000), // Past date
+      });
+
+      mockRepository.findOne
+        .mockResolvedValueOnce(null) // No existing telegram user
+        .mockResolvedValueOnce(mockUser); // User with expired code
+
+      // Act
+      const result = await userRepository.verifyAndLinkTelegram(telegramUsername, code);
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Invalid or expired code');
+    });
+  });
+
+  describe('unlinkTelegramAccount', () => {
+    const userId = 1;
+
+    it('should successfully unlink telegram account', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        id: userId,
+        telegramUsername: 'testuser_telegram',
+        telegramLinkCode: '123456',
+        telegramLinkCodeExpiresAt: new Date(),
+      });
+
+      mockRepository.findOne.mockResolvedValue(mockUser);
+      mockRepository.save.mockResolvedValue({
+        ...mockUser,
+        telegramUsername: undefined,
+        telegramLinkCode: undefined,
+        telegramLinkCodeExpiresAt: undefined,
+      });
+
+      // Act
+      const result = await userRepository.unlinkTelegramAccount(userId);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('unlinked successfully');
+      expect(mockRepository.save).toHaveBeenCalledWith({
+        ...mockUser,
+        telegramUsername: null,
+        telegramLinkCode: null,
+        telegramLinkCodeExpiresAt: null,
+      });
+    });
+
+    it('should return error when user not found', async () => {
+      // Arrange
+      mockRepository.findOne.mockResolvedValue(null);
+
+      // Act
+      const result = await userRepository.unlinkTelegramAccount(userId);
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('User not found');
+    });
+
+    it('should return error when no telegram account linked', async () => {
+      // Arrange
+      const mockUser = createMockCitizen({
+        id: userId,
+        telegramUsername: undefined,
+      });
+
+      mockRepository.findOne.mockResolvedValue(mockUser);
+
+      // Act
+      const result = await userRepository.unlinkTelegramAccount(userId);
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No Telegram account linked');
     });
   });
 });

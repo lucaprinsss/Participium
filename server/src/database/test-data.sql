@@ -1,9 +1,12 @@
 -- ============================================
--- Test Data for E2E Testing - V5.0 (Multi-Role Support)
+-- Test Data for E2E Testing - V4.3 (with email verification)
 -- ============================================
+-- NOTE: This file assumes that seed.sql has already been executed
+--       to populate departments, roles, department_roles, and category_role_mapping
 
 -- Clear existing data (safety check)
 TRUNCATE TABLE users CASCADE;
+TRUNCATE TABLE companies CASCADE;
 
 -- Reset sequences to ensure consistent IDs
 ALTER SEQUENCE users_id_seq RESTART WITH 1;
@@ -619,7 +622,7 @@ SELECT
   'The street light on Via Roma is not working properly and needs maintenance',
   'Public Lighting',
   ST_GeogFromText('POINT(7.6869005 45.0703393)'),
-  'Via Roma 15, 10121 Torino',
+  'Via Roma, 15, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10121, Italia',
   false,
   'Pending Approval',
   CURRENT_TIMESTAMP - INTERVAL '2 days' AS created_at
@@ -644,7 +647,7 @@ SELECT
   'The sidewalk near the central park has a large crack and poses a safety hazard',
   'Roads and Urban Furnishings',
   ST_GeogFromText('POINT(7.6932941 45.0692403)'),
-  'Corso Vittorio Emanuele II 45, 10125 Torino',
+  'Corso Vittorio Emanuele II, 45, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10125, Italia',
   false,
   'Assigned',
   staff.id,
@@ -672,7 +675,7 @@ SELECT
   'There is a significant water leak from the main pipe causing flooding',
   'Water Supply - Drinking Water',
   ST_GeogFromText('POINT(7.6782069 45.0625748)'),
-  'Via Po 25, 10124 Torino',
+  'Via Po, 25, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10124, Italia',
   false,
   'In Progress',
   staff.id,
@@ -700,7 +703,7 @@ SELECT
   'The trash bin is completely full and garbage is overflowing onto the street',
   'Waste',
   ST_GeogFromText('POINT(7.6950000 45.0700000)'),
-  'Piazza Castello 1, 10121 Torino',
+  'Piazza Castello, 1, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10121, Italia',
   false,
   'Resolved',
   staff.id,
@@ -728,7 +731,7 @@ SELECT
   'This is a test report that was rejected',
   'Other',
   ST_GeogFromText('POINT(7.6800000 45.0650000)'),
-  'Via Garibaldi 10, 10122 Torino',
+  'Via Garibaldi, 10, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10122, Italia',
   false,
   'Rejected',
   'Duplicate report - already exists',
@@ -753,7 +756,7 @@ SELECT
   'The entrance ramp for wheelchair access is blocked by parked bicycles',
   'Architectural Barriers',
   ST_GeogFromText('POINT(7.6850000 45.0680000)'),
-  'Via Milano 8, 10123 Torino',
+  'Via Milano, 8, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10123, Italia',
   true,
   'Pending Approval',
   CURRENT_TIMESTAMP - INTERVAL '1 day' AS created_at
@@ -778,7 +781,7 @@ SELECT
   'The sewer is blocked causing bad smell and potential overflow',
   'Sewer System',
   ST_GeogFromText('POINT(7.6900000 45.0710000)'),
-  'Via Nizza 30, 10126 Torino',
+  'Via Nizza, 30, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10126, Italia',
   false,
   'Suspended',
   staff.id,
@@ -791,30 +794,39 @@ WHERE citizen.username = 'testcitizen'
 -- ============================================
 -- INSERT PHOTOS FOR TEST REPORTS
 -- ============================================
+-- Le foto sono copiate nell'immagine Docker dal Dockerfile
+-- Percorsi relativi: /uploads/reports/{reportId}/{filename}
+-- NOTE: Using subqueries to get correct report IDs since seed.sql creates many reports before these
 
--- Foto per Report 1
+-- Foto per Report "Street light broken"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (1, '/uploads/reports/1/1.jpg', CURRENT_TIMESTAMP - INTERVAL '2 days');
+SELECT id, '/uploads/reports/1/1.jpg', CURRENT_TIMESTAMP - INTERVAL '2 days'
+FROM reports WHERE title = 'Street light broken';
 
--- Foto per Report 2
+-- Foto per Report "Broken sidewalk"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (2, '/uploads/reports/2/2.jpg', CURRENT_TIMESTAMP - INTERVAL '3 days');
+SELECT id, '/uploads/reports/2/2.jpg', CURRENT_TIMESTAMP - INTERVAL '3 days'
+FROM reports WHERE title = 'Broken sidewalk';
 
--- Foto per Report 3
+-- Foto per Report "Water leak on street"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (3, '/uploads/reports/3/2_2.jpg', CURRENT_TIMESTAMP - INTERVAL '4 days');
+SELECT id, '/uploads/reports/3/2_2.jpg', CURRENT_TIMESTAMP - INTERVAL '4 days'
+FROM reports WHERE title = 'Water leak on street';
 
--- Foto per Report 4
+-- Foto per Report "Trash overflow"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (4, '/uploads/reports/4/3.jpg', CURRENT_TIMESTAMP - INTERVAL '5 days');
+SELECT id, '/uploads/reports/4/3.jpg', CURRENT_TIMESTAMP - INTERVAL '5 days'
+FROM reports WHERE title = 'Trash overflow';
 
--- Foto per Report 5
+-- Foto per Report "Test rejected report"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (5, '/uploads/reports/5/4.jpg', CURRENT_TIMESTAMP - INTERVAL '6 days');
+SELECT id, '/uploads/reports/5/4.jpg', CURRENT_TIMESTAMP - INTERVAL '6 days'
+FROM reports WHERE title = 'Test rejected report';
 
--- Foto per Report 6
+-- Foto per Report "Wheelchair access blocked"
 INSERT INTO photos (report_id, storage_url, created_at)
-VALUES (6, '/uploads/reports/6/5.jpg', CURRENT_TIMESTAMP - INTERVAL '1 day');
+SELECT id, '/uploads/reports/6/5.jpg', CURRENT_TIMESTAMP - INTERVAL '1 day'
+FROM reports WHERE title = 'Wheelchair access blocked';
 
 
 -- ============================================

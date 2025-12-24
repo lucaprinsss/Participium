@@ -57,5 +57,5 @@ export interface CreateReportRequest {
   location: Location;
   address?: string;
   photos: string[];
-  isAnonymous?: boolean;
+  isAnonymous: boolean;
 }

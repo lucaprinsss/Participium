@@ -1,3 +1,5 @@
+import { MessageEntity } from '@models/entity/messageEntity';
+import { MessageResponse } from '@models/dto/output/MessageResponse';
 import { ErrorDTO } from "@models/errors/ErrorDTO";
 import { UserResponse } from "@models/dto/output/UserResponse";
 import { ReportResponse, PhotoResponse } from "@models/dto/output/ReportResponse";
@@ -117,10 +119,10 @@ export function mapUserEntityToUserResponse(entity: UserEntity | null | undefine
 
 /**
  * Maps a Photo DTO (snake_case) to API response format (camelCase)
- * @param photo - Photo DTO from database
+ * @param photo - Photo DTO from database or repository
  * @returns PhotoResponse for API
  */
-export function mapPhotoToResponse(photo: Photo): PhotoResponse {
+export function mapPhotoToResponse(photo: any): PhotoResponse {
   return {
     id: photo.id,
     reportId: photo.report_id,
@@ -258,4 +260,23 @@ function removeNullAttributes<T extends Record<string, any>>(
   );
   
   return Object.fromEntries(filtered) as Partial<T>;
+}
+
+/**
+ * Maps a MessageEntity to MessageResponse DTO
+ */
+export function mapMessageToResponse(message: MessageEntity): MessageResponse {
+  return {
+    id: message.id,
+    reportId: message.reportId,
+    author: {
+      id: message.sender.id,
+      username: message.sender.username,
+      firstName: message.sender.firstName,
+      lastName: message.sender.lastName,
+      role: message.sender.departmentRole?.role?.name || 'Unknown',
+    },
+    content: message.content,
+    createdAt: message.createdAt,
+  };
 }

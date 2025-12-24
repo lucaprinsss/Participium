@@ -1,0 +1,156 @@
+/* OtpVerification.css */
+
+:root {
+  --otp-primary: #a12b32; /* Il tuo brand red */
+  --otp-primary-hover: #c9303a;
+  --otp-bg: #f8f9fa;
+  --otp-border: #e9ecef;
+  --otp-text: #212529;
+  --otp-focus-shadow: rgba(161, 43, 50, 0.25);
+  --otp-transition: all 0.2s ease-in-out;
+}
+
+.otp-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  animation: otpFadeIn 0.4s ease-out;
+}
+
+/* Container per i messaggi di stato */
+.otp-status-message {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* Griglia degli input */
+.otp-input-group {
+  display: flex;
+  gap: 0.75rem; /* Spazio tra le caselle */
+  justify-content: center;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+/* Singola casella di input */
+.otp-digit-input {
+  width: 3rem;  /* Larghezza fissa responsive */
+  height: 3.5rem; /* Altezza */
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--otp-text);
+  background-color: #fff;
+  border: 2px solid var(--otp-border);
+  border-radius: 12px;
+  transition: var(--otp-transition);
+  outline: none;
+  
+  /* Rimuove lo spinner dei numeri nei browser */
+  -moz-appearance: textfield;
+}
+
+.otp-digit-input::-webkit-outer-spin-button,
+.otp-digit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Stati interattivi */
+.otp-digit-input:focus {
+  border-color: var(--otp-primary);
+  box-shadow: 0 0 0 4px var(--otp-focus-shadow);
+  transform: translateY(-2px);
+}
+
+.otp-digit-input:not(:placeholder-shown) {
+  border-color: #ced4da;
+  background-color: #fff;
+}
+
+.otp-digit-input.filled {
+  border-color: var(--otp-primary);
+}
+
+/* Pulsante verifica */
+.otp-action-btn {
+  width: 100%;
+  padding: 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, var(--otp-primary) 0%, var(--otp-primary-hover) 100%);
+  color: white;
+  transition: var(--otp-transition);
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.otp-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(161, 43, 50, 0.2);
+}
+
+.otp-action-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Link Resend */
+.otp-resend-container {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+  text-align: center;
+}
+
+.otp-resend-link {
+  background: none;
+  border: none;
+  color: var(--otp-primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.otp-resend-link:hover {
+  text-decoration: underline;
+  color: var(--otp-primary-hover);
+}
+
+/* Info Email */
+.otp-email-hint {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #6c757d;
+  background: rgba(0,0,0,0.03);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+/* Animazioni */
+@keyframes otpFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive adjustments per schermi molto piccoli */
+@media (max-width: 400px) {
+  .otp-input-group {
+    gap: 0.4rem;
+  }
+  .otp-digit-input {
+    width: 2.5rem;
+    height: 3rem;
+    font-size: 1.25rem;
+  }
+}

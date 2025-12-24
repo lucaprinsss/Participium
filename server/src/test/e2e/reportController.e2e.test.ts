@@ -7,8 +7,8 @@ import {
   ensureTestDatabase
 } from '@test/utils/dbTestUtils';
 import { AppDataSource } from '@database/connection';
-import { ReportStatus } from '@models/dto/ReportStatus';
-import { ReportCategory } from '@models/dto/ReportCategory';
+import { ReportStatus } from '@dto/ReportStatus';
+import { ReportCategory } from '@dto/ReportCategory';
 
 describe('ReportController E2E Tests - Assigned Reports', () => {
   let technicianId: number;
@@ -241,6 +241,47 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
       expect(response.body.address).toBe(newReport.address);
     });
 
+    it('should return 400 if isAnonymous field is missing', async () => {
+      const newReport = {
+        title: 'Invalid test report title',
+        description: 'This is an invalid test description to check isAnonymous field',
+        category: ReportCategory.ROADS,
+        location: {
+            latitude: 45.0703393,
+            longitude: 7.6869005
+          },
+          address: 'Via Roma 1, Torino',
+          photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD86P8Ag5t/4Lpftzf8E4v+CwnxO+DPwH+P3/Cvfht4e8N/D2+0vQf+FZeBNc+zz6j4C0PUL2T7XrPhu+vJvMvLu4l2vcuqbyqKqKqqP6PP+CL3/BVD4+f8FMP2DPDnxp+P3wz+Gfwy8U69r2uaReeG/h1qniG/0q1i026WCKZJvEum6ddmR1BLAwBQRwSea/zsP+D3X/lM98Z/+xJ+F/8A6qfRK/0Gf+Dbf/lBF+zJ/wBhzx1/6l7ygD/9k=']
+      };
+
+      await request(app)
+        .post('/api/reports')
+        .set('Cookie', citizenCookies)
+        .send(newReport)
+        .expect(400);
+    });
+
+    it('should return 400 if isAnonymous field is not a boolean value', async () => {
+      const newReport = {
+        title: 'Invalid test report title',
+        description: 'This is an invalid test description to check isAnonymous field',
+        category: ReportCategory.ROADS,
+        location: {
+            latitude: 45.0703393,
+            longitude: 7.6869005
+          },
+          address: 'Via Roma 1, Torino',
+          isAnonymous: 7.6869005,
+          photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD86P8Ag5t/4Lpftzf8E4v+CwnxO+DPwH+P3/Cvfht4e8N/D2+0vQf+FZeBNc+zz6j4C0PUL2T7XrPhu+vJvMvLu4l2vcuqbyqKqKqqP6PP+CL3/BVD4+f8FMP2DPDnxp+P3wz+Gfwy8U69r2uaReeG/h1qniG/0q1i026WCKZJvEum6ddmR1BLAwBQRwSea/zsP+D3X/lM98Z/+xJ+F/8A6qfRK/0Gf+Dbf/lBF+zJ/wBhzx1/6l7ygD/9k=']
+      };
+
+      await request(app)
+        .post('/api/reports')
+        .set('Cookie', citizenCookies)
+        .send(newReport)
+        .expect(400);
+    });
+
     it('should return 401 if user is not authenticated', async () => {
       const newReport = {
         title: 'Valid unauthorized report',
@@ -312,10 +353,9 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
       );
     });
 
-    it('should return all reports for authenticated user', async () => {
+    it('should return all reports', async () => {
       const response = await request(app)
         .get('/api/reports')
-        .set('Cookie', citizenCookies)
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
@@ -326,7 +366,6 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     it('should filter reports by status', async () => {
       const response = await request(app)
         .get('/api/reports')
-        .set('Cookie', citizenCookies)
         .query({ status: ReportStatus.ASSIGNED })
         .expect(200);
 
@@ -337,7 +376,6 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     it('should filter reports by category', async () => {
       const response = await request(app)
         .get('/api/reports')
-        .set('Cookie', citizenCookies)
         .query({ category: ReportCategory.ROADS })
         .expect(200);
 
@@ -348,17 +386,18 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     it('should filter reports by status and category', async () => {
       const response = await request(app)
         .get('/api/reports')
-        .set('Cookie', citizenCookies)
         .query({ status: ReportStatus.ASSIGNED, category: ReportCategory.ROADS })
         .expect(200);
 
       expect(response.body.length).toBe(1);
     });
 
-    it('should return 401 if user is not authenticated', async () => {
-      await request(app)
+    it('should work without authentication', async () => {
+      const response = await request(app)
         .get('/api/reports')
-        .expect(401);
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
     });
   });
 
@@ -529,13 +568,12 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
       }
     });
 
-    it('should require authentication', async () => {
+    it('should allow public access without authentication', async () => {
       const response = await request(app)
         .get('/api/reports/map')
-        .expect(401);
+        .expect(200);
 
-      expect(response.body).toHaveProperty('name');
-      expect(response.body.name).toBe('UnauthorizedError');
+      expect(Array.isArray(response.body)).toBe(true);
     });
   });
 

@@ -99,6 +99,9 @@ jest.mock('@controllers/reportController', () => ({
     getInternalComments: jest.fn((req, res) => res.status(200).json([])),
     addInternalComment: jest.fn((req, res) => res.status(201).json({})),
     deleteInternalComment: jest.fn((req, res) => res.status(204).send()),
+    getMessages: jest.fn((req, res) => res.status(200).json([])),
+    sendMessage: jest.fn((req, res) => res.status(201).json({})),
+    getReportByAddress: jest.fn((req, res) => res.status(200).json([])),
   },
 }));
 jest.mock('@middleware/reportMiddleware', () => ({
@@ -156,6 +159,7 @@ const mockUpdateReportStatus = reportController.updateReportStatus as jest.Mock;
 const mockCreateReport = reportController.createReport as jest.Mock;
 const mockGetCategories = reportController.getCategories as jest.Mock;
 const mockGetAssignedReportsToExternalMaintainer = reportController.getAssignedReportsToExternalMaintainer as jest.Mock;
+const mockGetReportByAddress = reportController.getReportByAddress as jest.Mock;
 
 const mockReportsResponse = [
   {
@@ -286,7 +290,6 @@ describe('Report Routes Integration Tests', () => {
     // Mock getAllReports controller
     mockGetAllReports.mockImplementation((req, res) => {
       const { status, category } = req.query;
-
       let filteredReports = [...mockReportsResponse];
 
       if (status) {
@@ -348,10 +351,9 @@ describe('Report Routes Integration Tests', () => {
 
   // --- GET /api/reports (getAllReports) ---
   describe('GET /api/reports', () => {
-    it('should return all reports for authenticated user', async () => {
+    it('should return all reports', async () => {
       const res = await request(app)
-        .get('/api/reports')
-        .set('x-test-user-type', 'PRO');
+        .get('/api/reports');
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(2);
@@ -361,20 +363,16 @@ describe('Report Routes Integration Tests', () => {
     it('should filter reports by status=PENDING_APPROVAL', async () => {
       const res = await request(app)
         .get('/api/reports')
-        .query({ status: ReportStatus.PENDING_APPROVAL })
-        .set('x-test-user-type', 'PRO');
+        .query({ status: ReportStatus.PENDING_APPROVAL });
 
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveLength(1);
-      expect(res.body[0].status).toBe(ReportStatus.PENDING_APPROVAL);
+      expect(res.status).toBe(403); // Should fail because public users can't see PENDING_APPROVAL
       expect(mockGetAllReports).toHaveBeenCalledTimes(1);
     });
 
     it('should filter reports by category', async () => {
       const res = await request(app)
         .get('/api/reports')
-        .query({ category: ReportCategory.ROADS })
-        .set('x-test-user-type', 'PRO');
+        .query({ category: ReportCategory.ROADS });
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(1);
@@ -390,7 +388,7 @@ describe('Report Routes Integration Tests', () => {
         })
         .set('x-test-user-type', 'PRO');
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(403); // Should fail because public users can't see PENDING_APPROVAL
       expect(mockGetAllReports).toHaveBeenCalledTimes(1);
     });
   });

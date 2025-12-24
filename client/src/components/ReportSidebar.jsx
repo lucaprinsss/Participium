@@ -53,6 +53,16 @@ const ReportSidebar = ({
     ((typeof report.assignee === "object" && Number(report.assignee.id) === Number(currentUserId)) ||
       (typeof report.assignee === "number" && Number(report.assignee) === Number(currentUserId)));
 
+  // LOGICA VISIBILITÀ PULSANTE DELEGA
+  // Il pulsante appare SOLO se:
+  // 1. L'utente corrente è l'assegnatario interno
+  // 2. Il report NON è già "Resolved"
+  // 3. Il report NON è già "Assigned" (a un esterno)
+  const shouldShowDelegateButton = 
+    isCurrentInternalAssignee && 
+    report.status !== "Resolved" && 
+    report.status === "Assigned";
+
   // External Assignment Logic
   const handleDropdownToggle = async (isOpen) => {
     setIsDropdownOpen(isOpen);
@@ -212,7 +222,8 @@ const ReportSidebar = ({
         </div>
 
         {/* Dropdown Assignment */}
-        {isCurrentInternalAssignee && (
+        {/* MODIFICA: Utilizzo la nuova condizione shouldShowDelegateButton */}
+        {shouldShowDelegateButton && (
           <div className="mt-3 pt-3 border-top animate-fadeIn">
             <span className="rdm-label mb-2">Delegate Task</span>
             <Dropdown onToggle={handleDropdownToggle} className="rdm-dropdown-container">
@@ -274,6 +285,7 @@ ReportSidebar.propTypes = {
     updatedAt: PropTypes.string,
     isAnonymous: PropTypes.bool,
     is_anonymous: PropTypes.bool,
+    status: PropTypes.string, // Aggiunto status alle PropTypes per chiarezza
     reporter: PropTypes.shape({
       first_name: PropTypes.string,
       last_name: PropTypes.string,

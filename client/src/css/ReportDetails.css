@@ -200,9 +200,7 @@
   position: relative;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  /* RIMOSSO: border: 2px solid white; */
   background-color: transparent;
-  /* Aggiunto per massima sicurezza contro sfondo indesiderato */
 }
 
 .rdm-photo-card img {

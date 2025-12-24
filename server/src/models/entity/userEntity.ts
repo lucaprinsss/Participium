@@ -49,6 +49,12 @@ export class UserEntity implements Express.User {
   @Column({ type: "timestamptz", nullable: true })
   verificationCodeExpiresAt?: Date;
 
+  @Column({ length: 6, nullable: true })
+  telegramLinkCode?: string;
+
+  @Column({ type: "timestamptz", nullable: true })
+  telegramLinkCodeExpiresAt?: Date;
+
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;
 }

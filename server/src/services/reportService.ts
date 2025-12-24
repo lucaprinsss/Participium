@@ -1,30 +1,33 @@
-import { ReportCategory } from '../models/dto/ReportCategory';
-import { MapReportResponse } from '../models/dto/output/MapReportResponse';
-import { ClusteredReportResponse } from '../models/dto/output/ClusteredReportResponse';
-import { reportRepository } from '../repositories/reportRepository';
+
+import { notificationRepository, createNotification } from '../repositories/notificationRepository';
+import { ReportCategory } from '@dto/ReportCategory';
+import { MapReportResponse } from '@dto/output/MapReportResponse';
+import { ClusteredReportResponse } from '@dto/output/ClusteredReportResponse';
+import { reportRepository } from '@repositories/reportRepository';
 import { ReportStatus } from '@models/dto/ReportStatus';
-import { Location } from '../models/dto/Location';
-import { BadRequestError } from '../models/errors/BadRequestError';
-import { UnauthorizedError } from '../models/errors/UnauthorizedError';
-import { InsufficientRightsError } from '../models/errors/InsufficientRightsError';
-import { NotFoundError } from '../models/errors/NotFoundError';
-import { isWithinTurinBoundaries, isValidCoordinate } from '../utils/geoValidationUtils';
-import { dataUriToBuffer, extractMimeType, validatePhotos } from '../utils/photoValidationUtils';
+import { Location } from '@dto/Location';
+import { BadRequestError } from '@errors/BadRequestError';
+import { UnauthorizedError } from '@errors/UnauthorizedError';
+import { InsufficientRightsError } from '@errors/InsufficientRightsError';
+import { NotFoundError } from '@errors/NotFoundError';
+import { isWithinTurinBoundaries, isValidCoordinate } from '@utils/geoValidationUtils';
+import { dataUriToBuffer, extractMimeType, validatePhotos } from '@utils/photoValidationUtils';
 import { storageService } from './storageService';
-import { photoRepository } from '../repositories/photoRepository';
-import { categoryRoleRepository } from '../repositories/categoryRoleRepository';
-import { userRepository } from '../repositories/userRepository';
-import { companyRepository } from '../repositories/companyRepository';
-import { CreateReportRequest } from '../models/dto/input/CreateReportRequest';
-import { ReportResponse } from '../models/dto/output/ReportResponse';
+import { photoRepository } from '@repositories/photoRepository';
+import { categoryRoleRepository } from '@repositories/categoryRoleRepository';
+import { userRepository } from '@repositories/userRepository';
+import { companyRepository } from '@repositories/companyRepository';
+import { CreateReportRequest } from '@dto/input/CreateReportRequest';
+import { ReportResponse } from '@dto/output/ReportResponse';
 import { SystemRoles, isTechnicalStaff, isCitizen } from '@models/dto/UserRole';
-import { ReportEntity } from '../models/entity/reportEntity';
+import { ReportEntity } from '@entity/reportEntity';
 import { Report } from '@models/dto/Report'; 
-import { mapReportEntityToResponse, mapReportEntityToDTO, mapReportEntityToReportResponse } from './mapperService';
-import { commentRepository } from '../repositories/commentRepository';
-import { CommentResponse } from '../models/dto/output/CommentResponse';
-import { CommentEntity } from '../models/entity/commentEntity';
 import { RoleUtils } from '@utils/roleUtils';
+import { mapReportEntityToResponse, mapReportEntityToDTO, mapReportEntityToReportResponse, mapMessageToResponse } from './mapperService';
+import { commentRepository } from '@repositories/commentRepository';
+import { CommentResponse } from '@dto/output/CommentResponse';
+import { CommentEntity } from '@entity/commentEntity';
+import { messageRepository } from '../repositories/messageRepository';
 
 /**
  * Report Service
@@ -194,7 +197,7 @@ class ReportService {
         category: reportData.category,
         location: `POINT(${reportData.location.longitude} ${reportData.location.latitude})`,
         address: reportData.address?.trim(),
-        isAnonymous: reportData.isAnonymous || false,
+        isAnonymous: reportData.isAnonymous,
         photos: []
       };
 
@@ -230,12 +233,12 @@ class ReportService {
    * Enforces authorization: pending reports only for public relations officers
    */
   async getAllReports(
-    userId: number, 
+    userId: number | undefined, 
     status?: ReportStatus,
     category?: ReportCategory
   ): Promise<ReportResponse[]> {
     
-    const userEntity = await userRepository.findUserById(userId);
+    let userRole: string | undefined;
     
     if (!userEntity) {
       throw new UnauthorizedError('User not found');
@@ -347,6 +350,8 @@ class ReportService {
     const userRoles = RoleUtils.getUserRoleNames(user);
 
     const currentStatus = report.status;
+    // save previous status for notification message
+    const previousStatus = report.status;
 
     switch (newStatus) {
       case ReportStatus.ASSIGNED:
@@ -437,6 +442,23 @@ class ReportService {
     report.status = newStatus;
     report.updatedAt = new Date();
     const updatedReport = await reportRepository.save(report);
+
+    // Create notification for reporter about status change
+    if (report.reporterId) {
+      let statusMessage = `Your report "${report.title}" has changed status: ${previousStatus} → ${newStatus}.`;
+      if (body.resolutionNotes && newStatus === ReportStatus.RESOLVED) {
+        statusMessage += ` Resolution notes: ${body.resolutionNotes}`;
+      }
+      if (body.rejectionReason && newStatus === ReportStatus.REJECTED) {
+        statusMessage += ` Rejection reason: ${body.rejectionReason}`;
+      }
+      await createNotification({
+        userId: report.reporterId,
+        reportId: report.id,
+        content: statusMessage
+      });
+    }
+
     return mapReportEntityToDTO(updatedReport);
   }
 
@@ -616,6 +638,83 @@ class ReportService {
       createdAt: comment.createdAt
     };
   }
+
+
+    /**
+   * Retrieve reports located near a specific address
+   * @param address 
+   * @returns 
+   */
+  async getReportByAddress(address: string): Promise<ReportResponse[]> {
+    // Cerchiamo i report tramite il repository
+    const reports = await reportRepository.findReportsByAddress(address);
+    
+    // Mappiamo i risultati aggiungendo i nomi delle aziende se necessario
+    return await this.mapReportsWithCompanyNames(reports);
+  }
+
+
+  
+  /**
+   * Send a message from technical staff to the citizen reporter and notify the citizen
+   * @param reportId - The ID of the report
+   * @param senderId - The ID of the staff sending the message
+   * @param content - The message content
+   * @returns The created message with sender info
+   */
+  async sendMessage(reportId: number, senderId: number, content: string) {
+
+    // Validate content
+    if (!content || content.trim().length === 0) {
+      throw new BadRequestError('content cannot be empty');
+    }
+    if (content.length > 2000) {
+      throw new BadRequestError('content cannot exceed 2000 characters');
+    }
+
+    // Find the report
+    const report = await reportRepository.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundError('Report not found');
+    }
+
+    // Only technical staff assigned to the report can send messages
+    if (report.assigneeId !== senderId) {
+      throw new InsufficientRightsError('Only assigned technical staff can send messages');
+    }
+
+    // Save the message
+    const message = await messageRepository.createMessage(reportId, senderId, content.trim());
+
+    // Notify the citizen (report.reporterId)
+    if (report.reporterId) {
+      await createNotification({
+        userId: report.reporterId,
+        reportId: report.id,
+        content: `You have a new message about your report: "${report.title}"`,
+      });
+    }
+
+    return mapMessageToResponse(message);
+  }
+
+    /**
+   * Get all public messages for a report
+   * @param reportId - The ID of the report
+   * @returns Array of messages (MessageResponse[])
+   */
+  async getMessages(reportId: number, userId: number) {
+    const report = await reportRepository.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundError('Report not found');
+    }
+    if (report.assigneeId !== userId && report.reporterId !== userId) {
+      throw new InsufficientRightsError('Only the assigned staff or the report author can view messages');
+    }
+    const messages = await messageRepository.getMessagesByReportId(reportId);
+    return messages.map(mapMessageToResponse);
+  }
+  
 }
 
 export const reportService = new ReportService();

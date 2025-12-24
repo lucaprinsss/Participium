@@ -112,6 +112,8 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL UNIQUE,
     personal_photo_url TEXT,
     telegram_username VARCHAR(100) UNIQUE,
+    telegram_link_code VARCHAR(6),
+    telegram_link_code_expires_at TIMESTAMPTZ,
     email_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
     
     -- Field for external maintainers (reference to company)
@@ -223,4 +225,20 @@ CREATE TABLE user_roles (
 
 CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
 CREATE INDEX idx_user_roles_department_role_id ON user_roles(department_role_id);
+/*
+ * ====================================
+ * INDEXES
+ * ====================================
+ */
+
+/*
+ * Indexes for Telegram columns
+ */
+CREATE INDEX idx_users_telegram_link_code 
+ON users(telegram_link_code) 
+WHERE telegram_link_code IS NOT NULL;
+
+CREATE INDEX idx_users_telegram_username 
+ON users(telegram_username) 
+WHERE telegram_username IS NOT NULL;
 

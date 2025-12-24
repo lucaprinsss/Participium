@@ -1,14 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import userController from '@controllers/userController';
 import { userService } from '@services/userService';
-import { departmentService } from '@services/departmentService';
+import { userRepository } from '@repositories/userRepository';
 import { BadRequestError } from '@models/errors/BadRequestError';
+import { UnauthorizedError } from '@errors/UnauthorizedError';
 import { ConflictError } from '@models/errors/ConflictError';
 import { AppError } from '@models/errors/AppError';
+import { departmentService } from '@services/departmentService';
 
 // Mock delle dipendenze
 jest.mock('@services/userService');
 jest.mock('@services/departmentService');
+jest.mock('@repositories/userRepository');
 
 describe('UserController Unit Tests', () => {
   let mockRequest: Partial<Request>;
@@ -662,6 +665,488 @@ describe('UserController Unit Tests', () => {
     });
   });
 
+  describe('generateTelegramLinkCode', () => {
+    it('should generate telegram link code successfully', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockCode = 'ABC123';
+      mockRequest.user = mockUser;
+      (userService.generateTelegramLinkCode as jest.Mock).mockResolvedValue(mockCode);
+
+      // Act
+      await userController.generateTelegramLinkCode(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.generateTelegramLinkCode).toHaveBeenCalledWith(1);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({
+        code: 'ABC123',
+        expiresAt: expect.any(String)
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return 404 when user not found', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      mockRequest.user = mockUser;
+      (userService.generateTelegramLinkCode as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      await userController.generateTelegramLinkCode(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.generateTelegramLinkCode).toHaveBeenCalledWith(1);
+      expect(statusMock).toHaveBeenCalledWith(404);
+      expect(jsonMock).toHaveBeenCalledWith({
+        code: 404,
+        name: 'NotFoundError',
+        message: 'User not found'
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle service errors', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockError = new Error('Service error');
+      mockRequest.user = mockUser;
+      (userService.generateTelegramLinkCode as jest.Mock).mockRejectedValue(mockError);
+
+      // Act
+      await userController.generateTelegramLinkCode(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.generateTelegramLinkCode).toHaveBeenCalledWith(1);
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+      expect(statusMock).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getTelegramStatus', () => {
+    it('should return telegram status with linked account', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockUserEntity = {
+        id: 1,
+        telegramUsername: 'testuser',
+        telegramLinkCode: 'ABC123',
+        telegramLinkCodeExpiresAt: new Date(Date.now() + 600000) // 10 minutes from now
+      };
+      mockRequest.user = mockUser;
+      (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUserEntity);
+
+      // Act
+      await userController.getTelegramStatus(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userRepository.findUserById).toHaveBeenCalledWith(1);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({
+        isLinked: true,
+        telegramUsername: 'testuser',
+        activeCode: {
+          code: 'ABC123',
+          expiresAt: mockUserEntity.telegramLinkCodeExpiresAt
+        }
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return telegram status with unlinked account and no active code', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockUserEntity = {
+        id: 1,
+        telegramUsername: null,
+        telegramLinkCode: null,
+        telegramLinkCodeExpiresAt: null
+      };
+      mockRequest.user = mockUser;
+      (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUserEntity);
+
+      // Act
+      await userController.getTelegramStatus(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userRepository.findUserById).toHaveBeenCalledWith(1);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({
+        isLinked: false,
+        telegramUsername: null,
+        activeCode: null
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return telegram status with expired code', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockUserEntity = {
+        id: 1,
+        telegramUsername: null,
+        telegramLinkCode: 'ABC123',
+        telegramLinkCodeExpiresAt: new Date(Date.now() - 600000) // 10 minutes ago
+      };
+      mockRequest.user = mockUser;
+      (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUserEntity);
+
+      // Act
+      await userController.getTelegramStatus(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userRepository.findUserById).toHaveBeenCalledWith(1);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({
+        isLinked: false,
+        telegramUsername: null,
+        activeCode: null
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return 404 when user not found', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      mockRequest.user = mockUser;
+      (userRepository.findUserById as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      await userController.getTelegramStatus(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userRepository.findUserById).toHaveBeenCalledWith(1);
+      expect(statusMock).toHaveBeenCalledWith(404);
+      expect(jsonMock).toHaveBeenCalledWith({
+        code: 404,
+        name: 'NotFoundError',
+        message: 'User not found'
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle repository errors', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockError = new Error('Repository error');
+      mockRequest.user = mockUser;
+      (userRepository.findUserById as jest.Mock).mockRejectedValue(mockError);
+
+      // Act
+      await userController.getTelegramStatus(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userRepository.findUserById).toHaveBeenCalledWith(1);
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+      expect(statusMock).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('unlinkTelegramAccount', () => {
+    it('should unlink telegram account successfully', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockResult = { success: true, message: 'Telegram account unlinked successfully' };
+      mockRequest.user = mockUser;
+      (userService.unlinkTelegramAccount as jest.Mock).mockResolvedValue(mockResult);
+
+      // Act
+      await userController.unlinkTelegramAccount(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.unlinkTelegramAccount).toHaveBeenCalledWith(1);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({
+        message: 'Telegram account unlinked successfully'
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return 400 when unlink fails', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockResult = { success: false, message: 'Account not linked' };
+      mockRequest.user = mockUser;
+      (userService.unlinkTelegramAccount as jest.Mock).mockResolvedValue(mockResult);
+
+      // Act
+      await userController.unlinkTelegramAccount(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.unlinkTelegramAccount).toHaveBeenCalledWith(1);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(jsonMock).toHaveBeenCalledWith({
+        code: 400,
+        name: 'BadRequestError',
+        message: 'Account not linked'
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle service errors', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockError = new Error('Service error');
+      mockRequest.user = mockUser;
+      (userService.unlinkTelegramAccount as jest.Mock).mockRejectedValue(mockError);
+
+      // Act
+      await userController.unlinkTelegramAccount(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.unlinkTelegramAccount).toHaveBeenCalledWith(1);
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+      expect(statusMock).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getNotifications', () => {
+    it('should get notifications without filter', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockNotifications = [
+        { id: 1, message: 'Test notification', isRead: false },
+        { id: 2, message: 'Another notification', isRead: true }
+      ];
+      mockRequest.user = mockUser;
+      mockRequest.query = {};
+      (userService.getUserNotifications as jest.Mock).mockResolvedValue(mockNotifications);
+
+      // Act
+      await userController.getNotifications(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.getUserNotifications).toHaveBeenCalledWith(1, undefined);
+      expect(jsonMock).toHaveBeenCalledWith(mockNotifications);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should get notifications filtered by read status true', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockNotifications = [{ id: 2, message: 'Read notification', isRead: true }];
+      mockRequest.user = mockUser;
+      mockRequest.query = { is_read: 'true' };
+      (userService.getUserNotifications as jest.Mock).mockResolvedValue(mockNotifications);
+
+      // Act
+      await userController.getNotifications(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.getUserNotifications).toHaveBeenCalledWith(1, true);
+      expect(jsonMock).toHaveBeenCalledWith(mockNotifications);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should get notifications filtered by read status false', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockNotifications = [{ id: 1, message: 'Unread notification', isRead: false }];
+      mockRequest.user = mockUser;
+      mockRequest.query = { is_read: 'false' };
+      (userService.getUserNotifications as jest.Mock).mockResolvedValue(mockNotifications);
+
+      // Act
+      await userController.getNotifications(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.getUserNotifications).toHaveBeenCalledWith(1, false);
+      expect(jsonMock).toHaveBeenCalledWith(mockNotifications);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should get notifications with invalid is_read query parameter', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockNotifications = [
+        { id: 1, message: 'Test notification', isRead: false },
+        { id: 2, message: 'Another notification', isRead: true }
+      ];
+      mockRequest.user = mockUser;
+      mockRequest.query = { is_read: 'invalid' };
+      (userService.getUserNotifications as jest.Mock).mockResolvedValue(mockNotifications);
+
+      // Act
+      await userController.getNotifications(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.getUserNotifications).toHaveBeenCalledWith(1, undefined);
+      expect(jsonMock).toHaveBeenCalledWith(mockNotifications);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedError when user not authenticated', async () => {
+      // Arrange
+      mockRequest.user = undefined;
+
+      // Act
+      await userController.getNotifications(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(new UnauthorizedError('Not authenticated'));
+      expect(userService.getUserNotifications).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+
+    it('should handle service errors', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockError = new Error('Service error');
+      mockRequest.user = mockUser;
+      mockRequest.query = {};
+      (userService.getUserNotifications as jest.Mock).mockRejectedValue(mockError);
+
+      // Act
+      await userController.getNotifications(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.getUserNotifications).toHaveBeenCalledWith(1, undefined);
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('markNotificationAsRead', () => {
+    it('should mark notification as read', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockNotification = { id: 1, message: 'Test notification', isRead: true };
+      mockRequest.user = mockUser;
+      mockRequest.params = { id: '1' };
+      mockRequest.body = { is_read: true };
+      (userService.markNotificationAsRead as jest.Mock).mockResolvedValue(mockNotification);
+
+      // Act
+      await userController.markNotificationAsRead(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.markNotificationAsRead).toHaveBeenCalledWith(1, 1, true);
+      expect(jsonMock).toHaveBeenCalledWith(mockNotification);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should mark notification as unread', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockNotification = { id: 1, message: 'Test notification', isRead: false };
+      mockRequest.user = mockUser;
+      mockRequest.params = { id: '1' };
+      mockRequest.body = { is_read: false };
+      (userService.markNotificationAsRead as jest.Mock).mockResolvedValue(mockNotification);
+
+      // Act
+      await userController.markNotificationAsRead(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.markNotificationAsRead).toHaveBeenCalledWith(1, 1, false);
+      expect(jsonMock).toHaveBeenCalledWith(mockNotification);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle falsy is_read value as false', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockNotification = { id: 1, message: 'Test notification', isRead: false };
+      mockRequest.user = mockUser;
+      mockRequest.params = { id: '1' };
+      mockRequest.body = { is_read: null };
+      (userService.markNotificationAsRead as jest.Mock).mockResolvedValue(mockNotification);
+
+      // Act
+      await userController.markNotificationAsRead(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.markNotificationAsRead).toHaveBeenCalledWith(1, 1, false);
+      expect(jsonMock).toHaveBeenCalledWith(mockNotification);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedError when user not authenticated', async () => {
+      // Arrange
+      mockRequest.user = undefined;
+      mockRequest.params = { id: '1' };
+      mockRequest.body = { is_read: true };
+
+      // Act
+      await userController.markNotificationAsRead(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(new UnauthorizedError('Not authenticated'));
+      expect(userService.markNotificationAsRead).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+
+    it('should handle service errors', async () => {
+      // Arrange
+      const mockUser = { id: 1 };
+      const mockError = new Error('Service error');
+      mockRequest.user = mockUser;
+      mockRequest.params = { id: '1' };
+      mockRequest.body = { is_read: true };
+      (userService.markNotificationAsRead as jest.Mock).mockRejectedValue(mockError);
+
+      // Act
+      await userController.markNotificationAsRead(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.markNotificationAsRead).toHaveBeenCalledWith(1, 1, true);
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findUserByUsername', () => {
+    it('should find user by username successfully', async () => {
+      // Arrange
+      const mockUser = { id: 1, username: 'testuser', email: 'test@example.com' };
+      mockRequest.params = { username: 'testuser' };
+      (userService.getUserByUsername as jest.Mock).mockResolvedValue(mockUser);
+
+      // Act
+      await userController.findUserByUsername(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.getUserByUsername).toHaveBeenCalledWith('testuser');
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(mockUser);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return 404 when user not found', async () => {
+      // Arrange
+      mockRequest.params = { username: 'nonexistent' };
+      (userService.getUserByUsername as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      await userController.findUserByUsername(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.getUserByUsername).toHaveBeenCalledWith('nonexistent');
+      expect(statusMock).toHaveBeenCalledWith(404);
+      expect(jsonMock).toHaveBeenCalledWith({ message: 'User not found' });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle service errors', async () => {
+      // Arrange
+      const mockError = new Error('Service error');
+      mockRequest.params = { username: 'testuser' };
+      (userService.getUserByUsername as jest.Mock).mockRejectedValue(mockError);
+
+      // Act
+      await userController.findUserByUsername(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.getUserByUsername).toHaveBeenCalledWith('testuser');
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+      expect(statusMock).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Controller Structure', () => {
     it('should be an object', () => {
       expect(typeof userController).toBe('object');
@@ -675,6 +1160,36 @@ describe('UserController Unit Tests', () => {
     it('should have getExternalMaintainersByCategory method', () => {
       expect(userController).toHaveProperty('getExternalMaintainersByCategory');
       expect(typeof userController.getExternalMaintainersByCategory).toBe('function');
+    });
+
+    it('should have generateTelegramLinkCode method', () => {
+      expect(userController).toHaveProperty('generateTelegramLinkCode');
+      expect(typeof userController.generateTelegramLinkCode).toBe('function');
+    });
+
+    it('should have getTelegramStatus method', () => {
+      expect(userController).toHaveProperty('getTelegramStatus');
+      expect(typeof userController.getTelegramStatus).toBe('function');
+    });
+
+    it('should have unlinkTelegramAccount method', () => {
+      expect(userController).toHaveProperty('unlinkTelegramAccount');
+      expect(typeof userController.unlinkTelegramAccount).toBe('function');
+    });
+
+    it('should have getNotifications method', () => {
+      expect(userController).toHaveProperty('getNotifications');
+      expect(typeof userController.getNotifications).toBe('function');
+    });
+
+    it('should have markNotificationAsRead method', () => {
+      expect(userController).toHaveProperty('markNotificationAsRead');
+      expect(typeof userController.markNotificationAsRead).toBe('function');
+    });
+
+    it('should have findUserByUsername method', () => {
+      expect(userController).toHaveProperty('findUserByUsername');
+      expect(typeof userController.findUserByUsername).toBe('function');
     });
 
     it('register should accept three parameters (req, res, next)', () => {
@@ -691,6 +1206,54 @@ describe('UserController Unit Tests', () => {
 
     it('getExternalMaintainersByCategory should be async', () => {
       expect(userController.getExternalMaintainersByCategory.constructor.name).toBe('AsyncFunction');
+    });
+
+    it('generateTelegramLinkCode should accept three parameters (req, res, next)', () => {
+      expect(userController.generateTelegramLinkCode.length).toBe(3);
+    });
+
+    it('generateTelegramLinkCode should be async', () => {
+      expect(userController.generateTelegramLinkCode.constructor.name).toBe('AsyncFunction');
+    });
+
+    it('getTelegramStatus should accept three parameters (req, res, next)', () => {
+      expect(userController.getTelegramStatus.length).toBe(3);
+    });
+
+    it('getTelegramStatus should be async', () => {
+      expect(userController.getTelegramStatus.constructor.name).toBe('AsyncFunction');
+    });
+
+    it('unlinkTelegramAccount should accept three parameters (req, res, next)', () => {
+      expect(userController.unlinkTelegramAccount.length).toBe(3);
+    });
+
+    it('unlinkTelegramAccount should be async', () => {
+      expect(userController.unlinkTelegramAccount.constructor.name).toBe('AsyncFunction');
+    });
+
+    it('getNotifications should accept three parameters (req, res, next)', () => {
+      expect(userController.getNotifications.length).toBe(3);
+    });
+
+    it('getNotifications should be async', () => {
+      expect(userController.getNotifications.constructor.name).toBe('AsyncFunction');
+    });
+
+    it('markNotificationAsRead should accept three parameters (req, res, next)', () => {
+      expect(userController.markNotificationAsRead.length).toBe(3);
+    });
+
+    it('markNotificationAsRead should be async', () => {
+      expect(userController.markNotificationAsRead.constructor.name).toBe('AsyncFunction');
+    });
+
+    it('findUserByUsername should accept three parameters (req, res, next)', () => {
+      expect(userController.findUserByUsername.length).toBe(3);
+    });
+
+    it('findUserByUsername should be async', () => {
+      expect(userController.findUserByUsername.constructor.name).toBe('AsyncFunction');
     });
   });
 });

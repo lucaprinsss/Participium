@@ -4,19 +4,32 @@ import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { companyRepository } from '@repositories/companyRepository';
 import { ConflictError } from '@models/errors/ConflictError';
+import { NotFoundError } from '@models/errors/NotFoundError'; // Assunto che esista
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { AppError } from '@models/errors/AppError';
 import { AppDataSource } from '@database/connection';
+import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
 
 import { sendVerificationEmail } from '@utils/emailSender';
-
 import crypto from 'crypto';
+import { notificationRepository } from '../repositories/notificationRepository';
 
 /**
  * Service for user-related business logic
  */
 class UserService {
+  
+  /**
+   * Helper privato per generare i dati di verifica (Codice + Scadenza)
+   */
+  private generateOtpData() {
+    // Genera un intero tra 100000 (incluso) e 1000000 (escluso)
+    const otpCode = crypto.randomInt(100000, 1000000).toString();
+    const otpExpiration = new Date(Date.now() + 1800000); // 30 minutes from now
+    return { otpCode, otpExpiration };
+  }
+
   /**
    * Registers a new citizen
    * Validates uniqueness of username and email
@@ -48,9 +61,8 @@ class UserService {
       targetRoleIds = [citizenRole.id];
     }
 
-    // Genera un intero tra 100000 (incluso) e 1000000 (escluso)
-    const otpCode = crypto.randomInt(100000, 1000000).toString();
-    const otpExpiration = new Date(Date.now() + 1800000) // 30 minutes from now
+    // Genera i dati OTP usando l'helper
+    const { otpCode, otpExpiration } = this.generateOtpData();
 
     // Create new user with hashed password
     const newUser = await userRepository.createUserWithPassword({
@@ -91,10 +103,56 @@ class UserService {
       throw new AppError('Failed to map user data', 500);
     }
 
-    await sendVerificationEmail(email, otpCode).catch((error) => {
-      logInfo(`Failed to send verification email to ${email}: ${error}`);
-    });
+    // Invio email (gestito senza bloccare il ritorno della risposta se fallisce l'invio, o come preferisci)
+    await this.sendVerificationCode(email, otpCode);
+
     return userResponse;
+  }
+
+  /**
+   * Gestisce il rinvio del codice di verifica.
+   * Aggiorna i dati dell'utente con un nuovo codice e una nuova scadenza.
+   * @param email Email dell'utente
+   */
+  async resendVerificationCode(email: string): Promise<void> {
+    // 1. Trova l'utente
+    const user = await userRepository.findUserByEmail(email);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // 2. Controllo opzionale: se è già verificato, non ha senso inviare un nuovo codice
+    if (user.isVerified) {
+      throw new ConflictError('User is already verified');
+    }
+
+    // 3. Genera nuovi dati OTP
+    const { otpCode, otpExpiration } = this.generateOtpData();
+
+    // 4. Aggiorna l'utente nel DB (Assumendo che il repository abbia un metodo di update)
+    // Nota: È fondamentale aggiornare sia il codice che la data di scadenza
+    await userRepository.updateVerificationData(user.id, {
+        verificationCode: otpCode,
+        verificationCodeExpiresAt: otpExpiration
+    });
+
+    logInfo(`Verification code regenerated for user: ${user.username} (ID: ${user.id})`);
+
+    // 5. Invia la mail
+    await this.sendVerificationCode(email, otpCode);
+  }
+
+  /**
+   * Wrapper per l'invio dell'email per gestire errori di logging centralizzati
+   */
+  private async sendVerificationCode(email: string, otpCode: string): Promise<void> {
+    try {
+      await sendVerificationEmail(email, otpCode);
+    } catch (error) {
+      logInfo(`Failed to send verification email to ${email}: ${error}`);
+      // Qui potresti decidere se lanciare un errore o lasciare che sia "silent"
+      // throw new AppError('Error sending verification email', 500); 
+    }
   }
 
   /**
@@ -111,6 +169,22 @@ class UserService {
 
     return mapUserEntityToUserResponse(user);
   }
+
+
+  /**
+   * Gets user by username
+   * @param username Username
+   * @returns UserResponse DTO or null
+   */
+  async getUserByUsername(username: string): Promise<UserResponse | null> {
+    const user = await userRepository.findUserByUsername(username);
+    if (!user) {
+      return null;
+    }
+
+    return mapUserEntityToUserResponse(user);
+  }
+
 
   /**
    * Get external maintainers by category
@@ -145,6 +219,46 @@ class UserService {
       })
       .filter((user): user is UserResponse => user !== null);
   }
-}
+
+  async getUserNotifications(userId: number, isRead?: boolean) {
+    const where: any = { userId };
+    if (typeof isRead !== 'undefined') {
+      where.isRead = isRead;
+    }
+    return await notificationRepository.find({
+      where,
+      order: { createdAt: 'DESC' }
+    });
+  }
+
+  async markNotificationAsRead(userId: number, notificationId: number, isRead: boolean) {
+    const notification = await notificationRepository.findOneBy({ id: notificationId });
+    if (!notification) {
+      throw new NotFoundError('Notification not found');
+    }
+    if (notification.userId !== userId) {
+      // Forbidden: trying to update someone else's notification
+      throw new InsufficientRightsError('You can only update your own notifications');
+    }
+    notification.isRead = isRead;
+    return await notificationRepository.save(notification);
+  }
+
+  /**
+   * Generate Telegram link code
+   * @param userId User ID
+   * @returns Generated verification code
+   */
+  async generateTelegramLinkCode(userId: number): Promise<string | null> {
+    return userRepository.generateTelegramLinkCode(userId);
+  }
+  /**
+   * Unlink Telegram account
+   * @param userId User ID
+   * @returns Result with success status and message
+   */
+  async unlinkTelegramAccount(userId: number): Promise<{ success: boolean; message: string }> {
+    return userRepository.unlinkTelegramAccount(userId);
+  }}
 
 export const userService = new UserService();

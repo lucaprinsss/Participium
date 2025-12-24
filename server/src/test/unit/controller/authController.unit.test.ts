@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import authController from '@controllers/authController';
 import { authService } from '@services/authService';
+import { userService } from '@services/userService';
 import { userRepository } from '@repositories/userRepository';
 import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { UserEntity } from '@models/entity/userEntity';
@@ -8,6 +9,7 @@ import passport from 'passport';
 
 // Mock delle dipendenze
 jest.mock('@services/authService');
+jest.mock('@services/userService');
 jest.mock('@repositories/userRepository');
 jest.mock('passport');
 
@@ -212,6 +214,26 @@ describe('AuthController Unit Tests', () => {
           message: 'Invalid credentials',
         })
       );
+    });
+
+    it('should return 401 for unverified user', () => {
+      // Arrange
+      const unverifiedUser = { ...mockUser, isVerified: false };
+      mockRequest.body = loginData;
+      (passport.authenticate as jest.Mock).mockImplementation((strategy, callback) => {
+        return (req: Request, res: Response, next: NextFunction) => {
+          callback(null, unverifiedUser, { message: 'Success' });
+        };
+      });
+
+      // Act
+      authController.login(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(passport.authenticate).toHaveBeenCalledWith('local', expect.any(Function));
+      expect(mockNext).toHaveBeenCalledWith(new UnauthorizedError('Email not verified. Please verify your email before logging in.'));
+      expect(statusMock).not.toHaveBeenCalled();
+      expect(mockRequest.logIn).not.toHaveBeenCalled();
     });
 
     it('should not expose sensitive data in response', () => {
@@ -577,6 +599,71 @@ describe('AuthController Unit Tests', () => {
 
     it('verifyEmail should accept three parameters (req, res, next)', () => {
       expect(authController.verifyEmail.length).toBe(3);
+    });
+  });
+
+  describe('resendVerificationCode', () => {
+    it('should resend verification code successfully', async () => {
+      // Arrange
+      const resendData = { email: 'test@example.com' };
+      mockRequest.body = resendData;
+      (userService.resendVerificationCode as jest.Mock).mockResolvedValue(undefined);
+
+      // Act
+      await authController.resendVerificationCode(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.resendVerificationCode).toHaveBeenCalledWith(resendData.email);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({ message: 'Verification code sent successfully' });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError when email is missing', async () => {
+      // Arrange
+      mockRequest.body = {};
+
+      // Act
+      await authController.resendVerificationCode(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Email is required',
+        })
+      );
+      expect(userService.resendVerificationCode).not.toHaveBeenCalled();
+      expect(statusMock).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+
+    it('should call next with error when userService.resendVerificationCode throws', async () => {
+      // Arrange
+      const resendData = { email: 'test@example.com' };
+      mockRequest.body = resendData;
+      const mockError = new Error('Failed to send email');
+      (userService.resendVerificationCode as jest.Mock).mockRejectedValue(mockError);
+
+      // Act
+      await authController.resendVerificationCode(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.resendVerificationCode).toHaveBeenCalledWith(resendData.email);
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+      expect(statusMock).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
     });
   });
 });

@@ -7,6 +7,8 @@ import { NotFoundError } from '@models/errors/NotFoundError';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { UserEntity } from '@models/entity/userEntity';
 
+import { userService } from '@services/userService';
+
 /**
  * Controller for Authentication-related HTTP requests
  */
@@ -108,6 +110,24 @@ class AuthController {
       await authService.verifyEmailCode(email, otpCode);
 
       res.status(200).json({ message: 'Email verified successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+/**
+   * Resend verification code
+   */
+  async resendVerificationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        throw new BadRequestError('Email is required');
+      }
+
+      await userService.resendVerificationCode(email);
+
+      res.status(200).json({ message: 'Verification code sent successfully' });
     } catch (error) {
       next(error);
     }

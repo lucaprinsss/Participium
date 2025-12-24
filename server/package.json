@@ -16,8 +16,8 @@
     "test:unit": "jest --testPathPatterns=unit --runInBand --silent",
     "test:integration": "run-s test:db:up test:wait test:integration:run test:db:down",
     "test:integration:run": "jest --testPathPatterns=integration --runInBand --silent",
-    "test:db:up": "docker-compose -f docker-compose.test.yml up -d",
-    "test:db:down": "docker-compose -f docker-compose.test.yml down -v",
+    "test:db:up": "docker compose -f docker-compose.test.yml up -d",
+    "test:db:down": "docker compose -f docker-compose.test.yml down -v",
     "storage:local": "node scripts/switch-storage.js local",
     "storage:r2": "node scripts/switch-storage.js r2",
     "storage:status": "node scripts/switch-storage.js status"
@@ -40,10 +40,12 @@
     "reflect-metadata": "^0.2.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "telegraf": "^4.16.3",
     "typeorm": "^0.3.27",
     "winston": "^3.18.3"
   },
   "devDependencies": {
+    "@jest-mock/express": "^2.0.2",
     "@types/cors": "^2.8.19",
     "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.5",

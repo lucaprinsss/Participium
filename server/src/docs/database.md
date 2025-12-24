@@ -14,7 +14,7 @@ Participium is a citizen reporting system that allows users to submit reports ab
 - **User Management** (citizens, staff, administrators) with **multiple roles per user**
 - **Report Lifecycle** (submission, approval, assignment, resolution)
 - **Media Attachments** (photos)
-- **Communication** (comments, messages, notifications)
+- **Communication** (comments, messages, notifications, Telegram integration)
 - **Geolocation** (using PostGIS for spatial data)
 - **Automatic Assignment Workflow**
 
@@ -132,15 +132,35 @@ Stores information for all system actors.
 | `password_hash` | `VARCHAR(255)` | NOT NULL | Hashed password |
 | `email` | `VARCHAR(255)` | NOT NULL, UNIQUE | Email address |
 | `personal_photo_url` | `TEXT` | NULLABLE | URL to user's profile photo |
-| `telegram_username` | `VARCHAR(100)` | NULLABLE, UNIQUE | Telegram username |
-| `email_notifications_enabled` | `BOOLEAN` | NOT NULL, DEFAULT true | Enable email notifications |
-| `company_id` | `INT` | **FOREIGN KEY** -> `companies(id)`, NULLABLE | Company reference (External Maintainers only) |
-| `is_verified` | `BOOLEAN` | NOT NULL, DEFAULT false | Email verified flag |
-| `verification_code` | `VARCHAR(6)` | NULLABLE | 6-digit verification code |
-| `verification_code_expires_at` | `TIMESTAMPTZ` | NULLABLE | Code expiration timestamp |
+| `telegram_username` | `VARCHAR(100)` | NULLABLE, UNIQUE | Telegram username for bot integration |
+| `telegram_link_code` | `VARCHAR(6)` | NULLABLE | 6-digit code for linking Telegram account |
+| `telegram_link_code_expires_at` | `TIMESTAMPTZ` | NULLABLE | Expiration timestamp for the Telegram link code |
+| `email_notifications_enabled` | `BOOLEAN` | NOT NULL, DEFAULT true | Flag to enable/disable email notifications |
+| `company_id` | `INT` | **FOREIGN KEY** → `companies(id)`, NULLABLE | Reference to external company (only for External Maintainer role) |
+| `is_verified` | `BOOLEAN` | NOT NULL, DEFAULT false | Indicates if the user's email has been verified |
+| `verification_code` | `VARCHAR(6)` | NULLABLE | 6-digit verification code sent via email (null after verification) |
+| `verification_code_expires_at` | `TIMESTAMPTZ` | NULLABLE | Expiration timestamp for the verification code (30 minutes from generation) |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Registration date |
 
 **Note:** User roles are now managed through the `user_roles` table (many-to-many relationship).
+
+
+**Indexes:**
+- Primary key on `id`
+- Unique index on `username`
+- Unique index on `email`
+- Unique index on `telegram_username` (where not null)
+- Index on `telegram_link_code` (where not null)
+- Foreign key index on `department_role_id`
+
+**Notes:**
+- In V3, user roles are no longer stored as an ENUM but are managed through the `department_role_id` foreign key
+- Each user is assigned to a specific "position" which is a combination of department and role
+- Citizens are assigned to the 'Organization' department with 'Citizen' role
+- **V4.1**: External maintainers are now regular users with the 'External Maintainer' role in the 'External Service Providers' department
+- **V4.2**: Email verification system added. New users must verify their email within 30 minutes using a 6-digit code. Users cannot use the system until `is_verified` is true. Pre-existing users (admin, external maintainers) are automatically verified
+- **V4.3**: Added `company_id` foreign key to link external maintainers to their companies. The `companies` table now stores company data separately from user accounts
+- **V4.4**: Added Telegram integration fields. Users can link their Telegram account using a temporary 6-digit code that expires after 10 minutes. The `telegram_username` is used for bot notifications, while `telegram_link_code` facilitates the linking process.
 
 ---
 
@@ -289,4 +309,5 @@ reports (1) ────────────< (N) messages
 | 4.1 | 2025-12-02 | Integrated external maintainers as users |
 | 4.2 | 2025-12-02 | Added email verification system |
 | 4.3 | 2025-12-05 | Separated company entities from user accounts |
-| 5.0 | 2025-12-20 | **Multi-role support (PT10):** Added `user_roles` table for many-to-many user-role relationship. Removed `department_role_id` from `users` table. Users can now have multiple roles simultaneously. |
+| 4.4 | 2025-12-22 | **Added Telegram integration:** Added `telegram_link_code` and `telegram_link_code_expires_at` fields to `users` table. Users can link their Telegram accounts using a temporary 6-digit code that expires after 10 minutes. Added corresponding indexes for efficient querying. |
+| 5.0 | 2025-12-24 | **Multi-role support (PT10):** Added `user_roles` table for many-to-many user-role relationship. Removed `department_role_id` from `users` table. Users can now have multiple roles simultaneously. |

@@ -819,7 +819,14 @@ describe('MunicipalityUserController Integration Tests', () => {
         });
 
         it('should return 400 when trying to assign CITIZEN role', async () => {
-            const response = await adminAgent
+            // Create a fresh agent for this test to avoid session issues
+            const freshAdminAgent = request.agent(app);
+            await freshAdminAgent.post('/api/sessions').send({
+                username: ADMIN_CREDENTIALS.username,
+                password: ADMIN_CREDENTIALS.password
+            });
+
+            const response = await freshAdminAgent
                 .put(`/api/municipality/users/${createdEmployee.id}/role`)
                 .send({ role_name: 'Citizen' });
 

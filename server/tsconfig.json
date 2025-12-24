@@ -17,6 +17,7 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": "./src",
     "paths": {
+      "@app": ["app"],
       "@config/*": ["config/*"],
       "@controllers/*": ["controllers/*"],
       "@middleware/*": ["middleware/*"],
@@ -29,7 +30,8 @@
       "@entity/*": ["models/entity/*"],
       "@errors/*": ["models/errors/*"],
       "@database/*": ["database/*"],
-      "@test/*": ["test/*"]
+      "@test/*": ["test/*"],
+      "@telegramBot/*": ["telegramBot/*"]
     }
   },
   "include": [

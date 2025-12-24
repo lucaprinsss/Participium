@@ -258,5 +258,36 @@ router.delete('/current', isLoggedIn, AuthController.logout);
  */
 router.post('/verifyEmail', AuthController.verifyEmail);
 
+/**
+ * @swagger
+ * /api/sessions/resend-code:
+ *  post:
+ *   tags: [Authentication]
+ *   summary: Resend verification code
+ *   description: Resends the OTP code to the user's email if the account is not verified.
+ *   requestBody:
+ *     required: true
+ *     content:
+ *       application/json:
+ *         schema:
+ *           type: object
+ *           required:
+ *             - email
+ *           properties:
+ *             email:
+ *               type: string
+ *               format: email
+ *               description: The email address used during registration
+ *               example: "mario.rossi@gmail.com"
+ *   responses:
+ *     200:
+ *       description: Verification code sent successfully
+ *     404:
+ *       description: User not found
+ *     409:
+ *       description: User already verified
+ */
+router.post('/resend-code', AuthController.resendVerificationCode);
+
 export default router;
 

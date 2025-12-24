@@ -39,9 +39,9 @@ export const validateCreateReport = (req: Request, res: Response, next: NextFunc
       );
     }
 
-    // Validate isAnonymous (optional)
-    if (data.isAnonymous !== undefined && typeof data.isAnonymous !== 'boolean') {
-      throw new BadRequestError('isAnonymous must be a boolean');
+    // Validate isAnonymous 
+    if (data.isAnonymous === undefined || data.isAnonymous === null || typeof data.isAnonymous !== 'boolean') {
+      throw new BadRequestError('isAnonymous is required and must be a boolean');
     }
 
     // Validate location

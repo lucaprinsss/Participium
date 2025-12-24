@@ -1,10 +1,14 @@
 import { userService } from '../../../services/userService';
 import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
+import { notificationRepository } from '@repositories/notificationRepository';
+import { companyRepository } from '@repositories/companyRepository';
 import * as mapperService from '@services/mapperService';
 import * as loggingService from '@services/loggingService';
 import { ConflictError } from '@models/errors/ConflictError';
+import { NotFoundError } from '@models/errors/NotFoundError';
 import { AppError } from '@models/errors/AppError';
+import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
 import { RegisterRequest } from '@models/dto/input/RegisterRequest';
 import { UserEntity } from '@models/entity/userEntity';
 import { UserResponse } from '@models/dto/output/UserResponse';
@@ -13,7 +17,7 @@ import { AppDataSource } from '@database/connection';
 jest.mock('@repositories/userRepository');
 jest.mock('@repositories/departmentRoleRepository');
 jest.mock('@repositories/companyRepository');
-import { companyRepository } from '@repositories/companyRepository';
+jest.mock('@repositories/notificationRepository');
 jest.mock('@services/mapperService');
 jest.mock('@services/loggingService');
 jest.mock('@database/connection');
@@ -687,6 +691,316 @@ describe('UserService', () => {
           category2
         );
       });
+    });
+  });
+
+  describe('generateTelegramLinkCode', () => {
+    it('should generate telegram link code successfully', async () => {
+      // Arrange
+      const userId = 1;
+      const expectedCode = '123456';
+      (userRepository.generateTelegramLinkCode as jest.Mock).mockResolvedValue(expectedCode);
+
+      // Act
+      const result = await userService.generateTelegramLinkCode(userId);
+
+      // Assert
+      expect(userRepository.generateTelegramLinkCode).toHaveBeenCalledWith(userId);
+      expect(result).toBe(expectedCode);
+    });
+
+    it('should return null when user not found', async () => {
+      // Arrange
+      const userId = 999;
+      (userRepository.generateTelegramLinkCode as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      const result = await userService.generateTelegramLinkCode(userId);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('resendVerificationCode', () => {
+    const testEmail = 'test@example.com';
+
+    it('should resend verification code for unverified user', async () => {
+      // Arrange
+      const mockUser = createMockUserEntity({
+        id: 1,
+        username: 'testuser',
+        email: testEmail,
+        isVerified: false
+      });
+
+      (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(mockUser);
+      (userRepository.updateVerificationData as jest.Mock).mockResolvedValue(undefined);
+
+      // Act
+      await userService.resendVerificationCode(testEmail);
+
+      // Assert
+      expect(userRepository.findUserByEmail).toHaveBeenCalledWith(testEmail);
+      expect(userRepository.updateVerificationData).toHaveBeenCalledWith(1, expect.objectContaining({
+        verificationCode: expect.any(String),
+        verificationCodeExpiresAt: expect.any(Date)
+      }));
+      expect(loggingService.logInfo).toHaveBeenCalledWith(
+        'Verification code regenerated for user: testuser (ID: 1)'
+      );
+    });
+
+    it('should throw NotFoundError if user not found', async () => {
+      // Arrange
+      (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(userService.resendVerificationCode(testEmail)).rejects.toThrow(NotFoundError);
+      await expect(userService.resendVerificationCode(testEmail)).rejects.toThrow('User not found');
+    });
+
+    it('should throw ConflictError if user is already verified', async () => {
+      // Arrange
+      const mockUser = createMockUserEntity({
+        isVerified: true
+      });
+
+      (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(mockUser);
+
+      // Act & Assert
+      await expect(userService.resendVerificationCode(testEmail)).rejects.toThrow(ConflictError);
+      await expect(userService.resendVerificationCode(testEmail)).rejects.toThrow('User is already verified');
+    });
+  });
+
+  describe('getUserByUsername', () => {
+    const testUsername = 'testuser';
+
+    it('should return user response when user exists', async () => {
+      // Arrange
+      const mockUser = createMockUserEntity({ username: testUsername });
+      const mockResponse = createMockUserResponse({ username: testUsername });
+
+      (userRepository.findUserByUsername as jest.Mock).mockResolvedValue(mockUser);
+      (mapperService.mapUserEntityToUserResponse as jest.Mock).mockReturnValue(mockResponse);
+
+      // Act
+      const result = await userService.getUserByUsername(testUsername);
+
+      // Assert
+      expect(userRepository.findUserByUsername).toHaveBeenCalledWith(testUsername);
+      expect(mapperService.mapUserEntityToUserResponse).toHaveBeenCalledWith(mockUser);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should return null when user does not exist', async () => {
+      // Arrange
+      (userRepository.findUserByUsername as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      const result = await userService.getUserByUsername(testUsername);
+
+      // Assert
+      expect(userRepository.findUserByUsername).toHaveBeenCalledWith(testUsername);
+      expect(mapperService.mapUserEntityToUserResponse).not.toHaveBeenCalled();
+      expect(result).toBeNull();
+    });
+
+    it('should propagate database errors', async () => {
+      // Arrange
+      const error = new Error('Database connection failed');
+      (userRepository.findUserByUsername as jest.Mock).mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(userService.getUserByUsername(testUsername)).rejects.toThrow('Database connection failed');
+    });
+  });
+
+  describe('getUserNotifications', () => {
+    const userId = 1;
+
+    it('should return all notifications for user when isRead is not specified', async () => {
+      // Arrange
+      const mockNotifications = [
+        { id: 1, userId, message: 'Test notification 1', isRead: false },
+        { id: 2, userId, message: 'Test notification 2', isRead: true }
+      ];
+
+      (notificationRepository.find as jest.Mock).mockResolvedValue(mockNotifications);
+
+      // Act
+      const result = await userService.getUserNotifications(userId);
+
+      // Assert
+      expect(notificationRepository.find).toHaveBeenCalledWith({
+        where: { userId },
+        order: { createdAt: 'DESC' }
+      });
+      expect(result).toEqual(mockNotifications);
+    });
+
+    it('should return only unread notifications when isRead is false', async () => {
+      // Arrange
+      const mockNotifications = [
+        { id: 1, userId, message: 'Unread notification', isRead: false }
+      ];
+
+      (notificationRepository.find as jest.Mock).mockResolvedValue(mockNotifications);
+
+      // Act
+      const result = await userService.getUserNotifications(userId, false);
+
+      // Assert
+      expect(notificationRepository.find).toHaveBeenCalledWith({
+        where: { userId, isRead: false },
+        order: { createdAt: 'DESC' }
+      });
+      expect(result).toEqual(mockNotifications);
+    });
+
+    it('should return only read notifications when isRead is true', async () => {
+      // Arrange
+      const mockNotifications = [
+        { id: 2, userId, message: 'Read notification', isRead: true }
+      ];
+
+      (notificationRepository.find as jest.Mock).mockResolvedValue(mockNotifications);
+
+      // Act
+      const result = await userService.getUserNotifications(userId, true);
+
+      // Assert
+      expect(notificationRepository.find).toHaveBeenCalledWith({
+        where: { userId, isRead: true },
+        order: { createdAt: 'DESC' }
+      });
+      expect(result).toEqual(mockNotifications);
+    });
+
+    it('should return empty array when no notifications exist', async () => {
+      // Arrange
+      (notificationRepository.find as jest.Mock).mockResolvedValue([]);
+
+      // Act
+      const result = await userService.getUserNotifications(userId);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('markNotificationAsRead', () => {
+    const userId = 1;
+    const notificationId = 10;
+
+    it('should mark notification as read successfully', async () => {
+      // Arrange
+      const mockNotification = {
+        id: notificationId,
+        userId,
+        message: 'Test notification',
+        isRead: false
+      };
+
+      const savedNotification = { ...mockNotification, isRead: true };
+
+      (notificationRepository.findOneBy as jest.Mock).mockResolvedValue(mockNotification);
+      (notificationRepository.save as jest.Mock).mockResolvedValue(savedNotification);
+
+      // Act
+      const result = await userService.markNotificationAsRead(userId, notificationId, true);
+
+      // Assert
+      expect(notificationRepository.findOneBy).toHaveBeenCalledWith({ id: notificationId });
+      expect(mockNotification.isRead).toBe(true);
+      expect(notificationRepository.save).toHaveBeenCalledWith(mockNotification);
+      expect(result).toBe(savedNotification);
+    });
+
+    it('should mark notification as unread successfully', async () => {
+      // Arrange
+      const mockNotification = {
+        id: notificationId,
+        userId,
+        message: 'Test notification',
+        isRead: true
+      };
+
+      const savedNotification = { ...mockNotification, isRead: false };
+
+      (notificationRepository.findOneBy as jest.Mock).mockResolvedValue(mockNotification);
+      (notificationRepository.save as jest.Mock).mockResolvedValue(savedNotification);
+
+      // Act
+      const result = await userService.markNotificationAsRead(userId, notificationId, false);
+
+      // Assert
+      expect(mockNotification.isRead).toBe(false);
+      expect(notificationRepository.save).toHaveBeenCalledWith(mockNotification);
+      expect(result).toBe(savedNotification);
+    });
+
+    it('should throw NotFoundError if notification not found', async () => {
+      // Arrange
+      (notificationRepository.findOneBy as jest.Mock).mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(userService.markNotificationAsRead(userId, notificationId, true)).rejects.toThrow(NotFoundError);
+      await expect(userService.markNotificationAsRead(userId, notificationId, true)).rejects.toThrow('Notification not found');
+    });
+
+    it('should throw InsufficientRightsError if trying to update another user notification', async () => {
+      // Arrange
+      const mockNotification = {
+        id: notificationId,
+        userId: 999, // Different user ID
+        message: 'Test notification',
+        isRead: false
+      };
+
+      (notificationRepository.findOneBy as jest.Mock).mockResolvedValue(mockNotification);
+
+      // Act & Assert
+      await expect(userService.markNotificationAsRead(userId, notificationId, true)).rejects.toThrow(InsufficientRightsError);
+      await expect(userService.markNotificationAsRead(userId, notificationId, true)).rejects.toThrow('You can only update your own notifications');
+    });
+  });
+
+  describe('generateTelegramLinkCode', () => {
+    const userId = 1;
+
+    it('should generate telegram link code successfully', async () => {
+      // Arrange
+      const expectedCode = 'ABC123XYZ';
+      (userRepository.generateTelegramLinkCode as jest.Mock).mockResolvedValue(expectedCode);
+
+      // Act
+      const result = await userService.generateTelegramLinkCode(userId);
+
+      // Assert
+      expect(userRepository.generateTelegramLinkCode).toHaveBeenCalledWith(userId);
+      expect(result).toBe(expectedCode);
+    });
+
+    it('should return null when code generation fails', async () => {
+      // Arrange
+      (userRepository.generateTelegramLinkCode as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      const result = await userService.generateTelegramLinkCode(userId);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('should propagate repository errors', async () => {
+      // Arrange
+      const error = new Error('Database error');
+      (userRepository.generateTelegramLinkCode as jest.Mock).mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(userService.generateTelegramLinkCode(userId)).rejects.toThrow('Database error');
     });
   });
 });
