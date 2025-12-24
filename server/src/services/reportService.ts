@@ -21,7 +21,7 @@ import { CreateReportRequest } from '@dto/input/CreateReportRequest';
 import { ReportResponse } from '@dto/output/ReportResponse';
 import { SystemRoles, isTechnicalStaff, isCitizen } from '@models/dto/UserRole';
 import { ReportEntity } from '@entity/reportEntity';
-import { Report } from '@models/dto/Report'; 
+import { Report } from '@models/dto/Report';
 import { RoleUtils } from '@utils/roleUtils';
 import { mapReportEntityToResponse, mapReportEntityToDTO, mapReportEntityToReportResponse, mapMessageToResponse } from './mapperService';
 import { commentRepository } from '@repositories/commentRepository';
@@ -160,7 +160,7 @@ class ReportService {
     for (const dataUri of photoDataUris) {
       const buffer = dataUriToBuffer(dataUri);
       const mimeType = extractMimeType(dataUri)!;
-      
+
       const storagePath = await storageService.uploadPhoto(buffer, mimeType, reportId);
       storagePaths.push(storagePath);
     }
@@ -233,25 +233,29 @@ class ReportService {
    * Enforces authorization: pending reports only for public relations officers
    */
   async getAllReports(
-    userId: number | undefined, 
+    userId: number | undefined,
     status?: ReportStatus,
     category?: ReportCategory
   ): Promise<ReportResponse[]> {
-    
-    let userRole: string | undefined;
-    
+
+    // Fetch user entity
+    if (!userId) {
+      throw new UnauthorizedError('User ID is required');
+    }
+
+    const userEntity = await userRepository.findUserById(userId);
     if (!userEntity) {
       throw new UnauthorizedError('User not found');
     }
-    
+
     const userRoles = RoleUtils.getUserRoleNames(userEntity);
-    
+
     if (!userRoles || userRoles.length === 0) {
       throw new UnauthorizedError('User has no roles assigned');
     }
-    
+
     const hasPublicRelationsRole = RoleUtils.userHasRole(userEntity, 'Municipal Public Relations Officer');
-    
+
     if (status === ReportStatus.PENDING_APPROVAL) {
       if (!hasPublicRelationsRole) {
         throw new InsufficientRightsError(
@@ -388,13 +392,13 @@ class ReportService {
           }
         }
         break;
-      
+
       case ReportStatus.REJECTED:
         if (currentStatus !== ReportStatus.PENDING_APPROVAL) {
-            throw new BadRequestError(`Cannot reject report with status ${currentStatus}. Only reports with status Pending Approval can be rejected.`);
+          throw new BadRequestError(`Cannot reject report with status ${currentStatus}. Only reports with status Pending Approval can be rejected.`);
         }
         if (!RoleUtils.userHasRole(user, SystemRoles.PUBLIC_RELATIONS_OFFICER)) {
-            throw new InsufficientRightsError('Only Public Relations Officers can reject reports.');
+          throw new InsufficientRightsError('Only Public Relations Officers can reject reports.');
         }
         if (!body.rejectionReason || body.rejectionReason.trim() === '') {
           throw new BadRequestError('Rejection reason is required when rejecting a report.');
@@ -408,7 +412,7 @@ class ReportService {
         }
         const isExternalMaintainer = RoleUtils.userHasRole(user, SystemRoles.EXTERNAL_MAINTAINER);
         const hasTechnicalRole = userRoles.some(role => isTechnicalStaff(role));
-        
+
         if (isExternalMaintainer) {
           if (report.assigneeId !== userId && report.externalAssigneeId !== userId) {
             throw new InsufficientRightsError('You can only resolve reports assigned to you.');
@@ -528,13 +532,13 @@ class ReportService {
     report.updatedAt = new Date();
 
     await reportRepository.save(report);
-    
+
     // Reload report with all relations
     const updatedReport = await reportRepository.findReportById(reportId);
     if (!updatedReport) {
       throw new NotFoundError('Report not found after update');
     }
-    
+
     return mapReportEntityToDTO(updatedReport);
   }
 
@@ -640,21 +644,21 @@ class ReportService {
   }
 
 
-    /**
-   * Retrieve reports located near a specific address
-   * @param address 
-   * @returns 
-   */
+  /**
+ * Retrieve reports located near a specific address
+ * @param address 
+ * @returns 
+ */
   async getReportByAddress(address: string): Promise<ReportResponse[]> {
     // Cerchiamo i report tramite il repository
     const reports = await reportRepository.findReportsByAddress(address);
-    
+
     // Mappiamo i risultati aggiungendo i nomi delle aziende se necessario
     return await this.mapReportsWithCompanyNames(reports);
   }
 
 
-  
+
   /**
    * Send a message from technical staff to the citizen reporter and notify the citizen
    * @param reportId - The ID of the report
@@ -698,11 +702,11 @@ class ReportService {
     return mapMessageToResponse(message);
   }
 
-    /**
-   * Get all public messages for a report
-   * @param reportId - The ID of the report
-   * @returns Array of messages (MessageResponse[])
-   */
+  /**
+ * Get all public messages for a report
+ * @param reportId - The ID of the report
+ * @returns Array of messages (MessageResponse[])
+ */
   async getMessages(reportId: number, userId: number) {
     const report = await reportRepository.findReportById(reportId);
     if (!report) {
@@ -714,7 +718,7 @@ class ReportService {
     const messages = await messageRepository.getMessagesByReportId(reportId);
     return messages.map(mapMessageToResponse);
   }
-  
+
 }
 
 export const reportService = new ReportService();

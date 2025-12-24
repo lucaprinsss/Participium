@@ -32,13 +32,13 @@ export function createErrorDTO(
 
 /**
  * Generate full URL for photo storage path
- */ 
+ */
 function getPhotoUrl(storageUrl: string): string {
   // If the storage URL already includes the protocol (http/https), return as-is
   if (storageUrl.startsWith('http://') || storageUrl.startsWith('https://')) {
     return storageUrl;
   }
-  
+
   // Otherwise, construct the full URL using the base URL
   const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3001';
   return `${baseUrl}${storageUrl}`;
@@ -94,7 +94,7 @@ export function mapRoleEntityToDTO(entity: RoleEntity): Role {
  * Handles multiple roles through user_roles join table
  */
 export function mapUserEntityToUserResponse(entity: UserEntity | null | undefined, companyName?: string): UserResponse | null {
-  
+
   if (!entity) {
     return null;
   }
@@ -164,7 +164,7 @@ export function mapReportEntityToResponse(report: ReportEntity, photos: any[], l
 export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCompanyName?: string): ReportResponse {
   // Parse PostGIS geography point to lat/lng
   let location = { latitude: 0, longitude: 0 };
-  
+
   if (typeof entity.location === 'string') {
     const match = new RegExp(/POINT\(([^ ]+) ([^ ]+)\)/).exec(entity.location);
     if (match) {
@@ -178,15 +178,15 @@ export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCo
   }
 
   // Map reporter info if available and not anonymous
-  const reporter = !entity.isAnonymous && entity.reporter ? 
+  const reporter = !entity.isAnonymous && entity.reporter ?
     mapUserEntityToUserResponse(entity.reporter) : null;
 
   // Map INTERNAL assignee info if available
-  const assignee = entity.assignee ? 
+  const assignee = entity.assignee ?
     mapUserEntityToUserResponse(entity.assignee, assigneeCompanyName) : null;
 
   // Map EXTERNAL assignee info if available
-  const externalAssignee = entity.externalAssignee ? 
+  const externalAssignee = entity.externalAssignee ?
     mapUserEntityToUserResponse(entity.externalAssignee, assigneeCompanyName) : null;
 
   // Map photos if available with full URLs
@@ -210,7 +210,7 @@ export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCo
     isAnonymous: entity.isAnonymous,
     status: entity.status as ReportStatus,
     rejectionReason: entity.rejectionReason || null,
-    
+
     // Internal Assignee fields
     assigneeId: entity.assigneeId || null,
     assignee,
@@ -258,7 +258,7 @@ function removeNullAttributes<T extends Record<string, any>>(
       value !== undefined &&
       (!Array.isArray(value) || value.length > 0)
   );
-  
+
   return Object.fromEntries(filtered) as Partial<T>;
 }
 
@@ -274,7 +274,7 @@ export function mapMessageToResponse(message: MessageEntity): MessageResponse {
       username: message.sender.username,
       firstName: message.sender.firstName,
       lastName: message.sender.lastName,
-      role: message.sender.departmentRole?.role?.name || 'Unknown',
+      role: message.sender.userRoles?.[0]?.departmentRole?.role?.name || 'Unknown',
     },
     content: message.content,
     createdAt: message.createdAt,
