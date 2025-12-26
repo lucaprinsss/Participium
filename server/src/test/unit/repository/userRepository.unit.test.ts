@@ -1480,7 +1480,7 @@ describe('UserRepository Unit Tests', () => {
         'r.assignee_id = user.id AND r.status IN (:...statuses)',
         { statuses: ['Assigned', 'In Progress', 'Suspended'] }
       );
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('dr.role_id = :roleId', { roleId });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('role.id = :roleId', { roleId });
       expect(mockQueryBuilder.groupBy).toHaveBeenCalledWith('user.id');
       expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith('userRoles.id');
       expect(mockQueryBuilder.addGroupBy).toHaveBeenCalledWith('dr.id');

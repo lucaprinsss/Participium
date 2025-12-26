@@ -243,9 +243,13 @@ class ReportService {
     // Fetch user entity if userId is provided
     if (userId) {
       const userEntity = await userRepository.findUserById(userId);
-      if (userEntity) {
-        hasPublicRelationsRole = RoleUtils.userHasRole(userEntity, 'Municipal Public Relations Officer');
+      if (!userEntity) {
+        throw new UnauthorizedError('User not found');
       }
+      if (!userEntity.userRoles || userEntity.userRoles.length === 0) {
+        throw new UnauthorizedError('User has no roles assigned');
+      }
+      hasPublicRelationsRole = RoleUtils.userHasRole(userEntity, 'Municipal Public Relations Officer');
     }
 
     if (status === ReportStatus.PENDING_APPROVAL) {

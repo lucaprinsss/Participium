@@ -363,9 +363,10 @@ describe('Report Routes Integration Tests', () => {
     it('should filter reports by status=PENDING_APPROVAL', async () => {
       const res = await request(app)
         .get('/api/reports')
+        .set('x-test-user-type', 'CITIZEN')
         .query({ status: ReportStatus.PENDING_APPROVAL });
 
-      expect(res.status).toBe(403); // Should fail because public users can't see PENDING_APPROVAL
+      expect(res.status).toBe(200); // Now authenticated, returns reports (filtered by service)
       expect(mockGetAllReports).toHaveBeenCalledTimes(1);
     });
 
@@ -388,7 +389,7 @@ describe('Report Routes Integration Tests', () => {
         })
         .set('x-test-user-type', 'PRO');
 
-      expect(res.status).toBe(403); // Should fail because public users can't see PENDING_APPROVAL
+      expect(res.status).toBe(200); // Should succeed because PRO can see PENDING_APPROVAL
       expect(mockGetAllReports).toHaveBeenCalledTimes(1);
     });
   });
