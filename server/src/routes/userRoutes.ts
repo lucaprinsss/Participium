@@ -206,7 +206,7 @@ router.post('/', validateRegisterInput, UserController.register);
  *               name: "InternalServerError"
  *               message: "An unexpected error occurred while updating profile"
  */
-//router.patch('/me', isLoggedIn, UserController.updateProfile);
+router.patch('/me', isLoggedIn, UserController.updateProfile);
 
 /**
  * @swagger

@@ -208,8 +208,37 @@ class UserController {
       next(error);
     }
   }
+/**
+   * Update current user profile settings
+   * Allows citizen to update photo, telegram username, and email notifications
+   */
+  async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
 
+      const userId = (req.user as any).id;
+      const { personalPhoto, telegramUsername, emailNotificationsEnabled } = req.body;
+
+      // At least one field must be provided
+      if (personalPhoto === undefined && telegramUsername === undefined && emailNotificationsEnabled === undefined) {
+        throw new BadRequestError('At least one field must be provided: personalPhoto, telegramUsername, or emailNotificationsEnabled');
+      }
+
+      const updatedUser = await userService.updateUserProfile(userId, {
+        personalPhoto,
+        telegramUsername,
+        emailNotificationsEnabled
+      });
+
+      res.status(200).json(updatedUser);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+
 
 
 

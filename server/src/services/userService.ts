@@ -10,11 +10,12 @@ import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { AppError } from '@models/errors/AppError';
 import { AppDataSource } from '@database/connection';
 import { InsufficientRightsError } from '@models/errors/InsufficientRightsError';
-
+import { BadRequestError } from '@models/errors/BadRequestError';
 import { sendVerificationEmail } from '@utils/emailSender';
 import crypto from 'crypto';
 import { notificationRepository } from '../repositories/notificationRepository';
-
+import { UserEntity } from '@models/entity/userEntity';
+import { saveBase64Image, deleteImage } from '@utils/fileUploadUtils';
 /**
  * Service for user-related business logic
  */
@@ -154,7 +155,137 @@ class UserService {
       // throw new AppError('Error sending verification email', 500); 
     }
   }
+    /**
+   * Update user profile settings (photo, telegram, email notifications)
+   * @param userId The ID of the user to update
+   * @param updateData Data to update
+   * @returns Updated user data formatted for response
+   */
+  async updateUserProfile(
+    userId: number,
+    updateData: {
+      personalPhoto?: string;
+      telegramUsername?: string;
+      emailNotificationsEnabled?: boolean;
+    }
+  ): Promise<any> {
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
 
+    const updatedFields:  Partial<UserEntity> = {};
+
+    // Handle personal photo upload (base64)
+    if (updateData.personalPhoto !== undefined) {
+      if (updateData.personalPhoto === null || updateData.personalPhoto === '') {
+        // Remove existing photo
+        if (user.personalPhotoUrl) {
+          deleteImage(user.personalPhotoUrl);
+        }
+        updatedFields.personalPhotoUrl = null as any;
+      } else {
+        // Validate base64 format
+        if (!this.isValidBase64Image(updateData.personalPhoto)) {
+          throw new BadRequestError('Invalid photo format.  Must be a valid base64 encoded image (JPEG, PNG, GIF, or WebP)');
+        }
+
+        // Delete old photo if exists
+        if (user.personalPhotoUrl) {
+          deleteImage(user.personalPhotoUrl);
+        }
+
+        // Save new photo
+        try {
+          const photoUrl = await saveBase64Image(updateData.personalPhoto, userId);
+          updatedFields.personalPhotoUrl = photoUrl;
+        } catch (error) {
+          throw new BadRequestError('Failed to save photo.  Please ensure the image is valid and not too large.');
+        }
+      }
+    }
+
+    // Handle telegram username
+    if (updateData. telegramUsername !== undefined) {
+      if (updateData.telegramUsername === null || updateData.telegramUsername === '') {
+        updatedFields.telegramUsername = null as any;
+      } else {
+        // Validate telegram username format (alphanumeric, underscore, 5-32 chars)
+        const telegramRegex = /^[a-zA-Z0-9_]{5,32}$/;
+        const cleanUsername = updateData.telegramUsername.replace('@', '');
+        
+        if (!telegramRegex. test(cleanUsername)) {
+          throw new BadRequestError('Invalid Telegram username format. Must be 5-32 characters, alphanumeric and underscores only.');
+        }
+
+        // Check if telegram username is already taken by another user
+        const existingUser = await userRepository.findUserByTelegramUsername(cleanUsername);
+        if (existingUser && existingUser.id !== userId) {
+          throw new BadRequestError('Telegram username already in use by another user');
+        }
+
+        updatedFields.telegramUsername = cleanUsername;
+      }
+    }
+
+    // Handle email notifications
+    if (updateData.emailNotificationsEnabled !== undefined) {
+      updatedFields.emailNotificationsEnabled = updateData.emailNotificationsEnabled;
+    }
+
+    // Update user in database
+    const updatedUser = await userRepository.updateUser(userId, updatedFields);
+
+    logInfo(`User profile updated: ${updatedUser.username} (ID: ${userId})`);
+
+    // Format response (convert to snake_case for API consistency)
+    return this.formatUserProfileResponse(updatedUser);
+  }
+
+  /**
+   * Validate base64 image format
+   */
+  private isValidBase64Image(base64String: string): boolean {
+    // Check if it's a data URI
+    const dataUriRegex = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/;
+    if (! dataUriRegex.test(base64String)) {
+      return false;
+    }
+
+    // Extract base64 data
+    const base64Data = base64String.split(',')[1];
+    if (!base64Data) {
+      return false;
+    }
+
+    // Check if valid base64
+    try {
+      Buffer.from(base64Data, 'base64');
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Format user response with snake_case fields
+   */
+  private formatUserProfileResponse(user: UserEntity): any {
+    // Get the primary role (first role)
+    const primaryRole = user. userRoles?.[0]?.departmentRole?. role?. name || 'Citizen';
+
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      first_name: user.firstName,
+      last_name: user.lastName,
+      personal_photo_url: user.personalPhotoUrl,
+      telegram_username: user.telegramUsername,
+      email_notifications_enabled:  user.emailNotificationsEnabled,
+      role_name: primaryRole
+    };
+  }
   /**
    * Gets user by ID
    * @param userId User ID

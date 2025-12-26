@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
-import { getCurrentUser, logout } from "./api/authApi"; 
+import {
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
+import { getCurrentUser, logout } from "./api/authApi";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Home from "./pages/Homepage.jsx";
@@ -11,6 +17,7 @@ import MapPage from "./pages/MapPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
 
 import "./App.css";
+import UserProfile from "./components/UserProfile.jsx";
 
 function App() {
   const location = useLocation();
@@ -23,7 +30,7 @@ function App() {
   // 1. DEFINIZIONE ROTTE
   // Rotte dove NON mostriamo la Navbar
   const noNavbarRoutes = ["/login", "/register", "/"];
-  
+
   // Rotte accessibili a TUTTI (anche sloggati)
   // Qui aggiungiamo '/reports-map' e '*' (per il 404)
   const publicRoutes = ["/login", "/register", "/", "/reports-map"];
@@ -33,22 +40,22 @@ function App() {
   // Gestione classe CSS body per navbar
   useEffect(() => {
     if (hideNavbar) {
-      document.body.classList.remove('has-navbar');
+      document.body.classList.remove("has-navbar");
     } else {
-      document.body.classList.add('has-navbar');
+      document.body.classList.add("has-navbar");
     }
     return () => {
-      document.body.classList.remove('has-navbar');
+      document.body.classList.remove("has-navbar");
     };
   }, [hideNavbar]);
 
   // Gestione Autenticazione
   useEffect(() => {
     let isMounted = true;
-    
+
     const checkAuthentication = async () => {
       if (!isMounted) return;
-      
+
       setIsAuthLoading(true);
       setAuthError(null);
 
@@ -58,29 +65,32 @@ function App() {
         if (isMounted) {
           setUser(null);
           setIsAuthLoading(false);
-          
+
           // MODIFICA CRUCIALE:
           // Se l'utente non è loggato, reindirizza SOLO se la rotta NON è pubblica.
           // In questo modo, se sei su /reports-map, non ti caccia via.
           if (!publicRoutes.includes(location.pathname)) {
-             navigate("/login", { replace: true });
+            navigate("/login", { replace: true });
           }
         }
-        return; 
+        return;
       }
-      
+
       try {
         const userData = await getCurrentUser();
         if (isMounted) {
           if (userData) {
-             setUser(userData);
-             // Se sei loggato e provi ad andare su login/register, vai alla home
-             if (location.pathname === "/login" || location.pathname === "/register") {
-               navigate("/home", { replace: true });
-             }
+            setUser(userData);
+            // Se sei loggato e provi ad andare su login/register, vai alla home
+            if (
+              location.pathname === "/login" ||
+              location.pathname === "/register"
+            ) {
+              navigate("/home", { replace: true });
+            }
           } else {
-             localStorage.removeItem("isLoggedIn");
-             setUser(null);
+            localStorage.removeItem("isLoggedIn");
+            setUser(null);
           }
         }
       } catch (error) {
@@ -88,7 +98,7 @@ function App() {
           localStorage.removeItem("isLoggedIn");
           setUser(null);
           setAuthError(error.message || "Error during authentication check");
-          
+
           if (!publicRoutes.includes(location.pathname)) {
             navigate("/login", { replace: true });
           }
@@ -128,23 +138,10 @@ function App() {
   };
 
   const CitizenRoute = ({ children }) => {
-    // 1. Se sta ancora caricando, aspettiamo
-    if (isAuthLoading) {
+    if (isAuthLoading)
       return <LoadingScreen message="Checking permissions..." />;
-    }
-
-    // 2. Se non c'è utente, login
-    if (!user) {
-      return <Navigate to="/login" replace />;
-    }
-
-    // 3. Se l'utente c'è MA non è Citizen, rimandiamo alla Home
-    const isCitizen = user.roles && user.roles.some(r => r.role_name === 'Citizen');
-    if (!isCitizen) {
-      return <Navigate to="/home" replace />;
-    }
-
-    // 4. Se è Citizen, mostra la pagina
+    if (!user) return <Navigate to="/login" replace />;
+    if (user.role_name !== "Citizen") return <Navigate to="/home" replace />;
     return children;
   };
 
@@ -161,51 +158,67 @@ function App() {
       <main className="main-content">
         <Routes>
           {/* --- ROTTE PUBBLICHE (Accessibili a tutti) --- */}
-          
+
           <Route path="/" element={<MainPage />} />
-          
+
           <Route path="/reports-map" element={<MapPage user={user} />} />
-          
-          <Route 
-            path="/login" 
-            element={user ? <Navigate to="/home" replace /> : <Login onLoginSuccess={setUser} />} 
+
+          <Route
+            path="/login"
+            element={
+              user ? (
+                <Navigate to="/home" replace />
+              ) : (
+                <Login onLoginSuccess={setUser} />
+              )
+            }
           />
-          
-          <Route 
-            path="/register" 
-            element={user ? <Navigate to="/home" replace /> : <Register />} 
+
+          <Route
+            path="/register"
+            element={user ? <Navigate to="/home" replace /> : <Register />}
           />
 
           {/* --- ROTTE PROTETTE (Qualsiasi utente loggato) --- */}
-          
-          <Route 
-            path="/home" 
+
+          <Route
+            path="/home"
             element={
               <ProtectedRoute>
                 <Home user={user} />
               </ProtectedRoute>
-            } 
+            }
+          />
+
+          <Route
+            path="/my-profile"
+            element={
+              <ProtectedRoute>
+                <UserProfile user={user} onUpdateUser={setUser} />
+              </ProtectedRoute>
+            }
           />
 
           {/* --- ROTTE CITTADINO (Solo ruolo 'Citizen') --- */}
-          
-          <Route 
-            path="/my-reports" 
+
+          <Route
+            path="/my-reports"
             element={
               <CitizenRoute>
                 <div>Profile Page - To be implemented</div>
               </CitizenRoute>
-            } 
+            }
           />
 
           {/* --- 404 (Pubblica) --- */}
-          <Route path="*" element={
-            <ProtectedRoute>
-              <NotFoundPage />
-            </ProtectedRoute>  
-          } 
+          <Route
+            path="*"
+            element={
+              <ProtectedRoute>
+                <NotFoundPage />
+              </ProtectedRoute>
+            }
           />
-          
         </Routes>
       </main>
     </div>
