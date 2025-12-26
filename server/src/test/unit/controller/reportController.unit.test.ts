@@ -81,8 +81,10 @@ describe('ReportController', () => {
 
   describe('getAllReports', () => {
     describe('authentication checks', () => {
-      it('should throw UnauthorizedError when user is not authenticated', async () => {
+      it('should call service with undefined userId when user is not authenticated', async () => {
         mockRequest.user = undefined;
+        const mockReports = [{ id: 1, title: 'Test Report' }];
+        (reportService.getAllReports as jest.Mock).mockResolvedValue(mockReports);
 
         await reportController.getAllReports(
           mockRequest as Request,
@@ -90,10 +92,13 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(mockNext).toHaveBeenCalledWith(expect.any(UnauthorizedError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'Not authenticated' })
+        expect(reportService.getAllReports).toHaveBeenCalledWith(
+          undefined,
+          undefined,
+          undefined
         );
+        expect(mockResponse.status).toHaveBeenCalledWith(200);
+        expect(mockResponse.json).toHaveBeenCalledWith(mockReports);
       });
 
       it('should call service with userId when user is authenticated', async () => {

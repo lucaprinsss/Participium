@@ -50,7 +50,7 @@ const TelegramLinkModal = ({ onClose }) => {
       }
     } catch (err) {
       console.error(err);
-      setError('Impossible caricare lo stato di Telegram.');
+      setError('Unable to load Telegram status.');
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ const TelegramLinkModal = ({ onClose }) => {
       setCode(result.code);
       setExpiresAt(result.expiresAt);
     } catch (err) {
-      setError('Errore nella generazione del codice.');
+      setError('Error generating code.');
     } finally {
       setGenerating(false);
     }
@@ -94,17 +94,17 @@ const TelegramLinkModal = ({ onClose }) => {
       setError(null);
       const res = await getTelegramStatus();
       if (res.isLinked) {
-        setSuccessMessage('Account collegato con successo!');
+        setSuccessMessage('Account linked successfully!');
         setStatus(res);
         setCode(null);
         setExpiresAt(null);
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError('Non ancora collegato. Hai inviato il codice al bot?');
+        setError('Not yet linked. Did you send the code to the bot?');
         setTimeout(() => setError(null), 3000);
       }
     } catch (err) {
-      setError('Errore durante il controllo dello stato.');
+      setError('Error checking status.');
     } finally {
       setChecking(false);
     }
@@ -114,14 +114,14 @@ const TelegramLinkModal = ({ onClose }) => {
     try {
       setUnlinking(true);
       await unlinkTelegramAccount();
-      setSuccessMessage('Account scollegato correttamente.');
+      setSuccessMessage('Account unlinked successfully.');
       setShowUnlinkConfirm(false);
       setCode(null);
       setExpiresAt(null);
       await loadTelegramStatus();
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      setError(err.message || 'Errore durante lo scollegamento.');
+      setError(err.message || 'Error during unlinking.');
     } finally {
       setUnlinking(false);
     }
@@ -134,7 +134,7 @@ const TelegramLinkModal = ({ onClose }) => {
       <div className="ch-modal-overlay">
         <div className="ch-modal-content">
            <div className="tl-icon-box"><FaTelegram /></div>
-           <h3 className="tl-title">Caricamento...</h3>
+           <h3 className="tl-title">Loading...</h3>
         </div>
       </div>
     );
@@ -154,10 +154,10 @@ const TelegramLinkModal = ({ onClose }) => {
             <div className="tl-icon-box">
               <FaTelegram />
             </div>
-            <h3 className="tl-title">Collega Telegram</h3>
+            <h3 className="tl-title">Link Telegram</h3>
             {!status?.isLinked && (
                <p className="tl-description">
-                 Ricevi aggiornamenti in tempo reale e invia segnalazioni direttamente dalla chat.
+                 Receive real-time updates and send reports directly from chat.
                </p>
             )}
           </div>
@@ -174,14 +174,14 @@ const TelegramLinkModal = ({ onClose }) => {
                   <div className="tl-linked-card">
                     <div className="tl-avatar"><FaTelegram /></div>
                     <div className="tl-user-info">
-                      <span className="tl-user-label">Account Collegato</span>
+                      <span className="tl-user-label">Linked Account</span>
                       <span className="tl-username">@{status.telegramUsername}</span>
                     </div>
                   </div>
                   
                   <div className="tl-actions">
                      <button className="tl-btn tl-btn-danger" onClick={() => setShowUnlinkConfirm(true)}>
-                       <FaUnlink /> Scollega Account
+                       <FaUnlink /> Unlink Account
                      </button>
                   </div>
                 </>
@@ -192,14 +192,14 @@ const TelegramLinkModal = ({ onClose }) => {
                      <FaExclamationTriangle />
                    </div>
                    <p className="tl-description">
-                     Sei sicuro? Non potrai più inviare segnalazioni via Telegram.
+                     Are you sure? You won't be able to send reports via Telegram anymore.
                    </p>
                    <div className="tl-actions">
                      <button className="tl-btn tl-btn-secondary" onClick={() => setShowUnlinkConfirm(false)}>
-                       Annulla
+                       Cancel
                      </button>
                      <button className="tl-btn tl-btn-danger" onClick={handleUnlinkAccount} disabled={unlinking}>
-                       {unlinking ? 'Scollegamento...' : 'Conferma'}
+                       {unlinking ? 'Unlinking...' : 'Confirm'}
                      </button>
                    </div>
                 </div>
@@ -211,13 +211,13 @@ const TelegramLinkModal = ({ onClose }) => {
               {code ? (
                 <div className="tl-code-wrapper">
                   <div className="tl-code-header">
-                    <span>Codice di verifica</span>
+                    <span>Verification Code</span>
                     <div className="tl-timer">
                       <FaClock /> {formatTime(timeLeft)}
                     </div>
                   </div>
 
-                  <div className="tl-code-display" onClick={copyToClipboard} title="Clicca per copiare">
+                  <div className="tl-code-display" onClick={copyToClipboard} title="Click to copy">
                     <span className="tl-code-text">{code}</span>
                     <span className="tl-copy-icon">
                        {copied ? <FaCheck /> : <FaCopy />}
@@ -227,11 +227,11 @@ const TelegramLinkModal = ({ onClose }) => {
                   <div className="tl-steps">
                     <div className="tl-step-row">
                       <div className="tl-step-num">1</div>
-                      <span>Apri <strong>@ParticipiumBot</strong> su Telegram</span>
+                      <span>Open <strong>@ParticipiumBot</strong> on Telegram</span>
                     </div>
                     <div className="tl-step-row">
                       <div className="tl-step-num">2</div>
-                      <span>Invia il comando: <code>/link {code}</code></span>
+                      <span>Send the command: <code>/link {code}</code></span>
                     </div>
                   </div>
 
@@ -241,14 +241,14 @@ const TelegramLinkModal = ({ onClose }) => {
                       onClick={handleGenerateCode} 
                       disabled={generating}
                     >
-                      Nuovo Codice
+                      New Code
                     </button>
                     <button 
                       className="tl-btn tl-btn-primary" 
                       onClick={handleCheckLinkStatus} 
                       disabled={checking}
                     >
-                      {checking ? 'Controllo...' : 'Ho inviato il codice'}
+                      {checking ? 'Checking...' : 'I sent the code'}
                     </button>
                   </div>
                 </div>
@@ -261,10 +261,10 @@ const TelegramLinkModal = ({ onClose }) => {
                     onClick={handleGenerateCode} 
                     disabled={generating}
                   >
-                    {generating ? 'Generazione...' : 'Genera Codice di Collegamento'}
+                    {generating ? 'Generating...' : 'Generate Link Code'}
                   </button>
                   <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '1rem'}}>
-                    Il codice sarà valido per 10 minuti.
+                    The code will be valid for 10 minutes.
                   </p>
                 </div>
               )}
