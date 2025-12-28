@@ -197,7 +197,7 @@ const CitizenHome = ({ user }) => {
   const handleNewReport = () => navigate('/reports-map');
 
   // Modificato per aprire la modale invece di navigare
-  const handleMyReports = () => setShowModal(true);
+  const handleMyReports = () => navigate('/my-reports');
 
   const handleTelegramLink = () => setShowTelegramModal(true);
 

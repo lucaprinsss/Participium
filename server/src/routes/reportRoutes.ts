@@ -228,6 +228,9 @@ router.post('/', requireRole(SystemRoles.CITIZEN), validateCreateReport, reportC
  */
 router.get('/', validateReportStatus, validateReportCategory, reportController.getAllReports);
 
+router.get('/me', isLoggedIn, reportController.getMyReports);
+
+
 /**
  * @swagger
  * /api/reports/search:

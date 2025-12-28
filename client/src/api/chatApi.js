@@ -19,8 +19,8 @@ async function handleResponse(response) {
 }
 
 
-export async function getMessages() {
-    const response = await fetch(`/api/reports/:id/messages`, {
+export async function getMessages(reportId) {
+    const response = await fetch(`/api/reports/${reportId}/messages`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -31,8 +31,8 @@ export async function getMessages() {
     return await handleResponse(response);
 }   
 
-export async function sendMessage(message) {
-    const response = await fetch(`/api/reports/:id/messages`, {
+export async function sendMessage(reportId, message) {
+    const response = await fetch(`/api/reports/${reportId}/messages`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

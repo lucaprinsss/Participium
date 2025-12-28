@@ -97,6 +97,30 @@ class ReportController {
   }
 
   /**
+   * Get reports created by the current user
+   * GET /api/reports/me
+   */
+  async getMyReports(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+      const userId = (req.user as User).id;
+      const { status, category } = req.query;
+
+      const reports = await reportService.getMyReports(
+        userId,
+        status as ReportStatus | undefined,
+        category as ReportCategory | undefined
+      );
+      
+      res.status(200).json(reports);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get reports assigned to current user
    * GET /api/reports/assigned/me
    */

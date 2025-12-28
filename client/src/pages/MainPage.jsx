@@ -37,7 +37,6 @@ export default function MainPage() {
             </p>
 
             <div className="hero-actions">
-              {/* Nuovo pulsante a sinistra: Join Participium -> Login */}
               <button
                 className="hp-btn hp-btn-outline"
                 onClick={handleNavigateToLogin}
@@ -45,7 +44,6 @@ export default function MainPage() {
                 Join Participium
               </button>
 
-              {/* Pulsante esistente: Start Making Reports -> Reports Map */}
               <button
                 className="hp-btn hp-btn-primary"
                 onClick={handleNavigateToReports}

@@ -698,7 +698,7 @@ const MapPage = () => {
                                     gap: "4px",
                                   }}
                                 >
-                                  <FaExternalLinkAlt size={10} />{" "}
+                                  <FaExternalLinkAlt size={10} />
                                   Click for details
                                 </div>
                               </div>

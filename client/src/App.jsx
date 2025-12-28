@@ -6,6 +6,7 @@ import Register from "./pages/Register.jsx";
 import Home from "./pages/Homepage.jsx";
 import Navbar from "./components/Navbar.jsx";
 import MainPage from "./pages/MainPage.jsx";
+import MyReports from "./pages/MyReports.jsx";
 import LoadingScreen from "./components/LoadingScreen.jsx";
 import MapPage from "./pages/MapPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
@@ -196,7 +197,7 @@ function App() {
             path="/my-reports" 
             element={
               <CitizenRoute>
-                <div>Profile Page - To be implemented</div>
+                <MyReports />
               </CitizenRoute>
             } 
           />

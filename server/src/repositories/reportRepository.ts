@@ -340,6 +340,31 @@ class ReportRepository {
             }
         });
     }
+
+    /**
+     * Find reports created by a specific user
+     */
+    public async findByReporterId(reporterId: number, status?: ReportStatus, category?: ReportCategory): Promise<ReportEntity[]> {
+        const queryBuilder = this.repository
+            .createQueryBuilder('report')
+            .leftJoinAndSelect('report.reporter', 'reporter')
+            .leftJoinAndSelect('report.assignee', 'assignee')
+            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee')
+            .leftJoinAndSelect('report.photos', 'photos')
+            .where('report.reporterId = :reporterId', { reporterId });
+
+        if (status) {
+            queryBuilder.andWhere('report.status = :status', { status });
+        }
+
+        if (category) {
+            queryBuilder.andWhere('report.category = :category', { category });
+        }
+
+        return queryBuilder
+            .orderBy('report.createdAt', 'DESC')
+            .getMany();
+    }
 }
 
 export const reportRepository = new ReportRepository();

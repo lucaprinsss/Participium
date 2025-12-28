@@ -74,6 +74,18 @@ export const getReports = async (status, category) => {
 };
 
 /**
+ * Get reports created by the current user
+ */
+export const getMyReports = async (status, category) => {
+  const queryString = buildQueryString(status, category);
+  const response = await fetch(`/api/reports/me${queryString}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
+/**
  * Update the status of a report
  * @param {string|number} reportId - ID of the report to update
  * @param {string} status - The new status of the report

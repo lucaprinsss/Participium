@@ -299,6 +299,14 @@ class ReportService {
   }
 
   /**
+   * Get reports created by the current user
+   */
+  async getMyReports(userId: number, status?: ReportStatus, category?: ReportCategory): Promise<ReportResponse[]> {
+    const reports = await reportRepository.findByReporterId(userId, status, category);
+    return await this.mapReportsWithCompanyNames(reports);
+  }
+
+  /**
    * Get reports assigned to a specific external maintainer
    * @param externalMaintainerId - ID of the external maintainer to whom reports are assigned
    * @param status - Optional status filter

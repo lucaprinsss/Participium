@@ -7,6 +7,7 @@ import {
     FaExclamationCircle, FaTimesCircle, FaCheckCircle, FaPlay, FaPause, FaCheck
 } from "react-icons/fa";
 import ReportComments from "./ReportComments";
+import CitizenChat from "./CitizenChat";
 import { updateReportStatus } from "../api/reportApi";
 
 const ReportMainContent = ({
@@ -39,6 +40,7 @@ const ReportMainContent = ({
 
     const isExternalAssignee = currentUserId && report?.externalAssigneeId && Number(currentUserId) === Number(report.externalAssigneeId);
     const isOfficer = currentUserId && report?.assigneeId && Number(currentUserId) === Number(report.assigneeId);
+    const isCitizen = user && user.roles && user.roles.some(r => r.role_name === 'Citizen');
 
     // Handlers Azioni
     const handleRejectClick = () => { setIsRejecting(true); setValidationError(""); setAssignmentWarning(""); };
@@ -164,6 +166,11 @@ const ReportMainContent = ({
                         )}
                     </div>
                 </div>
+
+                {/* === CITIZEN CHAT === */}
+                {(isCitizen || isOfficer || isExternalAssignee) && (
+                    <CitizenChat reportId={report.id} currentUserId={currentUserId} isCitizen={isCitizen} />
+                )}
 
                 {/* === COMMENTS COMPONENT === */}
                 {showComments && report && ( 

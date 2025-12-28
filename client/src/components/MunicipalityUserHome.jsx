@@ -449,7 +449,7 @@ export default function MunicipalityUserHome({ user }) {
                         <th className="ps-4">Category</th>
                         <th>Title</th>
                         <th>Date</th>
-                        <th>Assigned External </th> {/* COLONNA AGGIUNTA */}
+                        <th>Assigned External </th>
                         <th>Status</th>
                         <th className="text-end pe-4">Action</th>
                     </tr>
