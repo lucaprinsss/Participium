@@ -23,6 +23,11 @@ interface NominatimSearchResult {
     lon: string;
     display_name: string;
     boundingbox?: string[];
+    address?: {
+        house_number?: string;
+        road?: string;
+        [key: string]: string | undefined;
+    };
 }
 
 export const getAddressFromProxy = async (req: Request, res: Response): Promise<void> => {
@@ -80,6 +85,12 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
         return;
     }
 
+    // Extract house number from the search query (excluding 5-digit postal codes)
+    const houseNumberMatch = address.match(/\b(\d{1,4}[a-zA-Z]?)\b/);
+    const requestedHouseNumber = houseNumberMatch ? houseNumberMatch[1] : null;
+    const hasHouseNumber = requestedHouseNumber !== null;
+    const searchLimit = hasHouseNumber ? 1 : 50; // Single result for specific address, multiple for street name
+
     const url = `https://nominatim.openstreetmap.org/search`;
 
     try {
@@ -90,7 +101,7 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
                 city: 'Torino',
                 country: 'Italia',
                 format: 'jsonv2',
-                limit: 1,
+                limit: searchLimit,
                 addressdetails: 1,
                 viewbox: '7.5200,45.1500,7.8000,44.9700', // Enlarged Turin area (west,north,east,south)
                 countrycodes: 'it'
@@ -102,13 +113,58 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
         });
 
         if (response.data && response.data.length > 0) {
-            const result = response.data[0];
-            res.json({
-                lat: parseFloat(result.lat),
-                lng: parseFloat(result.lon),
-                display_name: result.display_name,
-                boundingbox: result.boundingbox
-            });
+            const firstResult = response.data[0];
+            
+            // For specific addresses (with house number), validate the returned house number
+            if (hasHouseNumber) {
+                const returnedHouseNumber = firstResult.address?.house_number;
+                
+                // Check if the returned house number matches the requested one
+                if (!returnedHouseNumber || returnedHouseNumber !== requestedHouseNumber) {
+                    res.status(404).json({ 
+                        error: "Address with specified house number not found",
+                        details: `House number ${requestedHouseNumber} not found in the results`
+                    });
+                    return;
+                }
+
+                res.json({
+                    lat: parseFloat(firstResult.lat),
+                    lng: parseFloat(firstResult.lon),
+                    display_name: firstResult.display_name,
+                    boundingbox: firstResult.boundingbox,
+                    resultsCount: 1,
+                    isSpecificAddress: true
+                });
+            } else {
+                // For street names without number, calculate overall bounding box
+                let minLat = Infinity, maxLat = -Infinity;
+                let minLon = Infinity, maxLon = -Infinity;
+
+                response.data.forEach(result => {
+                    if (result.boundingbox) {
+                        const [south, north, west, east] = result.boundingbox.map(parseFloat);
+                        minLat = Math.min(minLat, south);
+                        maxLat = Math.max(maxLat, north);
+                        minLon = Math.min(minLon, west);
+                        maxLon = Math.max(maxLon, east);
+                    }
+                });
+
+                // If we have valid bounding box, use it; otherwise use first result's bbox
+                const overallBoundingBox = minLat !== Infinity 
+                    ? [minLat.toString(), maxLat.toString(), minLon.toString(), maxLon.toString()]
+                    : firstResult.boundingbox;
+
+                res.json({
+                    lat: parseFloat(firstResult.lat),
+                    lng: parseFloat(firstResult.lon),
+                    display_name: firstResult.display_name,
+                    boundingbox: overallBoundingBox,
+                    resultsCount: response.data.length,
+                    isSpecificAddress: false
+                });
+            }
         } else {
             res.status(404).json({ error: "Address not found" });
         }

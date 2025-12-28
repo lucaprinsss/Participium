@@ -234,7 +234,17 @@ const MapPage = () => {
     if (isMapReady && pendingZoom && mapInstance) {
       const timer = setTimeout(() => {
         try {
-          mapInstance.setView([pendingZoom.lat, pendingZoom.lng], 17);
+          if (pendingZoom.boundingbox && pendingZoom.boundingbox.length === 4) {
+            // Zoom to bounding box to show entire street/course
+            const [south, north, west, east] = pendingZoom.boundingbox.map(parseFloat);
+            mapInstance.fitBounds(
+              [[south, west], [north, east]],
+              { padding: [50, 50], maxZoom: 17 }
+            );
+          } else {
+            // Single point zoom
+            mapInstance.setView([pendingZoom.lat, pendingZoom.lng], 17);
+          }
         } finally {
           setPendingZoom(null);
         }
@@ -309,7 +319,17 @@ const MapPage = () => {
       const coordinates = await getCoordinatesFromAddress(searchText);
       
       if (coordinates && coordinates.lat && coordinates.lng) {
-        setPendingZoom({ lat: coordinates.lat, lng: coordinates.lng });
+        // Include bounding box only for street names (not specific addresses)
+        setPendingZoom({ 
+          lat: coordinates.lat, 
+          lng: coordinates.lng,
+          boundingbox: coordinates.isSpecificAddress ? null : coordinates.boundingbox
+        });
+        
+        const resultInfo = !coordinates.isSpecificAddress && coordinates.resultsCount > 1
+          ? ` (showing ${coordinates.resultsCount} segments)`
+          : "";
+        
         setNotification({
           message: `Showing location: ${searchText}`,
           type: "info",
