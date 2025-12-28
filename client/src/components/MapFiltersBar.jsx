@@ -26,6 +26,8 @@ const MapFiltersBar = ({
   hideReports,
   setHideReports,
   onSearch, // Nuova prop
+  showUserFilter = true, // Default true
+  showVisibilityToggle = true, // Default true
 }) => {
   const [searchText, setSearchText] = useState("");
 
@@ -143,45 +145,49 @@ const MapFiltersBar = ({
       </div>
 
       {/* 3. User Filter (All vs Mine) */}
-      <div className="mp-grid-item">
-        <button
-          className={`mp-filter-btn ${viewMode === "mine" ? "active" : ""}`}
-          onClick={() => setViewMode((prev) => (prev === "all" ? "mine" : "all"))}
-          disabled={!currentUser}
-        >
-          {viewMode === "all" ? (
-            <>
-              <FaUsers className="mp-btn-icon-fix" />
-              All Users
-            </>
-          ) : (
-            <>
-              <FaUser className="mp-btn-icon-fix" />
-              My Reports
-            </>
-          )}
-        </button>
-      </div>
+      {showUserFilter && (
+        <div className="mp-grid-item">
+          <button
+            className={`mp-filter-btn ${viewMode === "mine" ? "active" : ""}`}
+            onClick={() => setViewMode((prev) => (prev === "all" ? "mine" : "all"))}
+            disabled={!currentUser}
+          >
+            {viewMode === "all" ? (
+              <>
+                <FaUsers className="mp-btn-icon-fix" />
+                All Users
+              </>
+            ) : (
+              <>
+                <FaUser className="mp-btn-icon-fix" />
+                My Reports
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* 4. Visibility Toggle */}
-      <div className="mp-grid-item">
-        <button
-          className={`mp-filter-btn ${hideReports ? "alert-mode" : ""}`}
-          onClick={() => setHideReports(!hideReports)}
-        >
-          {hideReports ? (
-            <>
-              <FaEyeSlash className="mp-btn-icon-fix" />
-              Hidden
-            </>
-          ) : (
-            <>
-              <FaEye className="mp-btn-icon-fix" />
-              Visible
-            </>
-          )}
-        </button>
-      </div>
+      {showVisibilityToggle && (
+        <div className="mp-grid-item">
+          <button
+            className={`mp-filter-btn ${hideReports ? "alert-mode" : ""}`}
+            onClick={() => setHideReports(!hideReports)}
+          >
+            {hideReports ? (
+              <>
+                <FaEyeSlash className="mp-btn-icon-fix" />
+                Hidden
+              </>
+            ) : (
+              <>
+                <FaEye className="mp-btn-icon-fix" />
+                Visible
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

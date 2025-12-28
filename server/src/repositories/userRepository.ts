@@ -75,6 +75,19 @@ class UserRepository {
   }
 
   /**
+   * Finds a user by their ID, including the password hash.
+   * @param id The ID of the user.
+   * @returns The user entity or null if not found.
+   */
+  public async findUserByIdWithPassword(id: number): Promise<UserEntity | null> {
+    return this.repository
+      .createQueryBuilder("user")
+      .where("user.id = :id", { id })
+      .addSelect("user.passwordHash")
+      .getOne();
+  }
+
+  /**
    * Finds a user by their username, optionally including password hash.
    * This is typically used for authentication.
    * @param username The username of the user.

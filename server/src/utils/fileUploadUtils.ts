@@ -20,7 +20,7 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif',
  */
 export async function saveBase64Image(base64Image: string, userId: number): Promise<string> {
   // Extract MIME type and base64 data
-  const matches = base64Image.match(/^data:(. +);base64,(.+)$/);
+  const matches = base64Image.match(/^data:(.+);base64,(.+)$/);
   if (!matches || matches.length !== 3) {
     throw new BadRequestError('Invalid base64 image format');
   }
@@ -48,7 +48,9 @@ export async function saveBase64Image(base64Image: string, userId: number): Prom
   const filename = `user_${userId}_profile.${extension}`;
 
   // Define upload directory
-  const uploadDir = path.join(process.cwd(), 'server', 'src', 'public', 'uploads', 'photos');
+  // We use process.cwd() assuming the server is started from the 'server' directory
+  // and that app.ts serves static files from path.join(process.cwd(), 'uploads')
+  const uploadDir = path.join(process.cwd(), 'uploads', 'photos');
 
   // Create directory if it doesn't exist
   if (!fs.existsSync(uploadDir)) {
@@ -76,7 +78,8 @@ export async function saveBase64Image(base64Image: string, userId: number): Prom
  */
 export function deleteImage(photoUrl: string): void {
   try {
-    const filePath = path.join(process. cwd(), 'server', 'src', 'public', photoUrl);
+    // photoUrl is relative to the server root (e.g. /uploads/photos/...)
+    const filePath = path.join(process.cwd(), photoUrl);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }

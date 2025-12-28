@@ -210,6 +210,41 @@ router.patch('/me', isLoggedIn, UserController.updateProfile);
 
 /**
  * @swagger
+ * /api/users/me/password:
+ *   patch:
+ *     summary: Update password
+ *     description: Update the current user's password
+ *     tags: [Citizens]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 description: The current password
+ *               newPassword:
+ *                 type: string
+ *                 description: The new password (min 6 chars)
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *       400:
+ *         description: Invalid input or weak password
+ *       401:
+ *         description: Incorrect current password or not authenticated
+ */
+router.patch('/me/password', isLoggedIn, UserController.updatePassword);
+
+/**
+ * @swagger
  * /api/users/external-maintainers:
  *   get:
  *     summary: Get external maintainers by category

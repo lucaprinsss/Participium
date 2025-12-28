@@ -219,20 +219,66 @@ class UserController {
       }
 
       const userId = (req.user as any).id;
-      const { personalPhoto, telegramUsername, emailNotificationsEnabled } = req.body;
+      const { 
+        firstName, 
+        lastName, 
+        email, 
+        personalPhoto, 
+        telegramUsername, 
+        emailNotificationsEnabled 
+      } = req.body;
 
       // At least one field must be provided
-      if (personalPhoto === undefined && telegramUsername === undefined && emailNotificationsEnabled === undefined) {
-        throw new BadRequestError('At least one field must be provided: personalPhoto, telegramUsername, or emailNotificationsEnabled');
+      if (
+        firstName === undefined && 
+        lastName === undefined && 
+        email === undefined && 
+        personalPhoto === undefined && 
+        telegramUsername === undefined && 
+        emailNotificationsEnabled === undefined
+      ) {
+        throw new BadRequestError('At least one field must be provided');
       }
 
       const updatedUser = await userService.updateUserProfile(userId, {
+        firstName,
+        lastName,
+        email,
         personalPhoto,
         telegramUsername,
         emailNotificationsEnabled
       });
 
       res.status(200).json(updatedUser);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update user password
+   */
+  async updatePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('Not authenticated');
+      }
+
+      const userId = (req.user as any).id;
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        throw new BadRequestError('Current password and new password are required');
+      }
+
+      // Basic password strength validation (same as registration)
+      if (newPassword.length < 6) {
+        throw new BadRequestError('New password must be at least 6 characters long');
+      }
+
+      await userService.updatePassword(userId, currentPassword, newPassword);
+
+      res.status(200).json({ message: 'Password updated successfully' });
     } catch (error) {
       next(error);
     }

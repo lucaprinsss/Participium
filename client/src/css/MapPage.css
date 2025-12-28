@@ -55,31 +55,7 @@
   --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- SCROLLBAR UNIFICATA --- */
-.mp-page *::-webkit-scrollbar {
-  width: 0.375rem;
-  height: 0.375rem;
-}
 
-.mp-page *::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 0.25rem;
-}
-
-.mp-page *::-webkit-scrollbar-thumb {
-  background-color: var(--brand-red);
-  border-radius: 0.625rem;
-  border: 1px solid transparent; 
-}
-
-.mp-page *::-webkit-scrollbar-thumb:hover {
-  background-color: var(--brand-red-hover);
-}
-
-.mp-page * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--brand-red) transparent;
-}
 
 
 /* HEADER */

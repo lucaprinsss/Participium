@@ -106,13 +106,17 @@ export function mapUserEntityToUserResponse(entity: UserEntity | null | undefine
     role_name: userRole.departmentRole?.role?.name || ''
   })) || [];
 
+  const primaryRole = roles.length > 0 ? roles[0].role_name : 'Citizen';
+
   return removeNullAttributes({
     id: entity.id,
     username: entity.username,
     email: entity.email,
     first_name: entity.firstName,
     last_name: entity.lastName,
+    personal_photo_url: entity.personalPhotoUrl,
     roles: roles,
+    role_name: primaryRole,
     company_name: companyName
   }) as UserResponse;
 }

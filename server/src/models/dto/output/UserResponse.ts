@@ -36,6 +36,15 @@
  *         company_name:
  *           type: string
  *           description: Associated company name (for external maintainers)
+ *         personal_photo_url:
+ *           type: string
+ *           description: URL to user's profile photo
+ *         telegram_username:
+ *           type: string
+ *           description: Telegram username
+ *         email_notifications_enabled:
+ *           type: boolean
+ *           description: Whether email notifications are enabled
  *         created_at:
  *           type: string
  *           format: date-time
@@ -52,5 +61,9 @@ export interface UserResponse {
         department_name: string;
         role_name: string;
     }>
-    company_name?: string
+    role_name?: string;
+    company_name?: string;
+    personal_photo_url?: string;
+    telegram_username?: string;
+    email_notifications_enabled?: boolean;
 }

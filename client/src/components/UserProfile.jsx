@@ -8,9 +8,13 @@ import {
   FaCheckCircle,
   FaPen,
   FaTrashAlt,
+  FaInfoCircle,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 import "../css/UserProfile.css";
-import { updateUserProfile } from "../api/userApi";
+import { updateUserProfile, updatePassword } from "../api/userApi";
 
 export default function UserProfile({ user, onUpdateUser }) {
   // Stato locale per il form
@@ -22,6 +26,19 @@ export default function UserProfile({ user, onUpdateUser }) {
     personalPhotoUrl: "",
     emailNotificationsEnabled: true,
   });
+
+  // Password Change State
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordMessage, setPasswordMessage] = useState(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Stato per gestire il Drag & Drop e File
   const [dragActive, setDragActive] = useState(false);
@@ -132,6 +149,66 @@ export default function UserProfile({ user, onUpdateUser }) {
     inputRef.current.click();
   };
 
+  // --- PASSWORD LOGIC ---
+
+  const calculatePasswordStrength = (password) => {
+    let strength = 0;
+    if (password.length >= 6) strength += 1;
+    if (password.length >= 8) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/\d/.test(password)) strength += 1;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+    return strength;
+  };
+
+  const getPasswordStrengthColor = () => {
+    const colors = ["#dc3545", "#ff6b35", "#ffa726", "#9ccc65", "#4caf50"];
+    return colors[passwordStrength] || "#dc3545";
+  };
+
+  const handlePasswordInput = (e) => {
+    const { name, value } = e.target;
+    setPasswordData((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === "newPassword") {
+      setPasswordStrength(calculatePasswordStrength(value));
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPasswordLoading(true);
+    setPasswordMessage(null);
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordMessage({ type: "error", text: "New passwords do not match." });
+      setPasswordLoading(false);
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordMessage({ type: "error", text: "Password must be at least 6 characters." });
+      setPasswordLoading(false);
+      return;
+    }
+
+    try {
+      await updatePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      
+      setPasswordMessage({ type: "success", text: "Password updated successfully!" });
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordStrength(0);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "Failed to update password.";
+      setPasswordMessage({ type: "error", text: errorMessage });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   // ---------------------------------
 
   // NEW: Real API call
@@ -143,6 +220,9 @@ export default function UserProfile({ user, onUpdateUser }) {
     try {
       // Prepare data for API (convert to snake_case and camelCase appropriately)
       const updateData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
         telegramUsername: formData.telegramUsername || null,
         emailNotificationsEnabled: formData.emailNotificationsEnabled,
       };
@@ -154,9 +234,7 @@ export default function UserProfile({ user, onUpdateUser }) {
         // Photo was removed
         updateData.personalPhoto = null;
       }
-
-      console.log("Sending update:", updateData);
-
+      
       // Call the API
       const updatedUser = await updateUserProfile(updateData);
 
@@ -199,7 +277,7 @@ export default function UserProfile({ user, onUpdateUser }) {
     return f + l;
   };
 
-  const isCitizen = user?.role_name === "Citizen";
+  const isCitizen = user?.roles?.some(r => r.role_name === "Citizen");
 
   return (
     <div className="up-profile-page-wrapper">
@@ -307,26 +385,31 @@ export default function UserProfile({ user, onUpdateUser }) {
                   <span className="up-label-sys">Company ID</span>
                   <span className="up-value">{user?.companyId || "N/A"}</span>
                 </div>
-                <div className="up-system-row">
-                  <span className="up-label-sys">Verification</span>
-                  <span
-                    className={`up-value up-status-${
-                      user?.isVerified ? "verified" : "pending"
-                    }`}
-                  >
-                    {user?.isVerified ? "Verified" : "Pending"}
-                  </span>
-                </div>
-                <div className="up-system-row">
-                  <span className="up-label-sys">Member Since</span>
-                  <span className="up-value">
-                    {user?.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString()
-                      : "-"}
-                  </span>
-                </div>
               </div>
             )}
+
+            {/* Account Overview - Visible to Everyone */}
+            <div className="up-profile-card up-system-info-card">
+              <h3>Account Overview</h3>
+              <div className="up-system-row">
+                <span className="up-label-sys">Member Since</span>
+                <span className="up-value">
+                  {user?.createdAt
+                    ? new Date(user.createdAt).toLocaleDateString()
+                    : "-"}
+                </span>
+              </div>
+              <div className="up-system-row">
+                <span className="up-label-sys">Verification</span>
+                <span
+                  className={`up-value up-status-${
+                    user?.isVerified ? "verified" : "pending"
+                  }`}
+                >
+                  {user?.isVerified ? "Verified" : "Pending"}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Right Column:  Editable Details */}
@@ -345,9 +428,8 @@ export default function UserProfile({ user, onUpdateUser }) {
                     className="up-input"
                     name="firstName"
                     value={formData.firstName}
-                    readOnly
-                    disabled
-                    title="First name cannot be changed"
+                    onChange={handleChange}
+                    placeholder="Enter your first name"
                   />
                 </div>
                 <div className="up-form-group up-half-width">
@@ -357,9 +439,8 @@ export default function UserProfile({ user, onUpdateUser }) {
                     className="up-input"
                     name="lastName"
                     value={formData.lastName}
-                    readOnly
-                    disabled
-                    title="Last name cannot be changed"
+                    onChange={handleChange}
+                    placeholder="Enter your last name"
                   />
                 </div>
               </div>
@@ -380,9 +461,8 @@ export default function UserProfile({ user, onUpdateUser }) {
                     className="up-input"
                     name="email"
                     value={formData.email}
-                    readOnly
-                    disabled
-                    title="Email cannot be changed"
+                    onChange={handleChange}
+                    placeholder="Enter your email"
                   />
                 </div>
               </div>
@@ -425,6 +505,110 @@ export default function UserProfile({ user, onUpdateUser }) {
                   />
                   <span className="up-slider up-round"></span>
                 </label>
+              </div>
+            </div>
+
+            {/* Security - Password Change */}
+            <div className="up-profile-card">
+              <div className="up-card-header-custom">
+                <FaLock className="up-header-icon" />
+                <h3>Security</h3>
+              </div>
+              
+              <div className="up-form-group">
+                <label className="up-label">Current Password</label>
+                <div className="up-input-with-icon">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    className="up-input"
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordInput}
+                    placeholder="Enter current password"
+                  />
+                  <button
+                    type="button"
+                    className="up-password-toggle"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="up-form-row">
+                <div className="up-form-group up-half-width">
+                  <label className="up-label">New Password</label>
+                  <div className="up-input-with-icon">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      className="up-input"
+                      name="newPassword"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordInput}
+                      placeholder="New password"
+                    />
+                    <button
+                      type="button"
+                      className="up-password-toggle"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {/* Password Strength Meter */}
+                  {passwordData.newPassword && (
+                    <div className="up-password-strength">
+                      <div 
+                        className="up-strength-bar" 
+                        style={{ 
+                          width: `${(passwordStrength / 5) * 100}%`,
+                          backgroundColor: getPasswordStrengthColor() 
+                        }}
+                      />
+                      <span style={{ color: getPasswordStrengthColor() }}>
+                        {["Weak", "Fair", "Good", "Strong", "Very Strong"][passwordStrength] || "Weak"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="up-form-group up-half-width">
+                  <label className="up-label">Confirm Password</label>
+                  <div className="up-input-with-icon">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      className="up-input"
+                      name="confirmPassword"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordInput}
+                      placeholder="Confirm new password"
+                    />
+                    <button
+                      type="button"
+                      className="up-password-toggle"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="up-password-actions">
+                {passwordMessage && (
+                  <div className={`up-status-message up-${passwordMessage.type}`}>
+                    {passwordMessage.text}
+                  </div>
+                )}
+                <button 
+                  type="button" 
+                  className="up-btn-secondary"
+                  onClick={handlePasswordSubmit}
+                  disabled={passwordLoading || !passwordData.currentPassword || !passwordData.newPassword}
+                >
+                  {passwordLoading ? "Updating..." : "Update Password"}
+                </button>
               </div>
             </div>
 

@@ -238,20 +238,7 @@
   width: 100%;
 }
 
-.cf-dropdown-menu::-webkit-scrollbar {
-  width: 6px;
-}
-.cf-dropdown-menu::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-.cf-dropdown-menu::-webkit-scrollbar-thumb {
-  background: var(--cf-brand);
-  border-radius: 3px;
-}
-.cf-dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--cf-brand-hover);
-}
+
 
 .cf-dropdown-item {
   padding: 0.6rem 1rem;

@@ -204,9 +204,7 @@
   border-top-right-radius: 8px;
 }
 
-/* Scrollbar fine */
-.muf-roles-scroll::-webkit-scrollbar { width: 4px; }
-.muf-roles-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
 
 .muf-roles-table {
   width: 100%;
@@ -296,31 +294,7 @@
   z-index: 1060; /* Ensure it's above other things */
 }
 
-/* --- Custom Scrollbar --- */
-.muf-dropdown-menu::-webkit-scrollbar,
-.muf-roles-scroll::-webkit-scrollbar {
-  width: 6px;
-}
 
-.muf-dropdown-menu::-webkit-scrollbar-track,
-.muf-roles-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.muf-dropdown-menu::-webkit-scrollbar-thumb,
-.muf-roles-scroll::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-  border: 2px solid transparent; /* Creates padding effect */
-  background-clip: content-box;
-}
-
-.muf-dropdown-menu::-webkit-scrollbar-thumb:hover,
-.muf-roles-scroll::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
 
 .muf-btn-add {
   background: var(--muf-brand);

@@ -673,22 +673,7 @@
   scrollbar-color: #e5e7eb transparent;
 }
 
-.rdm-dropdown-scroll-area::-webkit-scrollbar {
-  width: 5px;
-}
 
-.rdm-dropdown-scroll-area::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.rdm-dropdown-scroll-area::-webkit-scrollbar-thumb {
-  background-color: var(--rdm-brand);
-  border-radius: 20px;
-}
-
-.rdm-dropdown-scroll-area::-webkit-scrollbar-thumb:hover {
-  background-color: var(--rdm-brand-dark);
-}
 
 .rdm-dropdown-header {
   padding: 8px 16px;
@@ -867,28 +852,7 @@
   color: var(--rdm-text-main);
 }
 
-/* --- SCROLLBAR STYLE --- */
-.rdm-modal .modal-body::-webkit-scrollbar {
-  width: 5px;
-}
 
-.rdm-modal .modal-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.rdm-modal .modal-body::-webkit-scrollbar-thumb {
-  background-color: var(--rdm-brand);
-  border-radius: 10px;
-}
-
-.rdm-modal .modal-body::-webkit-scrollbar-thumb:hover {
-  background-color: var(--rdm-brand-dark);
-}
-
-.rdm-modal .modal-body {
-  scrollbar-width: thin;
-  scrollbar-color: var(--rdm-brand) transparent;
-}
 
 /* --- Collapsible Logic --- */
 .rdm-section-title.interactable {

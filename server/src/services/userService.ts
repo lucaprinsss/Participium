@@ -16,6 +16,9 @@ import crypto from 'crypto';
 import { notificationRepository } from '../repositories/notificationRepository';
 import { UserEntity } from '@models/entity/userEntity';
 import { saveBase64Image, deleteImage } from '@utils/fileUploadUtils';
+import { verifyPassword, generatePasswordData } from '@utils/passwordUtils';
+import { UnauthorizedError } from '@models/errors/UnauthorizedError';
+
 /**
  * Service for user-related business logic
  */
@@ -164,6 +167,9 @@ class UserService {
   async updateUserProfile(
     userId: number,
     updateData: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
       personalPhoto?: string;
       telegramUsername?: string;
       emailNotificationsEnabled?: boolean;
@@ -174,7 +180,41 @@ class UserService {
       throw new NotFoundError('User not found');
     }
 
-    const updatedFields:  Partial<UserEntity> = {};
+    const updatedFields: Partial<UserEntity> = {};
+
+    // Handle First Name
+    if (updateData.firstName !== undefined) {
+      if (updateData.firstName.trim().length === 0) {
+        throw new BadRequestError('First name cannot be empty');
+      }
+      updatedFields.firstName = updateData.firstName;
+    }
+
+    // Handle Last Name
+    if (updateData.lastName !== undefined) {
+      if (updateData.lastName.trim().length === 0) {
+        throw new BadRequestError('Last name cannot be empty');
+      }
+      updatedFields.lastName = updateData.lastName;
+    }
+
+    // Handle Email
+    if (updateData.email !== undefined) {
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(updateData.email)) {
+        throw new BadRequestError('Invalid email format');
+      }
+
+      // Check uniqueness if email is changing
+      if (updateData.email !== user.email) {
+        const existingEmail = await userRepository.existsUserByEmail(updateData.email);
+        if (existingEmail) {
+          throw new ConflictError('Email already in use');
+        }
+        updatedFields.email = updateData.email;
+      }
+    }
 
     // Handle personal photo upload (base64)
     if (updateData.personalPhoto !== undefined) {
@@ -199,8 +239,13 @@ class UserService {
         try {
           const photoUrl = await saveBase64Image(updateData.personalPhoto, userId);
           updatedFields.personalPhotoUrl = photoUrl;
-        } catch (error) {
-          throw new BadRequestError('Failed to save photo.  Please ensure the image is valid and not too large.');
+        } catch (error: any) {
+          // If the error is already a known type (e.g. BadRequestError from saveBase64Image), rethrow it
+          if (error.statusCode) {
+            throw error;
+          }
+          // Otherwise throw a generic error with details
+          throw new BadRequestError(`Failed to save photo: ${error.message}`);
         }
       }
     }
@@ -240,6 +285,42 @@ class UserService {
 
     // Format response (convert to snake_case for API consistency)
     return this.formatUserProfileResponse(updatedUser);
+  }
+
+  /**
+   * Update user password
+   * @param userId User ID
+   * @param currentPassword Current password
+   * @param newPassword New password
+   */
+  async updatePassword(userId: number, currentPassword: string, newPassword: string): Promise<void> {
+    // 1. Get user with password hash
+    const user = await userRepository.findUserByIdWithPassword(userId);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (!user.passwordHash) {
+      // Should not happen for registered users, but maybe for some legacy/external auth
+      throw new BadRequestError('User has no password set');
+    }
+
+    // 2. Verify current password
+    const [salt, hash] = user.passwordHash.split(':');
+    const isValid = await verifyPassword(currentPassword, salt, hash);
+    
+    if (!isValid) {
+      throw new UnauthorizedError('Incorrect current password');
+    }
+
+    // 3. Hash new password
+    const { salt: newSalt, hash: newHash } = await generatePasswordData(newPassword);
+    
+    // 4. Update user
+    user.passwordHash = `${newSalt}:${newHash}`;
+    await userRepository.save(user);
+
+    logInfo(`User password updated: ${user.username} (ID: ${userId})`);
   }
 
   /**

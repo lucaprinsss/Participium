@@ -27,6 +27,21 @@ export const updateUserProfile = async (data) => {
 };
 
 /**
+ * Update user password
+ * @param {Object} data - { currentPassword, newPassword }
+ * @returns {Promise} Success message
+ */
+export const updatePassword = async (data) => {
+  try {
+    const response = await apiClient.patch('/users/me/password', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating password:', error);
+    throw error;
+  }
+};
+
+/**
  * Get current user profile
  * @returns {Promise} Current user data
  */

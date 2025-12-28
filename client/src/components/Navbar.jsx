@@ -38,7 +38,10 @@ export default function Navbar({ user, onLogout }) {
     return user?.username || 'User'; 
   }, [user?.first_name, user?.last_name, user?.username]);
 
-  const displayRole = useMemo(() => userRoles.map(r => r.role_name).join(', ') || 'User', [userRoles]);
+  const displayRole = useMemo(() => {
+    if (userRoles.length > 1) return 'Multiple roles';
+    return userRoles.map(r => r.role_name).join(', ') || 'User';
+  }, [userRoles]);
   
   const avatarInitials = useMemo(() => {
       return getInitials(user?.first_name, user?.last_name);
@@ -127,7 +130,15 @@ export default function Navbar({ user, onLogout }) {
                 }}
             >
               <div className="user-avatar">
-                {avatarInitials}
+                {user?.personal_photo_url ? (
+                  <img 
+                    src={user.personal_photo_url} 
+                    alt="Profile" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                  />
+                ) : (
+                  avatarInitials
+                )}
               </div>
               <div className="user-details">
                 <div className="user-name">{displayUsername}</div>
