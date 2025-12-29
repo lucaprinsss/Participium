@@ -1649,3 +1649,257 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
     });
   });
 });
+
+describe('ReportService Integration Tests - Messages', () => {
+  let createdUserIds: number[] = [];
+  let createdReportIds: number[] = [];
+  let citizenId: number;
+  let technicianId: number;
+  let otherTechnicianId: number;
+  let assignedReportId: number;
+
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Create citizen
+    const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    const citizen = await userRepository.createUserWithPassword({
+      username: `citizen_msg_svc${r()}`,
+      password: 'Password123!',
+      email: `citizen_msg_svc${r()}@test.com`,
+      firstName: 'Citizen',
+      lastName: 'Messages',
+      isVerified: true
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [citizen.id, citizenRole!.id]
+    );
+    citizenId = citizen.id;
+    createdUserIds.push(citizenId);
+
+    // Create technician
+    const techRole = await departmentRoleRepository.findByDepartmentAndRole('Water and Sewer Services Department', 'Water Network staff member');
+    if (!techRole) throw new Error('Technician role not found');
+    const technician = await userRepository.createUserWithPassword({
+      username: `tech_msg_svc${r()}`,
+      password: 'Password123!',
+      email: `tech_msg_svc${r()}@test.com`,
+      firstName: 'Tech',
+      lastName: 'Messages',
+      isVerified: true
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [technician.id, techRole!.id]
+    );
+    technicianId = technician.id;
+    createdUserIds.push(technicianId);
+
+    // Create other technician
+    const otherTechnician = await userRepository.createUserWithPassword({
+      username: `other_tech_msg_svc${r()}`,
+      password: 'Password123!',
+      email: `other_tech_msg_svc${r()}@test.com`,
+      firstName: 'Other',
+      lastName: 'Tech',
+      isVerified: true
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [otherTechnician.id, techRole!.id]
+    );
+    otherTechnicianId = otherTechnician.id;
+    createdUserIds.push(otherTechnicianId);
+  });
+
+  afterAll(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(ReportEntity).delete({ id: In(createdReportIds) });
+    }
+    if (createdUserIds.length > 0) {
+      await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
+    }
+  });
+
+  beforeEach(async () => {
+    // Create assigned report
+    const report = await reportRepository.createReport({
+      title: 'Report for messages',
+      description: 'Test messages',
+      category: ReportCategory.WATER_SUPPLY,
+      reporterId: citizenId,
+      location: 'POINT(7.6869 45.0703)',
+      isAnonymous: false
+    }, []);
+    await AppDataSource.query(
+      'UPDATE reports SET status = $1, assignee_id = $2 WHERE id = $3',
+      [ReportStatus.ASSIGNED, technicianId, report.id]
+    );
+    assignedReportId = report.id;
+    createdReportIds.push(assignedReportId);
+  });
+
+  afterEach(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(ReportEntity).delete({ id: In(createdReportIds) });
+      createdReportIds = [];
+    }
+  });
+
+  describe('sendMessage', () => {
+    it('should send message successfully when assigned technician posts', async () => {
+      const message = await reportService.sendMessage(
+        assignedReportId,
+        technicianId,
+        'We will fix this tomorrow'
+      );
+
+      expect(message).toBeDefined();
+      expect(message.id).toBeGreaterThan(0);
+      expect(message.content).toBe('We will fix this tomorrow');
+      expect(message.author).toBeDefined();
+      expect(message.author.id).toBe(technicianId);
+      expect(message.reportId).toBe(assignedReportId);
+      expect(message.createdAt).toBeDefined();
+    });
+
+    it('should trim whitespace from message content', async () => {
+      const message = await reportService.sendMessage(
+        assignedReportId,
+        technicianId,
+        '  Message with spaces  '
+      );
+
+      expect(message.content).toBe('Message with spaces');
+    });
+
+    it('should throw BadRequestError when content is empty', async () => {
+      await expect(
+        reportService.sendMessage(assignedReportId, technicianId, '')
+      ).rejects.toThrow(BadRequestError);
+
+      await expect(
+        reportService.sendMessage(assignedReportId, technicianId, '   ')
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should throw BadRequestError when content exceeds 2000 characters', async () => {
+      const longContent = 'x'.repeat(2001);
+
+      await expect(
+        reportService.sendMessage(assignedReportId, technicianId, longContent)
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should throw NotFoundError when report does not exist', async () => {
+      await expect(
+        reportService.sendMessage(999999, technicianId, 'Test message')
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw InsufficientRightsError when non-assigned user tries to send', async () => {
+      await expect(
+        reportService.sendMessage(assignedReportId, otherTechnicianId, 'Unauthorized')
+      ).rejects.toThrow();
+    });
+
+    it('should create notification for the report owner', async () => {
+      await reportService.sendMessage(assignedReportId, technicianId, 'Test notification');
+
+      // Check notification was created
+      const notifications = await AppDataSource.query(
+        'SELECT * FROM notifications WHERE user_id = $1 AND report_id = $2',
+        [citizenId, assignedReportId]
+      );
+
+      expect(notifications.length).toBeGreaterThan(0);
+      expect(notifications[0].content).toContain('new message');
+    });
+  });
+
+  describe('getMessages', () => {
+    beforeEach(async () => {
+      // Add a test message
+      await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+         VALUES ($1, $2, 'Test message', CURRENT_TIMESTAMP)`,
+        [assignedReportId, technicianId]
+      );
+    });
+
+    it('should return messages when assigned technician requests', async () => {
+      const messages = await reportService.getMessages(assignedReportId, technicianId);
+
+      expect(Array.isArray(messages)).toBe(true);
+      expect(messages.length).toBe(1);
+      expect(messages[0].content).toBe('Test message');
+      expect(messages[0].author).toBeDefined();
+    });
+
+    it('should return messages when reporter (citizen) requests', async () => {
+      const messages = await reportService.getMessages(assignedReportId, citizenId);
+
+      expect(Array.isArray(messages)).toBe(true);
+      expect(messages.length).toBe(1);
+      expect(messages[0].content).toBe('Test message');
+    });
+
+    it('should throw NotFoundError when report does not exist', async () => {
+      await expect(
+        reportService.getMessages(999999, technicianId)
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw InsufficientRightsError for unauthorized user', async () => {
+      await expect(
+        reportService.getMessages(assignedReportId, otherTechnicianId)
+      ).rejects.toThrow();
+    });
+
+    it('should return empty array when no messages exist', async () => {
+      // Create new report without messages
+      const newReport = await reportRepository.createReport({
+        title: 'No messages',
+        description: 'Test',
+        category: ReportCategory.WATER_SUPPLY,
+        reporterId: citizenId,
+        location: 'POINT(7.6869 45.0703)',
+        isAnonymous: false
+      }, []);
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1, assignee_id = $2 WHERE id = $3',
+        [ReportStatus.ASSIGNED, technicianId, newReport.id]
+      );
+      createdReportIds.push(newReport.id);
+
+      const messages = await reportService.getMessages(newReport.id, technicianId);
+
+      expect(Array.isArray(messages)).toBe(true);
+      expect(messages.length).toBe(0);
+    });
+
+    it('should return messages ordered by creation date (ASC)', async () => {
+      // Add more messages
+      await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+         VALUES ($1, $2, 'Second message', CURRENT_TIMESTAMP + interval '1 second')`,
+        [assignedReportId, technicianId]
+      );
+      await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+         VALUES ($1, $2, 'Third message', CURRENT_TIMESTAMP + interval '2 seconds')`,
+        [assignedReportId, technicianId]
+      );
+
+      const messages = await reportService.getMessages(assignedReportId, technicianId);
+
+      expect(messages.length).toBe(3);
+      expect(messages[0].content).toBe('Test message');
+      expect(messages[1].content).toBe('Second message');
+      expect(messages[2].content).toBe('Third message');
+    });
+  });
+});

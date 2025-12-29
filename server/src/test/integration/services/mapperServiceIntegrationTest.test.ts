@@ -42,6 +42,7 @@ describe('Mapper Service', () => {
         email: 'test@example.com',
         first_name: 'Mario',
         last_name: 'Rossi',
+        role_name: 'Administrator',
         roles: [
           {
             department_role_id: 1,

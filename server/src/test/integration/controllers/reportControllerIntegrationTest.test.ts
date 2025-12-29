@@ -983,3 +983,448 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
     });
   });
 });
+
+describe('ReportController Integration Tests - Status Update', () => {
+  let proAgent: ReturnType<typeof request.agent>;
+  let technicianAgent: ReturnType<typeof request.agent>;
+  let citizenAgent: ReturnType<typeof request.agent>;
+  let proUserId: number;
+  let technicianUserId: number;
+  let citizenUserId: number;
+  let pendingReportId: number;
+  let assignedReportId: number;
+  let createdUserIds: number[] = [];
+  let createdReportIds: number[] = [];
+  let proUsername: string;
+  let techUsername: string;
+  let citizenUsername: string;
+
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Create PRO user
+    const proDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Municipal Public Relations Officer');
+    if (!proDeptRole) throw new Error('PRO role not found');
+
+    proUsername = `pro_status_${r()}`;
+    const proUser = await userRepository.createUserWithPassword({
+      username: proUsername,
+      password: 'Password123!',
+      email: `${proUsername}@test.com`,
+      firstName: 'PRO',
+      lastName: 'Status',
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: proUser.id,
+      departmentRoleId: proDeptRole.id
+    });
+    proUserId = proUser.id;
+    createdUserIds.push(proUserId);
+
+    // Create technician user
+    const techDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Water and Sewer Services Department', 'Water Network staff member');
+    if (!techDeptRole) throw new Error('Technician role not found');
+
+    techUsername = `tech_status_${r()}`;
+    const techUser = await userRepository.createUserWithPassword({
+      username: techUsername,
+      password: 'Password123!',
+      email: `${techUsername}@test.com`,
+      firstName: 'Tech',
+      lastName: 'Status',
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: techUser.id,
+      departmentRoleId: techDeptRole.id
+    });
+    technicianUserId = techUser.id;
+    createdUserIds.push(technicianUserId);
+
+    // Create citizen user
+    const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    if (!citizenDeptRole) throw new Error('Citizen role not found');
+
+    citizenUsername = `citizen_status_${r()}`;
+    const citizenUser = await userRepository.createUserWithPassword({
+      username: citizenUsername,
+      password: 'Password123!',
+      email: `${citizenUsername}@test.com`,
+      firstName: 'Citizen',
+      lastName: 'Status',
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: citizenUser.id,
+      departmentRoleId: citizenDeptRole.id
+    });
+    citizenUserId = citizenUser.id;
+    createdUserIds.push(citizenUserId);
+
+    // Login agents
+    proAgent = request.agent(app);
+    await proAgent.post('/api/sessions').send({ username: proUsername, password: 'Password123!' });
+
+    technicianAgent = request.agent(app);
+    await technicianAgent.post('/api/sessions').send({ username: techUsername, password: 'Password123!' });
+
+    citizenAgent = request.agent(app);
+    await citizenAgent.post('/api/sessions').send({ username: citizenUsername, password: 'Password123!' });
+  });
+
+  afterAll(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(ReportEntity).delete({ id: In(createdReportIds) });
+    }
+    if (createdUserIds.length > 0) {
+      await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
+    }
+  });
+
+  beforeEach(async () => {
+    // Create pending report
+    const pendingReport = await AppDataSource.query(
+      `INSERT INTO reports (reporter_id, title, description, category, status, location, is_anonymous, created_at)
+       VALUES ($1, 'Pending Report', 'Test', 'Sewer System', 'Pending Approval', ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      [citizenUserId]
+    );
+    pendingReportId = pendingReport[0].id;
+    createdReportIds.push(pendingReportId);
+
+    // Create assigned report
+    const assignedReport = await AppDataSource.query(
+      `INSERT INTO reports (reporter_id, title, description, category, status, assignee_id, location, is_anonymous, created_at)
+       VALUES ($1, 'Assigned Report', 'Test', 'Sewer System', 'Assigned', $2, ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      [citizenUserId, technicianUserId]
+    );
+    assignedReportId = assignedReport[0].id;
+    createdReportIds.push(assignedReportId);
+  });
+
+  afterEach(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(ReportEntity).delete({ id: In(createdReportIds) });
+      createdReportIds = [];
+    }
+  });
+
+  describe('PUT /api/reports/:id/status', () => {
+    it('should approve report when PRO approves (200)', async () => {
+      const response = await proAgent
+        .put(`/api/reports/${pendingReportId}/status`)
+        .send({ newStatus: 'Assigned' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe('Assigned');
+      expect(response.body.assignee_id).toBeDefined();
+    });
+
+    it('should reject report when PRO provides rejection reason (200)', async () => {
+      const response = await proAgent
+        .put(`/api/reports/${pendingReportId}/status`)
+        .send({ newStatus: 'Rejected', rejectionReason: 'Invalid location' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe('Rejected');
+      expect(response.body.rejection_reason).toBe('Invalid location');
+    });
+
+    it('should return 400 when rejecting without reason', async () => {
+      const response = await proAgent
+        .put(`/api/reports/${pendingReportId}/status`)
+        .send({ newStatus: 'Rejected' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('Rejection reason');
+    });
+
+    it('should set report to RESOLVED when technician resolves (200)', async () => {
+      const response = await technicianAgent
+        .put(`/api/reports/${assignedReportId}/status`)
+        .send({ newStatus: 'Resolved', resolutionNotes: 'Fixed the issue' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe('Resolved');
+    });
+
+    it('should return 400 when newStatus is missing', async () => {
+      const response = await proAgent
+        .put(`/api/reports/${pendingReportId}/status`)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('newStatus');
+    });
+
+    it('should return 403 when citizen tries to update status', async () => {
+      const response = await citizenAgent
+        .put(`/api/reports/${pendingReportId}/status`)
+        .send({ newStatus: 'Assigned' });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should return 404 when report does not exist', async () => {
+      const response = await proAgent
+        .put('/api/reports/999999/status')
+        .send({ newStatus: 'Assigned' });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return 400 with invalid report ID format', async () => {
+      const response = await proAgent
+        .put('/api/reports/invalid/status')
+        .send({ newStatus: 'Assigned' });
+
+      expect(response.status).toBe(400);
+    });
+  });
+});
+
+describe('ReportController Integration Tests - Messages', () => {
+  let technicianAgent: ReturnType<typeof request.agent>;
+  let citizenAgent: ReturnType<typeof request.agent>;
+  let otherCitizenAgent: ReturnType<typeof request.agent>;
+  let technicianUserId: number;
+  let citizenUserId: number;
+  let otherCitizenUserId: number;
+  let assignedReportId: number;
+  let createdUserIds: number[] = [];
+  let createdReportIds: number[] = [];
+  let techUsername: string;
+  let citizenUsername: string;
+  let otherCitizenUsername: string;
+
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Create technician user
+    const techDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Water and Sewer Services Department', 'Water Network staff member');
+    if (!techDeptRole) throw new Error('Technician role not found');
+
+    techUsername = `tech_msg_${r()}`;
+    const techUser = await userRepository.createUserWithPassword({
+      username: techUsername,
+      password: 'Password123!',
+      email: `${techUsername}@test.com`,
+      firstName: 'Tech',
+      lastName: 'Messages',
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: techUser.id,
+      departmentRoleId: techDeptRole.id
+    });
+    technicianUserId = techUser.id;
+    createdUserIds.push(technicianUserId);
+
+    // Create citizen user
+    const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    if (!citizenDeptRole) throw new Error('Citizen role not found');
+
+    citizenUsername = `citizen_msg_${r()}`;
+    const citizenUser = await userRepository.createUserWithPassword({
+      username: citizenUsername,
+      password: 'Password123!',
+      email: `${citizenUsername}@test.com`,
+      firstName: 'Citizen',
+      lastName: 'Messages',
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: citizenUser.id,
+      departmentRoleId: citizenDeptRole.id
+    });
+    citizenUserId = citizenUser.id;
+    createdUserIds.push(citizenUserId);
+
+    // Create other citizen user
+    otherCitizenUsername = `other_citizen_msg_${r()}`;
+    const otherCitizenUser = await userRepository.createUserWithPassword({
+      username: otherCitizenUsername,
+      password: 'Password123!',
+      email: `${otherCitizenUsername}@test.com`,
+      firstName: 'Other',
+      lastName: 'Citizen',
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: otherCitizenUser.id,
+      departmentRoleId: citizenDeptRole.id
+    });
+    otherCitizenUserId = otherCitizenUser.id;
+    createdUserIds.push(otherCitizenUserId);
+
+    // Login agents
+    technicianAgent = request.agent(app);
+    await technicianAgent.post('/api/sessions').send({ username: techUsername, password: 'Password123!' });
+
+    citizenAgent = request.agent(app);
+    await citizenAgent.post('/api/sessions').send({ username: citizenUsername, password: 'Password123!' });
+
+    otherCitizenAgent = request.agent(app);
+    await otherCitizenAgent.post('/api/sessions').send({ username: otherCitizenUsername, password: 'Password123!' });
+  });
+
+  afterAll(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(ReportEntity).delete({ id: In(createdReportIds) });
+    }
+    if (createdUserIds.length > 0) {
+      await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
+    }
+  });
+
+  beforeEach(async () => {
+    // Create assigned report
+    const report = await AppDataSource.query(
+      `INSERT INTO reports (reporter_id, title, description, category, status, assignee_id, location, is_anonymous, created_at)
+       VALUES ($1, 'Report with messages', 'Test', 'Sewer System', 'Assigned', $2, ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      [citizenUserId, technicianUserId]
+    );
+    assignedReportId = report[0].id;
+    createdReportIds.push(assignedReportId);
+  });
+
+  afterEach(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(ReportEntity).delete({ id: In(createdReportIds) });
+      createdReportIds = [];
+    }
+  });
+
+  describe('POST /api/reports/:id/messages', () => {
+    it('should send message when assigned technician posts (201)', async () => {
+      const response = await technicianAgent
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .send({ content: 'We will fix this issue tomorrow' });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.content).toBe('We will fix this issue tomorrow');
+      expect(response.body.author).toBeDefined();
+      expect(response.body.author.username).toBe(techUsername);
+    });
+
+    it('should trim whitespace from message content (201)', async () => {
+      const response = await technicianAgent
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .send({ content: '  Message with spaces  ' });
+
+      expect(response.status).toBe(201);
+      expect(response.body.content).toBe('Message with spaces');
+    });
+
+    it('should return 400 when content is missing', async () => {
+      const response = await technicianAgent
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toContain('content');
+    });
+
+    it('should return 400 when content is empty', async () => {
+      const response = await technicianAgent
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .send({ content: '' });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 403 when non-assigned user tries to send message', async () => {
+      const response = await otherCitizenAgent
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .send({ content: 'Unauthorized message' });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should return 404 when report does not exist', async () => {
+      const response = await technicianAgent
+        .post('/api/reports/999999/messages')
+        .send({ content: 'Test message' });
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('GET /api/reports/:id/messages', () => {
+    beforeEach(async () => {
+      // Add a message to the report
+      await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+         VALUES ($1, $2, 'Test message content', CURRENT_TIMESTAMP)`,
+        [assignedReportId, technicianUserId]
+      );
+    });
+
+    it('should return messages when assigned technician requests (200)', async () => {
+      const response = await technicianAgent
+        .get(`/api/reports/${assignedReportId}/messages`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].content).toBe('Test message content');
+    });
+
+    it('should return messages when reporter (citizen) requests (200)', async () => {
+      const response = await citizenAgent
+        .get(`/api/reports/${assignedReportId}/messages`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(1);
+    });
+
+    it('should return 403 when unauthorized user requests messages', async () => {
+      const response = await otherCitizenAgent
+        .get(`/api/reports/${assignedReportId}/messages`);
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should return 404 when report does not exist', async () => {
+      const response = await technicianAgent
+        .get('/api/reports/999999/messages');
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return empty array when no messages exist', async () => {
+      // Create new report without messages
+      const newReport = await AppDataSource.query(
+        `INSERT INTO reports (reporter_id, title, description, category, status, assignee_id, location, is_anonymous, created_at)
+         VALUES ($1, 'No messages', 'Test', 'Sewer System', 'Assigned', $2, ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [citizenUserId, technicianUserId]
+      );
+      const newReportId = newReport[0].id;
+      createdReportIds.push(newReportId);
+
+      const response = await technicianAgent
+        .get(`/api/reports/${newReportId}/messages`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(0);
+    });
+  });
+});
+

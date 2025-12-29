@@ -1261,4 +1261,425 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
       expect(result.length).toBe(0);
     });
   });
+
+  describe('PUT /api/reports/:id/status - Additional Status Transitions', () => {
+    let pendingReportId: number;
+    let assignedReportId: number;
+
+    beforeEach(async () => {
+      // Create a report in Pending Approval status
+      const pendingResult = await AppDataSource.query(
+        `INSERT INTO reports 
+        (reporter_id, title, description, category, status, location, is_anonymous, created_at)
+        VALUES 
+        ($1, 'Pending Report', 'Needs approval', 'Roads and Urban Furnishings', 'Pending Approval', ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [citizenId]
+      );
+      pendingReportId = pendingResult[0].id;
+
+      // Create a report in Assigned status
+      const assignedResult = await AppDataSource.query(
+        `INSERT INTO reports 
+        (reporter_id, title, description, category, status, assignee_id, location, is_anonymous, created_at)
+        VALUES 
+        ($1, 'Assigned Report', 'In progress', 'Roads and Urban Furnishings', 'Assigned', $2, ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [citizenId, technicianId]
+      );
+      assignedReportId = assignedResult[0].id;
+    });
+
+    it('should approve report (ASSIGNED) when PRO approves pending report', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${pendingReportId}/status`)
+        .set('Cookie', proCookies)
+        .send({ newStatus: ReportStatus.ASSIGNED })
+        .expect(200);
+
+      expect(response.body.status).toBe(ReportStatus.ASSIGNED);
+      expect(response.body.assignee_id).toBeDefined();
+    });
+
+    it('should reject report when PRO provides rejection reason', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${pendingReportId}/status`)
+        .set('Cookie', proCookies)
+        .send({ 
+          newStatus: ReportStatus.REJECTED, 
+          rejectionReason: 'Invalid location' 
+        })
+        .expect(200);
+
+      expect(response.body.status).toBe(ReportStatus.REJECTED);
+      expect(response.body.rejection_reason).toBe('Invalid location');
+    });
+
+    it('should return 400 when rejecting without reason', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${pendingReportId}/status`)
+        .set('Cookie', proCookies)
+        .send({ newStatus: ReportStatus.REJECTED })
+        .expect(400);
+
+      expect(response.body.message).toContain('Rejection reason');
+    });
+
+    it('should set report to IN_PROGRESS when technical staff updates', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${assignedReportId}/status`)
+        .set('Cookie', technicianCookies)
+        .send({ newStatus: ReportStatus.IN_PROGRESS })
+        .expect(200);
+
+      expect(response.body.status).toBe(ReportStatus.IN_PROGRESS);
+    });
+
+    it('should return 403 when technical staff tries to approve', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${pendingReportId}/status`)
+        .set('Cookie', technicianCookies)
+        .send({ newStatus: ReportStatus.ASSIGNED })
+        .expect(403);
+
+      expect(response.body.message).toContain('Public Relations Officer');
+    });
+
+    it('should return 400 when newStatus is missing', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${assignedReportId}/status`)
+        .set('Cookie', technicianCookies)
+        .send({})
+        .expect(400);
+
+      expect(response.body.message).toContain('newStatus');
+    });
+
+    it('should accept "status" field instead of "newStatus"', async () => {
+      const response = await request(app)
+        .put(`/api/reports/${assignedReportId}/status`)
+        .set('Cookie', technicianCookies)
+        .send({ status: ReportStatus.RESOLVED })
+        .expect(400);
+
+      expect(response.body.message).toContain('newStatus');
+    });
+
+    it('should suspend report when technical staff suspends in-progress report', async () => {
+      // First set to IN_PROGRESS
+      await AppDataSource.query(
+        `UPDATE reports SET status = 'In Progress' WHERE id = $1`,
+        [assignedReportId]
+      );
+
+      const response = await request(app)
+        .put(`/api/reports/${assignedReportId}/status`)
+        .set('Cookie', technicianCookies)
+        .send({ newStatus: ReportStatus.SUSPENDED })
+        .expect(200);
+
+      expect(response.body.status).toBe(ReportStatus.SUSPENDED);
+    });
+
+    it('should allow external maintainer to resolve assigned report', async () => {
+      // Update report to be assigned to external maintainer
+      await AppDataSource.query(
+        `UPDATE reports SET external_assignee_id = $1 WHERE id = $2`,
+        [externalMaintainerId, assignedReportId]
+      );
+
+      const externalCookies = await request(app)
+        .post('/api/sessions')
+        .send({ username: 'testexternal', password: 'StaffPass123!' })
+        .expect(200)
+        .then(res => res.headers['set-cookie']);
+
+      const response = await request(app)
+        .put(`/api/reports/${assignedReportId}/status`)
+        .set('Cookie', externalCookies)
+        .send({ newStatus: ReportStatus.RESOLVED })
+        .expect(200);
+
+      expect(response.body.status).toBe(ReportStatus.RESOLVED);
+    });
+  });
+
+  describe('POST /api/reports/:id/messages', () => {
+    let assignedReportId: number;
+
+    beforeEach(async () => {
+      const result = await AppDataSource.query(
+        `INSERT INTO reports 
+        (reporter_id, title, description, category, status, assignee_id, location, is_anonymous, created_at)
+        VALUES 
+        ($1, 'Report with messages', 'Test report', 'Roads and Urban Furnishings', 'Assigned', $2, ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [citizenId, technicianId]
+      );
+      assignedReportId = result[0].id;
+    });
+
+    it('should send message when assigned technical staff posts message', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', technicianCookies)
+        .send({ content: 'We will fix this issue tomorrow' })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.content).toBe('We will fix this issue tomorrow');
+      expect(response.body.author).toBeDefined();
+      expect(response.body.author.username).toBe(TECHNICIAN_USERNAME);
+      expect(response.body.createdAt).toBeDefined();
+    });
+
+    it('should trim whitespace from message content', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', technicianCookies)
+        .send({ content: '  Message with spaces  ' })
+        .expect(201);
+
+      expect(response.body.content).toBe('Message with spaces');
+    });
+
+    it('should return 400 when content is missing', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', technicianCookies)
+        .send({})
+        .expect(400);
+
+      expect(response.body.message).toContain('content');
+    });
+
+    it('should return 400 when content is empty', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', technicianCookies)
+        .send({ content: '' })
+        .expect(400);
+
+      expect(response.body.message).toContain('required');
+    });
+
+    it('should return 400 when content is only whitespace', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', technicianCookies)
+        .send({ content: '   ' })
+        .expect(400);
+
+      expect(response.body.message).toContain('empty');
+    });
+
+    it('should return 400 when content exceeds 2000 characters', async () => {
+      const longContent = 'a'.repeat(2001);
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', technicianCookies)
+        .send({ content: longContent })
+        .expect(400);
+
+      expect(response.body.message).toContain('2000');
+    });
+
+    it('should return 403 when non-assigned staff tries to send message', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', techManagerCookies)
+        .send({ content: 'I am not assigned to this report' })
+        .expect(403);
+
+      expect(response.body.message).toContain('assigned');
+    });
+
+    it('should return 403 when citizen tries to send message', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', citizenCookies)
+        .send({ content: 'Citizen message' })
+        .expect(403);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should return 403 when PRO tries to send message', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', proCookies)
+        .send({ content: 'PRO message' })
+        .expect(403);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const response = await request(app)
+        .post(`/api/reports/${assignedReportId}/messages`)
+        .send({ content: 'Unauthenticated message' })
+        .expect(401);
+
+      expect(response.body.name).toBe('UnauthorizedError');
+    });
+
+    it('should return 404 for non-existent report', async () => {
+      const response = await request(app)
+        .post('/api/reports/999999/messages')
+        .set('Cookie', technicianCookies)
+        .send({ content: 'Message to non-existent report' })
+        .expect(404);
+
+      expect(response.body.message).toContain('not found');
+    });
+
+    it('should return 400 for invalid report ID format', async () => {
+      const response = await request(app)
+        .post('/api/reports/invalid/messages')
+        .set('Cookie', technicianCookies)
+        .send({ content: 'Message' })
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+  });
+
+  describe('GET /api/reports/:id/messages', () => {
+    let assignedReportId: number;
+    let messageId: number;
+
+    beforeEach(async () => {
+      const reportResult = await AppDataSource.query(
+        `INSERT INTO reports 
+        (reporter_id, title, description, category, status, assignee_id, location, is_anonymous, created_at)
+        VALUES 
+        ($1, 'Report with messages', 'Test report', 'Roads and Urban Furnishings', 'Assigned', $2, ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [citizenId, technicianId]
+      );
+      assignedReportId = reportResult[0].id;
+
+      // Create a message
+      const messageResult = await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+        VALUES ($1, $2, 'Test message content', CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [assignedReportId, technicianId]
+      );
+      messageId = messageResult[0].id;
+    });
+
+    it('should return messages when assigned technician requests them', async () => {
+      const response = await request(app)
+        .get(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', technicianCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].content).toBe('Test message content');
+      expect(response.body[0].author).toBeDefined();
+      expect(response.body[0].author.username).toBe(TECHNICIAN_USERNAME);
+    });
+
+    it('should return messages when reporter (citizen) requests them', async () => {
+      const response = await request(app)
+        .get(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', citizenCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].content).toBe('Test message content');
+    });
+
+    it('should return empty array when no messages exist', async () => {
+      // Create new report without messages
+      const noMessagesResult = await AppDataSource.query(
+        `INSERT INTO reports 
+        (reporter_id, title, description, category, status, assignee_id, location, is_anonymous, created_at)
+        VALUES 
+        ($1, 'Report without messages', 'Test', 'Roads and Urban Furnishings', 'Assigned', $2, ST_GeogFromText('POINT(7.6869 45.0703)'), false, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [citizenId, technicianId]
+      );
+      const noMessagesReportId = noMessagesResult[0].id;
+
+      const response = await request(app)
+        .get(`/api/reports/${noMessagesReportId}/messages`)
+        .set('Cookie', technicianCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(0);
+    });
+
+    it('should return 403 when non-assigned staff tries to view messages', async () => {
+      const response = await request(app)
+        .get(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', techManagerCookies)
+        .expect(403);
+
+      expect(response.body.message).toContain('assigned staff or the report author');
+    });
+
+    it('should return 403 when PRO tries to view messages', async () => {
+      const response = await request(app)
+        .get(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', proCookies)
+        .expect(403);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const response = await request(app)
+        .get(`/api/reports/${assignedReportId}/messages`)
+        .expect(401);
+
+      expect(response.body.name).toBe('UnauthorizedError');
+    });
+
+    it('should return 404 for non-existent report', async () => {
+      const response = await request(app)
+        .get('/api/reports/999999/messages')
+        .set('Cookie', technicianCookies)
+        .expect(404);
+
+      expect(response.body.message).toContain('not found');
+    });
+
+    it('should return 400 for invalid report ID format', async () => {
+      const response = await request(app)
+        .get('/api/reports/invalid/messages')
+        .set('Cookie', technicianCookies)
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should return messages ordered by creation date (ASC)', async () => {
+      // Add more messages
+      await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+        VALUES ($1, $2, 'Second message', CURRENT_TIMESTAMP + interval '1 minute')`,
+        [assignedReportId, technicianId]
+      );
+      await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+        VALUES ($1, $2, 'Third message', CURRENT_TIMESTAMP + interval '2 minutes')`,
+        [assignedReportId, technicianId]
+      );
+
+      const response = await request(app)
+        .get(`/api/reports/${assignedReportId}/messages`)
+        .set('Cookie', technicianCookies)
+        .expect(200);
+
+      expect(response.body.length).toBe(3);
+      expect(response.body[0].content).toBe('Test message content');
+      expect(response.body[1].content).toBe('Second message');
+      expect(response.body[2].content).toBe('Third message');
+    });
+  });
 });

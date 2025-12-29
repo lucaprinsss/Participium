@@ -92,6 +92,7 @@ jest.mock('@controllers/reportController', () => ({
     getAllReports: jest.fn((req, res) => res.status(200).json([])),
     getCategories: jest.fn((req, res) => res.status(200).json([])),
     getMapReports: jest.fn((req, res) => res.status(200).json([])),
+    getMyReports: jest.fn((req, res) => res.status(200).json([])),
     getMyAssignedReports: jest.fn((req, res) => res.status(200).json([])),
     getAssignedReportsToExternalMaintainer: jest.fn((req, res) => res.status(200).json([])),
     updateReportStatus: jest.fn((req, res) => res.status(200).json({})),

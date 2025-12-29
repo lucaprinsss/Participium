@@ -1,6 +1,7 @@
 import request from 'supertest';
 import app from '../../app';
 import { userRepository } from '@repositories/userRepository';
+import { AppDataSource } from '@database/connection';
 import {
   setupTestDatabase,
   teardownTestDatabase,
@@ -881,6 +882,7 @@ describe('UserController E2E Tests', () => {
   describe('GET /api/users/external-maintainers', () => {
     let techStaffCookies: string[];
     let citizenCookies: string[];
+    let citizenId: number;
 
     const TECH_STAFF_USERNAME = 'teststaffmember';
     const TECH_STAFF_PASSWORD = 'StaffPass123!';
@@ -903,6 +905,15 @@ describe('UserController E2E Tests', () => {
         console.log('Test users not found, reloading test data...');
         const { loadTestData } = await import('../utils/dbTestUtils');
         await loadTestData();
+      }
+
+      // Get citizen ID
+      const citizenResult = await AppDataSource.query(
+        `SELECT id FROM users WHERE username = $1`,
+        [CITIZEN_USERNAME]
+      );
+      if (citizenResult.length > 0) {
+        citizenId = citizenResult[0].id;
       }
 
       // Login users before each test to ensure fresh cookies
@@ -1001,6 +1012,433 @@ describe('UserController E2E Tests', () => {
       const lastNames = response.body.map((m: any) => m.last_name);
       const sortedLastNames = [...lastNames].sort((a, b) => a.localeCompare(b));
       expect(lastNames).toEqual(sortedLastNames);
+    });
+  });
+
+  describe('GET /api/users/notifications', () => {
+    let citizenId: number;
+    let citizenCookies: string[];
+    let notification1Id: number;
+    let notification2Id: number;
+    let notification3Id: number;
+    let otherUserId: number;
+
+    const CITIZEN_USERNAME = 'testcitizen';
+    const CITIZEN_PASSWORD = 'TestPass123!';
+
+    const loginAs = async (username: string, password: string): Promise<string[]> => {
+      const response = await request(app)
+        .post('/api/sessions')
+        .send({ username, password })
+        .expect(200);
+      const cookies = response.headers['set-cookie'];
+      return Array.isArray(cookies) ? cookies : [cookies];
+    };
+
+    beforeEach(async () => {
+      // Get citizen ID
+      const citizenResult = await AppDataSource.query(
+        `SELECT id FROM users WHERE username = $1`,
+        [CITIZEN_USERNAME]
+      );
+      citizenId = citizenResult[0].id;
+
+      // Login citizen
+      citizenCookies = await loginAs(CITIZEN_USERNAME, CITIZEN_PASSWORD);
+
+      // Get another user ID for testing
+      const otherUserResult = await AppDataSource.query(
+        `SELECT id FROM users WHERE username = 'testuser' LIMIT 1`
+      );
+      if (otherUserResult.length > 0) {
+        otherUserId = otherUserResult[0].id;
+      }
+
+      // Create test notifications for citizen
+      const result1 = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+        VALUES ($1, 'Your report has been updated', false, CURRENT_TIMESTAMP - interval '2 hours')
+        RETURNING id`,
+        [citizenId]
+      );
+      notification1Id = result1[0].id;
+
+      const result2 = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+        VALUES ($1, 'New message on your report', false, CURRENT_TIMESTAMP - interval '1 hour')
+        RETURNING id`,
+        [citizenId]
+      );
+      notification2Id = result2[0].id;
+
+      const result3 = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+        VALUES ($1, 'Report resolved', true, CURRENT_TIMESTAMP - interval '3 hours')
+        RETURNING id`,
+        [citizenId]
+      );
+      notification3Id = result3[0].id;
+    });
+
+    afterEach(async () => {
+      // Clean up notifications
+      await AppDataSource.query(`DELETE FROM notifications WHERE user_id = $1`, [citizenId]);
+      if (otherUserId) {
+        await AppDataSource.query(`DELETE FROM notifications WHERE user_id = $1`, [otherUserId]);
+      }
+    });
+
+    it('should return all notifications for authenticated user', async () => {
+      const response = await request(app)
+        .get('/api/users/notifications')
+        .set('Cookie', citizenCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(3);
+      
+      // Should be ordered by createdAt DESC (most recent first)
+      expect(response.body[0].content).toBe('New message on your report');
+      expect(response.body[1].content).toBe('Your report has been updated');
+      expect(response.body[2].content).toBe('Report resolved');
+    });
+
+    it('should filter unread notifications when is_read=false', async () => {
+      const response = await request(app)
+        .get('/api/users/notifications?is_read=false')
+        .set('Cookie', citizenCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(2);
+      expect(response.body.every((n: any) => n.isRead === false)).toBe(true);
+    });
+
+    it('should filter read notifications when is_read=true', async () => {
+      const response = await request(app)
+        .get('/api/users/notifications?is_read=true')
+        .set('Cookie', citizenCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(1);
+      expect(response.body[0].isRead).toBe(true);
+      expect(response.body[0].content).toBe('Report resolved');
+    });
+
+    it('should return empty array when user has no notifications', async () => {
+      // Clean notifications first
+      await AppDataSource.query(`DELETE FROM notifications WHERE user_id = $1`, [citizenId]);
+
+      const response = await request(app)
+        .get('/api/users/notifications')
+        .set('Cookie', citizenCookies)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(0);
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const response = await request(app)
+        .get('/api/users/notifications')
+        .expect(401);
+
+      expect(response.body.name).toBe('UnauthorizedError');
+    });
+
+    it('should include notification properties', async () => {
+      const response = await request(app)
+        .get('/api/users/notifications')
+        .set('Cookie', citizenCookies)
+        .expect(200);
+
+      expect(response.body.length).toBeGreaterThan(0);
+      const notification = response.body[0];
+      expect(notification).toHaveProperty('id');
+      expect(notification).toHaveProperty('userId');
+      expect(notification).toHaveProperty('content');
+      expect(notification).toHaveProperty('isRead');
+      expect(notification).toHaveProperty('createdAt');
+    });
+
+    it('should only return notifications belonging to authenticated user', async () => {
+      if (!otherUserId) {
+        // Skip if no other user available
+        return;
+      }
+
+      // Create a notification for another user
+      await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+        VALUES ($1, 'Other user notification', false, CURRENT_TIMESTAMP)`,
+        [otherUserId]
+      );
+
+      const response = await request(app)
+        .get('/api/users/notifications')
+        .set('Cookie', citizenCookies)
+        .expect(200);
+
+      // Should only return 3 notifications (not the one from another user)
+      expect(response.body.length).toBe(3);
+      expect(response.body.every((n: any) => n.userId === citizenId)).toBe(true);
+    });
+
+    it('should handle invalid is_read query parameter gracefully', async () => {
+      const response = await request(app)
+        .get('/api/users/notifications?is_read=invalid')
+        .set('Cookie', citizenCookies)
+        .expect(200);
+
+      // Should return all notifications when is_read is invalid
+      expect(response.body.length).toBe(3);
+    });
+  });
+
+  describe('PATCH /api/users/notifications/:id', () => {
+    let citizenId: number;
+    let citizenCookies: string[];
+    let notificationId: number;
+    let otherUserId: number;
+    let otherUserCookies: string[];
+
+    const CITIZEN_USERNAME = 'testcitizen';
+    const CITIZEN_PASSWORD = 'TestPass123!';
+
+    const loginAs = async (username: string, password: string): Promise<string[]> => {
+      const response = await request(app)
+        .post('/api/sessions')
+        .send({ username, password })
+        .expect(200);
+      const cookies = response.headers['set-cookie'];
+      return Array.isArray(cookies) ? cookies : [cookies];
+    };
+
+    beforeEach(async () => {
+      // Get citizen ID
+      const citizenResult = await AppDataSource.query(
+        `SELECT id FROM users WHERE username = $1`,
+        [CITIZEN_USERNAME]
+      );
+      citizenId = citizenResult[0].id;
+
+      // Login citizen
+      citizenCookies = await loginAs(CITIZEN_USERNAME, CITIZEN_PASSWORD);
+
+      const result = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+        VALUES ($1, 'Test notification', false, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [citizenId]
+      );
+      notificationId = result[0].id;
+
+      // Get another user for ownership tests
+      const otherUserResult = await AppDataSource.query(
+        `SELECT id FROM users WHERE username = 'testuser' LIMIT 1`
+      );
+      if (otherUserResult.length > 0) {
+        otherUserId = otherUserResult[0].id;
+        const loginResponse = await request(app)
+          .post('/api/sessions')
+          .send({ username: 'testuser', password: 'TestPass123!' })
+          .expect(200);
+        const cookies = loginResponse.headers['set-cookie'];
+        otherUserCookies = Array.isArray(cookies) ? cookies : [cookies];
+      }
+    });
+
+    afterEach(async () => {
+      await AppDataSource.query(`DELETE FROM notifications WHERE user_id = $1`, [citizenId]);
+      if (otherUserId) {
+        await AppDataSource.query(`DELETE FROM notifications WHERE user_id = $1`, [otherUserId]);
+      }
+    });
+
+    it('should mark notification as read', async () => {
+      const response = await request(app)
+        .patch(`/api/users/notifications/${notificationId}`)
+        .set('Cookie', citizenCookies)
+        .send({ is_read: true })
+        .expect(200);
+
+      expect(response.body.id).toBe(notificationId);
+      expect(response.body.isRead).toBe(true);
+      expect(response.body.content).toBe('Test notification');
+
+      // Verify in database
+      const dbResult = await AppDataSource.query(
+        `SELECT is_read FROM notifications WHERE id = $1`,
+        [notificationId]
+      );
+      expect(dbResult[0].is_read).toBe(true);
+    });
+
+    it('should mark notification as unread', async () => {
+      // First mark as read
+      await AppDataSource.query(
+        `UPDATE notifications SET is_read = true WHERE id = $1`,
+        [notificationId]
+      );
+
+      const response = await request(app)
+        .patch(`/api/users/notifications/${notificationId}`)
+        .set('Cookie', citizenCookies)
+        .send({ is_read: false })
+        .expect(200);
+
+      expect(response.body.isRead).toBe(false);
+
+      // Verify in database
+      const dbResult = await AppDataSource.query(
+        `SELECT is_read FROM notifications WHERE id = $1`,
+        [notificationId]
+      );
+      expect(dbResult[0].is_read).toBe(false);
+    });
+
+    it('should return 403 when trying to update another user\'s notification', async () => {
+      if (!otherUserId || !otherUserCookies) {
+        // Skip if no other user available
+        return;
+      }
+
+      // Create notification for another user
+      const otherResult = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+        VALUES ($1, 'Other user notification', false, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [otherUserId]
+      );
+      const otherNotificationId = otherResult[0].id;
+
+      const response = await request(app)
+        .patch(`/api/users/notifications/${otherNotificationId}`)
+        .set('Cookie', citizenCookies)
+        .send({ is_read: true })
+        .expect(403);
+
+      expect(response.body.message).toContain('own notifications');
+    });
+
+    it('should return 404 for non-existent notification', async () => {
+      const response = await request(app)
+        .patch('/api/users/notifications/999999')
+        .set('Cookie', citizenCookies)
+        .send({ is_read: true })
+        .expect(404);
+
+      expect(response.body.message).toContain('not found');
+    });
+
+    it('should return 400 for invalid notification ID format', async () => {
+      const response = await request(app)
+        .patch('/api/users/notifications/invalid')
+        .set('Cookie', citizenCookies)
+        .send({ is_read: true })
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should return 400 for negative notification ID', async () => {
+      const response = await request(app)
+        .patch('/api/users/notifications/-1')
+        .set('Cookie', citizenCookies)
+        .send({ is_read: true })
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should return 400 for decimal notification ID', async () => {
+      const response = await request(app)
+        .patch('/api/users/notifications/1.5')
+        .set('Cookie', citizenCookies)
+        .send({ is_read: true })
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const response = await request(app)
+        .patch(`/api/users/notifications/${notificationId}`)
+        .send({ is_read: true })
+        .expect(401);
+
+      expect(response.body.name).toBe('UnauthorizedError');
+    });
+
+    it('should handle truthy values for is_read', async () => {
+      const response = await request(app)
+        .patch(`/api/users/notifications/${notificationId}`)
+        .set('Cookie', citizenCookies)
+        .send({ is_read: 1 })
+        .expect(200);
+
+      expect(response.body.isRead).toBe(true);
+    });
+
+    it('should handle falsy values for is_read', async () => {
+      const response = await request(app)
+        .patch(`/api/users/notifications/${notificationId}`)
+        .set('Cookie', citizenCookies)
+        .send({ is_read: 0 })
+        .expect(200);
+
+      expect(response.body.isRead).toBe(false);
+    });
+
+    it('should preserve other notification fields when updating', async () => {
+      const response = await request(app)
+        .patch(`/api/users/notifications/${notificationId}`)
+        .set('Cookie', citizenCookies)
+        .send({ is_read: true })
+        .expect(200);
+
+      expect(response.body.userId).toBe(citizenId);
+      expect(response.body.content).toBe('Test notification');
+      expect(response.body.createdAt).toBeDefined();
+    });
+
+    it('should allow technical staff to update their own notifications', async () => {
+      // Create notification for technician
+      const techResult = await AppDataSource.query(
+        `SELECT id FROM users WHERE username = 'teststaffmember' LIMIT 1`
+      );
+      const techId = techResult[0]?.id;
+      
+      if (!techId) {
+        // Skip if tech user not available
+        return;
+      }
+
+      const techNotifResult = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+        VALUES ($1, 'Staff notification', false, CURRENT_TIMESTAMP)
+        RETURNING id`,
+        [techId]
+      );
+      const techNotifId = techNotifResult[0].id;
+
+      const techLoginResponse = await request(app)
+        .post('/api/sessions')
+        .send({ username: 'teststaffmember', password: 'StaffPass123!' })
+        .expect(200);
+      const techCookies = techLoginResponse.headers['set-cookie'];
+
+      const response = await request(app)
+        .patch(`/api/users/notifications/${techNotifId}`)
+        .set('Cookie', techCookies)
+        .send({ is_read: true })
+        .expect(200);
+
+      expect(response.body.isRead).toBe(true);
+
+      // Cleanup
+      await AppDataSource.query(`DELETE FROM notifications WHERE id = $1`, [techNotifId]);
     });
   });
 });
