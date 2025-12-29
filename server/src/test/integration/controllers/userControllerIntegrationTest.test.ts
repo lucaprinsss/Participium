@@ -316,3 +316,218 @@ describe('UserController Integration Tests - Get External Maintainers', () => {
     });
   });
 });
+
+describe('UserController Integration Tests - Notifications', () => {
+  let citizenAgent: ReturnType<typeof request.agent>;
+  let otherCitizenAgent: ReturnType<typeof request.agent>;
+  let citizenUserId: number;
+  let otherCitizenUserId: number;
+  let notificationId: number;
+  let createdUserIds: number[] = [];
+  let createdNotificationIds: number[] = [];
+
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Create citizen user
+    const citizenDeptRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    if (!citizenDeptRole) throw new Error('Citizen role not found');
+
+    const citizenUser = await userRepository.createUserWithPassword({
+      username: `citizen_notif_${random()}`,
+      password: 'Password123!',
+      email: `citizen_notif_${random()}@test.com`,
+      firstName: 'Citizen',
+      lastName: 'Notif',
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: citizenUser.id,
+      departmentRoleId: citizenDeptRole.id
+    });
+    citizenUserId = citizenUser.id;
+    createdUserIds.push(citizenUserId);
+
+    // Create other citizen user
+    const otherCitizenUser = await userRepository.createUserWithPassword({
+      username: `other_citizen_notif_${random()}`,
+      password: 'Password123!',
+      email: `other_citizen_notif_${random()}@test.com`,
+      firstName: 'Other',
+      lastName: 'Citizen',
+      emailNotificationsEnabled: true,
+      isVerified: true
+    });
+    await AppDataSource.getRepository('user_roles').save({
+      userId: otherCitizenUser.id,
+      departmentRoleId: citizenDeptRole.id
+    });
+    otherCitizenUserId = otherCitizenUser.id;
+    createdUserIds.push(otherCitizenUserId);
+
+    // Login agents
+    citizenAgent = request.agent(app);
+    await citizenAgent.post('/api/sessions').send({ 
+      username: `citizen_notif_${random()}`, 
+      password: 'Password123!' 
+    });
+
+    otherCitizenAgent = request.agent(app);
+    await otherCitizenAgent.post('/api/sessions').send({ 
+      username: `other_citizen_notif_${random()}`, 
+      password: 'Password123!' 
+    });
+  });
+
+  afterAll(async () => {
+    if (createdNotificationIds.length > 0) {
+      await AppDataSource.query('DELETE FROM notifications WHERE id = ANY($1)', [createdNotificationIds]);
+    }
+    if (createdUserIds.length > 0) {
+      await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
+    }
+  });
+
+  beforeEach(async () => {
+    // Create a notification for the citizen
+    const result = await AppDataSource.query(
+      `INSERT INTO notifications (user_id, content, is_read, created_at)
+       VALUES ($1, 'Test notification', false, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      [citizenUserId]
+    );
+    notificationId = result[0].id;
+    createdNotificationIds.push(notificationId);
+  });
+
+  afterEach(async () => {
+    if (createdNotificationIds.length > 0) {
+      await AppDataSource.query('DELETE FROM notifications WHERE id = ANY($1)', [createdNotificationIds]);
+      createdNotificationIds = [];
+    }
+  });
+
+  describe('GET /api/users/notifications', () => {
+    it('should return user notifications (200)', async () => {
+      const response = await citizenAgent.get('/api/users/notifications');
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+      
+      const notification = response.body.find((n: any) => n.id === notificationId);
+      expect(notification).toBeDefined();
+      expect(notification.content).toBe('Test notification');
+      expect(notification.isRead).toBe(false);
+    });
+
+    it('should return empty array when user has no notifications (200)', async () => {
+      const response = await otherCitizenAgent.get('/api/users/notifications');
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(0);
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const unauthAgent = request.agent(app);
+      const response = await unauthAgent.get('/api/users/notifications');
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should only return current user notifications', async () => {
+      // Create notification for other user
+      const otherNotif = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+         VALUES ($1, 'Other user notification', false, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [otherCitizenUserId]
+      );
+      createdNotificationIds.push(otherNotif[0].id);
+
+      const response = await citizenAgent.get('/api/users/notifications');
+
+      expect(response.status).toBe(200);
+      const hasOtherNotif = response.body.some((n: any) => n.id === otherNotif[0].id);
+      expect(hasOtherNotif).toBe(false);
+    });
+  });
+
+  describe('PATCH /api/users/notifications/:id', () => {
+    it('should mark notification as read (200)', async () => {
+      const response = await citizenAgent
+        .patch(`/api/users/notifications/${notificationId}`)
+        .send({ is_read: true });
+
+      expect(response.status).toBe(200);
+      expect(response.body.isRead).toBe(true);
+
+      // Verify in database
+      const dbNotif = await AppDataSource.query(
+        'SELECT is_read FROM notifications WHERE id = $1',
+        [notificationId]
+      );
+      expect(dbNotif[0].is_read).toBe(true);
+    });
+
+    it('should mark notification as unread (200)', async () => {
+      // First mark as read
+      await AppDataSource.query(
+        'UPDATE notifications SET is_read = true WHERE id = $1',
+        [notificationId]
+      );
+
+      const response = await citizenAgent
+        .patch(`/api/users/notifications/${notificationId}`)
+        .send({ is_read: false });
+
+      expect(response.status).toBe(200);
+      expect(response.body.isRead).toBe(false);
+    });
+
+    it('should return 403 when user tries to update other user notification', async () => {
+      const response = await otherCitizenAgent
+        .patch(`/api/users/notifications/${notificationId}`)
+        .send({ is_read: true });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should return 404 when notification does not exist', async () => {
+      const response = await citizenAgent
+        .patch('/api/users/notifications/999999')
+        .send({ is_read: true });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return 400 with invalid notification ID format', async () => {
+      const response = await citizenAgent
+        .patch('/api/users/notifications/invalid')
+        .send({ is_read: true });
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when is_read is missing', async () => {
+      const response = await citizenAgent
+        .patch(`/api/users/notifications/${notificationId}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const unauthAgent = request.agent(app);
+      const response = await unauthAgent
+        .patch(`/api/users/notifications/${notificationId}`)
+        .send({ is_read: true });
+
+      expect(response.status).toBe(401);
+    });
+  });
+});

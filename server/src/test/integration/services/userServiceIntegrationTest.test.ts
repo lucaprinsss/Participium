@@ -366,3 +366,274 @@ describe('UserService Integration Tests', () => {
     });
   });
 });
+
+describe('UserService Integration Tests - Notifications', () => {
+  const createdUserIds: number[] = [];
+  const createdNotificationIds: number[] = [];
+  let citizenId: number;
+  let otherCitizenId: number;
+
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Create citizen user
+    const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    if (!citizenRole) throw new Error('Citizen role not found');
+
+    const citizen = await userRepository.createUserWithPassword({
+      username: `citizen_notif_svc_${Date.now()}`,
+      password: 'Password123!',
+      email: `citizen_notif_svc_${Date.now()}@test.com`,
+      firstName: 'Citizen',
+      lastName: 'Notif',
+      isVerified: true
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [citizen.id, citizenRole.id]
+    );
+    citizenId = citizen.id;
+    createdUserIds.push(citizenId);
+
+    // Create other citizen
+    const otherCitizen = await userRepository.createUserWithPassword({
+      username: `other_citizen_notif_svc_${Date.now()}`,
+      password: 'Password123!',
+      email: `other_citizen_notif_svc_${Date.now()}@test.com`,
+      firstName: 'Other',
+      lastName: 'Citizen',
+      isVerified: true
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [otherCitizen.id, citizenRole.id]
+    );
+    otherCitizenId = otherCitizen.id;
+    createdUserIds.push(otherCitizenId);
+  });
+
+  afterAll(async () => {
+    if (createdNotificationIds.length > 0) {
+      await AppDataSource.query('DELETE FROM notifications WHERE id = ANY($1)', [createdNotificationIds]);
+    }
+    if (createdUserIds.length > 0) {
+      await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
+    }
+  });
+
+  describe('getNotifications', () => {
+    beforeEach(async () => {
+      // Create notifications for citizen
+      const result1 = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+         VALUES ($1, 'Unread notification', false, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [citizenId]
+      );
+      createdNotificationIds.push(result1[0].id);
+
+      const result2 = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+         VALUES ($1, 'Read notification', true, CURRENT_TIMESTAMP - interval '1 day')
+         RETURNING id`,
+        [citizenId]
+      );
+      createdNotificationIds.push(result2[0].id);
+
+      // Create notification for other citizen
+      const result3 = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+         VALUES ($1, 'Other user notification', false, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [otherCitizenId]
+      );
+      createdNotificationIds.push(result3[0].id);
+    });
+
+    afterEach(async () => {
+      if (createdNotificationIds.length > 0) {
+        await AppDataSource.query('DELETE FROM notifications WHERE id = ANY($1)', [createdNotificationIds]);
+        createdNotificationIds.length = 0;
+      }
+    });
+
+    it('should return all notifications for the user', async () => {
+      const notifications = await userService.getUserNotifications(citizenId);
+
+      expect(Array.isArray(notifications)).toBe(true);
+      expect(notifications.length).toBe(2);
+    });
+
+    it('should return notifications ordered by creation date (DESC)', async () => {
+      const notifications = await userService.getUserNotifications(citizenId);
+
+      expect(notifications[0].content).toBe('Unread notification');
+      expect(notifications[1].content).toBe('Read notification');
+      expect(notifications[0].createdAt.getTime()).toBeGreaterThan(notifications[1].createdAt.getTime());
+    });
+
+    it('should only return notifications for the specified user', async () => {
+      const notifications = await userService.getUserNotifications(citizenId);
+
+      const hasOtherUserNotif = notifications.some((n: any) => n.content === 'Other user notification');
+      expect(hasOtherUserNotif).toBe(false);
+    });
+
+    it('should return empty array when user has no notifications', async () => {
+      // Create new user without notifications
+      const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+      const newUser = await userRepository.createUserWithPassword({
+        username: `no_notif_user_${Date.now()}`,
+        password: 'Password123!',
+        email: `no_notif_user_${Date.now()}@test.com`,
+        firstName: 'No',
+        lastName: 'Notif',
+        isVerified: true
+      });
+      await AppDataSource.query(
+        `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+        [newUser.id, citizenRole!.id]
+      );
+      createdUserIds.push(newUser.id);
+
+      const notifications = await userService.getUserNotifications(newUser.id);
+
+      expect(Array.isArray(notifications)).toBe(true);
+      expect(notifications.length).toBe(0);
+    });
+
+    it('should include all required fields in notification response', async () => {
+      const notifications = await userService.getUserNotifications(citizenId);
+
+      expect(notifications.length).toBeGreaterThan(0);
+      const notif = notifications[0];
+
+      expect(notif).toHaveProperty('id');
+      expect(notif).toHaveProperty('userId');
+      expect(notif).toHaveProperty('content');
+      expect(notif).toHaveProperty('isRead');
+      expect(notif).toHaveProperty('createdAt');
+      expect(notif.userId).toBe(citizenId);
+    });
+
+    it('should include reportId when notification is related to a report', async () => {
+      // Create a report first
+      const reportResult = await AppDataSource.query(
+        `INSERT INTO reports 
+          (reporter_id, title, description, category, location, status, is_anonymous, created_at) 
+         VALUES ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8)
+         RETURNING id`,
+        [
+          citizenId,
+          'Test report',
+          'Test description',
+          'Public Lighting',
+          'POINT(7.6869005 45.0703393)',
+          'Pending Approval',
+          false,
+          new Date()
+        ]
+      );
+      const reportId = reportResult[0].id;
+
+      // Create a report-related notification
+      const reportNotif = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, report_id, content, is_read, created_at)
+         VALUES ($1, $2, 'Report notification', false, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [citizenId, reportId]
+      );
+      createdNotificationIds.push(reportNotif[0].id);
+
+      const notifications = await userService.getUserNotifications(citizenId);
+      const reportRelated = notifications.find((n: any) => n.content === 'Report notification');
+
+      expect(reportRelated).toBeDefined();
+      expect(reportRelated?.reportId).toBe(reportId);
+
+      // Cleanup: delete the report
+      await AppDataSource.query('DELETE FROM reports WHERE id = $1', [reportId]);
+    });
+  });
+
+  describe('updateNotification', () => {
+    let notificationId: number;
+
+    beforeEach(async () => {
+      const result = await AppDataSource.query(
+        `INSERT INTO notifications (user_id, content, is_read, created_at)
+         VALUES ($1, 'Test notification', false, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [citizenId]
+      );
+      notificationId = result[0].id;
+      createdNotificationIds.push(notificationId);
+    });
+
+    afterEach(async () => {
+      if (createdNotificationIds.length > 0) {
+        await AppDataSource.query('DELETE FROM notifications WHERE id = ANY($1)', [createdNotificationIds]);
+        createdNotificationIds.length = 0;
+      }
+    });
+
+    it('should mark notification as read', async () => {
+      const updated = await userService.markNotificationAsRead(citizenId, notificationId, true);
+
+      expect(updated.isRead).toBe(true);
+      expect(updated.id).toBe(notificationId);
+
+      // Verify in database
+      const dbNotif = await AppDataSource.query(
+        'SELECT is_read FROM notifications WHERE id = $1',
+        [notificationId]
+      );
+      expect(dbNotif[0].is_read).toBe(true);
+    });
+
+    it('should mark notification as unread', async () => {
+      // First mark as read
+      await AppDataSource.query(
+        'UPDATE notifications SET is_read = true WHERE id = $1',
+        [notificationId]
+      );
+
+      const updated = await userService.markNotificationAsRead(citizenId, notificationId, false);
+
+
+      expect(updated.isRead).toBe(false);
+
+      // Verify in database
+      const dbNotif = await AppDataSource.query(
+        'SELECT is_read FROM notifications WHERE id = $1',
+        [notificationId]
+      );
+      expect(dbNotif[0].is_read).toBe(false);
+    });
+
+    it('should throw NotFoundError when notification does not exist', async () => {
+      await expect(
+        userService.markNotificationAsRead(citizenId, 999999, true)
+      ).rejects.toThrow();
+    });
+
+    it('should throw error when user tries to update other user notification', async () => {
+      await expect(
+        userService.markNotificationAsRead(otherCitizenId, notificationId, true)
+      ).rejects.toThrow();
+    });
+
+    it('should return updated notification with all fields', async () => {
+      const updated = await userService.markNotificationAsRead(citizenId, notificationId, true);
+
+      expect(updated).toHaveProperty('id');
+      expect(updated).toHaveProperty('userId');
+      expect(updated).toHaveProperty('content');
+      expect(updated).toHaveProperty('isRead');
+      expect(updated).toHaveProperty('createdAt');
+      expect(updated.content).toBe('Test notification');
+    });
+  });
+});
