@@ -4,7 +4,7 @@ import request from 'supertest';
 import express, { Express } from 'express';
 import geocodingRouter from '../../../routes/geocodingRoutes';
 
-import { getAddressFromProxy } from '../../../controllers/geocodingController';
+import { getAddressFromProxy, getCoordinatesFromAddress } from '../../../controllers/geocodingController';
 
 const app: Express = express();
 
@@ -12,6 +12,7 @@ app.use(express.json());
 app.use('/api/proxy', geocodingRouter);
 
 const mockGetAddressFromProxy = getAddressFromProxy as jest.Mock;
+const mockGetCoordinatesFromAddress = getCoordinatesFromAddress as jest.Mock;
 
 const mockAddressResponse = {
     address: {
@@ -24,9 +25,28 @@ const mockAddressResponse = {
     display_name: 'Via Roma 42, 00100 Rome, Italy',
 };
 
+const mockCoordinatesResponse = {
+    lat: 45.0703393,
+    lng: 7.6869005,
+    display_name: 'Via Roma 42, Turin, Italy',
+    boundingbox: ['45.0703', '45.0704', '7.6868', '7.6870'],
+    resultsCount: 1,
+    isSpecificAddress: true
+};
+
 describe('Geocoding Routes Integration Tests', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+
+        mockGetCoordinatesFromAddress.mockImplementation((req, res) => {
+            const address = req.query.address as string;
+
+            if (!address || address.trim() === '') {
+                return res.status(400).json({ error: 'Address is required' });
+            }
+
+            res.status(200).json(mockCoordinatesResponse);
+        });
 
         mockGetAddressFromProxy.mockImplementation((req, res) => {
             const lat = req.query.lat as string;
@@ -54,6 +74,163 @@ describe('Geocoding Routes Integration Tests', () => {
             }
 
             res.status(200).json(mockAddressResponse);
+        });
+    });
+
+    // --- GET /api/proxy/coordinates (Get Coordinates From Address) ---
+    describe('GET /api/proxy/coordinates', () => {
+        it('should return 200 and coordinates for valid address', async () => {
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'Via Roma 42, Turin' });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toEqual(mockCoordinatesResponse);
+            expect(res.body).toHaveProperty('lat');
+            expect(res.body).toHaveProperty('lng');
+            expect(res.body).toHaveProperty('display_name');
+            expect(mockGetCoordinatesFromAddress).toHaveBeenCalledTimes(1);
+        });
+
+        it('should return 200 for street name without house number', async () => {
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'Via Roma' });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('lat');
+            expect(res.body).toHaveProperty('lng');
+        });
+
+        it('should return 200 for address with special characters', async () => {
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: "Corso d'Italia 15" });
+
+            expect(res.status).toBe(200);
+        });
+
+        it('should return 400 if address is missing', async () => {
+            const res = await request(app)
+                .get('/api/proxy/coordinates');
+
+            expect(res.status).toBe(400);
+            expect(res.body.error).toContain('Address is required');
+        });
+
+        it('should return 400 if address is empty string', async () => {
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: '' });
+
+            expect(res.status).toBe(400);
+            expect(res.body.error).toContain('Address is required');
+        });
+
+        it('should return 400 if address is only whitespace', async () => {
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: '   ' });
+
+            expect(res.status).toBe(400);
+            expect(res.body.error).toContain('Address is required');
+        });
+
+        it('should return 404 if address is not found', async () => {
+            mockGetCoordinatesFromAddress.mockImplementation((req, res) => {
+                res.status(404).json({ error: 'Address not found' });
+            });
+
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'NonExistentStreet 999' });
+
+            expect(res.status).toBe(404);
+            expect(res.body.error).toContain('Address not found');
+        });
+
+        it('should return 404 if house number does not match', async () => {
+            mockGetCoordinatesFromAddress.mockImplementation((req, res) => {
+                res.status(404).json({
+                    error: 'Address with specified house number not found',
+                    details: 'House number 42 not found in the results'
+                });
+            });
+
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'Via Roma 42' });
+
+            expect(res.status).toBe(404);
+            expect(res.body.error).toContain('Address with specified house number not found');
+        });
+
+        it('should return 500 if external service fails', async () => {
+            mockGetCoordinatesFromAddress.mockImplementation((req, res) => {
+                res.status(500).json({ error: 'Internal server error during address search' });
+            });
+
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'Via Roma' });
+
+            expect(res.status).toBe(500);
+            expect(res.body.error).toContain('Internal server error');
+        });
+
+        it('should return external service error status for Nominatim errors', async () => {
+            mockGetCoordinatesFromAddress.mockImplementation((req, res) => {
+                res.status(503).json({
+                    error: 'External map service error',
+                    details: 'Service temporarily unavailable'
+                });
+            });
+
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'Via Roma' });
+
+            expect(res.status).toBe(503);
+            expect(res.body.error).toContain('External map service error');
+        });
+
+        it('should handle timeout from external service', async () => {
+            mockGetCoordinatesFromAddress.mockImplementation((req, res) => {
+                res.status(504).json({ error: 'Gateway timeout' });
+            });
+
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'Via Roma' });
+
+            expect(res.status).toBe(504);
+        });
+
+        it('should return response with boundingbox', async () => {
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'Via Roma' });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('boundingbox');
+        });
+
+        it('should return response with resultsCount', async () => {
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'Via Roma' });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('resultsCount');
+        });
+
+        it('should return response with isSpecificAddress flag', async () => {
+            const res = await request(app)
+                .get('/api/proxy/coordinates')
+                .query({ address: 'Via Roma 42' });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('isSpecificAddress');
         });
     });
 
