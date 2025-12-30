@@ -79,7 +79,7 @@ export async function logout() {
 
     return await handleResponse(response);
   } catch (error) {
-    // Anche se la chiamata fallisce, rimuoviamo l'indizio per sicurezza lato client
+    // Even if the call fails, we remove the hint for client-side security
     localStorage.removeItem("isLoggedIn");
     throw error;
   }

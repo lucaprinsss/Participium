@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 
 // Configura il transporter (il "postino")
-// È meglio crearlo fuori dalla funzione per evitare di riconnettersi a ogni email
+// Better to create it outside the function to avoid reconnecting for each email
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465,
@@ -15,10 +15,10 @@ const transporter = nodemailer.createTransport({
 
 export const sendVerificationEmail = async (userEmail: string, verificationCode: string) => {
   try {
-    // Verifica che la configurazione sia corretta (opzionale, utile per debug)
+    // Verify that the configuration is correct (optional, useful for debugging)
     // await transporter.verify(); 
     const info = await transporter.sendMail({
-      from: `"Participium Team" <${process.env.EMAIL_USER}>`, // Deve coincidere con l'utente autenticato
+      from: `"Participium Team" <${process.env.EMAIL_USER}>`, // Must match the authenticated user
       to: userEmail,
       subject: 'Verify your email for Participium',
       html: `

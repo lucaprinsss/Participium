@@ -98,13 +98,13 @@ export const updateReportStatus = async (reportId, status, reason = null) => {
     if (status === 'Rejected') {
         bodyData.rejectionReason = reason;
     } else {
-        bodyData.reason = reason; // Fallback per altri stati se necessario
+        bodyData.reason = reason; // Fallback for other states if necessary
     }
   }
 
   const response = await fetch(`/api/reports/${reportId}/status`, {
     method: "PUT",
-    credentials: "include", // Importante per i cookie di sessione
+    credentials: "include", // Important for session cookies
     headers: {
       "Content-Type": "application/json",
     },
@@ -184,7 +184,7 @@ export const assignToExternalUser = async (reportId, externalUserId) => {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    // MODIFICA QUI: Mappa externalUserId nella chiave attesa dal backend
+    // CHANGE HERE: Map externalUserId to the key expected by the backend
     body: JSON.stringify({ externalAssigneeId: externalUserId }), 
   }); 
 
@@ -227,7 +227,7 @@ export const deleteReportComment = async (reportId, commentId) => {
  */
 export const getReportsByAddress = async (address) => {
   
-  // Codifica l'indirizzo per l'URL
+  // Encode the address for the URL
   const encodedAddress = encodeURIComponent(address);
   
   // CORREZIONE: Aggiunto '/search?address='

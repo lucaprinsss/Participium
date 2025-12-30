@@ -13,18 +13,18 @@ export default function Login({ onLoginSuccess }) {
 
   // --- STATO ---
   const [formData, setFormData] = useState({
-    username: "", // Questo campo funge anche da email in molti sistemi, oppure usa email separata se necessario
+    username: "", // This field also serves as email in many systems, or use separate email if necessary
     password: ""
   });
   
-  // Stato per gestire la visualizzazione: 'login' oppure 'verification'
+  // State to manage the view: 'login' or 'verification'
   const [viewState, setViewState] = useState('login'); 
 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   
-  // Flag specifico per mostrare il pulsante di azione nell'errore
+  // Specific flag to show action button in error
   const [isUnverifiedError, setIsUnverifiedError] = useState(false);
 
   const [isFocused, setIsFocused] = useState({
@@ -89,7 +89,7 @@ export default function Login({ onLoginSuccess }) {
       const serverMessage = err.data?.error || err.data?.message || err.message || "";
       
       // Controllo se l'errore riguarda la verifica dell'account
-      // Nota: Adatta queste stringhe in base a cosa risponde ESATTAMENTE il backend (es. status 403)
+      // Note: Adapt these strings based on what EXACTLY the backend responds (e.g. status 403)
       const isUnverified = 
         err.status === 403 || 
         serverMessage.toLowerCase().includes("verified") || 
@@ -114,8 +114,8 @@ export default function Login({ onLoginSuccess }) {
 
   // --- LOGICA PASSAGGIO A VERIFICA ---
   const handleSwitchToVerification = async () => {
-    // Prima di cambiare vista, inviamo il codice (opzionale, o possiamo lasciare che lo faccia l'utente nella view successiva)
-    // Per UX fluida, andiamo alla view e l'utente può cliccare "Resend" se non ha il codice.
+    // Before changing view, we send the code (optional, or we can let the user do it in the next view)
+    // For smooth UX, go to the view and the user can click "Resend" if they don't have the code.
     setViewState('verification');
     setError("");
   };

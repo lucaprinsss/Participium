@@ -115,7 +115,7 @@ export default function Navbar({ user, onLogout }) {
         {user && (
           <div className="navbar-right-section">
             
-            {/* MODIFICATO: User Info Card ora è cliccabile */}
+            {/* MODIFIED: User Info Card is now clickable */}
             <div 
                 className="user-info-card clickable-profile" 
                 onClick={handleProfileClick}

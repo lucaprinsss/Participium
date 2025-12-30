@@ -36,7 +36,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
     const [deletingUser, setDeletingUser] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
 
-    // --- FETCH DATA PRINCIPALE ---
+    // --- MAIN DATA FETCH ---
     useEffect(() => {
         let isMounted = true;
         const initData = async () => {
@@ -70,7 +70,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
         return () => { isMounted = false; };
     }, [refreshTrigger]);
 
-    // Helper per refresh silenzioso dopo edit/delete
+    // Helper for silent refresh after edit/delete
     const reloadUsers = async () => {
         try {
             const list = await getAllMunicipalityUsers();

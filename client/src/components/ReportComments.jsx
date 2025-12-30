@@ -159,7 +159,7 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
             const newCommentAdded = data.length > oldCommentsCount && oldCommentsCount > 0;
             
             if (newCommentAdded) {
-                // Scroll liscio solo quando viene aggiunto un commento DA FUORI (es. reload)
+                // Smooth scroll only when a comment is added FROM OUTSIDE (e.g. reload)
                 setTimeout(() => scrollToBottom("smooth"), 50); 
             } else if (isInitialLoad && isExpanded) {
                  // Scrolla subito 'auto' all'apertura iniziale se non ci sono commenti freschi
@@ -179,11 +179,11 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
         if (reportId) fetchComments(true);
     }, [reportId, fetchComments]);
 
-    // Scrolla in basso quando si apre la tendina (gestisce l'animazione)
+    // Scroll down when the dropdown opens (handles animation)
     useEffect(() => {
-        // Scrolla solo se aperto E ci sono commenti
+        // Scroll only if open AND there are comments
         if (isExpanded && comments.length > 0) {
-            // Un breve timeout per permettere all'animazione CSS di finire prima dello scroll
+            // A brief timeout to allow the CSS animation to finish before scrolling
             setTimeout(() => scrollToBottom("smooth"), 300);
         }
     }, [isExpanded, comments.length, scrollToBottom]); 
@@ -199,10 +199,10 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
             await addReportComment(reportId, { content });
             setNewCommentText("");
             
-            // Ricarica la lista e gestisce lo scroll internamente alla chiamata fetch
+            // Reload the list and handle scroll internally in the fetch call
             const data = await fetchComments(); 
             
-            // Forza lo scroll alla fine (risolve il glitch post-invio)
+            // Force scroll to the end (fixes post-send glitch)
             if (data && data.length > 0) {
                  setTimeout(() => scrollToBottom("smooth"), 50);
             }
@@ -235,7 +235,7 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
         try {
             await deleteReportComment(reportId, commentToDelete);
             
-            // Aggiorna lo stato in base alla risposta, anche in caso di risposta non-JSON attesa (API DELETE)
+            // Update state based on response, even for non-JSON expected response (DELETE API)
             setComments((prev) => prev.filter((c) => c.id !== commentToDelete));
             
             showToast("Comment deleted.", "success");
@@ -243,7 +243,7 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
 
         } catch (error) {
             console.error("Error deleting comment:", error);
-             // Gestione esplicita di successo anche se la risposta non è JSON (comune nelle API DELETE)
+             // Explicit success handling even if response is not JSON (common in DELETE APIs)
             if (error.message && error.message.includes("JSON")) {
                  setComments((prev) => prev.filter((c) => c.id !== commentToDelete));
                  showToast("Comment deleted.", "success");

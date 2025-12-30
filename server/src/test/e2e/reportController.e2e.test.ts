@@ -20,7 +20,7 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
   let citizenId: number;
   let citizenCookies: string[];
 
-  // Usa utenti di test già presenti in test-data.sql
+  // Use test users already present in test-data.sql
   const TECHNICIAN_USERNAME = 'teststaffmember';
   const TECHNICIAN_PASSWORD = 'StaffPass123!';
   const TECH_MANAGER_USERNAME = 'testroadstaff'; // Road Maintenance staff member (technical staff)
@@ -52,7 +52,7 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     );
     console.log('Users in database:', allUsers.map((u: any) => u.username).join(', '));
 
-    // Recupera gli id degli utenti di test già presenti
+    // Retrieve IDs of already present test users
     const techResult = await AppDataSource.query(
       `SELECT id FROM users WHERE username = $1`,
       [TECHNICIAN_USERNAME]
@@ -403,7 +403,7 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
 
   describe('GET /api/reports/map', () => {
     beforeEach(async () => {
-      // Inserisci report con diverse categorie e stati per la mappa
+      // Insert reports with different categories and statuses for the map
       await AppDataSource.query(
         `INSERT INTO reports 
           (reporter_id, title, description, category, location, address, status, assignee_id, is_anonymous, created_at)

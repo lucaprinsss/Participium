@@ -7,7 +7,7 @@ import { UnauthorizedError } from '@models/errors/UnauthorizedError';
 import { UserEntity } from '@models/entity/userEntity';
 import passport from 'passport';
 
-// Mock delle dipendenze
+// Mock dependencies
 jest.mock('@services/authService');
 jest.mock('@services/userService');
 jest.mock('@repositories/userRepository');
@@ -66,15 +66,15 @@ describe('AuthController Unit Tests', () => {
   };
 
   beforeEach(() => {
-    // Reset dei mock prima di ogni test
+    // Reset mocks before each test
     jest.clearAllMocks();
 
-    // Setup mock della response
+    // Setup response mock
     jsonMock = jest.fn();
     statusMock = jest.fn().mockReturnValue({ json: jsonMock });
     clearCookieMock = jest.fn();
 
-    // Setup mock della request
+    // Setup request mock
     mockRequest = {
       body: {},
       session: {
@@ -86,14 +86,14 @@ describe('AuthController Unit Tests', () => {
       isAuthenticated: jest.fn() as any,
     };
 
-    // Setup mock della response
+    // Setup response mock
     mockResponse = {
       status: statusMock,
       json: jsonMock,
       clearCookie: clearCookieMock,
     };
 
-    // Setup mock del next
+    // Setup next mock
     mockNext = jest.fn();
   });
 
@@ -241,7 +241,7 @@ describe('AuthController Unit Tests', () => {
       mockRequest.body = loginData;
       (authService.createUserResponse as jest.Mock).mockReturnValue(mockUserResponse);
 
-      // Mock passport.authenticate per simulare successo
+      // Mock passport.authenticate to simulate success
       (passport.authenticate as jest.Mock).mockImplementation((strategy, callback) => {
         return createAuthMiddleware(callback);
       });

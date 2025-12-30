@@ -35,7 +35,7 @@ describe('DepartmentRoleRepository Integration Tests', () => {
         }
     });
 
-    // --- Test per findById() ---
+    // --- Tests for findById() ---
     describe('findById', () => {
         it('should find an existing department role by ID', async () => {
             const departmentRoles = await departmentRoleRepository.findAll();
@@ -72,7 +72,7 @@ describe('DepartmentRoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findByDepartmentAndRole() ---
+    // --- Tests for findByDepartmentAndRole() ---
     describe('findByDepartmentAndRole', () => {
         it('should find Organization Administrator', async () => {
             const found = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Administrator');
@@ -132,7 +132,7 @@ describe('DepartmentRoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findByDepartment() ---
+    // --- Tests for findByDepartment() ---
     describe('findByDepartment', () => {
         it('should find all roles for Organization department', async () => {
             const orgDept = await departmentRepository.findByName('Organization');
@@ -180,7 +180,7 @@ describe('DepartmentRoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findByRole() ---
+    // --- Tests for findByRole() ---
     describe('findByRole', () => {
         it('should find all department roles for a specific role', async () => {
             const citizenRole = await roleRepository.findByName('Citizen');
@@ -216,7 +216,7 @@ describe('DepartmentRoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findAll() ---
+    // --- Tests for findAll() ---
     describe('findAll', () => {
         it('should return all department roles', async () => {
             const departmentRoles = await departmentRoleRepository.findAll();
@@ -257,7 +257,7 @@ describe('DepartmentRoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findMunicipalityDepartmentRoles() ---
+    // --- Tests for findMunicipalityDepartmentRoles() ---
     describe('findMunicipalityDepartmentRoles', () => {
         it('should return department roles excluding Citizen and Administrator', async () => {
             const municipalityDR = await departmentRoleRepository.findMunicipalityDepartmentRoles();
@@ -306,7 +306,7 @@ describe('DepartmentRoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findByRoleName() ---
+    // --- Tests for findByRoleName() ---
     describe('findByRoleName', () => {
         it('should find all department roles with Citizen', async () => {
             const citizenDRs = await departmentRoleRepository.findByRoleName('Citizen');
@@ -369,7 +369,7 @@ describe('DepartmentRoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per save() ---
+    // --- Tests for save() ---
     describe('save', () => {
         it('should save a new department role', async () => {
             // Create test department and role first

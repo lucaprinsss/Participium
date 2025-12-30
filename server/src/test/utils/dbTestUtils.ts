@@ -26,15 +26,15 @@ export async function cleanDatabase(): Promise<void> {
     // Disabilita constraints temporaneamente
     await queryRunner.query('SET session_replication_role = replica;');
 
-    // Pulisci solo le tabelle che possono essere modificate dai test
-    // NON pulire le tabelle con dati di test base
+    // Clean only tables that can be modified by tests
+    // DO NOT clean tables with base test data
     await queryRunner.query('TRUNCATE TABLE reports CASCADE;');
     await queryRunner.query('TRUNCATE TABLE comments CASCADE;');
     await queryRunner.query('TRUNCATE TABLE photos CASCADE;');
     await queryRunner.query('TRUNCATE TABLE notifications CASCADE;');
     await queryRunner.query('TRUNCATE TABLE messages CASCADE;');
 
-    // Pulisci solo utenti creati durante i test (non quelli di test-data.sql)
+    // Clean only users created during tests (not those from test-data.sql)
     await queryRunner.query(
       'DELETE FROM users WHERE username NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);',
       [
@@ -147,7 +147,7 @@ export async function setupTestDatabase(): Promise<void> {
       await AppDataSource.initialize();
       console.log('Test database connected successfully');
 
-      // Verifica connessione con una query semplice
+      // Verify connection with a simple query
       const result = await AppDataSource.query('SELECT NOW()');
       console.log('Database connection verified:', result[0]);
     } catch (error) {

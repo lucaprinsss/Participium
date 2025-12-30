@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import PropTypes from "prop-types"; // Importato per la validazione delle props
+import PropTypes from "prop-types"; // Imported for props validation
 import { Modal } from "react-bootstrap";
 import { FaTag, FaTimes, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaInfoCircle } from "react-icons/fa";
 import { getCurrentUser } from "../api/authApi";
@@ -24,7 +24,7 @@ import "../css/ReportDetails.css";
 // -------------------------------------------------------------------------
 const ToastMessage = ({ message, type, onClose }) => {
     useEffect(() => {
-        // MODIFICA QUI: 2000 ms = 2 secondi
+        // CHANGE HERE: 2000 ms = 2 seconds
         const timer = setTimeout(() => {
             onClose();
         }, 2000);
@@ -78,7 +78,7 @@ const ReportDetails = ({
     onStatusUpdate,
     onReportUpdated,
 }) => {
-    // NUOVO STATO: Mantiene il report aggiornato all'interno della modale
+    // NEW STATE: Keeps the report updated inside the modal
     const [report, setReport] = useState(initialReport);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [currentUserRoles, setCurrentUserRoles] = useState([]);
@@ -95,7 +95,7 @@ const ReportDetails = ({
      * @param {'success'|'error'|'warning'|'info'} type - Il tipo di notifica.
      */
     const showToast = useCallback((message, type = "success") => {
-        // Nascondi il precedente prima di mostrarne uno nuovo per evitare sovrapposizioni
+        // Hide the previous one before showing a new one to avoid overlaps
         setToast({ show: false, message: "", type: "" });
         // Un piccolo ritardo per permettere l'animazione di chiusura (opzionale)
         setTimeout(() => setToast({ show: true, message, type }), 100);
@@ -105,7 +105,7 @@ const ReportDetails = ({
         setToast({ show: false, message: "", type: "" });
     }, []);
 
-    // Sync dello stato locale quando la prop esterna cambia (necessario per l'aggiornamento)
+    // Sync local state when external prop changes (necessary for update)
     useEffect(() => {
         setReport(initialReport);
     }, [initialReport]);
@@ -250,7 +250,7 @@ const ReportDetails = ({
 ReportDetails.propTypes = {
     show: PropTypes.bool.isRequired,
     onHide: PropTypes.func.isRequired,
-    // La prop 'report' è cruciale e deve essere un oggetto
+    // The 'report' prop is crucial and must be an object
     report: PropTypes.shape({
         id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
         title: PropTypes.string.isRequired,
@@ -263,7 +263,7 @@ ReportDetails.propTypes = {
     onApprove: PropTypes.func.isRequired,
     onReject: PropTypes.func.isRequired,
     onStatusUpdate: PropTypes.func.isRequired,
-    onReportUpdated: PropTypes.func, // Può essere opzionale se non è sempre necessario notificare il genitore
+    onReportUpdated: PropTypes.func, // Can be optional if not always necessary to notify the parent
 };
 
 export default ReportDetails;

@@ -74,7 +74,7 @@ describe('Roles Routes Integration Tests', () => {
     });
   });
 
-  // --- Test per GET /api/roles ---
+  // --- Tests for GET /api/roles ---
   describe('GET /api/roles', () => {
     it('dovrebbe restituire 200 e la lista di ruoli se l\'utente è admin', async () => {
       const res = await request(app)

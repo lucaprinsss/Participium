@@ -304,7 +304,7 @@ export default function UserProfile({ user, onUpdateUser }) {
                 ) : (
                   <div className="up-avatar-placeholder">{getInitials()}</div>
                 )}
-                {/* Badge Posizionato Sotto */}
+                {/* Badge Positioned Below */}
                 <div className="up-role-badge">{user?.role_name || "User"}</div>
               </div>
 

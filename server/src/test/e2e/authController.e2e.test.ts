@@ -33,7 +33,7 @@ describe('AuthController E2E Tests', () => {
 
   describe('POST /api/sessions - Login with Pre-loaded Test Users', () => {
     it('should login successfully with testcitizen user', async () => {
-      // Arrange - User già presente da test-data.sql
+      // Arrange - User already present from test-data.sql
       const testUser = {
         username: 'testcitizen',
         password: 'TestPass123!',

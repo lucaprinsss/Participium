@@ -23,7 +23,7 @@ describe('RoleRepository Integration Tests', () => {
         }
     });
 
-    // --- Test per findById() ---
+    // --- Tests for findById() ---
     describe('findById', () => {
         it('should find an existing role by ID', async () => {
             const roles = await roleRepository.findAll();
@@ -59,7 +59,7 @@ describe('RoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findByName() ---
+    // --- Tests for findByName() ---
     describe('findByName', () => {
         it('should find Citizen role', async () => {
             const found = await roleRepository.findByName('Citizen');
@@ -101,7 +101,7 @@ describe('RoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findAll() ---
+    // --- Tests for findAll() ---
     describe('findAll', () => {
         it('should return all roles', async () => {
             const roles = await roleRepository.findAll();
@@ -143,7 +143,7 @@ describe('RoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findMunicipalityRoles() ---
+    // --- Tests for findMunicipalityRoles() ---
     describe('findMunicipalityRoles', () => {
         it('should return roles excluding Citizen and Administrator', async () => {
             const municipalityRoles = await roleRepository.findMunicipalityRoles();
@@ -195,7 +195,7 @@ describe('RoleRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per save() ---
+    // --- Tests for save() ---
     describe('save', () => {
         it('should save a new role', async () => {
             const timestamp = Date.now();

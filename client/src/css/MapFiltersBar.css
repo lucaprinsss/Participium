@@ -19,7 +19,7 @@
   .mp-filters-bar {
     grid-template-columns: 1fr 1fr 1fr;
   }
-  /* La barra di ricerca prende tutta la prima riga */
+  /* The search bar takes the entire first row */
   .mp-grid-item.search-item {
     grid-column: span 3;
   }

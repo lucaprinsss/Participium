@@ -14,7 +14,7 @@
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    /* Sfondo leggero blu solo per l'icona */
+    /* Light blue background only for the icon */
     background: rgba(34, 158, 217, 0.1); 
     color: #229ED9; /* Colore ufficiale Telegram */
     display: flex;

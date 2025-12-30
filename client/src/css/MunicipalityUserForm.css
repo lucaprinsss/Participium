@@ -377,6 +377,6 @@
   }
   
   .muf-body {
-    overflow-y: auto; /* Abilita scroll solo su mobile */
+    overflow-y: auto; /* Enable scroll only on mobile */
   }
 }

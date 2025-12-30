@@ -29,16 +29,16 @@ function App() {
   const [authError, setAuthError] = useState(null);
 
   // 1. DEFINIZIONE ROTTE
-  // Rotte dove NON mostriamo la Navbar
+  // Routes where we DON'T show the Navbar
   const noNavbarRoutes = ["/login", "/register", "/"];
 
-  // Rotte accessibili a TUTTI (anche sloggati)
-  // Qui aggiungiamo '/reports-map' e '*' (per il 404)
+  // Routes accessible to ALL (even logged out)
+  // Here we add '/reports-map' and '*' (for 404)
   const publicRoutes = ["/login", "/register", "/", "/reports-map"];
 
   const hideNavbar = noNavbarRoutes.includes(location.pathname);
 
-  // Gestione classe CSS body per navbar
+  // Handle CSS body class for navbar
   useEffect(() => {
     if (hideNavbar) {
       document.body.classList.remove("has-navbar");
@@ -68,8 +68,8 @@ function App() {
           setIsAuthLoading(false);
 
           // MODIFICA CRUCIALE:
-          // Se l'utente non è loggato, reindirizza SOLO se la rotta NON è pubblica.
-          // In questo modo, se sei su /reports-map, non ti caccia via.
+          // If user is not logged in, redirect ONLY if the route is NOT public.
+          // This way, if you're on /reports-map, it doesn't kick you out.
           if (!publicRoutes.includes(location.pathname)) {
             navigate("/login", { replace: true });
           }
@@ -82,7 +82,7 @@ function App() {
         if (isMounted) {
           if (userData) {
             setUser(userData);
-            // Se sei loggato e provi ad andare su login/register, vai alla home
+            // If you're logged in and try to go to login/register, go to home
             if (
               location.pathname === "/login" ||
               location.pathname === "/register"
@@ -150,8 +150,8 @@ function App() {
     return children;
   };
 
-  // Mostra loading screen solo se stiamo caricando l'auth E siamo su una rotta protetta
-  // (per evitare il flash bianco su pagine pubbliche)
+  // Show loading screen only if we're loading auth AND we're on a protected route
+  // (to avoid white flash on public pages)
   if (isAuthLoading && !publicRoutes.includes(location.pathname)) {
     return <LoadingScreen message="Loading..." />;
   }
@@ -204,7 +204,7 @@ function App() {
             }
           />
 
-          {/* --- ROTTE CITTADINO (Solo ruolo 'Citizen') --- */}
+          {/* --- CITIZEN ROUTES (Only 'Citizen' role) --- */}
 
           <Route
             path="/my-reports"

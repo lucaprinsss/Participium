@@ -28,7 +28,7 @@ class UserService {
    * Helper privato per generare i dati di verifica (Codice + Scadenza)
    */
   private generateOtpData() {
-    // Genera un intero tra 100000 (incluso) e 1000000 (escluso)
+    // Generate an integer between 100000 (inclusive) and 1000000 (exclusive)
     const otpCode = crypto.randomInt(100000, 1000000).toString();
     const otpExpiration = new Date(Date.now() + 1800000); // 30 minutes from now
     return { otpCode, otpExpiration };
@@ -65,7 +65,7 @@ class UserService {
       targetRoleIds = [citizenRole.id];
     }
 
-    // Genera i dati OTP usando l'helper
+    // Generate OTP data using the helper
     const { otpCode, otpExpiration } = this.generateOtpData();
 
     // Create new user with hashed password
@@ -107,7 +107,7 @@ class UserService {
       throw new AppError('Failed to map user data', 500);
     }
 
-    // Invio email (gestito senza bloccare il ritorno della risposta se fallisce l'invio, o come preferisci)
+    // Send email (handled without blocking the response return if sending fails, or as you prefer)
     await this.sendVerificationCode(email, otpCode);
 
     return userResponse;
@@ -119,22 +119,22 @@ class UserService {
    * @param email Email dell'utente
    */
   async resendVerificationCode(email: string): Promise<void> {
-    // 1. Trova l'utente
+    // 1. Find the user
     const user = await userRepository.findUserByEmail(email);
     if (!user) {
       throw new NotFoundError('User not found');
     }
 
-    // 2. Controllo opzionale: se è già verificato, non ha senso inviare un nuovo codice
+    // 2. Optional check: if already verified, it doesn't make sense to send a new code
     if (user.isVerified) {
       throw new ConflictError('User is already verified');
     }
 
-    // 3. Genera nuovi dati OTP
+    // 3. Generate new OTP data
     const { otpCode, otpExpiration } = this.generateOtpData();
 
-    // 4. Aggiorna l'utente nel DB (Assumendo che il repository abbia un metodo di update)
-    // Nota: È fondamentale aggiornare sia il codice che la data di scadenza
+    // 4. Update the user in DB (Assuming the repository has an update method)
+    // Note: It's essential to update both the code and the expiration date
     await userRepository.updateVerificationData(user.id, {
         verificationCode: otpCode,
         verificationCodeExpiresAt: otpExpiration
@@ -154,7 +154,7 @@ class UserService {
       await sendVerificationEmail(email, otpCode);
     } catch (error) {
       logInfo(`Failed to send verification email to ${email}: ${error}`);
-      // Qui potresti decidere se lanciare un errore o lasciare che sia "silent"
+      // Here you could decide whether to throw an error or let it be "silent"
       // throw new AppError('Error sending verification email', 500); 
     }
   }

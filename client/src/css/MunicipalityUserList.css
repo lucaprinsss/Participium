@@ -263,7 +263,7 @@
   overflow: visible;
   /* Già presente, ma fondamentale */
 
-  /* --- MODIFICA QUI --- */
+  /* --- CHANGE HERE --- */
   min-height: 250px;
   display: flex;
   flex-direction: column;

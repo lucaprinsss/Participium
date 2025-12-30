@@ -400,7 +400,7 @@ const MapPage = () => {
     loadBoundaries();
   }, []);
 
-  // --- Effect per calcolare l'indirizzo ---
+  // --- Effect to calculate the address ---
   useEffect(() => {
     if (marker) {
       const fetchAddress = async () => {

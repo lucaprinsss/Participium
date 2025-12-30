@@ -36,7 +36,7 @@ body {
   padding: var(--spacing-container);
   box-sizing: border-box;
 
-  /* MODIFICA QUI: Invece di 100vh, sottrai l'altezza della navbar */
+  /* CHANGE HERE: Instead of 100vh, subtract navbar height */
   min-height: calc(100vh - var(--navbar-height, 80px));
   
   display: flex;
@@ -169,7 +169,7 @@ body {
     align-items: center;
 }
 
-/* Hover effect solo se il dispositivo supporta hover */
+/* Hover effect only if device supports hover */
 @media (hover: hover) {
   .ch-action-card:hover {
     transform: translateY(-3px);
@@ -240,7 +240,7 @@ body {
   position: relative;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   max-height: 90vh; /* Previeni che esca dallo schermo su telefoni bassi */
-  overflow-y: auto; /* Scroll se il contenuto è troppo lungo */
+  overflow-y: auto; /* Scroll if content is too long */
 }
 
 /* Stile Specifico per TELEGRAM */

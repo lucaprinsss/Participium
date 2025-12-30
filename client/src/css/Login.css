@@ -210,7 +210,7 @@
   margin-left: -0.25rem; 
   z-index: 2;
   font-size: 0.9rem;
-  background-color: transparent; /* Aggiunto sfondo per coprire la riga se passa sopra */
+  background-color: transparent; /* Added background to cover the line if it passes over */
 }
 
 /* PASSWORD */

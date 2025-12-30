@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import PropTypes from "prop-types"; // Importato per la validazione delle props
+import PropTypes from "prop-types"; // Imported for props validation
 import { Alert, InputGroup, Tooltip, OverlayTrigger } from "react-bootstrap";
 import { FaSearch, FaBuilding, FaTag, FaUndo } from "react-icons/fa";
 import { getAllCompanies } from "../api/companyApi";
@@ -156,7 +156,7 @@ export default function CompanyList({ refreshTrigger }) {
 
       <div className="mul-card">
         <div className="mul-card-body">
-          {/* Chiamata alla funzione di rendering estratta */}
+          {/* Call to extracted rendering function */}
           {renderContent()}
         </div>
       </div>
@@ -164,7 +164,7 @@ export default function CompanyList({ refreshTrigger }) {
   );
 }
 
-// Aggiunta la validazione delle props (S6774)
+// Added props validation (S6774)
 CompanyList.propTypes = {
   refreshTrigger: PropTypes.oneOfType([
     PropTypes.bool,

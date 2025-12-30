@@ -65,7 +65,7 @@
   margin: 0;
   letter-spacing: -0.05em;
   
-  /* Gradiente sul testo invece che sullo sfondo */
+  /* Gradient on text instead of background */
   background: linear-gradient(135deg, var(--brand-navy) 30%, var(--brand-red) 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -80,7 +80,7 @@
 /* Nascondiamo l'icona fluttuante complessa per pulizia, 
    o la teniamo statica e semplice se serve */
 .nf-icon-container {
-  display: none; /* Rimuovi questa riga se vuoi mantenere l'icona tra i numeri */
+  display: none; /* Remove this line if you want to keep the icon between numbers */
 }
 
 /* Titolo e Descrizione */
@@ -145,7 +145,7 @@
 }
 
 /* --- Elementi da Nascondere per Semplicità --- */
-/* Nascondiamo la colonna destra (mappa/cerchi) perché aggiungeva complessità non necessaria */
+/* Hide the right column (map/circles) because it added unnecessary complexity */
 .nf-visual {
   display: none;
 }

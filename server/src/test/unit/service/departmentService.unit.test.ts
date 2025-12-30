@@ -20,7 +20,7 @@ describe('DepartmentService Unit Tests', () => {
     jest.clearAllMocks();
   });
 
-  // --- Test per getMunicipalityDepartments() ---
+  // --- Tests for getMunicipalityDepartments() ---
   describe('getMunicipalityDepartments', () => {
 
     it('should return all departments excluding Organization', async () => {
@@ -73,7 +73,7 @@ describe('DepartmentService Unit Tests', () => {
     });
   });
 
-  // --- Test per getRolesByDepartment() ---
+  // --- Tests for getRolesByDepartment() ---
   describe('getRolesByDepartment', () => {
 
     it('should return roles for existing department', async () => {

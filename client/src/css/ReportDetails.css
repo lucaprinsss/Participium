@@ -321,13 +321,13 @@
   
   /* --- STILE MODERNO "SOLID" --- */
   
-  /* Sfondo SOLIDO uguale al background della modale per coprire il testo che scorre sotto */
+  /* SOLID background same as modal background to cover text scrolling underneath */
   background: var(--rdm-bg-light); 
   
   /* Bordo superiore sottile */
   border-top: 1px solid var(--rdm-border) !important;
   
-  /* Rimuoviamo il radius qui se usiamo il controfooter, o lo teniamo se è l'ultimo elemento */
+  /* Remove radius here if we use the counter-footer, or keep it if it's the last element */
   border-bottom-left-radius: 0; 
   border-bottom-right-radius: 0;
   
@@ -361,19 +361,19 @@
   
   /* --- MODIFICHE ESSENZIALI PER "PRIMO PIANO" --- */
   
-  /* 1. Usiamo sticky invece di relative */
+  /* 1. Use sticky instead of relative */
   position: sticky; 
   
   /* 2. Lo ancoriamo esattamente al bordo inferiore della visuale (compensando il padding) */
   bottom: -32px;   
   
-  /* 3. Z-Index altissimo per stare sopra a tutto (footer, dropdown, mappe) */
+  /* 3. Very high Z-Index to stay above everything (footer, dropdown, maps) */
   z-index: 9999; 
   
   /* 4. Display block per sicurezza */
   display: block;
   
-  /* Opzionale: assicura che copra anche bordi o ombre strane */
+  /* Optional: ensure it covers even strange borders or shadows */
   box-shadow: 0 -1px 0 var(--rdm-bg-light); 
 }
 

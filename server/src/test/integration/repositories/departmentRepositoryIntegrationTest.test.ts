@@ -23,7 +23,7 @@ describe('DepartmentRepository Integration Tests', () => {
         }
     });
 
-    // --- Test per findById() ---
+    // --- Tests for findById() ---
     describe('findById', () => {
         it('should find an existing department by ID', async () => {
             // Use an existing department from seed data
@@ -60,7 +60,7 @@ describe('DepartmentRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findByName() ---
+    // --- Tests for findByName() ---
     describe('findByName', () => {
         it('should find an existing department by name', async () => {
             // Organization should always exist in seed data
@@ -103,7 +103,7 @@ describe('DepartmentRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per findAll() ---
+    // --- Tests for findAll() ---
     describe('findAll', () => {
         it('should return all departments', async () => {
             const departments = await departmentRepository.findAll();
@@ -147,7 +147,7 @@ describe('DepartmentRepository Integration Tests', () => {
         });
     });
 
-    // --- Test per save() ---
+    // --- Tests for save() ---
     describe('save', () => {
         it('should save a new department', async () => {
             const timestamp = Date.now();

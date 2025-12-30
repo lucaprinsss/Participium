@@ -3,7 +3,7 @@ import { UserEntity } from '@models/entity/userEntity';
 import * as passwordUtils from '@utils/passwordUtils';
 import { createMockCitizen } from '@test/utils/mockEntities';
 
-// Mock delle dipendenze
+// Mock dependencies
 jest.mock('@database/connection');
 jest.mock('@utils/passwordUtils');
 
@@ -12,7 +12,7 @@ describe('UserRepository Unit Tests', () => {
   let mockQueryBuilder: any;
 
   beforeEach(() => {
-    // Reset dei mock prima di ogni test
+    // Reset mocks before each test
     jest.clearAllMocks();
 
     // Setup mock del QueryBuilder

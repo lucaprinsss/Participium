@@ -657,7 +657,7 @@ class ReportService {
     // Cerchiamo i report tramite il repository
     const reports = await reportRepository.findReportsByAddress(address);
 
-    // Mappiamo i risultati aggiungendo i nomi delle aziende se necessario
+    // Map results adding company names if necessary
     return await this.mapReportsWithCompanyNames(reports);
   }
 

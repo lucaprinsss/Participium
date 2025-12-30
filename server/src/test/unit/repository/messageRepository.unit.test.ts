@@ -1,7 +1,7 @@
 import { messageRepository } from '@repositories/messageRepository';
 import { MessageEntity } from '@entity/messageEntity';
 
-// Mock delle dipendenze
+// Mock dependencies
 jest.mock('@database/connection');
 
 describe('MessageRepository Unit Tests', () => {
@@ -9,7 +9,7 @@ describe('MessageRepository Unit Tests', () => {
   let mockQueryBuilder: any;
 
   beforeEach(() => {
-    // Reset dei mock prima di ogni test
+    // Reset mocks before each test
     jest.clearAllMocks();
 
     // Setup mock del QueryBuilder

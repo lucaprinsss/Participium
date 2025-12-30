@@ -906,7 +906,7 @@ describe('MunicipalityUserController E2E Tests', () => {
     });
 
     it('should return all municipality roles when authenticated as admin', async () => {
-      // --- Arrange: Esegui il login come admin ---
+      // --- Arrange: Perform login as admin ---
       // (Preso direttamente dal tuo file di esempio AuthController)
       const loginResponse = await request(app)
         .post('/api/sessions')
@@ -919,7 +919,7 @@ describe('MunicipalityUserController E2E Tests', () => {
       // Estrai i cookie di sessione
       const cookies = loginResponse.headers['set-cookie'];
 
-      // --- Act: Chiama la rotta protetta CON i cookie ---
+      // --- Act: Call the protected route WITH cookies ---
       const response = await request(app)
         .get('/api/roles')
         .set('Cookie', cookies) // <-- CORREZIONE: Aggiungi i cookie di autenticazione

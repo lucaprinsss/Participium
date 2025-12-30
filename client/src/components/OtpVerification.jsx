@@ -17,7 +17,7 @@ const OtpVerification = ({ username }) => {
   const [success, setSuccess] = useState("");
   const [user, setUser] = useState(null);
 
-  // Riferimenti agli input DOM per gestire il focus
+  // References to DOM inputs to handle focus
   const inputRefs = useRef([]);
 
   // --- EFFECT: Caricamento Utente ---
@@ -56,7 +56,7 @@ const OtpVerification = ({ username }) => {
     newOtp[index] = element.value;
     setOtp(newOtp);
 
-    // Sposta il focus al prossimo input se è stato inserito un numero
+    // Move focus to the next input if a number was entered
     if (element.value && index < 5) {
       inputRefs.current[index + 1].focus();
     }
@@ -69,7 +69,7 @@ const OtpVerification = ({ username }) => {
     // Gestione Backspace
     if (e.key === "Backspace") {
       if (!otp[index] && index > 0) {
-        // Se la casella è vuota e premi backspace, vai alla precedente
+        // If the box is empty and you press backspace, go to the previous one
         inputRefs.current[index - 1].focus();
       }
     }
@@ -78,7 +78,7 @@ const OtpVerification = ({ username }) => {
   const handlePaste = (e) => {
     e.preventDefault();
     const pasteData = e.clipboardData.getData("text").trim();
-    // Accetta solo numeri
+    // Accept only numbers
     if (!/^\d+$/.test(pasteData)) return;
 
     const newOtp = [...otp];
@@ -93,7 +93,7 @@ const OtpVerification = ({ username }) => {
 
     setOtp(newOtp);
     
-    // Focus sull'ultimo elemento riempito o sul prossimo vuoto
+    // Focus on the last filled element or the next empty one
     const nextFocusIndex = Math.min(digits.length, 5);
     inputRefs.current[nextFocusIndex].focus();
   };

@@ -54,10 +54,10 @@ const ReportSidebar = ({
       (typeof report.assignee === "number" && Number(report.assignee) === Number(currentUserId)));
 
   // LOGICA VISIBILITÀ PULSANTE DELEGA
-  // Il pulsante appare SOLO se:
-  // 1. L'utente corrente è l'assegnatario interno
-  // 2. Il report NON è già "Resolved"
-  // 3. Il report NON è già "Assigned" (a un esterno)
+  // The button appears ONLY if:
+  // 1. The current user is the internal assignee
+  // 2. The report is NOT already "Resolved"
+  // 3. The report is NOT already "Assigned" (to an external maintainer)
   const shouldShowDelegateButton = 
     isCurrentInternalAssignee && 
     report.status !== "Resolved" && 
@@ -261,7 +261,7 @@ const ReportSidebar = ({
           </div>
         </div>
 
-        {/* MODIFICA: Mostra il pulsante solo se l'utente NON è un Citizen E le coordinate sono disponibili */}
+        {/* CHANGE: Show button only if user is NOT a Citizen AND coordinates are available */}
         {(!isCitizen && mapCoordinates) && ( // FIX S7735
           <button
             className={`rdm-btn-map-toggle ${showMap ? "active" : ""}`}
@@ -285,7 +285,7 @@ ReportSidebar.propTypes = {
     updatedAt: PropTypes.string,
     isAnonymous: PropTypes.bool,
     is_anonymous: PropTypes.bool,
-    status: PropTypes.string, // Aggiunto status alle PropTypes per chiarezza
+    status: PropTypes.string, // Added status to PropTypes for clarity
     reporter: PropTypes.shape({
       first_name: PropTypes.string,
       last_name: PropTypes.string,

@@ -16,5 +16,5 @@ if (process.env.NODE_ENV === 'test' || process.argv.some(arg => arg.includes('te
   if (result.error) {
     console.error('Error loading .env.test:', result.error);
   }
-  // Rimossi i log di successo per mantenere l'output pulito
+  // Removed success logs to keep the output clean
 }

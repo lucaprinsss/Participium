@@ -5,7 +5,7 @@ import { createCompany } from "../api/companyApi";
 import { FaBuilding, FaTag, FaSave, FaTimes, FaChevronDown } from "react-icons/fa";
 import "../css/CompanyForm.css"; // Assicurati che il nome del file CSS corrisponda
 
-// Helper aggiornato con le classi cf-
+// Updated helper with cf- classes
 const getLabelClass = (hasError) => hasError ? "cf-label text-danger" : "cf-label";
 
 getLabelClass.propTypes = {

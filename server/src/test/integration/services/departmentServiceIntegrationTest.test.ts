@@ -135,7 +135,7 @@ describe('DepartmentService Integration Tests', () => {
     await cleanDatabase();
   });
 
-  // --- Test per getMunicipalityDepartments() ---
+  // --- Tests for getMunicipalityDepartments() ---
   describe('getMunicipalityDepartments', () => {
 
     it('should return all municipality departments from database', async () => {
@@ -162,7 +162,7 @@ describe('DepartmentService Integration Tests', () => {
     });
   });
 
-  // --- Test per getRolesByDepartment() ---
+  // --- Tests for getRolesByDepartment() ---
   describe('getRolesByDepartment', () => {
 
     it('should return roles for Water and Sewer Services Department', async () => {
@@ -288,7 +288,7 @@ describe('DepartmentService Integration Tests', () => {
     });
   });
 
-  // --- Test per validazione database constraints ---
+  // --- Tests for database constraints validation ---
   describe('Database Integrity', () => {
 
     it('should have all departments loaded from test-data.sql', async () => {

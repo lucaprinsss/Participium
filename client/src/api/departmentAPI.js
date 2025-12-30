@@ -7,7 +7,7 @@ const handleResponse = async (response) => {
     try {
       const data = await response.json();
       // FIX: Lo Swagger restituisce errori nel formato { message: "..." },
-      // quindi diamo priorità a data.message rispetto a data.error
+      // so we give priority to data.message over data.error
       error.message = data.message || data.error || `Request failed with status ${response.status}`;
       error.status = response.status;
       error.data = data;

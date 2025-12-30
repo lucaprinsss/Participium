@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PropTypes from 'prop-types'; // Importato per la validazione delle props
+import PropTypes from 'prop-types'; // Imported for props validation
 import { useNavigate } from 'react-router-dom';
 import {
   FaMapMarkedAlt,
@@ -15,7 +15,7 @@ import TelegramLinkModal from './TelegramLinkModal';
 
 // Componente Modale per feature non implementata
 const NotImplementedModal = ({ onClose }) => (
-  // Correzione riga 16: Overlay. È interattivo (chiude la modale)
+  // Correction line 16: Overlay. It's interactive (closes the modal)
   <div
     className="ch-modal-overlay"
     onClick={onClose}
@@ -30,7 +30,7 @@ const NotImplementedModal = ({ onClose }) => (
       }
     }}
   >
-    {/* Correzione riga 17: Contenuto della Modale. NON è interattivo, serve solo a fermare la propagazione. */}
+    {/* Correction line 17: Modal Content. NOT interactive, only serves to stop propagation. */}
     <div
       className="ch-modal-content"
       onClick={(e) => e.stopPropagation()}
@@ -76,7 +76,7 @@ const FeatureCard = ({ icon: Icon, title, description }) => (
 
 // Aggiunta validazione props (S6774 per riga 38)
 FeatureCard.propTypes = {
-  icon: PropTypes.elementType.isRequired, // icon non usato direttamente ma come Icon
+  icon: PropTypes.elementType.isRequired, // icon not used directly but as Icon
   title: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
 };
@@ -191,12 +191,12 @@ const CitizenHome = ({ user }) => {
   const [showModal, setShowModal] = useState(false);
   const [showTelegramModal, setShowTelegramModal] = useState(false);
 
-  // Utilizzo first_name come da preferenza salvata
+  // Using first_name as per saved preference
   const userName = user?.first_name || 'Citizen';
 
   const handleNewReport = () => navigate('/reports-map');
 
-  // Modificato per aprire la modale invece di navigare
+  // Modified to open the modal instead of navigating
   const handleMyReports = () => navigate('/my-reports');
 
   const handleTelegramLink = () => setShowTelegramModal(true);

@@ -15,7 +15,7 @@ describe('MunicipalityUserController Unit Tests', () => {
   let mockNext: NextFunction;
 
   beforeEach(() => {
-    // Reset dei mock prima di ogni test
+    // Reset mocks before each test
     jest.clearAllMocks();
 
     // Setup mock request
@@ -437,7 +437,7 @@ describe('MunicipalityUserController Unit Tests', () => {
       mockRequest.params = { id: '1' };
       mockRequest.body = { role_name: 'InvalidRole' };
 
-      // Mock service per simulare errore
+      // Mock service to simulate error
       (municipalityUserService.assignRole as jest.Mock).mockRejectedValueOnce(
         new BadRequestError('Invalid role specified')
       );

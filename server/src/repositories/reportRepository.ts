@@ -7,7 +7,7 @@ import { ReportStatus } from '../models/dto/ReportStatus';
 import { Repository } from "typeorm";
 import { photoRepository } from "./photoRepository";
 
-import { ILike } from "typeorm"; // Importante: aggiungi ILike agli import
+import { ILike } from "typeorm"; // Important: add ILike to imports
 
 /**
  * Report Repository
@@ -259,8 +259,8 @@ class ReportRepository {
         const queryBuilder = this.repository
             .createQueryBuilder('report')
             .leftJoinAndSelect('report.reporter', 'reporter')
-            .leftJoinAndSelect('report.assignee', 'assignee') // Cruciale per staff interno
-            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee') // AGGIUNTO: Per evitare null se presente
+            .leftJoinAndSelect('report.assignee', 'assignee') // Crucial for internal staff
+            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee') // ADDED: To avoid null if present
             .leftJoinAndSelect('report.photos', 'photos')
             .where('report.assigneeId = :assigneeId', { assigneeId });
 
@@ -285,13 +285,13 @@ class ReportRepository {
         const queryBuilder = this.repository
             .createQueryBuilder('report')
             .leftJoinAndSelect('report.reporter', 'reporter')
-            .leftJoinAndSelect('report.assignee', 'assignee') // AGGIUNTO: Per completezza
-            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee') // Cruciale per esterni
+            .leftJoinAndSelect('report.assignee', 'assignee') // ADDED: For completeness
+            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee') // Crucial for external maintainers
             .leftJoinAndSelect('report.photos', 'photos')
             .where('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
             
-        // Nota: Ho rimosso il filtro rigido sul ruolo qui. Se stiamo filtrando per ID, 
-        // assumiamo che l'ID sia corretto. Il controllo del ruolo dovrebbe essere fatto nel Service o Middleware.
+        // Note: I removed the strict role filter here. If we're filtering by ID,
+        // we assume the ID is correct. Role checking should be done in Service or Middleware.
 
         if (status) {
             queryBuilder.andWhere('report.status = :status', { status });

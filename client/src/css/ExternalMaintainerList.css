@@ -46,11 +46,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  /* margin-bottom: 2rem; Rimosso per evitare S4657, perché è incluso in margin: 2rem; */
+  /* margin-bottom: 2rem; Removed to avoid S4657, because it's included in margin: 2rem; */
   flex-wrap: wrap;
   gap: 1rem;
   margin: 2rem;
-  /* FIX S4657: Mantenuto solo l'shorthand */
+  /* FIX S4657: Kept only the shorthand */
 }
 
 .eml-title {

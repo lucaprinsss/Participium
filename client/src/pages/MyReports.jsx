@@ -119,7 +119,7 @@ const MyReports = () => {
                                 filterStatus={filterStatus}
                                 setFilterStatus={setFilterStatus}
                                 onSearch={setSearchText}
-                                // Props non usate in questa pagina ma richieste dal componente
+                                // Props not used in this page but required by the component
                                 viewMode="map" 
                                 setViewMode={() => {}}
                                 hideReports={false}

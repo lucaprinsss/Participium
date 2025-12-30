@@ -37,7 +37,7 @@ const ALL_STATUSES = [
     "Resolved",
 ];
 
-// FIX: Rimosso "All Statuses" da qui per evitare la duplicazione nel Dropdown
+// FIX: Removed "All Statuses" from here to avoid duplication in the Dropdown
 const STAFF_MEMBER_STATUSES_LIST = [
     "Assigned",
     "In Progress",
@@ -83,7 +83,7 @@ const formatStatusForApi = (uiStatus) => {
 
 // --- SUB-COMPONENTI ESTRATTI PER RIDURRE LA COMPLESSITÀ ---
 
-// 1. Componente per il corpo della tabella
+// 1. Component for table body
 const ReportsTableBody = React.memo(({ reports, handleShow }) => {
     if (reports.length === 0) {
         return (
@@ -179,7 +179,7 @@ const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, s
                     <Dropdown.Item eventKey="" active={categoryFilter === ""}>
                         All Categories
                     </Dropdown.Item>
-                    {/* Correzione S6479: Uso cat come chiave */}
+                    {/* Correction S6479: Use cat as key */}
                     {allCategories.map((cat) => (
                         <Dropdown.Item
                             key={cat}
@@ -219,7 +219,7 @@ const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, s
                     <Dropdown.Item eventKey="" active={statusFilter === ""}>
                         All Statuses
                     </Dropdown.Item>
-                    {/* Correzione S6479: Uso st come chiave */}
+                    {/* Correction S6479: Use st as key */}
                     {availableStatuses.map((st) => (
                         <Dropdown.Item
                             key={st}

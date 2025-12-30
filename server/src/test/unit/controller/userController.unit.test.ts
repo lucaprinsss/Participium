@@ -8,7 +8,7 @@ import { ConflictError } from '@models/errors/ConflictError';
 import { AppError } from '@models/errors/AppError';
 import { departmentService } from '@services/departmentService';
 
-// Mock delle dipendenze
+// Mock dependencies
 jest.mock('@services/userService');
 jest.mock('@services/departmentService');
 jest.mock('@repositories/userRepository');
@@ -33,28 +33,28 @@ describe('UserController Unit Tests', () => {
   };
 
   beforeEach(() => {
-    // Reset dei mock prima di ogni test
+    // Reset mocks before each test
     jest.clearAllMocks();
 
-    // Setup mock della response
+    // Setup response mock
     jsonMock = jest.fn();
     statusMock = jest.fn().mockReturnValue({ json: jsonMock });
 
-    // Setup mock della request
+    // Setup request mock
     mockRequest = {
       body: {},
     };
 
-    // Setup mock della response
+    // Setup response mock
     mockResponse = {
       status: statusMock,
       json: jsonMock,
     };
 
-    // Setup mock del next
+    // Setup next mock
     mockNext = jest.fn();
 
-    // Setup default mock per departmentService.getDepartmentRoleIdsByRoleName
+    // Setup default mock for departmentService.getDepartmentRoleIdsByRoleName
     (departmentService.getDepartmentRoleIdsByRoleName as jest.Mock).mockResolvedValue(mockCitizenDepartmentRoleIds);
   });
 

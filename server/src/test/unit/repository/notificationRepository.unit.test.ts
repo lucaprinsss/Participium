@@ -1,7 +1,7 @@
 import { AppDataSource } from '@database/connection';
 import { NotificationEntity } from '@entity/notificationEntity';
 
-// Mock delle dipendenze
+// Mock dependencies
 jest.mock('@database/connection', () => ({
   AppDataSource: {
     getRepository: jest.fn(),

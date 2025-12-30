@@ -59,7 +59,7 @@ describe('GeocodingController E2E Tests', () => {
       // For specific address with house number
       expect(response.body.isSpecificAddress).toBe(true);
       expect(response.body.resultsCount).toBe(1);
-    }, 15000); // Timeout aumentato per chiamate API esterne
+    }, 15000); // Increased timeout for external API calls
 
     it('should return coordinates for a valid street name without house number', async () => {
       // Arrange

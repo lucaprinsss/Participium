@@ -7,7 +7,7 @@ const handleResponse = async (response) => {
     try {
       const data = await response.json();
 
-      // Aggiorna il messaggio con il dettaglio API
+      // Update message with API detail
       error.message = data.message || data.error || `Request failed with status ${response.status}`;
 
       error.status = response.status;

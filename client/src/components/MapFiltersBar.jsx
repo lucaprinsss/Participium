@@ -47,7 +47,7 @@ const MapFiltersBar = ({
   const clearSearch = () => {
     setSearchText("");
     if (onSearch) {
-      onSearch(""); // Una stringa vuota resetta la ricerca nel genitore
+      onSearch(""); // An empty string resets the search in the parent
     }
   };
 

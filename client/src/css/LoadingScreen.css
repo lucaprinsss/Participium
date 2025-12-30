@@ -10,7 +10,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 9999; /* Assicura che stia sopra a tutto */
+  z-index: 9999; /* Ensures it stays above everything */
 }
 
 /* Lo Spinner (Cerchio che gira) */
@@ -24,7 +24,7 @@
   margin-bottom: 1rem;
 }
 
-/* Testo opzionale sotto lo spinner */
+/* Optional text below the spinner */
 .loading-text {
   color: #6c757d;
   font-size: 1rem;

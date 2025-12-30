@@ -3,7 +3,7 @@ import axios from 'axios';
 // URL del tuo backend locale (o da variabile d'ambiente)
 const API_BASE_URL = 'http://localhost:3001/api'; 
 
-// Definizione dei tipi per i dati che ci aspettiamo dal nostro Backend Proxy
+// Definition of types for data we expect from our Backend Proxy
 interface AddressDetails {
     road?: string;
     house_number?: string;
