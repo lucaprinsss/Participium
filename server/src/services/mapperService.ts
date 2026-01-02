@@ -117,7 +117,11 @@ export function mapUserEntityToUserResponse(entity: UserEntity | null | undefine
     personal_photo_url: entity.personalPhotoUrl,
     roles: roles,
     role_name: primaryRole,
-    company_name: companyName
+    company_name: companyName,
+    telegram_username: entity.telegramUsername,
+    email_notifications_enabled: entity.emailNotificationsEnabled,
+    created_at: entity.createdAt,
+    is_verified: entity.isVerified
   }) as UserResponse;
 }
 

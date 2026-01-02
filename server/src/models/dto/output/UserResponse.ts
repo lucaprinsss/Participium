@@ -66,4 +66,6 @@ export interface UserResponse {
     personal_photo_url?: string;
     telegram_username?: string;
     email_notifications_enabled?: boolean;
+    created_at?: string;
+    is_verified?: boolean;
 }

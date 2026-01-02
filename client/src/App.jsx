@@ -150,6 +150,13 @@ function App() {
     return children;
   };
 
+  const UserRoute = ({ children }) => {
+    if (isAuthLoading)
+      return <LoadingScreen message="Checking permissions..." />;
+    if (user && user.role_name !== "Citizen") return <Navigate to="/home" replace />;
+    return children;
+  };
+
   // Show loading screen only if we're loading auth AND we're on a protected route
   // (to avoid white flash on public pages)
   if (isAuthLoading && !publicRoutes.includes(location.pathname)) {
@@ -166,8 +173,6 @@ function App() {
 
           <Route path="/" element={<MainPage />} />
 
-          <Route path="/reports-map" element={<MapPage user={user} />} />
-
           <Route
             path="/login"
             element={
@@ -178,11 +183,23 @@ function App() {
               )
             }
           />
+        
 
           <Route
             path="/register"
             element={user ? <Navigate to="/home" replace /> : <Register />}
           />
+
+
+           {/*-- Route accessibile solo a utenti con ruolo 'Citizen' o non loggati --*/}
+          <Route 
+            path="/reports-map" 
+            element={
+              <UserRoute>
+                <MapPage user={user} />
+              </UserRoute>
+            }
+          />          
 
           {/* --- ROTTE PROTETTE (Qualsiasi utente loggato) --- */}
 

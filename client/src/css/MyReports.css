@@ -89,65 +89,7 @@
     font-weight: 600;
 }
 
-.mr-card {
-    background: var(--mr-card-bg);
-    border-radius: var(--mr-radius);
-    box-shadow: var(--mr-shadow-sm);
-    border: 1px solid rgba(0,0,0,0.03);
-    overflow: hidden;
-}
-
-.mr-card-body {
-    padding: 0;
-}
-
-.mr-table-wrapper {
-    overflow-x: auto;
-}
-
-.mr-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-}
-
-.mr-table th {
-    background-color: #f8f9fa;
-    color: var(--mr-text-muted);
-    font-weight: 600;
-    padding: 1rem 1.5rem;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--mr-border-color);
-}
-
-.mr-table td {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--mr-border-color);
-    vertical-align: middle;
-    color: var(--mr-text-dark);
-}
-
-.mr-table-row {
-    transition: background-color 0.2s ease;
-    cursor: pointer;
-}
-
-.mr-table-row:hover {
-    background-color: #f1f3f5;
-}
-
-.mr-table-row:last-child td {
-    border-bottom: none;
-}
-
-.mr-empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: var(--mr-text-muted);
-    font-style: italic;
-}
+/* Table styles removed - using MunicipalityUserList.css (mul-) classes */
 
 .mr-table-title {
     font-weight: 600;

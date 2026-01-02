@@ -6,7 +6,6 @@ import { getAllExternals, deleteMunicipalityUser, updateMunicipalityUser } from 
 import { getAllCompanies } from "../api/companyApi";
 import { getAllDepartmentRolesMapping } from "../api/departmentAPI";
 import UserDetails from "./UserDetails";
-import "../css/ExternalMaintainerList.css";
 import "../css/MunicipalityUserList.css"; // Import for modal styles
 
 export default function ExternalMaintainerList({ refreshTrigger }) {
@@ -144,17 +143,17 @@ export default function ExternalMaintainerList({ refreshTrigger }) {
   });
 
   return (
-    <div className="externalMaintainerList-modern">
-      <div className="eml-header">
-        <h1 className="eml-title">External Maintainers</h1>
-        <div className="eml-filters">
-          <InputGroup className="eml-filter-group">
-            <InputGroup.Text className="eml-filter-icon"><FaBuilding /></InputGroup.Text>
-            <Dropdown onSelect={handleCompanySelect} className="eml-custom-dropdown">
-              <Dropdown.Toggle variant="light" className="eml-filter-toggle">
+    <div className="municipalityUserList-modern">
+      <div className="mul-header">
+        <h1 className="mul-title">External Maintainers</h1>
+        <div className="mul-filters">
+          <InputGroup className="mul-filter-group">
+            <InputGroup.Text className="mul-filter-icon"><FaBuilding /></InputGroup.Text>
+            <Dropdown onSelect={handleCompanySelect} className="mul-custom-dropdown">
+              <Dropdown.Toggle variant="light" className="mul-filter-toggle">
                 <div className="d-flex align-items-center justify-content-between w-100">
                   <span className="text-truncate">{getSelectedCompanyName()}</span>
-                  <FaChevronDown className="eml-dropdown-arrow ms-2" />
+                  <FaChevronDown className="mul-dropdown-arrow ms-2" />
                 </div>
               </Dropdown.Toggle>
               <Dropdown.Menu className="modern-dropdown-menu">
@@ -168,7 +167,7 @@ export default function ExternalMaintainerList({ refreshTrigger }) {
             </Dropdown>
           </InputGroup>
           <OverlayTrigger placement="top" overlay={<Tooltip>Reset Filters</Tooltip>}>
-            <button className="eml-btn-reset" onClick={handleResetFilters} disabled={!companyFilter}><FaUndo /></button>
+            <button className="mul-btn-reset" onClick={handleResetFilters} disabled={!companyFilter}><FaUndo /></button>
           </OverlayTrigger>
         </div>
       </div>
@@ -177,21 +176,21 @@ export default function ExternalMaintainerList({ refreshTrigger }) {
         <Alert variant={error ? "danger" : "success"} onClose={() => { setError(""); setSuccess("") }} dismissible className="mb-4">{error || success}</Alert>
       )}
 
-      <div className="eml-card">
-        <div className="eml-card-body">
+      <div className="mul-card">
+        <div className="mul-card-body">
           {loading ? (
-            <div className="eml-loading">
-              <div className="eml-loading-spinner"></div>
+            <div className="mul-loading">
+              <div className="mul-loading-spinner"></div>
               Loading...
             </div>
           ) : filteredUsers.length === 0 ? (
-            <div className="eml-empty">
+            <div className="mul-empty">
               <div>👷</div>
               No maintainers found.
             </div>
           ) : (
-            <div className="eml-table-wrapper mul-table-wrapper-scrollable">
-              <table className="eml-table">
+            <div className="mul-table-wrapper mul-table-wrapper-scrollable">
+              <table className="mul-table">
                 <thead>
                   <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Company</th><th>Actions</th></tr>
                 </thead>
@@ -201,17 +200,17 @@ export default function ExternalMaintainerList({ refreshTrigger }) {
                         key={user.id}
                         onClick={() => handleEdit(user)}
                         style={{ cursor: 'pointer' }}
-                        className="eml-table-row"
+                        className="mul-table-row"
                     >
                       <td><span className="text-muted">#{user.id}</span></td>
                       <td><strong>{user.username}</strong></td>
                       <td>{user.email}</td>
-                      <td><span className="eml-role-badge">{user.roles?.map(r => r.role_name).join(', ') || ''}</span></td>
+                      <td><span className="mul-role-badge">{user.roles?.map(r => r.role_name).join(', ') || ''}</span></td>
                       <td>{user.company_name || "-"}</td>
                       <td>
-                        <div className="eml-actions">
+                        <div className="mul-actions">
                           <button 
-                            className="eml-btn eml-btn-delete" 
+                            className="mul-btn mul-btn-delete" 
                             onClick={(e) => { e.stopPropagation(); handleDeleteClick(user); }}
                           >
                             Delete

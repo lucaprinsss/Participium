@@ -394,8 +394,8 @@ export default function UserProfile({ user, onUpdateUser }) {
               <div className="up-system-row">
                 <span className="up-label-sys">Member Since</span>
                 <span className="up-value">
-                  {user?.createdAt
-                    ? new Date(user.createdAt).toLocaleDateString()
+                  {user?.created_at
+                    ? new Date(user.created_at).toLocaleDateString()
                     : "-"}
                 </span>
               </div>
@@ -403,10 +403,10 @@ export default function UserProfile({ user, onUpdateUser }) {
                 <span className="up-label-sys">Verification</span>
                 <span
                   className={`up-value up-status-${
-                    user?.isVerified ? "verified" : "pending"
+                    user?.is_verified ? "verified" : "pending"
                   }`}
                 >
-                  {user?.isVerified ? "Verified" : "Pending"}
+                  {user?.is_verified ? "Verified" : "Pending"}
                 </span>
               </div>
             </div>
@@ -475,8 +475,9 @@ export default function UserProfile({ user, onUpdateUser }) {
                     className="up-input"
                     name="telegramUsername"
                     value={formData.telegramUsername}
-                    onChange={handleChange}
-                    placeholder="e.g.  johndoe"
+                    readOnly
+                    disabled
+                    placeholder="Not linked"
                   />
                 </div>
               </div>

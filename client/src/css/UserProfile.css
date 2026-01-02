@@ -10,7 +10,6 @@
     --brand-red-light: rgba(161, 43, 50, 0.08);
     --success-green: #28a745;
     --danger-red: #dc3545;
-    --font-serif: 'Cinzel', serif;
     --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.08);
     --radius: 0.75rem;
@@ -22,6 +21,7 @@
     min-height: 100vh;
     display: flex;
     justify-content: center;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .up-profile-container {

@@ -15,6 +15,7 @@ import {
 import { BsEye } from "react-icons/bs";
 import { FaFilter, FaList, FaChevronDown, FaUserTie, FaHardHat, FaInfoCircle } from "react-icons/fa";
 import "../css/MunicipalityUserHome.css";
+import "../css/MunicipalityUserList.css";
 
 // Componenti
 import ReportDetails from "./ReportDetails";
@@ -99,11 +100,11 @@ const ReportsTableBody = React.memo(({ reports, handleShow }) => {
     }
 
     return reports.map((report) => (
-        <tr key={report.id}>
+        <tr key={report.id} className="mul-table-row">
             <td className="ps-4">
                 <span className="fw-semibold text-dark">{report.category}</span>
             </td>
-            <td>{report.title}</td>
+            <td><strong>{report.title}</strong></td>
             <td>{report.createdAt.toLocaleDateString()}</td>
             <td>
                 {/* Colonna Aggiunta per l'Assegnatario */}
@@ -121,14 +122,14 @@ const ReportsTableBody = React.memo(({ reports, handleShow }) => {
                 </Badge>
             </td>
             <td className="text-end pe-4">
-                <Button
-                    variant="outline-primary"
-                    size="sm"
-                    className="rounded-pill px-3 d-inline-flex align-items-center"
-                    onClick={() => handleShow(report)}
-                >
-                    <BsEye className="me-2" /> View
-                </Button>
+                <div className="mul-actions justify-content-end">
+                    <button
+                        className="mul-btn mul-btn-edit"
+                        onClick={() => handleShow(report)}
+                    >
+                        <BsEye className="me-2" /> View
+                    </button>
+                </div>
             </td>
         </tr>
     ));
@@ -152,19 +153,19 @@ ReportsTableBody.propTypes = {
 
 // 2. Componente per i filtri
 const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, statusFilter, allCategories, availableStatuses, setCategoryFilter, setStatusFilter }) => (
-    <div className="mu-filters">
+    <div className="mul-filters">
         {/* Category Filter */}
-        <InputGroup className="mu-filter-group">
-            <InputGroup.Text className="mu-filter-icon">
+        <InputGroup className="mul-filter-group">
+            <InputGroup.Text className="mul-filter-icon">
                 <FaList />
             </InputGroup.Text>
             <Dropdown
                 onSelect={setCategoryFilter}
-                className="mu-custom-dropdown"
+                className="mul-custom-dropdown"
             >
                 <Dropdown.Toggle
                     variant="light"
-                    className="mu-filter-toggle"
+                    className="mul-filter-toggle"
                     id="category-filter"
                     disabled={isCategoryFilterDisabled}
                 >
@@ -172,7 +173,7 @@ const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, s
                         <span className="text-truncate">
                             {categoryFilter || "All Categories"}
                         </span>
-                        <FaChevronDown className="mu-dropdown-arrow ms-2" />
+                        <FaChevronDown className="mul-dropdown-arrow ms-2" />
                     </div>
                 </Dropdown.Toggle>
                 <Dropdown.Menu className="modern-dropdown-menu">
@@ -194,24 +195,24 @@ const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, s
         </InputGroup>
 
         {/* Status Filter */}
-        <InputGroup className="mu-filter-group">
-            <InputGroup.Text className="mu-filter-icon">
+        <InputGroup className="mul-filter-group">
+            <InputGroup.Text className="mul-filter-icon">
                 <FaFilter />
             </InputGroup.Text>
             <Dropdown
                 onSelect={setStatusFilter}
-                className="mu-custom-dropdown"
+                className="mul-custom-dropdown"
             >
                 <Dropdown.Toggle
                     variant="light"
-                    className="mu-filter-toggle"
+                    className="mul-filter-toggle"
                     id="status-filter"
                 >
                     <div className="d-flex align-items-center justify-content-between w-100">
                         <span className="text-truncate">
                             {statusFilter || "All Statuses"}
                         </span>
-                        <FaChevronDown className="mu-dropdown-arrow ms-2" />
+                        <FaChevronDown className="mul-dropdown-arrow ms-2" />
                     </div>
                 </Dropdown.Toggle>
                 <Dropdown.Menu className="modern-dropdown-menu">
@@ -448,21 +449,23 @@ export default function MunicipalityUserHome({ user }) {
     // --- RENDER CONTENT HELPER ---
     const renderTable = (tableReports, handleView) => {
         return (
-            <Table responsive hover className="mu-table mb-0 align-middle">
-                <thead className="bg-light text-uppercase small text-muted">
-                    <tr>
-                        <th className="ps-4">Category</th>
-                        <th>Title</th>
-                        <th>Date</th>
-                        <th>Assigned External </th>
-                        <th>Status</th>
-                        <th className="text-end pe-4">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <ReportsTableBody reports={tableReports} handleShow={handleView} />
-                </tbody>
-            </Table>
+            <div className="mul-table-wrapper mul-table-wrapper-scrollable">
+                <Table hover className="mul-table mb-0 align-middle">
+                    <thead className="bg-light text-uppercase small text-muted">
+                        <tr>
+                            <th className="ps-4">Category</th>
+                            <th>Title</th>
+                            <th>Date</th>
+                            <th>Assigned External </th>
+                            <th>Status</th>
+                            <th className="text-end pe-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <ReportsTableBody reports={tableReports} handleShow={handleView} />
+                    </tbody>
+                </Table>
+            </div>
         );
     };
 
@@ -470,13 +473,13 @@ export default function MunicipalityUserHome({ user }) {
         if (currentView?.key === 'director-dashboard') {
             return (
                 <>
-                    <div className="mu-header-wrapper">
+                    <div className="mul-header-wrapper">
                         <div>
-                            <h2 className="mu-home-title">Director Dashboard</h2>
-                            <p className="mu-home-subtitle">Department overview and analytics.</p>
+                            <h2 className="mul-home-title">Director Dashboard</h2>
+                            <p className="mul-home-subtitle">Department overview and analytics.</p>
                         </div>
                     </div>
-                    <Card className="mu-home-card border-0 shadow-sm p-5 text-center d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
+                    <Card className="mul-home-card border-0 shadow-sm p-5 text-center d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
                         <div className="mb-4" style={{ fontSize: '3rem', color: '#cbd5e1' }}>
                             <FaInfoCircle />
                         </div>
@@ -493,10 +496,10 @@ export default function MunicipalityUserHome({ user }) {
         return (
             <>
                  {/* Header Section */}
-                 <div className="mu-header-wrapper">
+                 <div className="mul-header-wrapper">
                     <div>
-                        <h2 className="mu-home-title">{currentView?.label || "Officer Dashboard"}</h2>
-                        <p className="mu-home-subtitle">
+                        <h2 className="mul-home-title">{currentView?.label || "Officer Dashboard"}</h2>
+                        <p className="mul-home-subtitle">
                             Manage and validate citizen reports.
                         </p>
                     </div>
@@ -520,7 +523,7 @@ export default function MunicipalityUserHome({ user }) {
                 )}
     
                 {/* Table Card */}
-                <Card className="mu-home-card border-0 shadow-sm" style={{ minHeight: '300px' }}>
+                <Card className="mul-home-card border-0 shadow-sm" style={{ minHeight: '300px' }}>
                     {isLoading ? (
                         <div className="text-center p-5"></div>
                     ) : (
@@ -545,13 +548,13 @@ export default function MunicipalityUserHome({ user }) {
     // --- MAIN RENDER ---
     if (views.length > 1) {
         return (
-            <Container fluid className="mu-home-container">
+            <Container fluid className="mul-home-container">
                 <Tab.Container activeKey={activeViewKey} onSelect={setActiveViewKey}>
-                    <div className="mu-layout-wrapper">
+                    <div className="mul-layout-wrapper">
                         {/* Sidebar */}
-                        <div className="mu-sidebar">
-                            <Nav variant="pills" className="flex-column mu-nav-pills">
-                                <div className="mu-nav-group-label">Views</div>
+                        <div className="mul-sidebar">
+                            <Nav variant="pills" className="flex-column mul-nav-pills">
+                                <div className="mul-nav-group-label">Views</div>
                                 {views.map(view => (
                                     <Nav.Item key={view.key}>
                                         <Nav.Link eventKey={view.key}>
@@ -563,7 +566,7 @@ export default function MunicipalityUserHome({ user }) {
                         </div>
 
                         {/* Content */}
-                        <div className="mu-content">
+                        <div className="mul-content">
                             <Tab.Content>
                                 <Tab.Pane eventKey={activeViewKey}>
                                     {renderContent()}
@@ -589,7 +592,7 @@ export default function MunicipalityUserHome({ user }) {
 
     // Single View Layout
     return (
-        <Container className="mu-home-container">
+        <Container className="mul-home-container">
             {renderContent()}
             <ReportDetails
                 show={showModal}

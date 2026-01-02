@@ -11,7 +11,7 @@ import {
 } from 'react-icons/fa';
 
 export default function MainPage() {
-  const navigate = useNavigate();
+  const navigate = useNavigate();  
 
   const handleNavigateToLogin = () => {
     navigate('/login');
