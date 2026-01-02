@@ -713,6 +713,27 @@ router.get('/telegram-status', isLoggedIn, UserController.getTelegramStatus);
 
 /**
  * @swagger
+ * /api/users/telegram-confirm:
+ *   post:
+ *     summary: Confirm Telegram link
+ *     description: Confirms the Telegram link after the user acknowledges in the web app.
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Link confirmed successfully
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post('/telegram-confirm', isLoggedIn, UserController.confirmTelegramLink);
+
+/**
+ * @swagger
  * /api/users/telegram-unlink:
  *   delete:
  *     summary: Unlink Telegram account

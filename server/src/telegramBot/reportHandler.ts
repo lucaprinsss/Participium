@@ -14,7 +14,7 @@ export class ReportHandler {
 
   async startReport(ctx: Context) {
     const chatId = ctx.chat!.id;
-    const telegramUsername = ctx.from?.username;
+    const telegramUsername = ctx.from?.username?.toLowerCase();
 
     if (!telegramUsername) {
       return ctx.reply(
@@ -34,8 +34,16 @@ export class ReportHandler {
       return ctx.reply(
         '❌ Access Denied\n\n' +
         'You must be registered on the Participium platform to create reports via Telegram.\n\n' +
-        'Visit our website to register and link your account using the /link command.\n\n' +
-        'After registration, you\'ll be able to submit reports directly from Telegram.',
+        'Visit our website to register and link your account using the /link command.\n\n',
+        { parse_mode: 'Markdown' }
+      );
+    }
+
+    if (!user.telegramLinkConfirmed) {
+      return ctx.reply(
+        '⏳ Confirmation Required\n\n'
+        + 'We received your /link request, but you need to confirm it from the Participium app before sending reports.\n\n'
+        + 'Open the app, go to Telegram linking, and tap "I sent the code" to finish linking.',
         { parse_mode: 'Markdown' }
       );
     }
@@ -95,7 +103,7 @@ export class ReportHandler {
   }
 
   async linkAccount(ctx: Context) {
-    const telegramUsername = ctx.from?.username;
+    const telegramUsername = ctx.from?.username?.toLowerCase();
     if (!telegramUsername) {
       return ctx.reply(
         '⚠️ Username Required\n\n' +
@@ -135,7 +143,7 @@ export class ReportHandler {
 
     try {
       const result = await userRepository.verifyAndLinkTelegram(telegramUsername, code);
-      ctx.reply(`✅ ${result.message}\n\nYou can now create reports using /newreport`, { parse_mode: 'Markdown' });
+      ctx.reply(`✅ ${result.message}`, { parse_mode: 'Markdown' });
     } catch (error) {
       console.error('Failed to link Telegram account:', error);
       ctx.reply(
@@ -173,10 +181,7 @@ export class ReportHandler {
       // Show confirmation dialog
       ctx.reply(
         '⚠️ Unlink Account\n\n' +
-        'Are you sure you want to unlink your Telegram account from Participium?\n\n' +
-        'You will no longer be able to:\n' +
-        '• Create reports via Telegram\n' +
-        '• Receive updates about your reports\n\n' +
+        'Are you sure you want to unlink your Telegram account from Participium?\n' +
         'You can always link again later using /link',
         {
           parse_mode: 'Markdown',

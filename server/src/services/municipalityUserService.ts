@@ -105,7 +105,8 @@ class MunicipalityUserService {
       lastName: last_name,
       password,
       companyId: companyId,
-      isVerified: true  // Municipality users are pre-verified
+      isVerified: true,  // Municipality users are pre-verified
+      telegramLinkConfirmed: false
     });
 
     // Create user_roles entries manually via raw query or service

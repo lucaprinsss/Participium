@@ -114,6 +114,7 @@ CREATE TABLE users (
     telegram_username VARCHAR(100) UNIQUE,
     telegram_link_code VARCHAR(6),
     telegram_link_code_expires_at TIMESTAMPTZ,
+    telegram_link_confirmed BOOLEAN NOT NULL DEFAULT false,
     email_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
     
     -- Field for external maintainers (reference to company)

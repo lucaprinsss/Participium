@@ -195,7 +195,7 @@ export class ReportWizard {
 
     if (data === 'confirm_yes') {
       const telegramUsername = ctx.from?.username!;
-      await this.saveReport(session.data, ctx.chat!.id, telegramUsername);
+      await this.saveReport(session.data, ctx.chat!.id, telegramUsername.toLowerCase());
     } else if (data === 'confirm_no') {
       ctx.reply('❌ Report cancelled\n\nYou can create a new report at any time using /newreport');
       this.removeSession(ctx.chat!.id);
@@ -250,6 +250,11 @@ Review the information above and confirm to submit your report.
       const user = await userRepository.findUserByTelegramUsername(telegramUsername);
       if (!user) {
         throw new Error('User not found');
+      }
+
+      if (!user.telegramLinkConfirmed) {
+        this.bot.telegram.sendMessage(chatId, '⏳ Link not confirmed. Please open the Participium app and tap "I sent the code" before submitting reports.', { parse_mode: 'Markdown' });
+        return;
       }
 
       const photosDataUris = data.photos?.map(buffer => bufferToDataUri(buffer)) || [];

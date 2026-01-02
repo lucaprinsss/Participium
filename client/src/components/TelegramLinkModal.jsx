@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FaTelegram, FaTimes, FaCopy, FaCheck, FaClock, FaUnlink, FaExclamationTriangle } from 'react-icons/fa';
-import { generateTelegramLinkCode, getTelegramStatus, unlinkTelegramAccount } from '../api/authApi';
+import { confirmTelegramLink, generateTelegramLinkCode, getTelegramStatus, unlinkTelegramAccount } from '../api/authApi';
 import '../css/TelegramLinkModal.css';
 
 const TelegramLinkModal = ({ onClose }) => {
@@ -92,19 +92,20 @@ const TelegramLinkModal = ({ onClose }) => {
     try {
       setChecking(true);
       setError(null);
-      const res = await getTelegramStatus();
+      const res = await confirmTelegramLink();
       if (res.isLinked) {
         setSuccessMessage('Account linked successfully!');
-        setStatus(res);
+        setStatus((prev) => ({ ...(prev || {}), ...res }));
         setCode(null);
         setExpiresAt(null);
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError('Not yet linked. Did you send the code to the bot?');
+        const msg = res.requiresConfirmation ? 'Link pending. Please finish the flow from the app.' : 'Not yet linked. Did you send the code to the bot?';
+        setError(msg);
         setTimeout(() => setError(null), 3000);
       }
     } catch (err) {
-      setError('Error checking status.');
+      setError(err?.message || 'Error confirming link.');
     } finally {
       setChecking(false);
     }
@@ -165,6 +166,11 @@ const TelegramLinkModal = ({ onClose }) => {
           {/* Feedback Messaggi */}
           {error && <div className="tl-msg error">{error}</div>}
           {successMessage && <div className="tl-msg success"><FaCheck /> {successMessage}</div>}
+          {status?.requiresConfirmation && !status?.isLinked && (
+            <div className="tl-msg warning">
+              <FaClock /> Link pending confirmation in the app. Tap "I sent the code" to finish.
+            </div>
+          )}
 
           {status?.isLinked ? (
             /* --- SCENARIO 1: ACCOUNT COLLEGATO --- */
@@ -233,6 +239,12 @@ const TelegramLinkModal = ({ onClose }) => {
                       <div className="tl-step-num">2</div>
                       <span>Send the command: <code>/link {code}</code></span>
                     </div>
+                    {status?.requiresConfirmation && (
+                      <div className="tl-step-row" style={{ color: '#b45309', fontWeight: 600 }}>
+                        <div className="tl-step-num">!</div>
+                        <span>Finish by tapping "I sent the code" below.</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="tl-actions">

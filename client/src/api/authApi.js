@@ -111,6 +111,19 @@ export async function getTelegramStatus() {
   return await handleResponse(response);
 }
 
+// POST /api/users/telegram-confirm
+export async function confirmTelegramLink() {
+  const response = await fetch(`/api/users/telegram-confirm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  return await handleResponse(response);
+}
+
 // DELETE /api/users/telegram-unlink
 export async function unlinkTelegramAccount() {
   const response = await fetch(`/api/users/telegram-unlink`, {
@@ -124,4 +137,4 @@ export async function unlinkTelegramAccount() {
   return await handleResponse(response);
 }
 
-export default { login, getCurrentUser, logout, generateTelegramLinkCode, getTelegramStatus, unlinkTelegramAccount };
+export default { login, getCurrentUser, logout, generateTelegramLinkCode, getTelegramStatus, unlinkTelegramAccount, confirmTelegramLink };
