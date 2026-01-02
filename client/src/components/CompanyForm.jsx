@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Row, Col, Form, Button, Alert, InputGroup, Dropdown } from "react-bootstrap";
 import { createCompany } from "../api/companyApi";
+import { getAllCategories } from "../api/reportApi";
 import { FaBuilding, FaTag, FaSave, FaTimes, FaChevronDown } from "react-icons/fa";
 import "../css/CompanyForm.css"; // Assicurati che il nome del file CSS corrisponda
 
