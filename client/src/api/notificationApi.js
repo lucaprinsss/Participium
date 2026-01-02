@@ -1,12 +1,29 @@
+class UnauthorizedError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'UnauthorizedError';
+    this.status = 401;
+  }
+}
+
 const handleResponse = async (response) => {
   if (!response.ok) {
-    const error = new Error(`Request failed with status ${response.status}`);
+    let parsedMessage;
     try {
       const data = await response.json();
-      error.message = data.message || data.error || error.message;
+      parsedMessage = data.message || data.error;
     } catch (e) {
       // ignore json parse error
     }
+
+    const message = parsedMessage || `Request failed with status ${response.status}`;
+
+    if (response.status === 401) {
+      throw new UnauthorizedError(message);
+    }
+
+    const error = new Error(message);
+    error.status = response.status;
     throw error;
   }
   return response.json();

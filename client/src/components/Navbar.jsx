@@ -104,35 +104,28 @@ export default function Navbar({ user, onLogout }) {
     const fetchNotifications = async () => {
       try {
         const data = await getNotifications();
-        // Filter only unread notifications as requested
         const unreadData = data.filter(n => !n.isRead);
-        
-        // Sort by date descending (newest first)
         unreadData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         setNotifications(unreadData);
         setUnreadCount(unreadData.length);
 
-        // Handle Toast Logic
         if (isFirstLoad.current) {
           isFirstLoad.current = false;
-          if (unreadData.length > 0) {
-            lastNotificationIdRef.current = unreadData[0].id;
-          } else {
-            lastNotificationIdRef.current = 0;
-          }
-        } else {
-          if (unreadData.length > 0) {
-            const latestNotification = unreadData[0];
-            // If we have a new notification (ID > last known ID)
-            if (latestNotification.id > (lastNotificationIdRef.current || 0)) {
-              showToast("Hai una nuova notifica!", "info");
-              lastNotificationIdRef.current = latestNotification.id;
-            }
+          lastNotificationIdRef.current = unreadData[0]?.id || 0;
+        } else if (unreadData.length > 0) {
+          const latestNotification = unreadData[0];
+          if (latestNotification.id > (lastNotificationIdRef.current || 0)) {
+            showToast("You have a new notification!", "info");
+            lastNotificationIdRef.current = latestNotification.id;
           }
         }
       } catch (error) {
         console.error("Error fetching notifications:", error);
+        if (error?.status === 401 || error?.message?.includes('Not authenticated')) {
+          showToast("Expired session. Please log in again.", "error");
+          onLogout?.();
+        }
       }
     };
 
