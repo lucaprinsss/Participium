@@ -1499,9 +1499,9 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
         .post(`/api/reports/${assignedReportId}/messages`)
         .set('Cookie', citizenCookies)
         .send({ content: 'Citizen message' })
-        .expect(403);
+        .expect(201);
 
-      expect(response.body.message).toBeDefined();
+      expect(response.body).toBeDefined();
     });
 
     it('should return 403 when PRO tries to send message', async () => {

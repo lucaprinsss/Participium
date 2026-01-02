@@ -135,6 +135,7 @@ Stores information for all system actors.
 | `telegram_username` | `VARCHAR(100)` | NULLABLE, UNIQUE | Telegram username for bot integration |
 | `telegram_link_code` | `VARCHAR(6)` | NULLABLE | 6-digit code for linking Telegram account |
 | `telegram_link_code_expires_at` | `TIMESTAMPTZ` | NULLABLE | Expiration timestamp for the Telegram link code |
+| `telegram_link_confirmed` | `BOOLEAN` | NOT NULL, DEFAULT false | Flag set to true only after the user confirms linking from the web app |
 | `email_notifications_enabled` | `BOOLEAN` | NOT NULL, DEFAULT true | Flag to enable/disable email notifications |
 | `company_id` | `INT` | **FOREIGN KEY** → `companies(id)`, NULLABLE | Reference to external company (only for External Maintainer role) |
 | `is_verified` | `BOOLEAN` | NOT NULL, DEFAULT false | Indicates if the user's email has been verified |

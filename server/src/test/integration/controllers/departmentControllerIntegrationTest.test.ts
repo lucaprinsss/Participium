@@ -51,7 +51,8 @@ describe('DepartmentController Integration Tests', () => {
             firstName: 'Admin',
             lastName: 'User',
             emailNotificationsEnabled: true,
-            isVerified: true
+            isVerified: true,
+            telegramLinkConfirmed: false,
         });
         createdUserIds.push(adminUser.id);
 
@@ -78,7 +79,8 @@ describe('DepartmentController Integration Tests', () => {
             firstName: 'Citizen',
             lastName: 'User',
             emailNotificationsEnabled: true,
-            isVerified: true
+            isVerified: true,
+            telegramLinkConfirmed: false,
         });
         createdUserIds.push(citizenUser.id);
 
@@ -104,7 +106,8 @@ describe('DepartmentController Integration Tests', () => {
             firstName: 'Tech',
             lastName: 'Staff',
             emailNotificationsEnabled: true,
-            isVerified: true
+            isVerified: true,
+            telegramLinkConfirmed: false,
         });
         createdUserIds.push(techStaffUser.id);
 

@@ -184,30 +184,29 @@ describe('Telegram Bot', () => {
       expect(mockCtx.reply).toHaveBeenCalledWith(
         '🏛 *Participium Bot - Help*\n\n' +
         '*Available Commands:*\n\n' +
-        '🔗 /link <code>\n' +
+        '/link <code>\n' +
         'Link your Telegram account to Participium.\n' +
         'Generate the code from your profile on the website.\n\n' +
-        '📝 /newreport\n' +
+        '/newreport\n' +
         'Create a new report about an issue in the city.\n' +
-        'You will be guided through the process step by step.\n\n' +
-        ' /unlink\n' +
+        '*How to Report an Issue:*\n' +
+        '1. Use /newreport command\n' +
+        '2. Send the location or address\n' +
+        '3. Provide a title and description\n' +
+        '4. Select a category\n' +
+        '5. Attach 1-3 photos\n' +
+        '6. Choose privacy settings\n' +
+        '7. Confirm and submit\n\n' +
+        '/unlink\n' +
         'Unlink your Telegram account from Participium.\n' +
         'You can link again anytime with /link\n\n' +
-        '❓ /help\n' +
+        '/help\n' +
         'Display this help message.\n\n' +
         '━━━━━━━━━━━━━\n\n' +
-        '*How to Report an Issue:*\n' +
-        '1️⃣ Use /newreport command\n' +
-        '2️⃣ Send the location or address\n' +
-        '3️⃣ Provide a title and description\n' +
-        '4️⃣ Select a category\n' +
-        '5️⃣ Attach 1-3 photos\n' +
-        '6️⃣ Choose privacy settings\n' +
-        '7️⃣ Confirm and submit\n\n' +
-        '💡 *Need more help?*\n' +
+        '*Need more help?*\n' +
         'Visit our website or contact support.',
         { parse_mode: 'Markdown' }
-      );
+    );
     });
 
     it('should handle newreport command', () => {

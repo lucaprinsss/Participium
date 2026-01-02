@@ -30,7 +30,8 @@ describe('ValidateMapQuery Middleware Integration Tests', () => {
       firstName: 'MapQuery',
       lastName: 'Test',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
 
     await AppDataSource.getRepository('user_roles').save({
@@ -111,7 +112,7 @@ describe('ValidateMapQuery Middleware Integration Tests', () => {
   describe('Bounding Box Validation', () => {
     it('should reject missing minLat when bounding box provided', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&maxLat=45.1&minLon=7.5&maxLon=7.8'
+        '/api/reports/map?zoom=12&maxLat=45.1&minLng=7.5&maxLng=7.8'
       );
 
       expect(res.status).toBe(400);
@@ -120,25 +121,25 @@ describe('ValidateMapQuery Middleware Integration Tests', () => {
 
     it('should reject missing maxLat when bounding box provided', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=45.0&minLon=7.5&maxLon=7.8'
+        '/api/reports/map?zoom=12&minLat=45.0&minLng=7.5&maxLng=7.8'
       );
 
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('Bounding box requires all parameters');
     });
 
-    it('should reject missing minLon when bounding box provided', async () => {
+    it('should reject missing minLng when bounding box provided', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&maxLon=7.8'
+        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&maxLng=7.8'
       );
 
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('Bounding box requires all parameters');
     });
 
-    it('should reject missing maxLon when bounding box provided', async () => {
+    it('should reject missing maxLng when bounding box provided', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLon=7.5'
+        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLng=7.5'
       );
 
       expect(res.status).toBe(400);
@@ -147,61 +148,61 @@ describe('ValidateMapQuery Middleware Integration Tests', () => {
 
     it('should reject invalid latitude values (> 90)', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=45.0&maxLat=95.0&minLon=7.5&maxLon=7.8'
+        '/api/reports/map?zoom=12&minLat=45.0&maxLat=95.0&minLng=7.5&maxLng=7.8'
       );
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Bounding box requires all parameters');
+      expect(res.body.message).toContain('Invalid maximum coordinates: latitude must be between -90 and 90, longitude must be between -180 and 180');
     });
 
     it('should reject invalid latitude values (< -90)', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=-95.0&maxLat=45.1&minLon=7.5&maxLon=7.8'
+        '/api/reports/map?zoom=12&minLat=-95.0&maxLat=45.1&minLng=7.5&maxLng=7.8'
       );
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Bounding box requires all parameters');
+      expect(res.body.message).toContain('Invalid minimum coordinates: latitude must be between -90 and 90, longitude must be between -180 and 180');
     });
 
     it('should reject invalid longitude values (> 180)', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLon=7.5&maxLon=185.0'
+        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLng=7.5&maxLng=185.0'
       );
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Bounding box requires all parameters');
+      expect(res.body.message).toContain('Invalid maximum coordinates: latitude must be between -90 and 90, longitude must be between -180 and 180');
     });
 
     it('should reject invalid longitude values (< -180)', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLon=-185.0&maxLon=7.8'
+        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLng=-185.0&maxLng=7.8'
       );
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Bounding box requires all parameters');
+      expect(res.body.message).toContain('Invalid minimum coordinates: latitude must be between -90 and 90, longitude must be between -180 and 180');
     });
 
     it('should reject non-numeric latitude values', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=abc&maxLat=45.1&minLon=7.5&maxLon=7.8'
+        '/api/reports/map?zoom=12&minLat=abc&maxLat=45.1&minLng=7.5&maxLng=7.8'
       );
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Bounding box requires all parameters');
+      expect(res.body.message).toContain('minLat must be a valid number');
     });
 
     it('should reject non-numeric longitude values', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLon=xyz&maxLon=7.8'
+        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLng=xyz&maxLng=7.8'
       );
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Bounding box requires all parameters');
+      expect(res.body.message).toContain('minLng must be a valid number');
     });
 
     it('should accept valid bounding box with positive coordinates', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLon=7.5&maxLon=7.8'
+        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLng=7.5&maxLng=7.8'
       );
 
       // May return 400 due to other validation or 200 if successful
@@ -210,7 +211,7 @@ describe('ValidateMapQuery Middleware Integration Tests', () => {
 
     it('should accept valid bounding box with negative coordinates', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=-45.1&maxLat=-45.0&minLon=-7.8&maxLon=-7.5'
+        '/api/reports/map?zoom=12&minLat=-45.1&maxLat=-45.0&minLng=-7.8&maxLng=-7.5'
       );
 
       // May return 400 due to other validation or 200 if successful
@@ -219,7 +220,7 @@ describe('ValidateMapQuery Middleware Integration Tests', () => {
 
     it('should accept valid bounding box at latitude boundaries', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=-90&maxLat=90&minLon=7.5&maxLon=7.8'
+        '/api/reports/map?zoom=12&minLat=-90&maxLat=90&minLng=7.5&maxLng=7.8'
       );
 
       // May return 400 due to other validation or 200 if successful
@@ -228,7 +229,7 @@ describe('ValidateMapQuery Middleware Integration Tests', () => {
 
     it('should accept valid bounding box at longitude boundaries', async () => {
       const res = await agent.get(
-        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLon=-180&maxLon=180'
+        '/api/reports/map?zoom=12&minLat=45.0&maxLat=45.1&minLng=-180&maxLng=180'
       );
 
       // May return 400 due to other validation or 200 if successful
@@ -255,7 +256,7 @@ describe('ValidateMapQuery Middleware Integration Tests', () => {
 
     it('should reject partial bounding box without zoom', async () => {
       const res = await agent.get(
-        '/api/reports/map?minLat=45.0&maxLat=45.1&minLon=7.5'
+        '/api/reports/map?minLat=45.0&maxLat=45.1&minLng=7.5'
       );
 
       expect(res.status).toBe(400);

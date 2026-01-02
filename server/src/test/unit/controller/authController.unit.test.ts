@@ -53,6 +53,7 @@ describe('AuthController Unit Tests', () => {
     emailNotificationsEnabled: true,
     isVerified: true,
     createdAt: new Date(),
+    telegramLinkConfirmed: false,
   };
 
   const mockUserResponse = {

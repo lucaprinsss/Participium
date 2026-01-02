@@ -194,6 +194,8 @@ docker-compose logs -f db
 The database uses PostgreSQL with PostGIS for geolocation features.
 
 **Detailed schema documentation:** [`server/src/docs/database.md`](server/src/docs/database.md)
+ 
+ **Telegram linking:** The `users` table now includes `telegram_link_confirmed` to ensure Telegram accounts are usable for reports only after the user confirms linking from the web app.
 
 ## Deployment
 

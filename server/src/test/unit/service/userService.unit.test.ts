@@ -1009,4 +1009,80 @@ describe('UserService', () => {
       await expect(userService.generateTelegramLinkCode(userId)).rejects.toThrow('Database error');
     });
   });
+
+  describe('confirmTelegramLink', () => {
+    const userId = 42;
+
+    it('should confirm the telegram link successfully', async () => {
+      // Arrange
+      const expected = { success: true, message: 'Confirmed' };
+      (userRepository.confirmTelegramLink as jest.Mock).mockResolvedValue(expected);
+
+      // Act
+      const result = await userService.confirmTelegramLink(userId);
+
+      // Assert
+      expect(userRepository.confirmTelegramLink).toHaveBeenCalledWith(userId);
+      expect(result).toEqual(expected);
+    });
+
+    it('should return failure result when repository responds with success false', async () => {
+      // Arrange
+      const expected = { success: false, message: 'Already confirmed' };
+      (userRepository.confirmTelegramLink as jest.Mock).mockResolvedValue(expected);
+
+      // Act
+      const result = await userService.confirmTelegramLink(userId);
+
+      // Assert
+      expect(result).toEqual(expected);
+    });
+
+    it('should propagate repository errors', async () => {
+      // Arrange
+      const error = new Error('DB down');
+      (userRepository.confirmTelegramLink as jest.Mock).mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(userService.confirmTelegramLink(userId)).rejects.toThrow('DB down');
+    });
+  });
+
+  describe('unlinkTelegramAccount', () => {
+    const userId = 99;
+
+    it('should unlink telegram account successfully', async () => {
+      // Arrange
+      const expected = { success: true, message: 'Unlinked' };
+      (userRepository.unlinkTelegramAccount as jest.Mock).mockResolvedValue(expected);
+
+      // Act
+      const result = await userService.unlinkTelegramAccount(userId);
+
+      // Assert
+      expect(userRepository.unlinkTelegramAccount).toHaveBeenCalledWith(userId);
+      expect(result).toEqual(expected);
+    });
+
+    it('should handle failed unlink attempt', async () => {
+      // Arrange
+      const expected = { success: false, message: 'Not linked' };
+      (userRepository.unlinkTelegramAccount as jest.Mock).mockResolvedValue(expected);
+
+      // Act
+      const result = await userService.unlinkTelegramAccount(userId);
+
+      // Assert
+      expect(result).toEqual(expected);
+    });
+
+    it('should propagate errors from repository', async () => {
+      // Arrange
+      const error = new Error('Unexpected');
+      (userRepository.unlinkTelegramAccount as jest.Mock).mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(userService.unlinkTelegramAccount(userId)).rejects.toThrow('Unexpected');
+    });
+  });
 });

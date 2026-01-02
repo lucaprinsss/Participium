@@ -315,7 +315,7 @@ describe('ReportWizard', () => {
         isAnonymous: false,
       };
       mockCtx.callbackQuery = { data: 'confirm_yes' };
-      const mockUser = { id: 1 } as any;
+      const mockUser = { id: 1, telegramLinkConfirmed: true } as any;
       mockUserRepository.findUserByTelegramUsername.mockResolvedValue(mockUser);
       mockReportService.createReport.mockResolvedValue({ id: 123 } as any);
       mockBufferToDataUri.mockReturnValue('data:image/jpeg;base64,test');

@@ -73,7 +73,8 @@ describe('ReportService Integration Tests', () => {
       email: `citizen${r()}@test.com`,
       firstName: 'Citizen',
       lastName: 'Test',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -89,7 +90,8 @@ describe('ReportService Integration Tests', () => {
       email: `officer${r()}@test.com`,
       firstName: 'Officer',
       lastName: 'Test',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -1209,6 +1211,7 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
       firstName: 'Tech',
       lastName: 'Staff',
       isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -1261,6 +1264,7 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
       lastName: 'Maintainer',
       companyId: companyId,
       isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -1312,6 +1316,7 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
       firstName: 'Citizen',
       lastName: 'Test',
       isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -1499,6 +1504,7 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
         lastName: 'Maintainer',
         companyId: roadsCompany.id,
         isVerified: true,
+      telegramLinkConfirmed: false,
       });
       await AppDataSource.query(
         `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -1576,6 +1582,7 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
         lastName: 'Maintainer',
         companyId: companyId,
         isVerified: true,
+      telegramLinkConfirmed: false,
       });
       await AppDataSource.query(
         `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -1671,7 +1678,8 @@ describe('ReportService Integration Tests - Messages', () => {
       email: `citizen_msg_svc${r()}@test.com`,
       firstName: 'Citizen',
       lastName: 'Messages',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -1689,7 +1697,8 @@ describe('ReportService Integration Tests - Messages', () => {
       email: `tech_msg_svc${r()}@test.com`,
       firstName: 'Tech',
       lastName: 'Messages',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -1705,7 +1714,8 @@ describe('ReportService Integration Tests - Messages', () => {
       email: `other_tech_msg_svc${r()}@test.com`,
       firstName: 'Other',
       lastName: 'Tech',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,

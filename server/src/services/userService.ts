@@ -79,6 +79,7 @@ class UserService {
       isVerified: false,  // New citizens must verify their email
       verificationCode: otpCode,
       verificationCodeExpiresAt: otpExpiration,
+      telegramLinkConfirmed: false,
     });
 
     // Insert user roles using raw SQL (same pattern as municipalityUserService)
@@ -257,13 +258,13 @@ class UserService {
       } else {
         // Validate telegram username format (alphanumeric, underscore, 5-32 chars)
         const telegramRegex = /^[a-zA-Z0-9_]{5,32}$/;
-        const cleanUsername = updateData.telegramUsername.replace('@', '');
+        const cleanUsername = updateData.telegramUsername.replace('@', '').toLowerCase();
         
         if (!telegramRegex. test(cleanUsername)) {
           throw new BadRequestError('Invalid Telegram username format. Must be 5-32 characters, alphanumeric and underscores only.');
         }
 
-        // Check if telegram username is already taken by another user
+        // Check if telegram username is already taken by another user (case-insensitive)
         const existingUser = await userRepository.findUserByTelegramUsername(cleanUsername);
         if (existingUser && existingUser.id !== userId) {
           throw new BadRequestError('Telegram username already in use by another user');
@@ -445,6 +446,13 @@ class UserService {
    */
   async generateTelegramLinkCode(userId: number): Promise<string | null> {
     return userRepository.generateTelegramLinkCode(userId);
+  }
+
+  /**
+   * Confirm Telegram link after the user acknowledges in the web app.
+   */
+  async confirmTelegramLink(userId: number): Promise<{ success: boolean; message: string }> {
+    return userRepository.confirmTelegramLink(userId);
   }
   /**
    * Unlink Telegram account

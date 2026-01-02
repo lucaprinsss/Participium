@@ -112,14 +112,14 @@ class UserRepository {
    * @returns The user entity or null if not found.
    */
   public async findUserByTelegramUsername(telegramUsername: string): Promise<UserEntity | null> {
-    // 'addSelect' is used to explicitly include fields that might be excluded by default
+    // Case-insensitive lookup to avoid casing mismatches with Telegram usernames
     return this.repository
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.userRoles", "userRoles")
       .leftJoinAndSelect("userRoles.departmentRole", "departmentRole")
       .leftJoinAndSelect("departmentRole.department", "department")
       .leftJoinAndSelect("departmentRole.role", "role")
-      .where("user.telegram_username = :telegramUsername", { telegramUsername })
+      .where("LOWER(user.telegram_username) = LOWER(:telegramUsername)", { telegramUsername })
       .addSelect("user.passwordHash")
       .getOne();
   }
@@ -467,18 +467,22 @@ class UserRepository {
    * @returns True if the link was successful, false if the user was not found or already linked.
    */
   public async linkTelegramUsername(username: string, telegramUsername: string): Promise<boolean> {
+    const normalized = telegramUsername.toLowerCase();
+
     const user = await this.repository.findOne({ where: { username } });
     if (!user) {
       return false;
     }
 
     // Check if another user already has this telegram username
-    const existingUser = await this.repository.findOne({ where: { telegramUsername } });
+    const existingUser = await this.repository.createQueryBuilder("user")
+      .where("LOWER(user.telegram_username) = LOWER(:telegramUsername)", { telegramUsername: normalized })
+      .getOne();
     if (existingUser && existingUser.id !== user.id) {
       throw new Error('This Telegram username is already linked to another account.');
     }
 
-    user.telegramUsername = telegramUsername;
+    user.telegramUsername = normalized;
     await this.repository.save(user);
     return true;
   }
@@ -503,6 +507,7 @@ class UserRepository {
 
     user.telegramLinkCode = code;
     user.telegramLinkCodeExpiresAt = expiresAt;
+    user.telegramLinkConfirmed = false;
 
     await this.repository.save(user);
     return code;
@@ -515,8 +520,12 @@ class UserRepository {
    * @returns Object with success status and message.
    */
   public async verifyAndLinkTelegram(telegramUsername: string, code: string): Promise<{ success: boolean; message: string }> {
+    const normalized = telegramUsername.toLowerCase();
+
     // Check if another user already has this telegram username
-    const existingUser = await this.repository.findOne({ where: { telegramUsername } });
+    const existingUser = await this.repository.createQueryBuilder("user")
+      .where("LOWER(user.telegram_username) = LOWER(:telegramUsername)", { telegramUsername: normalized })
+      .getOne();
     if (existingUser) {
       return { success: false, message: 'This Telegram username is already linked to an account.' };
     }
@@ -538,13 +547,41 @@ class UserRepository {
     }
 
     // Link the account
-    user.telegramUsername = telegramUsername;
+    user.telegramUsername = normalized;
     user.telegramLinkCode = undefined;
     user.telegramLinkCodeExpiresAt = undefined;
+    user.telegramLinkConfirmed = false;
 
     await this.repository.save(user);
 
-    return { success: true, message: `*Account linked successfully!*\n\nYour Telegram username is now associated with the account "${user.username}".` };
+    return { success: true, message: `*Account linked successfully!*\n\nYour Telegram username is now associated with the account "${user.username}".\n\nPlease open the Participium app and tap "I sent the code" to confirm the link before creating reports via Telegram.` };
+  }
+
+  /**
+   * Marks the Telegram link as confirmed from the web app.
+   */
+  public async confirmTelegramLink(userId: number): Promise<{ success: boolean; message: string }> {
+    const user = await this.repository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      return { success: false, message: 'User not found.' };
+    }
+
+    if (!user.telegramUsername) {
+      return { success: false, message: 'No Telegram account to confirm.' };
+    }
+
+    if (user.telegramLinkConfirmed) {
+      return { success: true, message: 'Telegram account already confirmed.' };
+    }
+
+    user.telegramLinkConfirmed = true;
+    user.telegramLinkCode = null as any;
+    user.telegramLinkCodeExpiresAt = null as any;
+
+    await this.repository.save(user);
+
+    return { success: true, message: 'Telegram account confirmed successfully.' };
   }
 
   /**
@@ -565,6 +602,7 @@ class UserRepository {
     user.telegramUsername = null as any;
     user.telegramLinkCode = null as any;
     user.telegramLinkCodeExpiresAt = null as any;
+    user.telegramLinkConfirmed = false;
 
     await this.repository.save(user);
 

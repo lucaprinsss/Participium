@@ -122,9 +122,40 @@ class UserController {
       }
 
       res.status(200).json({
-        isLinked: !!userEntity.telegramUsername,
+        isLinked: !!userEntity.telegramUsername && !!userEntity.telegramLinkConfirmed,
         telegramUsername: userEntity.telegramUsername,
-        activeCode: activeCode
+        activeCode: activeCode,
+        requiresConfirmation: !!userEntity.telegramUsername && !userEntity.telegramLinkConfirmed
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Confirm Telegram link after the user taps the CTA in the app.
+   */
+  async confirmTelegramLink(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = req.user as any;
+      const result = await userService.confirmTelegramLink(user.id);
+
+      if (!result.success) {
+        res.status(400).json({
+          code: 400,
+          name: 'BadRequestError',
+          message: result.message
+        });
+        return;
+      }
+
+      const refreshed = await userRepository.findUserById(user.id);
+
+      res.status(200).json({
+        message: result.message,
+        isLinked: !!refreshed?.telegramUsername && !!refreshed?.telegramLinkConfirmed,
+        telegramUsername: refreshed?.telegramUsername,
+        requiresConfirmation: !!refreshed?.telegramUsername && !refreshed?.telegramLinkConfirmed
       });
     } catch (error) {
       next(error);

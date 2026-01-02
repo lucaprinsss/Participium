@@ -162,6 +162,7 @@ describe('AuthService Integration Tests', () => {
         isVerified: false,
         verificationCode,
         verificationCodeExpiresAt: expiresAt,
+        telegramLinkConfirmed: false,
       };
 
       const user = await userRepository.createUserWithPassword(userData);
@@ -190,6 +191,7 @@ describe('AuthService Integration Tests', () => {
         isVerified: false,
         verificationCode: correctCode,
         verificationCodeExpiresAt: expiresAt,
+        telegramLinkConfirmed: false,
       };
 
       const user = await userRepository.createUserWithPassword(userData);
@@ -213,6 +215,7 @@ describe('AuthService Integration Tests', () => {
         isVerified: false,
         verificationCode,
         verificationCodeExpiresAt: expiresAt,
+        telegramLinkConfirmed: false,
       };
 
       const user = await userRepository.createUserWithPassword(userData);
@@ -240,6 +243,7 @@ describe('AuthService Integration Tests', () => {
         isVerified: false,
         verificationCode,
         verificationCodeExpiresAt: expiredDate,
+        telegramLinkConfirmed: false,
       };
 
       const user = await userRepository.createUserWithPassword(userData);
@@ -260,6 +264,7 @@ describe('AuthService Integration Tests', () => {
         isVerified: true,
         verificationCode: undefined,
         verificationCodeExpiresAt: undefined,
+        telegramLinkConfirmed: false,
       };
 
       const user = await userRepository.createUserWithPassword(userData);

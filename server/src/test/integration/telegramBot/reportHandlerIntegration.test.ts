@@ -42,7 +42,7 @@ describe('ReportHandler Integration Tests', () => {
       // Verify
       expect(mockUserRepository.verifyAndLinkTelegram).toHaveBeenCalledWith('testuser', '123456');
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('✅ *Account linked successfully*'),
+        expect.stringContaining('Account linked successfully'),
         expect.any(Object)
       );
     });
@@ -57,7 +57,7 @@ describe('ReportHandler Integration Tests', () => {
 
       // Verify
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('❌ *Linking Failed*'),
+        expect.stringContaining('Linking Failed'),
         expect.any(Object)
       );
     });
@@ -79,7 +79,7 @@ describe('ReportHandler Integration Tests', () => {
       expect(mockUserRepository.findUserByTelegramUsername).toHaveBeenCalledWith('testuser');
       expect(mockUserRepository.unlinkTelegramAccount).toHaveBeenCalledWith(1);
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('✅ *Account Unlinked*'),
+        expect.stringContaining('Account Unlinked'),
         expect.any(Object)
       );
     });
@@ -99,7 +99,7 @@ describe('ReportHandler Integration Tests', () => {
 
       // Verify
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('❌ *Unlink Failed*'),
+        expect.stringContaining('Unlink Failed'),
         expect.any(Object)
       );
     });
@@ -137,7 +137,7 @@ describe('ReportHandler Integration Tests', () => {
       await reportHandler.linkAccount(mockCtx);
 
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('*Usage:* /link <code>'),
+        expect.stringContaining('Usage: /link <code>'),
         expect.any(Object)
       );
     });

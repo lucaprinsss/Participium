@@ -35,7 +35,7 @@ export const AppDataSource = new DataSource({
       NotificationEntity,
       __dirname + '/../models/entity/**/*.{ts,js}'
     ],
-    migrations: [],
+    migrations: [__dirname + '/../migrations/*.{ts,js}'],
     subscribers: [],
     namingStrategy: new SnakeCaseNamingStrategy(),
 });

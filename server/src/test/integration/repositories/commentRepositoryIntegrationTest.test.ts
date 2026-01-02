@@ -86,7 +86,8 @@ describe('CommentRepository Integration Tests', () => {
       email: `user${r()}@test.com`,
       firstName: 'Test',
       lastName: 'User',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
 
     const userRoleRepo = AppDataSource.getRepository(UserRoleEntity);
