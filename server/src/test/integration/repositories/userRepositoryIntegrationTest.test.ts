@@ -24,6 +24,7 @@ const buildUserData = (overrides: Partial<CreateUserInput> = {}): CreateUserInpu
   password: "securePass123",
   emailNotificationsEnabled: true,
   isVerified: false,
+  telegramLinkConfirmed:false,
   ...overrides,
 });
 

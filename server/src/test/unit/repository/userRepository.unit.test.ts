@@ -66,6 +66,7 @@ describe('UserRepository Unit Tests', () => {
       firstName: 'Test',
       lastName: 'User',
       isVerified: true,
+      telegramLinkConfirmed: false,
     };
 
     it('should create user with hashed password successfully', async () => {
@@ -1393,7 +1394,7 @@ describe('UserRepository Unit Tests', () => {
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('userRoles.departmentRole', 'departmentRole');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.department', 'department');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('departmentRole.role', 'role');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('user.telegram_username = :telegramUsername', { telegramUsername });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('LOWER(user.telegram_username) = LOWER(:telegramUsername)', { telegramUsername });
       expect(mockQueryBuilder.addSelect).toHaveBeenCalledWith('user.passwordHash');
       expect(mockQueryBuilder.getOne).toHaveBeenCalled();
       expect(result).toEqual(mockUser);
@@ -1592,14 +1593,14 @@ describe('UserRepository Unit Tests', () => {
         telegramUsername: undefined,
       });
       mockRepository.findOne.mockResolvedValue(mockUser);
-      mockRepository.save.mockResolvedValue({ ...mockUser, telegramUsername });
+      mockRepository.save.mockResolvedValue({ ...mockUser, telegramUsername: telegramUsername.toLowerCase() });
 
       // Act
       const result = await userRepository.linkTelegramUsername(username, telegramUsername);
 
       // Assert
       expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { username } });
-      expect(mockRepository.save).toHaveBeenCalledWith({ ...mockUser, telegramUsername });
+      expect(mockRepository.save).toHaveBeenCalledWith({ ...mockUser, telegramUsername: telegramUsername.toLowerCase() });
       expect(result).toBe(true);
     });
 
@@ -1619,8 +1620,9 @@ describe('UserRepository Unit Tests', () => {
       const mockUser = createMockCitizen({ id: 1, username });
       const existingUser = createMockCitizen({ id: 2, username: 'otheruser', telegramUsername });
       mockRepository.findOne
-        .mockResolvedValueOnce(mockUser) // First call for username lookup
-        .mockResolvedValueOnce(existingUser); // Second call for telegram username check
+        .mockResolvedValueOnce(mockUser); // First call for username lookup
+
+      mockQueryBuilder.getOne.mockResolvedValue(existingUser);
 
       // Act & Assert
       await expect(userRepository.linkTelegramUsername(username, telegramUsername)).rejects.toThrow(
@@ -1696,16 +1698,24 @@ describe('UserRepository Unit Tests', () => {
       });
 
       // Mock the query builder chain
-      const mockQueryBuilder = {
+      const mockExistingCheckQB = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any;
+
+      const mockCodeCheckQB = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockUser),
-      };
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-      mockRepository.findOne.mockResolvedValue(null); // No existing telegram user
+      } as any;
+
+      mockRepository.createQueryBuilder
+        .mockReturnValueOnce(mockExistingCheckQB)
+        .mockReturnValueOnce(mockCodeCheckQB);
+
       mockRepository.save.mockResolvedValue({
         ...mockUser,
-        telegramUsername,
+        telegramUsername: telegramUsername.toLowerCase(),
         telegramLinkCode: undefined,
         telegramLinkCodeExpiresAt: undefined,
       });
@@ -1714,10 +1724,9 @@ describe('UserRepository Unit Tests', () => {
       const result = await userRepository.verifyAndLinkTelegram(telegramUsername, code);
 
       // Assert
-      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { telegramUsername } });
       expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith("user");
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith("user.telegram_link_code = :code", { code });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+      expect(mockCodeCheckQB.where).toHaveBeenCalledWith("user.telegram_link_code = :code", { code });
+      expect(mockCodeCheckQB.andWhere).toHaveBeenCalledWith(
         "user.telegram_link_code_expires_at > :now",
         expect.objectContaining({ now: expect.any(Date) })
       );
@@ -1725,7 +1734,7 @@ describe('UserRepository Unit Tests', () => {
       expect(result.message).toContain('Account linked successfully');
       expect(mockRepository.save).toHaveBeenCalledWith({
         ...mockUser,
-        telegramUsername,
+        telegramUsername: telegramUsername.toLowerCase(),
         telegramLinkCode: undefined,
         telegramLinkCodeExpiresAt: undefined,
       });
@@ -1739,7 +1748,12 @@ describe('UserRepository Unit Tests', () => {
         telegramUsername,
       });
 
-      mockRepository.findOne.mockResolvedValue(existingUser);
+      const mockExistingCheckQB = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(existingUser),
+      } as any;
+
+      mockRepository.createQueryBuilder.mockReturnValue(mockExistingCheckQB);
 
       // Act
       const result = await userRepository.verifyAndLinkTelegram(telegramUsername, code);
@@ -1751,9 +1765,20 @@ describe('UserRepository Unit Tests', () => {
 
     it('should return error when code is invalid', async () => {
       // Arrange
-      mockRepository.findOne
-        .mockResolvedValueOnce(null) // No existing telegram user
-        .mockResolvedValueOnce(null); // No user with code
+      const mockExistingCheckQB = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any;
+
+      const mockCodeCheckQB = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any;
+
+      mockRepository.createQueryBuilder
+        .mockReturnValueOnce(mockExistingCheckQB)
+        .mockReturnValueOnce(mockCodeCheckQB);
 
       // Act
       const result = await userRepository.verifyAndLinkTelegram(telegramUsername, code);

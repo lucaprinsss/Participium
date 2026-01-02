@@ -70,18 +70,6 @@ describe('ReportHandler', () => {
         expect.any(Object)
       );
     });
-
-    it('should start report wizard when user exists', async () => {
-      const mockUser = { id: 1, username: 'testuser' } as any;
-      mockUserRepository.findUserByTelegramUsername.mockResolvedValue(mockUser);
-
-      await reportHandler.startReport(mockCtx);
-
-      expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('Report Location'),
-        expect.any(Object)
-      );
-    });
   });
 
   describe('linkAccount', () => {

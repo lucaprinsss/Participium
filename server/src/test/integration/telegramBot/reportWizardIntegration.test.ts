@@ -123,7 +123,7 @@ describe('ReportWizard Integration Tests', () => {
       // Step 8: Handle confirmation
       mockCtx.callbackQuery = { data: 'confirm_yes' };
       mockCtx.reply = jest.fn().mockResolvedValue(true);
-      const mockUser = { id: 1 } as any;
+      const mockUser = { id: 1, telegramLinkConfirmed: true } as any;
       mockUserRepository.findUserByTelegramUsername.mockResolvedValue(mockUser);
       mockReportService.createReport.mockResolvedValue({ id: 123 } as any);
       await wizard.handleCallbackQuery(mockCtx, session);
@@ -218,7 +218,7 @@ describe('ReportWizard Integration Tests', () => {
         }
       };
       mockCtx.callbackQuery = { data: 'confirm_yes' };
-      const mockUser = { id: 1 } as any;
+      const mockUser = { id: 1, telegramLinkConfirmed: true } as any;
       mockUserRepository.findUserByTelegramUsername.mockResolvedValue(mockUser);
       mockReportService.createReport.mockRejectedValue(new Error('Creation failed'));
 

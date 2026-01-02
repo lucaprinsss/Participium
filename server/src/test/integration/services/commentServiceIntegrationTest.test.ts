@@ -119,7 +119,8 @@ describe('ReportService - Internal Comments Integration Tests', () => {
       email: `tech${r()}@test.com`,
       firstName: 'Tech',
       lastName: 'Staff',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -135,7 +136,8 @@ describe('ReportService - Internal Comments Integration Tests', () => {
       email: `pro${r()}@test.com`,
       firstName: 'PRO',
       lastName: 'User',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -151,7 +153,8 @@ describe('ReportService - Internal Comments Integration Tests', () => {
       email: `external${r()}@test.com`,
       firstName: 'External',
       lastName: 'User',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -167,7 +170,8 @@ describe('ReportService - Internal Comments Integration Tests', () => {
       email: `citizen${r()}@test.com`,
       firstName: 'Citizen',
       lastName: 'User',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,

@@ -125,7 +125,8 @@ describe('ReportController Integration Tests', () => {
       firstName: 'Report',
       lastName: 'Test',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
 
     // Manually assign Citizen role
@@ -746,7 +747,8 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
       firstName: 'Tech',
       lastName: 'Staff',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: techStaffUser.id,
@@ -771,7 +773,8 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
       firstName: 'Citizen',
       lastName: 'User',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: citizenUser.id,
@@ -807,7 +810,8 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
         firstName: 'External',
         lastName: 'Maintainer',
         companyId: companyId,
-        isVerified: true
+        isVerified: true,
+        telegramLinkConfirmed: false,
       });
       await AppDataSource.getRepository('user_roles').save({
         userId: externalMaintainer.id,
@@ -827,7 +831,8 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
         firstName: 'Report',
         lastName: 'Creator',
         emailNotificationsEnabled: true,
-        isVerified: true
+        isVerified: true,
+        telegramLinkConfirmed: false,
       });
       await AppDataSource.getRepository('user_roles').save({
         userId: reportCreator.id,
@@ -893,7 +898,8 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
         firstName: 'Regular',
         lastName: 'User',
         emailNotificationsEnabled: true,
-        isVerified: true
+        isVerified: true,
+        telegramLinkConfirmed: false,
       });
       await AppDataSource.getRepository('user_roles').save({
         userId: regularUser.id,
@@ -925,7 +931,8 @@ describe('ReportController Integration Tests - Assign to External Maintainer', (
         lastName: 'Maintainer',
         emailNotificationsEnabled: true,
         companyId: wrongCompanyId,
-        isVerified: true
+        isVerified: true,
+        telegramLinkConfirmed: false,
       });
       await AppDataSource.getRepository('user_roles').save({
         userId: wrongMaintainer.id,
@@ -1016,7 +1023,8 @@ describe('ReportController Integration Tests - Status Update', () => {
       firstName: 'PRO',
       lastName: 'Status',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: proUser.id,
@@ -1037,7 +1045,8 @@ describe('ReportController Integration Tests - Status Update', () => {
       firstName: 'Tech',
       lastName: 'Status',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: techUser.id,
@@ -1058,7 +1067,8 @@ describe('ReportController Integration Tests - Status Update', () => {
       firstName: 'Citizen',
       lastName: 'Status',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: citizenUser.id,
@@ -1221,7 +1231,9 @@ describe('ReportController Integration Tests - Messages', () => {
       firstName: 'Tech',
       lastName: 'Messages',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
+
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: techUser.id,
@@ -1242,7 +1254,8 @@ describe('ReportController Integration Tests - Messages', () => {
       firstName: 'Citizen',
       lastName: 'Messages',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: citizenUser.id,
@@ -1260,7 +1273,8 @@ describe('ReportController Integration Tests - Messages', () => {
       firstName: 'Other',
       lastName: 'Citizen',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: otherCitizenUser.id,

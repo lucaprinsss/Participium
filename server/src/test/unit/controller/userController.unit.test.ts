@@ -744,12 +744,13 @@ describe('UserController Unit Tests', () => {
       expect(userRepository.findUserById).toHaveBeenCalledWith(1);
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(jsonMock).toHaveBeenCalledWith({
-        isLinked: true,
+        isLinked: false,
         telegramUsername: 'testuser',
         activeCode: {
           code: 'ABC123',
           expiresAt: mockUserEntity.telegramLinkCodeExpiresAt
-        }
+        },
+        requiresConfirmation: true
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -775,7 +776,8 @@ describe('UserController Unit Tests', () => {
       expect(jsonMock).toHaveBeenCalledWith({
         isLinked: false,
         telegramUsername: null,
-        activeCode: null
+        activeCode: null,
+        requiresConfirmation: false
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -801,7 +803,8 @@ describe('UserController Unit Tests', () => {
       expect(jsonMock).toHaveBeenCalledWith({
         isLinked: false,
         telegramUsername: null,
-        activeCode: null
+        activeCode: null,
+        requiresConfirmation: false
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -897,6 +900,77 @@ describe('UserController Unit Tests', () => {
 
       // Assert
       expect(userService.unlinkTelegramAccount).toHaveBeenCalledWith(1);
+      expect(mockNext).toHaveBeenCalledWith(mockError);
+      expect(statusMock).not.toHaveBeenCalled();
+      expect(jsonMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('confirmTelegramLink', () => {
+    it('should confirm telegram link successfully and return refreshed status', async () => {
+      // Arrange
+      const mockUser = { id: 7 };
+      const mockResult = { success: true, message: 'Confirmed' };
+      const refreshedUser = {
+        id: 7,
+        telegramUsername: 'john_doe',
+        telegramLinkConfirmed: true
+      } as any;
+
+      mockRequest.user = mockUser;
+      (userService.confirmTelegramLink as jest.Mock).mockResolvedValue(mockResult);
+      (userRepository.findUserById as jest.Mock).mockResolvedValue(refreshedUser);
+
+      // Act
+      await userController.confirmTelegramLink(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.confirmTelegramLink).toHaveBeenCalledWith(7);
+      expect(userRepository.findUserById).toHaveBeenCalledWith(7);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({
+        message: 'Confirmed',
+        isLinked: true,
+        telegramUsername: 'john_doe',
+        requiresConfirmation: false
+      });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should return 400 when confirmation fails', async () => {
+      // Arrange
+      const mockUser = { id: 8 };
+      const mockResult = { success: false, message: 'Code expired' };
+      mockRequest.user = mockUser;
+      (userService.confirmTelegramLink as jest.Mock).mockResolvedValue(mockResult);
+
+      // Act
+      await userController.confirmTelegramLink(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.confirmTelegramLink).toHaveBeenCalledWith(8);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(jsonMock).toHaveBeenCalledWith({
+        code: 400,
+        name: 'BadRequestError',
+        message: 'Code expired'
+      });
+      expect(userRepository.findUserById).not.toHaveBeenCalled();
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should handle service errors', async () => {
+      // Arrange
+      const mockUser = { id: 9 };
+      const mockError = new Error('Service error');
+      mockRequest.user = mockUser;
+      (userService.confirmTelegramLink as jest.Mock).mockRejectedValue(mockError);
+
+      // Act
+      await userController.confirmTelegramLink(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(userService.confirmTelegramLink).toHaveBeenCalledWith(9);
       expect(mockNext).toHaveBeenCalledWith(mockError);
       expect(statusMock).not.toHaveBeenCalled();
       expect(jsonMock).not.toHaveBeenCalled();

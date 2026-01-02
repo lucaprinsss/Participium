@@ -103,6 +103,7 @@ jest.mock('@controllers/reportController', () => ({
     getMessages: jest.fn((req, res) => res.status(200).json([])),
     sendMessage: jest.fn((req, res) => res.status(201).json({})),
     getReportByAddress: jest.fn((req, res) => res.status(200).json([])),
+    getReportById: jest.fn((req, res) => res.status(200).json({ id: req.params.id })),
   },
 }));
 jest.mock('@middleware/reportMiddleware', () => ({

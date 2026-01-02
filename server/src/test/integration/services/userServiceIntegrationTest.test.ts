@@ -201,6 +201,7 @@ describe('UserService Integration Tests', () => {
         lastName: 'Maintainer1',
         companyId: lightingCompanyId,
         isVerified: true,
+        telegramLinkConfirmed:false,
       });
       await AppDataSource.getRepository('user_roles').save({
         userId: lightingMaintainer1.id,
@@ -217,6 +218,7 @@ describe('UserService Integration Tests', () => {
         lastName: 'Maintainer2',
         companyId: lightingCompanyId,
         isVerified: true,
+        telegramLinkConfirmed:false,
       });
       await AppDataSource.getRepository('user_roles').save({
         userId: lightingMaintainer2.id,
@@ -234,6 +236,7 @@ describe('UserService Integration Tests', () => {
         lastName: 'Maintainer',
         companyId: roadsCompanyId,
         isVerified: true,
+        telegramLinkConfirmed:false,
       });
       await AppDataSource.getRepository('user_roles').save({
         userId: roadsMaintainer.id,
@@ -388,7 +391,8 @@ describe('UserService Integration Tests - Notifications', () => {
       email: `citizen_notif_svc_${Date.now()}@test.com`,
       firstName: 'Citizen',
       lastName: 'Notif',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed:false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -404,7 +408,8 @@ describe('UserService Integration Tests - Notifications', () => {
       email: `other_citizen_notif_svc_${Date.now()}@test.com`,
       firstName: 'Other',
       lastName: 'Citizen',
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed:false,
     });
     await AppDataSource.query(
       `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
@@ -490,7 +495,8 @@ describe('UserService Integration Tests - Notifications', () => {
         email: `no_notif_user_${Date.now()}@test.com`,
         firstName: 'No',
         lastName: 'Notif',
-        isVerified: true
+        isVerified: true,
+        telegramLinkConfirmed:false,
       });
       await AppDataSource.query(
         `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,

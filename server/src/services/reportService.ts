@@ -722,13 +722,13 @@ class ReportService {
       await createNotification({
         userId: report.reporterId,
         reportId: report.id,
-        content: `Hai ricevuto un nuovo messaggio per il report "${report.title}"`,
+        content: `You have a new message for report "${report.title}"`,
       });
     } else if (report.assigneeId && senderId === report.reporterId) {
       await createNotification({
         userId: report.assigneeId,
         reportId: report.id,
-        content: `Hai un nuovo messaggio per il report "${report.title}"`,
+        content: `You have a new message for report "${report.title}"`,
       });
     }
 

@@ -30,7 +30,8 @@ describe('ValidateReportQueryParams Middleware Integration Tests', () => {
       firstName: 'QueryParams',
       lastName: 'Test',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false
     });
 
     await AppDataSource.getRepository('user_roles').save({

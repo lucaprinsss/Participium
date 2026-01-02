@@ -248,7 +248,8 @@ describe('MunicipalityUserController Integration Tests', () => {
             firstName: EMPLOYEE_PAYLOAD.first_name,
             lastName: EMPLOYEE_PAYLOAD.last_name,
             isVerified: true,
-            emailNotificationsEnabled: true
+            emailNotificationsEnabled: true,
+            telegramLinkConfirmed:false,
         });
         await AppDataSource.getRepository('user_roles').save({
             userId: createdEmployee.id,

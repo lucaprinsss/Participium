@@ -35,6 +35,7 @@ describe('CompanyService Integration Tests', () => {
       firstName: 'Admin',
       lastName: 'Test',
       isVerified: true,
+      telegramLinkConfirmed: false,
     });
 
     await AppDataSource.query(

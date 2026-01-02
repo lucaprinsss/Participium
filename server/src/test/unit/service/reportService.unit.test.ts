@@ -775,8 +775,9 @@ describe('ReportService additional unit tests', () => {
   });
 
   describe('getReportById', () => {
-    it('should throw Not implemented yet error', async () => {
-      await expect(reportService.getReportById()).rejects.toThrow('Not implemented yet');
+    it('should throw NotFoundError when report is missing', async () => {
+      jest.spyOn(reportRepository, 'findReportById').mockResolvedValue(null as any);
+      await expect(reportService.getReportById(1)).rejects.toThrow('Report not found');
     });
   });
 
@@ -2031,7 +2032,7 @@ describe('ReportService additional unit tests', () => {
       expect(createNotification).toHaveBeenCalledWith({
         userId: 2,
         reportId: 1,
-        content: 'You have a new message about your report: "Test Report"',
+        content: 'You have a new message for report "Test Report"',
       });
       expect(mapperService.mapMessageToResponse).toHaveBeenCalledWith(mockMessage);
       expect(result).toEqual(mockMessageResponse);

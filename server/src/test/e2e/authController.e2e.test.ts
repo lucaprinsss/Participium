@@ -145,6 +145,7 @@ describe('AuthController E2E Tests', () => {
         firstName: dynamicUser.first_name,
         lastName: dynamicUser.last_name,
         isVerified: true,
+        telegramLinkConfirmed: false,
       });
 
       await AppDataSource.getRepository(UserRoleEntity).save({
@@ -452,6 +453,7 @@ describe('AuthController E2E Tests', () => {
         isVerified: false,
         verificationCode: testCode,
         verificationCodeExpiresAt: expiresAt,
+        telegramLinkConfirmed: false,
       });
 
       await AppDataSource.getRepository(UserRoleEntity).save({
@@ -621,6 +623,7 @@ describe('AuthController E2E Tests', () => {
         isVerified: false,
         verificationCode: expiredCodeUser.verificationCode,
         verificationCodeExpiresAt: expiredDate,
+        telegramLinkConfirmed: false,
       });
 
       await AppDataSource.getRepository(UserRoleEntity).save({

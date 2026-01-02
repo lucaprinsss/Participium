@@ -224,6 +224,7 @@ describe('AuthController Integration Tests', () => {
         isVerified: false,
         verificationCode: testCode,
         verificationCodeExpiresAt: expiresAt,
+        telegramLinkConfirmed: false,
       };
 
       const user = await userRepository.createUserWithPassword(userData);
@@ -389,6 +390,7 @@ describe('AuthController Integration Tests', () => {
         isVerified: false,
         verificationCode: expiredCode,
         verificationCodeExpiresAt: expiredDate,
+      telegramLinkConfirmed: false,
       };
 
       const expiredUser = await userRepository.createUserWithPassword(expiredUserData);

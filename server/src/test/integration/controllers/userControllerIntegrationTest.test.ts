@@ -201,7 +201,8 @@ describe('UserController Integration Tests - Get External Maintainers', () => {
       firstName: 'Tech',
       lastName: 'Staff',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     createdUserIds.push(techStaffUser.id);
 
@@ -228,7 +229,8 @@ describe('UserController Integration Tests - Get External Maintainers', () => {
       firstName: 'Citizen',
       lastName: 'User',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     createdUserIds.push(citizenUser.id);
 
@@ -267,7 +269,8 @@ describe('UserController Integration Tests - Get External Maintainers', () => {
         lastName: 'Maintainer',
         emailNotificationsEnabled: true,
         companyId: companyId,
-        isVerified: true
+        isVerified: true,
+      telegramLinkConfirmed: false,
       });
       createdUserIds.push(externalMaintainer.id);
       externalMaintainerId = externalMaintainer.id;
@@ -345,7 +348,8 @@ describe('UserController Integration Tests - Notifications', () => {
       firstName: 'Citizen',
       lastName: 'Notif',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: citizenUser.id,
@@ -363,7 +367,8 @@ describe('UserController Integration Tests - Notifications', () => {
       firstName: 'Other',
       lastName: 'Citizen',
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     await AppDataSource.getRepository('user_roles').save({
       userId: otherCitizenUser.id,
