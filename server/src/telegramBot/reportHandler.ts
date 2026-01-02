@@ -18,7 +18,7 @@ export class ReportHandler {
 
     if (!telegramUsername) {
       return ctx.reply(
-        '⚠️ *Username Required*\n\n' +
+        '⚠️ Username Required\n\n' +
         'To create reports, you need to set a Telegram username in your profile.\n\n' +
         '*How to set a username:*\n' +
         '1. Open Telegram Settings\n' +
@@ -32,9 +32,9 @@ export class ReportHandler {
     const user = await userRepository.findUserByTelegramUsername(telegramUsername);
     if (!user) {
       return ctx.reply(
-        '❌ *Access Denied*\n\n' +
+        '❌ Access Denied\n\n' +
         'You must be registered on the Participium platform to create reports via Telegram.\n\n' +
-        '🌐 Visit our website to register and link your account using the /link command.\n\n' +
+        'Visit our website to register and link your account using the /link command.\n\n' +
         'After registration, you\'ll be able to submit reports directly from Telegram.',
         { parse_mode: 'Markdown' }
       );
@@ -43,14 +43,14 @@ export class ReportHandler {
     userSessions.set(chatId, { step: WizardStep.WAITING_LOCATION, data: {} });
 
     ctx.reply(
-      '📍 *Report Location*\n\n' +
-      'Please provide the location of the issue:\n\n' +
-      '📎 *Option 1:* Send your location using the attachment button\n\n' +
-      '📝 *Option 2:* Write an address\n' +
-      'Example: "53, Corso Vittorio Emanuele II, Torino"\n\n' +
-      '🗺️ *Option 3:* Enter coordinates\n' +
-      'Format: latitude, longitude\n' +
-      'Example: 45.0703, 7.6869',
+      '📍 Report Location\n\n' +
+      'Please provide the location of the issue in one of the following ways:\n\n' +
+      '• Send your location using the attachment button\n\n' +
+      '• Write an address\n' +
+      '   Example: "53, Corso Vittorio Emanuele II, Torino"\n\n' +
+      '• Enter coordinates\n' +
+      '   Format: latitude, longitude\n' +
+      '   Example: 45.0703, 7.6869',
       {
         reply_markup: {
           keyboard: [[{ text: '📍 Send current location', request_location: true }]],
@@ -98,7 +98,7 @@ export class ReportHandler {
     const telegramUsername = ctx.from?.username;
     if (!telegramUsername) {
       return ctx.reply(
-        '⚠️ *Username Required*\n\n' +
+        '⚠️ Username Required\n\n' +
         'You need a Telegram username to link your account.\n\n' +
         'Please set a username in your Telegram settings and try again.',
         { parse_mode: 'Markdown' }
@@ -112,9 +112,9 @@ export class ReportHandler {
     const parts = text.split(' ');
     if (parts.length !== 2) {
       return ctx.reply(
-        '🔗 *Link Your Account*\n\n' +
-        '*Usage:* /link <code>\n\n' +
-        '*Steps:*\n' +
+        '🔗 Link Your Account\n\n' +
+        'Usage: /link <code>\n\n' +
+        'Steps:\n' +
         '1. Log in to the Participium website\n' +
         '2. Navigate to the related section\n' +
         '3. Generate a verification code\n' +
@@ -126,8 +126,8 @@ export class ReportHandler {
     const code = parts[1].trim();
     if (!code || !/^\d{6}$/.test(code)) {
       return ctx.reply(
-        '❌ *Invalid Code*\n\n' +
-        'The verification code must be exactly 6 digits.\n\n' +
+        '❌ Invalid Code\n\n' +
+        'The verification code must be exactly 6 digits.\n' +
         'Please check the code and try again.',
         { parse_mode: 'Markdown' }
       );
@@ -135,11 +135,11 @@ export class ReportHandler {
 
     try {
       const result = await userRepository.verifyAndLinkTelegram(telegramUsername, code);
-      ctx.reply(`✅ *${result.message}*\n\nYou can now create reports using /newreport`, { parse_mode: 'Markdown' });
+      ctx.reply(`✅ ${result.message}\n\nYou can now create reports using /newreport`, { parse_mode: 'Markdown' });
     } catch (error) {
       console.error('Failed to link Telegram account:', error);
       ctx.reply(
-        '❌ *Linking Failed*\n\n' +
+        '❌ Linking Failed\n\n' +
         'Unable to link your account. This may be due to:\n' +
         '• Invalid or expired code\n' +
         '• Code already used\n\n' +
@@ -153,7 +153,7 @@ export class ReportHandler {
     const telegramUsername = ctx.from?.username;
     if (!telegramUsername) {
       return ctx.reply(
-        '⚠️ *Username Required*\n\n' +
+        '⚠️ Username Required\n\n' +
         'You need a Telegram username to use this command.',
         { parse_mode: 'Markdown' }
       );
@@ -164,7 +164,7 @@ export class ReportHandler {
       const user = await userRepository.findUserByTelegramUsername(telegramUsername);
       if (!user) {
         return ctx.reply(
-          '❌ *Account Not Linked*\n\n' +
+          '❌ Account Not Linked\n\n' +
           'Your Telegram account is not linked to any Participium account.',
           { parse_mode: 'Markdown' }
         );
@@ -172,7 +172,7 @@ export class ReportHandler {
 
       // Show confirmation dialog
       ctx.reply(
-        '⚠️ *Unlink Account*\n\n' +
+        '⚠️ Unlink Account\n\n' +
         'Are you sure you want to unlink your Telegram account from Participium?\n\n' +
         'You will no longer be able to:\n' +
         '• Create reports via Telegram\n' +
@@ -183,8 +183,8 @@ export class ReportHandler {
           reply_markup: {
             inline_keyboard: [
               [
-                { text: '✅ Yes, Unlink', callback_data: 'unlink_confirm' },
-                { text: '❌ Cancel', callback_data: 'unlink_cancel' }
+                { text: 'Yes, Unlink', callback_data: 'unlink_confirm' },
+                { text: 'Cancel', callback_data: 'unlink_cancel' }
               ]
             ]
           }
@@ -193,7 +193,7 @@ export class ReportHandler {
     } catch (error) {
       console.error('Failed to unlink Telegram account:', error);
       ctx.reply(
-        '❌ *Unlink Failed*\n\n' +
+        '❌ Unlink Failed\n\n' +
         'Unable to unlink your account. Please try again later.',
         { parse_mode: 'Markdown' }
       );
@@ -220,14 +220,14 @@ export class ReportHandler {
         
         if (!result.success) {
           return ctx.reply(
-            `❌ *Unlink Failed*\n\n${result.message}`,
+            `❌ Unlink Failed\n\n${result.message}`,
             { parse_mode: 'Markdown' }
           );
         }
 
         ctx.reply(
-          '✅ *Account Unlinked*\n\n' +
-          'Your Telegram account has been successfully unlinked from Participium.\n\n' +
+          '✅ Account Unlinked\n\n' +
+          'Your Telegram account has been successfully unlinked from Participium.\n' +
           'Use /link to connect again whenever you want.',
           { parse_mode: 'Markdown' }
         );
@@ -237,7 +237,7 @@ export class ReportHandler {
       }
     } else if (data === 'unlink_cancel') {
       ctx.reply(
-        '❌ *Cancelled*\n\n' +
+        '❌ Cancelled\n\n' +
         'Your account remains linked.',
         { parse_mode: 'Markdown' }
       );

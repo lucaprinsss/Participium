@@ -143,7 +143,7 @@ export class ReportWizard {
       const categories = Object.values(ReportCategory);
       session.data.category = categories[index];
       session.step = WizardStep.WAITING_PHOTOS;
-      ctx.reply('📸 Attach photos\n\nSend up to 3 photos of the issue.\n\nPress "Done" when finished.', {
+      ctx.reply('📸 Attach photos\n\nSend up to 3 photos of the issue.\nPress "Done" when finished.', {
         reply_markup: {
           inline_keyboard: [[{ text: 'Done', callback_data: 'done' }]],
         },
@@ -215,25 +215,19 @@ export class ReportWizard {
     const summary = `
 📋 *Report Summary*
 
-📍 *Location*
-${data.location!.latitude.toFixed(6)}, ${data.location!.longitude.toFixed(6)}
+Location: ${data.location!.latitude.toFixed(6)}, ${data.location!.longitude.toFixed(6)}
 
-🏠 *Address*
-${data.address || 'Not available'}
+Address: ${data.address || 'Not available'}
 
-🏷️ *Title*
-${data.title}
+Title: ${data.title}
 
-📝 *Description*
-${data.description}
+Description: ${data.description}
 
-🗂️ *Category*
-${categoryNames[data.category!] || data.category}
+Category: ${categoryNames[data.category!] || data.category}
 
-📸 *Photos*
-${data.photos?.length || 0} attached
+Photos: ${data.photos?.length || 0} attached
 
-${data.isAnonymous ? '🔒 *Privacy*: Anonymous' : '👤 *Privacy*: Public'}
+${data.isAnonymous ? 'Privacy: Anonymous' : 'Privacy: Public'}
 
 ━━━━━━━━━━━━━━━━━━
 
