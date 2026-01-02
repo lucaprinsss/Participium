@@ -26,6 +26,7 @@ describe('Mapper Service', () => {
 
     it('should correctly map a userEntity to a UserResponse', () => {
       // Arrange
+      const creationDate = new Date('2023-01-01T12:00:00Z');
       const mockEntity = createMockMunicipalityUser('Administrator', 'Administration', {
         id: 123,
         username: 'testuser',
@@ -33,6 +34,7 @@ describe('Mapper Service', () => {
         firstName: 'Mario',
         lastName: 'Rossi',
         telegramUsername: 'tele_user',
+        createdAt: creationDate,
       });
       mockEntity.passwordHash = 'hash_segreto';
 
@@ -43,6 +45,10 @@ describe('Mapper Service', () => {
         first_name: 'Mario',
         last_name: 'Rossi',
         role_name: 'Administrator',
+        telegram_username: 'tele_user',
+        email_notifications_enabled: true,
+        created_at: creationDate.toISOString(),
+        is_verified: true,
         roles: [
           {
             department_role_id: 1,
@@ -55,8 +61,15 @@ describe('Mapper Service', () => {
       // Act
       const result = mapUserEntityToUserResponse(mockEntity);
 
+      const normalizedResult = {
+        ...result,
+        created_at: (result as any)?.created_at instanceof Date
+          ? (result as any).created_at.toISOString()
+          : (result as any)?.created_at,
+      } as UserResponse;
+
       // Assert
-      expect(result).toEqual(expectedResponse);
+      expect(normalizedResult).toEqual(expectedResponse);
 
       expect(result).not.toHaveProperty('passwordHash');
       expect(result).not.toHaveProperty('createdAt');

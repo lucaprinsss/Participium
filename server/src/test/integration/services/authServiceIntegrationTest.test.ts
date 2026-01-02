@@ -70,6 +70,10 @@ describe('AuthService Integration Tests', () => {
         first_name: 'Mario',
         last_name: 'Rossi',
         role_name: 'Administrator',
+        telegram_username: '@mariorossi',
+        email_notifications_enabled: true,
+        created_at: creationDate.toISOString(),
+        is_verified: true,
         personal_photo_url: 'http://example.com/photo.jpg',
         roles: [
           {
@@ -88,8 +92,15 @@ describe('AuthService Integration Tests', () => {
       // Act
       const result = authService.createUserResponse(expressUser);
 
+      const normalizedResult = {
+        ...result,
+        created_at: (result as any)?.created_at instanceof Date
+          ? (result as any).created_at.toISOString()
+          : (result as any)?.created_at,
+      } as UserResponse;
+
       // Assert
-      expect(result).toEqual(expectedDtoResponse);
+      expect(normalizedResult).toEqual(expectedDtoResponse);
 
       expect(result).not.toHaveProperty('passwordHash');
       expect(result).not.toHaveProperty('createdAt');
@@ -104,12 +115,14 @@ describe('AuthService Integration Tests', () => {
 
     it('should map a different role (e.g., Citizen) correctly', () => {
       // Arrange
+      const creationDate = new Date('2023-01-01T12:00:00Z');
       mockUserEntity = createMockCitizen({
         id: 123,
         username: 'testuser',
         firstName: 'Mario',
         lastName: 'Rossi',
         email: 'mario.rossi@example.com',
+        createdAt: creationDate,
       });
       const expressUser: Express.User = mockUserEntity;
 
@@ -120,6 +133,9 @@ describe('AuthService Integration Tests', () => {
         first_name: 'Mario',
         last_name: 'Rossi',
         role_name: 'Citizen',
+        email_notifications_enabled: true,
+        created_at: creationDate.toISOString(),
+        is_verified: true,
         roles: [
           {
             department_role_id: 1,
@@ -132,8 +148,15 @@ describe('AuthService Integration Tests', () => {
       // Act
       const result = authService.createUserResponse(expressUser);
 
+      const normalizedResult = {
+        ...result,
+        created_at: (result as any)?.created_at instanceof Date
+          ? (result as any).created_at.toISOString()
+          : (result as any)?.created_at,
+      } as UserResponse;
+
       // Assert
-      expect(result).toEqual(expectedCitizenResponse);
+      expect(normalizedResult).toEqual(expectedCitizenResponse);
     });
 
     it('should handle null user input gracefully', () => {
