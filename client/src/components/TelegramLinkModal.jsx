@@ -233,7 +233,7 @@ const TelegramLinkModal = ({ onClose }) => {
                   <div className="tl-steps">
                     <div className="tl-step-row">
                       <div className="tl-step-num">1</div>
-                      <span>Open <strong>@ParticipiumBot</strong> on Telegram</span>
+                      <span>Open <strong>@participiumT10_bot</strong> on Telegram</span>
                     </div>
                     <div className="tl-step-row">
                       <div className="tl-step-num">2</div>
