@@ -244,11 +244,11 @@ const MapPage = () => {
             const [south, north, west, east] = pendingZoom.boundingbox.map(parseFloat);
             mapInstance.fitBounds(
               [[south, west], [north, east]],
-              { padding: [50, 50], maxZoom: 17 }
+              { padding: [30, 30], maxZoom: 19 }
             );
           } else {
             // Single point zoom
-            mapInstance.setView([pendingZoom.lat, pendingZoom.lng], 17);
+            mapInstance.setView([pendingZoom.lat, pendingZoom.lng], 19);
           }
         } finally {
           setPendingZoom(null);
@@ -332,13 +332,33 @@ const MapPage = () => {
           boundingbox: coordinates.isSpecificAddress ? null : coordinates.boundingbox
         });
         
-        const resultInfo = !coordinates.isSpecificAddress && coordinates.resultsCount > 1
-          ? ` (showing ${coordinates.resultsCount} segments)`
-          : "";
+        // Build a concise address string (road + house number)
+        let addressText = "";
+        let notificationType = "info";
+        let notificationMessage = "";
+        
+        if (coordinates.road) {
+          addressText = coordinates.road;
+          if (coordinates.house_number) {
+            addressText += `, ${coordinates.house_number}`;
+          } else if (coordinates.houseNumberNotFound && coordinates.requestedHouseNumber) {
+            // House number was requested but not found in OpenStreetMap
+            notificationType = "warning";
+            notificationMessage = `House number ${coordinates.requestedHouseNumber} not found. Showing ${addressText} instead.`;
+          }
+        } else {
+          // Fallback to display_name if road is not available
+          addressText = coordinates.display_name;
+        }
+        
+        // Use custom message if set, otherwise build default message
+        if (!notificationMessage) {
+          notificationMessage = `Showing location: ${addressText}`;
+        }
         
         setNotification({
-          message: `Showing location: ${searchText}`,
-          type: "info",
+          message: notificationMessage,
+          type: notificationType,
         });
       }
     } catch (error) {

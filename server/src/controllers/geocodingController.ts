@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import axios, { AxiosError } from 'axios';
+import { isWithinTurinBoundaries } from '../utils/geoValidationUtils';
 
 // Nominatim reverse geocoding response interface
 interface NominatimResponse {
@@ -89,7 +90,7 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
     const houseNumberMatch = address.match(/\b(\d{1,4}[a-zA-Z]?)\b/);
     const requestedHouseNumber = houseNumberMatch ? houseNumberMatch[1] : null;
     const hasHouseNumber = requestedHouseNumber !== null;
-    const searchLimit = hasHouseNumber ? 1 : 50; // Single result for specific address, multiple for street name
+    const searchLimit = hasHouseNumber ? 10 : 50; // Multiple results to filter, even with house number
 
     const url = `https://nominatim.openstreetmap.org/search`;
 
@@ -113,35 +114,75 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
         });
 
         if (response.data && response.data.length > 0) {
-            const firstResult = response.data[0];
+            // Filter results to only include coordinates within Turin boundaries
+            const validResults = response.data.filter(result => {
+                const lat = parseFloat(result.lat);
+                const lon = parseFloat(result.lon);
+                return isWithinTurinBoundaries(lat, lon);
+            });
+
+            if (validResults.length === 0) {
+                res.status(404).json({ 
+                    error: "No valid addresses found within Turin city boundaries",
+                    details: "All results are outside the Turin municipality area"
+                });
+                return;
+            }
+
+            const firstResult = validResults[0];
             
             // For specific addresses (with house number), validate the returned house number
             if (hasHouseNumber) {
-                const returnedHouseNumber = firstResult.address?.house_number;
+                // Try to find exact match first
+                let matchedResult = validResults.find(result => 
+                    result.address?.house_number === requestedHouseNumber
+                );
                 
-                // Check if the returned house number matches the requested one
-                if (!returnedHouseNumber || returnedHouseNumber !== requestedHouseNumber) {
-                    res.status(404).json({ 
-                        error: "Address with specified house number not found",
-                        details: `House number ${requestedHouseNumber} not found in the results`
-                    });
-                    return;
+                // If no exact match, try to find a house number that starts with the requested number (e.g., 34a when searching for 34)
+                if (!matchedResult) {
+                    matchedResult = validResults.find(result => 
+                        result.address?.house_number?.startsWith(requestedHouseNumber)
+                    );
                 }
-
-                res.json({
-                    lat: parseFloat(firstResult.lat),
-                    lng: parseFloat(firstResult.lon),
-                    display_name: firstResult.display_name,
-                    boundingbox: firstResult.boundingbox,
-                    resultsCount: 1,
-                    isSpecificAddress: true
-                });
+                
+                if (matchedResult) {
+                    // Found exact match or variant (34a for 34)
+                    const isExactMatch = matchedResult.address?.house_number === requestedHouseNumber;
+                    
+                    res.json({
+                        lat: parseFloat(matchedResult.lat),
+                        lng: parseFloat(matchedResult.lon),
+                        display_name: matchedResult.display_name,
+                        road: matchedResult.address?.road,
+                        house_number: matchedResult.address?.house_number,
+                        requestedHouseNumber: requestedHouseNumber,
+                        boundingbox: matchedResult.boundingbox,
+                        resultsCount: 1,
+                        isSpecificAddress: true,
+                        isVariant: !isExactMatch
+                    });
+                } else {
+                    // House number not found at all - return street only
+                    res.json({
+                        lat: parseFloat(firstResult.lat),
+                        lng: parseFloat(firstResult.lon),
+                        display_name: firstResult.display_name,
+                        road: firstResult.address?.road,
+                        house_number: null,
+                        requestedHouseNumber: requestedHouseNumber,
+                        boundingbox: firstResult.boundingbox,
+                        resultsCount: validResults.length,
+                        isSpecificAddress: false,
+                        houseNumberNotFound: true
+                    });
+                }
+                return;
             } else {
                 // For street names without number, calculate overall bounding box
                 let minLat = Infinity, maxLat = -Infinity;
                 let minLon = Infinity, maxLon = -Infinity;
 
-                response.data.forEach(result => {
+                validResults.forEach(result => {
                     if (result.boundingbox) {
                         const [south, north, west, east] = result.boundingbox.map(parseFloat);
                         minLat = Math.min(minLat, south);
@@ -160,8 +201,10 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
                     lat: parseFloat(firstResult.lat),
                     lng: parseFloat(firstResult.lon),
                     display_name: firstResult.display_name,
+                    road: firstResult.address?.road,
+                    house_number: firstResult.address?.house_number,
                     boundingbox: overallBoundingBox,
-                    resultsCount: response.data.length,
+                    resultsCount: validResults.length,
                     isSpecificAddress: false
                 });
             }

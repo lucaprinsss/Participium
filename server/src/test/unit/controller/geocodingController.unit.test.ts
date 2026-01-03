@@ -11,7 +11,13 @@ jest.mock('axios', () => ({
   isAxiosError: jest.fn(),
 }));
 
+// Mock geoValidationUtils
+jest.mock('@utils/geoValidationUtils', () => ({
+  isWithinTurinBoundaries: jest.fn(),
+}));
+
 import axios from 'axios';
+import { isWithinTurinBoundaries } from '@utils/geoValidationUtils';
 
 describe('GeocodingController Unit Tests', () => {
   let mockRequest: Partial<Request>;
@@ -219,6 +225,7 @@ describe('GeocodingController Unit Tests', () => {
       (axios.get as jest.Mock).mockResolvedValueOnce({
         data: mockNominatimResponse,
       });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(true);
 
       // Act
       await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
@@ -232,7 +239,7 @@ describe('GeocodingController Unit Tests', () => {
             city: 'Torino',
             country: 'Italia',
             format: 'jsonv2',
-            limit: 1, // House number present, so limit is 1
+            limit: 10, // House number present, limit is 10
             addressdetails: 1,
             viewbox: '7.5200,45.1500,7.8000,44.9700',
             countrycodes: 'it',
@@ -247,9 +254,13 @@ describe('GeocodingController Unit Tests', () => {
         lat: 45.0703393,
         lng: 7.6869005,
         display_name: 'Via Roma 42, Turin, Italy',
+        road: 'Via Roma',
+        house_number: '42',
+        requestedHouseNumber: '42',
         boundingbox: ['45.0703', '45.0704', '7.6868', '7.6870'],
         resultsCount: 1,
         isSpecificAddress: true,
+        isVariant: false,
       });
     });
 
@@ -281,6 +292,7 @@ describe('GeocodingController Unit Tests', () => {
       (axios.get as jest.Mock).mockResolvedValueOnce({
         data: mockNominatimResponse,
       });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(true);
 
       // Act
       await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
@@ -299,6 +311,8 @@ describe('GeocodingController Unit Tests', () => {
         expect.objectContaining({
           lat: 45.0703393,
           lng: 7.6869005,
+          road: 'Via Roma',
+          house_number: undefined,
           resultsCount: 2,
           isSpecificAddress: false,
         })
@@ -369,7 +383,7 @@ describe('GeocodingController Unit Tests', () => {
       expect(jsonMock).toHaveBeenCalledWith({ error: 'Address not found' });
     });
 
-    it('should return 404 when house number does not match', async () => {
+    it('should return street when house number does not match', async () => {
       // Arrange
       const address = 'Via Roma 42';
       mockRequest = {
@@ -392,19 +406,27 @@ describe('GeocodingController Unit Tests', () => {
       (axios.get as jest.Mock).mockResolvedValueOnce({
         data: mockNominatimResponse,
       });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(true);
 
       // Act
       await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
 
-      // Assert
-      expect(statusMock).toHaveBeenCalledWith(404);
+      // Assert - Now returns the street with houseNumberNotFound flag
       expect(jsonMock).toHaveBeenCalledWith({
-        error: 'Address with specified house number not found',
-        details: 'House number 42 not found in the results',
+        lat: 45.0703393,
+        lng: 7.6869005,
+        display_name: 'Via Roma 40, Turin, Italy',
+        road: 'Via Roma',
+        house_number: null,
+        requestedHouseNumber: '42',
+        boundingbox: ['45.0703', '45.0704', '7.6868', '7.6870'],
+        resultsCount: 1,
+        isSpecificAddress: false,
+        houseNumberNotFound: true,
       });
     });
 
-    it('should return 404 when result has no house number but one was requested', async () => {
+    it('should return street when result has no house number but one was requested', async () => {
       // Arrange
       const address = 'Via Roma 42';
       mockRequest = {
@@ -427,15 +449,23 @@ describe('GeocodingController Unit Tests', () => {
       (axios.get as jest.Mock).mockResolvedValueOnce({
         data: mockNominatimResponse,
       });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(true);
 
       // Act
       await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
 
-      // Assert
-      expect(statusMock).toHaveBeenCalledWith(404);
+      // Assert - Now returns the street with houseNumberNotFound flag
       expect(jsonMock).toHaveBeenCalledWith({
-        error: 'Address with specified house number not found',
-        details: 'House number 42 not found in the results',
+        lat: 45.0703393,
+        lng: 7.6869005,
+        display_name: 'Via Roma, Turin, Italy',
+        road: 'Via Roma',
+        house_number: null,
+        requestedHouseNumber: '42',
+        boundingbox: ['45.0703', '45.0704', '7.6868', '7.6870'],
+        resultsCount: 1,
+        isSpecificAddress: false,
+        houseNumberNotFound: true,
       });
     });
 
@@ -462,6 +492,7 @@ describe('GeocodingController Unit Tests', () => {
       (axios.get as jest.Mock).mockResolvedValueOnce({
         data: mockNominatimResponse,
       });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(true);
 
       // Act
       await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
@@ -471,6 +502,8 @@ describe('GeocodingController Unit Tests', () => {
         expect.objectContaining({
           lat: 45.0703393,
           lng: 7.6869005,
+          road: 'Via Garibaldi',
+          house_number: '42a',
           isSpecificAddress: true,
         })
       );
@@ -501,6 +534,7 @@ describe('GeocodingController Unit Tests', () => {
       (axios.get as jest.Mock).mockResolvedValueOnce({
         data: mockNominatimResponse,
       });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(true);
 
       // Act
       await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
@@ -537,6 +571,7 @@ describe('GeocodingController Unit Tests', () => {
       (axios.get as jest.Mock).mockResolvedValueOnce({
         data: mockNominatimResponse,
       });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(true);
 
       // Act
       await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
@@ -681,6 +716,7 @@ describe('GeocodingController Unit Tests', () => {
       (axios.get as jest.Mock).mockResolvedValueOnce({
         data: mockNominatimResponse,
       });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(true);
 
       // Act
       await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
@@ -695,6 +731,141 @@ describe('GeocodingController Unit Tests', () => {
           }),
         })
       );
+    });
+
+    it('should find house number variant (34a when searching for 34)', async () => {
+      // Arrange
+      const address = 'Corso Castelfidardo 34';
+      mockRequest = {
+        query: { address },
+      };
+
+      const mockNominatimResponse = [
+        {
+          lat: '45.0703393',
+          lon: '7.6869005',
+          display_name: 'Corso Castelfidardo 34a, Turin, Italy',
+          boundingbox: ['45.0703', '45.0704', '7.6868', '7.6870'],
+          address: {
+            house_number: '34a',
+            road: 'Corso Castelfidardo',
+          },
+        },
+        {
+          lat: '45.0703500',
+          lon: '7.6869100',
+          display_name: 'Corso Castelfidardo 34b, Turin, Italy',
+          boundingbox: ['45.0703', '45.0704', '7.6868', '7.6870'],
+          address: {
+            house_number: '34b',
+            road: 'Corso Castelfidardo',
+          },
+        },
+      ];
+
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        data: mockNominatimResponse,
+      });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(true);
+
+      // Act
+      await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
+
+      // Assert - Should find 34a as it starts with 34
+      expect(jsonMock).toHaveBeenCalledWith({
+        lat: 45.0703393,
+        lng: 7.6869005,
+        display_name: 'Corso Castelfidardo 34a, Turin, Italy',
+        road: 'Corso Castelfidardo',
+        house_number: '34a',
+        requestedHouseNumber: '34',
+        boundingbox: ['45.0703', '45.0704', '7.6868', '7.6870'],
+        resultsCount: 1,
+        isSpecificAddress: true,
+        isVariant: true,
+      });
+    });
+
+    it('should filter out results outside Turin boundaries', async () => {
+      // Arrange
+      const address = 'Via Roma';
+      mockRequest = {
+        query: { address },
+      };
+
+      const mockNominatimResponse = [
+        {
+          lat: '45.0703393',
+          lon: '7.6869005',
+          display_name: 'Via Roma, Milan, Italy',
+          boundingbox: ['45.0703', '45.0704', '7.6868', '7.6870'],
+          address: {
+            road: 'Via Roma',
+          },
+        },
+        {
+          lat: '45.0705',
+          lon: '7.6871',
+          display_name: 'Via Roma, Turin, Italy',
+          boundingbox: ['45.0704', '45.0706', '7.6870', '7.6872'],
+          address: {
+            road: 'Via Roma',
+          },
+        },
+      ];
+
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        data: mockNominatimResponse,
+      });
+      
+      // First result is outside Turin, second is inside
+      (isWithinTurinBoundaries as jest.Mock)
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
+
+      // Act
+      await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
+
+      // Assert - Should only use the result inside Turin boundaries
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lat: 45.0705,
+          lng: 7.6871,
+          resultsCount: 1, // Only one valid result after filtering
+        })
+      );
+    });
+
+    it('should return 404 when all results are outside Turin boundaries', async () => {
+      // Arrange
+      const address = 'Via Roma';
+      mockRequest = {
+        query: { address },
+      };
+
+      const mockNominatimResponse = [
+        {
+          lat: '45.4642',
+          lon: '9.1900',
+          display_name: 'Via Roma, Milan, Italy',
+          boundingbox: ['45.4640', '45.4644', '9.1898', '9.1902'],
+        },
+      ];
+
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        data: mockNominatimResponse,
+      });
+      (isWithinTurinBoundaries as jest.Mock).mockReturnValue(false);
+
+      // Act
+      await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
+
+      // Assert
+      expect(statusMock).toHaveBeenCalledWith(404);
+      expect(jsonMock).toHaveBeenCalledWith({
+        error: 'No valid addresses found within Turin city boundaries',
+        details: 'All results are outside the Turin municipality area',
+      });
     });
   });
 });
