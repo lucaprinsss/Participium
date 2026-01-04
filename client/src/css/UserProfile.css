@@ -606,3 +606,185 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* --- NOTIFICATIONS (Adapted from MapPage) --- */
+.up-notification {
+  position: fixed;
+  top: 5.625rem; /* Adjust based on navbar height */
+  right: 1.5rem;
+  z-index: 1200;
+  animation: up-slideInRightSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  width: auto;
+  min-width: 20rem;
+  max-width: 25rem;
+}
+
+.up-notification-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.02);
+  border-radius: 0.75rem;
+  border-left: 5px solid transparent;
+  overflow: hidden;
+}
+
+.up-notification.success .up-notification-content { border-left-color: #10b981; }
+.up-notification.error .up-notification-content { border-left-color: #ef4444; }
+.up-notification.warning .up-notification-content { border-left-color: #f59e0b; }
+.up-notification.info .up-notification-content { border-left-color: #3b82f6; }
+
+.up-notification-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.up-notification.success .up-notification-icon { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+.up-notification.error .up-notification-icon { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.up-notification.warning .up-notification-icon { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+.up-notification.info .up-notification-icon { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+
+.up-notification-message {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.up-notification-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.25rem;
+  margin-left: auto;
+  transition: color 0.2s;
+}
+
+.up-notification-close:hover {
+  color: #4b5563;
+}
+
+@keyframes up-slideInRightSpring {
+  0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* --- CONFIRMATION MODAL --- */
+.up-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  animation: up-fadeIn 0.2s ease-out;
+}
+
+.up-modal-content {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  text-align: center;
+  animation: up-scaleIn 0.2s ease-out;
+}
+
+.up-modal-icon-wrapper {
+  width: 3.5rem;
+  height: 3.5rem;
+  background-color: #fff7ed; /* Orange-50 */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+}
+
+.up-modal-icon {
+  color: #f97316; /* Orange-500 */
+  font-size: 1.75rem;
+}
+
+.up-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.up-modal-text {
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.up-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.up-btn-modal-cancel {
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.up-btn-modal-cancel:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.up-btn-modal-confirm {
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background-color: var(--brand-red);
+  border: 1px solid transparent;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.up-btn-modal-confirm:hover {
+  background-color: var(--brand-red-hover);
+  transform: translateY(-1px);
+}
+
+@keyframes up-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes up-scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

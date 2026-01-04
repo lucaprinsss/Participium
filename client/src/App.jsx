@@ -20,6 +20,29 @@ import NotFoundPage from "./pages/NotFoundPage.jsx";
 import "./App.css";
 import UserProfile from "./components/UserProfile.jsx";
 
+// --- WRAPPERS ---
+
+const ProtectedRoute = ({ children, isAuthLoading, user }) => {
+  if (isAuthLoading) return <LoadingScreen message="Verifying access..." />;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
+const CitizenRoute = ({ children, isAuthLoading, user }) => {
+  if (isAuthLoading)
+    return <LoadingScreen message="Checking permissions..." />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role_name !== "Citizen") return <Navigate to="/home" replace />;
+  return children;
+};
+
+const UserRoute = ({ children, isAuthLoading, user }) => {
+  if (isAuthLoading)
+    return <LoadingScreen message="Checking permissions..." />;
+  if (user && user.role_name !== "Citizen") return <Navigate to="/home" replace />;
+  return children;
+};
+
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -134,29 +157,6 @@ function App() {
     }
   };
 
-  // --- WRAPPERS ---
-
-  const ProtectedRoute = ({ children }) => {
-    if (isAuthLoading) return <LoadingScreen message="Verifying access..." />;
-    if (!user) return <Navigate to="/login" replace />;
-    return children;
-  };
-
-  const CitizenRoute = ({ children }) => {
-    if (isAuthLoading)
-      return <LoadingScreen message="Checking permissions..." />;
-    if (!user) return <Navigate to="/login" replace />;
-    if (user.role_name !== "Citizen") return <Navigate to="/home" replace />;
-    return children;
-  };
-
-  const UserRoute = ({ children }) => {
-    if (isAuthLoading)
-      return <LoadingScreen message="Checking permissions..." />;
-    if (user && user.role_name !== "Citizen") return <Navigate to="/home" replace />;
-    return children;
-  };
-
   // Show loading screen only if we're loading auth AND we're on a protected route
   // (to avoid white flash on public pages)
   if (isAuthLoading && !publicRoutes.includes(location.pathname)) {
@@ -195,7 +195,7 @@ function App() {
           <Route 
             path="/reports-map" 
             element={
-              <UserRoute>
+              <UserRoute isAuthLoading={isAuthLoading} user={user}>
                 <MapPage user={user} />
               </UserRoute>
             }
@@ -206,7 +206,7 @@ function App() {
           <Route
             path="/home"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute isAuthLoading={isAuthLoading} user={user}>
                 <Home user={user} />
               </ProtectedRoute>
             }
@@ -215,7 +215,7 @@ function App() {
           <Route
             path="/my-profile"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute isAuthLoading={isAuthLoading} user={user}>
                 <UserProfile user={user} onUpdateUser={setUser} />
               </ProtectedRoute>
             }
@@ -226,7 +226,7 @@ function App() {
           <Route
             path="/my-reports"
             element={
-              <CitizenRoute>
+              <CitizenRoute isAuthLoading={isAuthLoading} user={user}>
                 <MyReports />
               </CitizenRoute>
             }
@@ -236,7 +236,7 @@ function App() {
           <Route
             path="*"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute isAuthLoading={isAuthLoading} user={user}>
                 <NotFoundPage />
               </ProtectedRoute>
             }

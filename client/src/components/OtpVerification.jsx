@@ -120,9 +120,9 @@ const OtpVerification = ({ username }) => {
 
     try {
       await verifyEmailCode(user.email, otpCode);
-      setSuccess("Verified! Redirecting...");
+      setSuccess("Verified! Redirecting to login...");
       setTimeout(() => {
-        navigate(0); // Refresh per gestire lo stato di login pulito
+        navigate("/login"); 
       }, 1500);
     } catch (err) {
       console.error("Verification failed:", err);
@@ -209,13 +209,6 @@ const OtpVerification = ({ username }) => {
         </button>
       </div>
 
-      {user?.email && (
-        <div className="text-center">
-           <span className="otp-email-hint">
-             Sent to <strong>{user.email.replace(/(.{2})(.*)(@.*)/, "$1***$3")}</strong>
-           </span>
-        </div>
-      )}
     </div>
   );
 };

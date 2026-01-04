@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useBlocker } from "react-router-dom";
 import {
   FaUser,
   FaEnvelope,
@@ -12,6 +13,8 @@ import {
   FaLock,
   FaEye,
   FaEyeSlash,
+  FaTimes,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import "../css/UserProfile.css";
 import { updateUserProfile, updatePassword } from "../api/userApi";
@@ -48,20 +51,98 @@ export default function UserProfile({ user, onUpdateUser }) {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  
+  // Notification & Dirty State
+  const [notification, setNotification] = useState(null);
+  const [initialFormData, setInitialFormData] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showBlockerModal, setShowBlockerModal] = useState(false);
 
   // Inizializza il form
   useEffect(() => {
     if (user) {
-      setFormData({
+      const initialData = {
         firstName: user.first_name || "",
         lastName: user.last_name || "",
         email: user.email || "",
         telegramUsername: user.telegram_username || "", // Fixed: snake_case from API
         personalPhotoUrl: user.personal_photo_url || "", // Fixed: snake_case from API
         emailNotificationsEnabled: user.email_notifications_enabled ?? true, // Fixed: snake_case
-      });
+      };
+      setFormData(initialData);
+      setInitialFormData(initialData);
     }
   }, [user]);
+
+  // Check for unsaved changes
+  useEffect(() => {
+    if (!initialFormData) return;
+    
+    const isFormChanged = 
+      formData.firstName !== initialFormData.firstName ||
+      formData.lastName !== initialFormData.lastName ||
+      formData.email !== initialFormData.email ||
+      formData.emailNotificationsEnabled !== initialFormData.emailNotificationsEnabled ||
+      (photoBase64 !== null) || // Photo changed
+      (selectedFile === null && !formData.personalPhotoUrl && initialFormData.personalPhotoUrl); // Photo removed
+
+    const isPasswordChanged = 
+      passwordData.currentPassword !== "" || 
+      passwordData.newPassword !== "" || 
+      passwordData.confirmPassword !== "";
+
+    setIsDirty(isFormChanged || isPasswordChanged);
+  }, [formData, passwordData, photoBase64, selectedFile, initialFormData]);
+
+  // Auto dismiss notification
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  // Block navigation if dirty
+  let blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  useEffect(() => {
+      if (blocker.state === "blocked") {
+          setShowBlockerModal(true);
+      } else {
+          setShowBlockerModal(false);
+      }
+  }, [blocker.state]);
+
+  const handleBlockerConfirm = () => {
+      if (blocker.state === "blocked") {
+          blocker.proceed();
+      }
+      setShowBlockerModal(false);
+  };
+
+  const handleBlockerCancel = () => {
+      if (blocker.state === "blocked") {
+          blocker.reset();
+      }
+      setShowBlockerModal(false);
+  };
+
+  // Block browser refresh/close
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -258,14 +339,25 @@ export default function UserProfile({ user, onUpdateUser }) {
       setPhotoBase64(null);
       setSelectedFile(null);
 
-      setMessage({ type: "success", text: "Profile updated successfully!" });
+      // Update initialFormData to reflect saved state (clears dirty flag)
+      setInitialFormData({
+        firstName: updatedUser.first_name || "",
+        lastName: updatedUser.last_name || "",
+        email: updatedUser.email || "",
+        telegramUsername: updatedUser.telegram_username || "",
+        personalPhotoUrl: updatedUser.personal_photo_url || "",
+        emailNotificationsEnabled: updatedUser.email_notifications_enabled ?? true,
+      });
+
+      setNotification({ type: "success", message: "Profile updated successfully!" });
+      // setMessage({ type: "success", text: "Profile updated successfully!" }); // Removed old message
     } catch (error) {
       console.error("Update error:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         "Failed to update profile. ";
-      setMessage({ type: "error", text: errorMessage });
+      setNotification({ type: "error", message: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -281,6 +373,26 @@ export default function UserProfile({ user, onUpdateUser }) {
 
   return (
     <div className="up-profile-page-wrapper">
+      {/* Notification Toast */}
+      {notification && (
+        <div className={`up-notification ${notification.type}`}>
+          <div className="up-notification-content">
+            <div className="up-notification-icon">
+              {notification.type === "success" && <FaCheckCircle />}
+              {notification.type === "error" && <FaTimes />}
+              {notification.type === "info" && <FaInfoCircle />}
+            </div>
+            <span className="up-notification-message">{notification.message}</span>
+            <button
+              className="up-notification-close"
+              onClick={() => setNotification(null)}
+            >
+              <FaTimes />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="up-profile-container">
         {/* Header Section */}
         <div className="up-profile-header">
@@ -519,6 +631,7 @@ export default function UserProfile({ user, onUpdateUser }) {
               <div className="up-form-group">
                 <label className="up-label">Current Password</label>
                 <div className="up-input-with-icon">
+                  <FaLock className="up-input-icon" />
                   <input
                     type={showCurrentPassword ? "text" : "password"}
                     className="up-input"
@@ -541,6 +654,7 @@ export default function UserProfile({ user, onUpdateUser }) {
                 <div className="up-form-group up-half-width">
                   <label className="up-label">New Password</label>
                   <div className="up-input-with-icon">
+                    <FaLock className="up-input-icon" />
                     <input
                       type={showNewPassword ? "text" : "password"}
                       className="up-input"
@@ -577,6 +691,7 @@ export default function UserProfile({ user, onUpdateUser }) {
                 <div className="up-form-group up-half-width">
                   <label className="up-label">Confirm Password</label>
                   <div className="up-input-with-icon">
+                    <FaLock className="up-input-icon" />
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       className="up-input"
@@ -633,6 +748,35 @@ export default function UserProfile({ user, onUpdateUser }) {
           </div>
         </form>
       </div>
+
+      {/* Unsaved Changes Modal */}
+      {showBlockerModal && (
+        <div className="up-modal-overlay">
+          <div className="up-modal-content">
+            <div className="up-modal-icon-wrapper">
+              <FaExclamationTriangle className="up-modal-icon" />
+            </div>
+            <h3 className="up-modal-title">Unsaved Changes</h3>
+            <p className="up-modal-text">
+              You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+            </p>
+            <div className="up-modal-actions">
+              <button 
+                className="up-btn-modal-cancel" 
+                onClick={handleBlockerCancel}
+              >
+                Stay
+              </button>
+              <button 
+                className="up-btn-modal-confirm" 
+                onClick={handleBlockerConfirm}
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
