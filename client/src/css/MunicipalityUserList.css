@@ -18,6 +18,20 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
+
+  /* --- Status Colors --- */
+  --status-pending-bg: #fff7ed;
+  --status-pending-text: #c2410c;
+  --status-progress-bg: #eff6ff;
+  --status-progress-text: #1d4ed8;
+  --status-resolved-bg: #ecfdf5;
+  --status-resolved-text: #047857;
+  --status-rejected-bg: #fef2f2;
+  --status-rejected-text: #b91c1c;
+  --status-suspended-bg: #f3f4f6;
+  --status-suspended-text: #4b5563;
+  --status-open-bg: #e0f2fe;
+  --status-open-text: #0369a1;
 }
 
 /* --- Main Container --- */
@@ -300,25 +314,35 @@
 
 .mul-table-wrapper {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden; /* Hide horizontal scrollbar by default */
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.mul-table-wrapper-scrollable {
+  overflow-x: auto; /* Allow scroll only if explicitly requested */
 }
 
 .mul-table {
   width: 100%;
-  border-collapse: collapse;
-  min-width: 800px;
+  border-collapse: separate; /* Changed from collapse for better border radius handling */
+  border-spacing: 0;
+  /* Removed min-width to prevent forced scrolling */
 }
 
 .mul-table th {
-  background: var(--bg-page);
-  color: var(--brand-navy);
+  background: #f8fafc; /* Light gray background for header */
+  color: var(--text-muted);
   font-weight: 600;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-subtle);
   text-align: left;
+  white-space: nowrap; /* Prevent header wrapping */
 }
 
 .mul-table td {
@@ -331,6 +355,7 @@
 
 .mul-table tbody tr {
   transition: background 0.2s ease;
+  cursor: pointer; /* Make rows look clickable */
 }
 
 .mul-table tbody tr:hover {
@@ -930,12 +955,12 @@
   display: inline-block;
 }
 
-.mul-status-resolved { color: #198754; background-color: #d1e7dd; }
-.mul-status-rejected { color: #dc3545; background-color: #f8d7da; }
-.mul-status-assigned { color: #0d6efd; background-color: #cfe2ff; }
-.mul-status-pending { color: #fd7e14; background-color: #ffe5d0; }
-.mul-status-suspended { color: #6c757d; background-color: #e2e3e5; }
-.mul-status-open { color: #0dcaf0; background-color: #cff4fc; }
+.mul-status-resolved { color: var(--status-resolved-text); background-color: var(--status-resolved-bg); }
+.mul-status-rejected { color: var(--status-rejected-text); background-color: var(--status-rejected-bg); }
+.mul-status-assigned { color: var(--status-progress-text); background-color: var(--status-progress-bg); }
+.mul-status-pending { color: var(--status-pending-text); background-color: var(--status-pending-bg); }
+.mul-status-suspended { color: var(--status-suspended-text); background-color: var(--status-suspended-bg); }
+.mul-status-open { color: var(--status-open-text); background-color: var(--status-open-bg); }
 
 /* --- Page Wrapper --- */
 .mul-page-wrapper {
@@ -943,4 +968,77 @@
     min-height: 100vh;
     padding: 2rem;
     font-family: 'Inter', sans-serif;
+}
+
+/* --- Sidebar Layout --- */
+.mul-layout-wrapper {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.mul-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 2rem;
+}
+
+.mul-content {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.mul-nav-pills .nav-link {
+  color: var(--text-muted);
+  font-weight: 500;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  border: 1px solid transparent;
+}
+
+.mul-nav-pills .nav-link:hover {
+  background-color: var(--bg-hover);
+  color: var(--brand-red);
+  transform: translateX(4px);
+}
+
+.mul-nav-pills .nav-link.active {
+  background-color: var(--brand-red);
+  color: white;
+  box-shadow: var(--shadow-md);
+  border-color: var(--brand-red);
+}
+
+.mul-nav-group-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem 0.5rem;
+}
+
+.mul-nav-group-label:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 992px) {
+  .mul-layout-wrapper {
+    flex-direction: column;
+  }
+  .mul-sidebar {
+    width: 100%;
+    position: static;
+    margin-bottom: 1.5rem;
+  }
 }

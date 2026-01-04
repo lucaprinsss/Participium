@@ -89,7 +89,7 @@ const ReportsTableBody = React.memo(({ reports, handleShow }) => {
     if (reports.length === 0) {
         return (
             <tr>
-                <td colSpan="6" className="text-center p-5 text-muted"> {/* Aumentato colSpan */}
+                <td colSpan="6" className="text-center p-5 text-muted">
                     <h5>No reports found</h5>
                     <p className="mb-0">
                         No reports match the search criteria.
@@ -99,33 +99,46 @@ const ReportsTableBody = React.memo(({ reports, handleShow }) => {
         );
     }
 
+    const getStatusClass = (status) => {
+        const s = status?.toLowerCase().replace(/_/g, " ");
+        if (s === "pending approval") return "mul-status-pending";
+        if (s === "assigned") return "mul-status-assigned";
+        if (s === "in progress") return "mul-status-assigned"; // Using same blue for progress
+        if (s === "resolved") return "mul-status-resolved";
+        if (s === "rejected") return "mul-status-rejected";
+        if (s === "suspended") return "mul-status-suspended";
+        return "mul-status-open";
+    };
+
     return reports.map((report) => (
-        <tr key={report.id} className="mul-table-row">
+        <tr 
+            key={report.id} 
+            className="mul-table-row"
+            onClick={() => handleShow(report)}
+        >
             <td className="ps-4">
                 <span className="fw-semibold text-dark">{report.category}</span>
             </td>
             <td><strong>{report.title}</strong></td>
             <td>{report.createdAt.toLocaleDateString()}</td>
             <td>
-                {/* Colonna Aggiunta per l'Assegnatario */}
                 {report.assignee?.username || report.assignee?.id || (
                     <span className="text-muted fst-italic">N/A</span>
                 )}
             </td>
             <td>
-                <Badge
-                    bg={getStatusBadgeVariant(report.status)}
-                    className="fw-normal"
-                >
-                    {/* Correzione S7781: Uso replaceAll() per sostituire tutti gli underscore */}
-                    {report.status.replaceAll("_", " ")}
-                </Badge>
+                <span className={`mul-status-badge ${getStatusClass(report.status)}`}>
+                    {report.status.replace(/_/g, " ")}
+                </span>
             </td>
             <td className="text-end pe-4">
                 <div className="mul-actions justify-content-end">
                     <button
                         className="mul-btn mul-btn-edit"
-                        onClick={() => handleShow(report)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleShow(report);
+                        }}
                     >
                         <BsEye className="me-2" /> View
                     </button>
@@ -473,13 +486,13 @@ export default function MunicipalityUserHome({ user }) {
         if (currentView?.key === 'director-dashboard') {
             return (
                 <>
-                    <div className="mul-header-wrapper">
+                    <div className="mul-header">
                         <div>
-                            <h2 className="mul-home-title">Director Dashboard</h2>
-                            <p className="mul-home-subtitle">Department overview and analytics.</p>
+                            <h2 className="mul-title">Director Dashboard</h2>
+                            <p className="text-muted">Department overview and analytics.</p>
                         </div>
                     </div>
-                    <Card className="mul-home-card border-0 shadow-sm p-5 text-center d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
+                    <Card className="mul-card border-0 shadow-sm p-5 text-center d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
                         <div className="mb-4" style={{ fontSize: '3rem', color: '#cbd5e1' }}>
                             <FaInfoCircle />
                         </div>
@@ -496,10 +509,10 @@ export default function MunicipalityUserHome({ user }) {
         return (
             <>
                  {/* Header Section */}
-                 <div className="mul-header-wrapper">
+                 <div className="mul-header">
                     <div>
-                        <h2 className="mul-home-title">{currentView?.label || "Officer Dashboard"}</h2>
-                        <p className="mul-home-subtitle">
+                        <h2 className="mul-title">{currentView?.label || "Officer Dashboard"}</h2>
+                        <p className="text-muted">
                             Manage and validate citizen reports.
                         </p>
                     </div>
@@ -523,7 +536,7 @@ export default function MunicipalityUserHome({ user }) {
                 )}
     
                 {/* Table Card */}
-                <Card className="mul-home-card border-0 shadow-sm" style={{ minHeight: '300px' }}>
+                <Card className="mul-card border-0 shadow-sm" style={{ minHeight: '300px' }}>
                     {isLoading ? (
                         <div className="text-center p-5"></div>
                     ) : (
@@ -548,7 +561,7 @@ export default function MunicipalityUserHome({ user }) {
     // --- MAIN RENDER ---
     if (views.length > 1) {
         return (
-            <Container fluid className="mul-home-container">
+            <Container fluid className="mul-page-wrapper">
                 <Tab.Container activeKey={activeViewKey} onSelect={setActiveViewKey}>
                     <div className="mul-layout-wrapper">
                         {/* Sidebar */}
@@ -592,7 +605,7 @@ export default function MunicipalityUserHome({ user }) {
 
     // Single View Layout
     return (
-        <Container className="mul-home-container">
+        <Container className="mul-page-wrapper">
             {renderContent()}
             <ReportDetails
                 show={showModal}

@@ -261,24 +261,41 @@ export default function MunicipalityUserList({ refreshTrigger }) {
 
             <div className="mul-card">
                 <div className="mul-card-body">
-                    {loading ? (
-                        <div className="mul-loading"><div className="mul-loading-spinner"></div>Loading users...</div>
-                    ) : filteredUsers.length === 0 ? (
-                        <div className="mul-empty"><div>👥</div>No users found.</div>
-                    ) : (
-                        <div className="mul-table-wrapper mul-table-wrapper-scrollable">
-                            <table className="mul-table">
-                                <thead>
+                    <div className="mul-table-wrapper mul-table-wrapper-scrollable">
+                        <table className="mul-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th><th>Username</th><th>Email</th><th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
                                     <tr>
-                                        <th>ID</th><th>Username</th><th>Email</th><th>Actions</th>
+                                        <td colSpan="4">
+                                            <div className="mul-loading">
+                                                <div className="mul-loading-content">
+                                                    <div className="mul-loading-spinner"></div>
+                                                    <div>Loading users...</div>
+                                                </div>
+                                            </div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredUsers.map((user) => (
+                                ) : filteredUsers.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="4">
+                                            <div className="mul-empty">
+                                                <div className="mul-empty-content">
+                                                    <div className="mul-empty-icon">👥</div>
+                                                    <div>No users found.</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredUsers.map((user) => (
                                         <tr 
                                             key={user.id} 
                                             onClick={() => handleEdit(user)} 
-                                            style={{ cursor: 'pointer' }}
                                             className="mul-table-row"
                                         >
                                             <td><span className="text-muted">#{user.id}</span></td>
@@ -295,11 +312,11 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
