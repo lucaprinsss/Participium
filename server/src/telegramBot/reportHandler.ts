@@ -55,7 +55,7 @@ export class ReportHandler {
       'Please provide the location of the issue in one of the following ways:\n\n' +
       '• Send your location using the attachment button\n\n' +
       '• Write an address\n' +
-      '   Example: "53, Corso Vittorio Emanuele II, Torino"\n\n' +
+      '   Example: "53, Corso Vittorio Emanuele II, Turin"\n\n' +
       '• Enter coordinates\n' +
       '   Format: latitude, longitude\n' +
       '   Example: 45.0703, 7.6869',

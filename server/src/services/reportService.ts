@@ -391,7 +391,7 @@ class ReportService {
           await createNotification({
             userId: assignee.id,
             reportId: report.id,
-            content: "Ti è stato assegnato un nuovo report!"
+            content: "You've been assigned a new report!"
           });
         } else {
           const categoryToAssign = body.category || report.category as ReportCategory;
@@ -410,7 +410,7 @@ class ReportService {
           await createNotification({
             userId: availableStaff.id,
             reportId: report.id,
-            content: "Ti è stato assegnato un nuovo report!"
+            content: "You've been assigned a new report! "
           });
 
           if (body.category) {
@@ -475,12 +475,12 @@ class ReportService {
 
     // Create notification for reporter about status change
     if (report.reporterId) {
-      let statusMessage = `Il tuo report "${report.title}" è passato allo status ${newStatus}.`;
+      let statusMessage = `Your report "${report.title}" has changed status to ${newStatus}.`;
       if (body.resolutionNotes && newStatus === ReportStatus.RESOLVED) {
-        statusMessage += ` Note di risoluzione: ${body.resolutionNotes}`;
+        statusMessage += ` Resolution notes: ${body.resolutionNotes}`;
       }
       if (body.rejectionReason && newStatus === ReportStatus.REJECTED) {
-        statusMessage += ` Motivo del rifiuto: ${body.rejectionReason}`;
+        statusMessage += ` Rejection reason: ${body.rejectionReason}`;
       }
       await createNotification({
         userId: report.reporterId,

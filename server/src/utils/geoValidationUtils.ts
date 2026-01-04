@@ -177,7 +177,7 @@ export async function geocodeAddress(address: string): Promise<{ location: { lat
     });
 
     if (!response.data || response.data.length === 0) {
-      throw new Error('Indirizzo non trovato');
+      throw new Error('Address not found');
     }
 
     const result = response.data[0];
@@ -189,8 +189,8 @@ export async function geocodeAddress(address: string): Promise<{ location: { lat
       address: result.display_name || address
     };
   } catch (error) {
-    console.error('Errore geocoding:', error);
-    throw new Error('Indirizzo non trovato');
+    console.error('Geocoding error:', error);
+    throw new Error('Address not found');
   }
 }
 
@@ -217,7 +217,7 @@ export async function reverseGeocode(location: { latitude: number; longitude: nu
 
     return response.data?.display_name || `${location.latitude}, ${location.longitude}`;
   } catch (error) {
-    console.error('Errore reverse geocoding:', error);
+    console.error('Reverse geocoding error:', error);
     return `${location.latitude}, ${location.longitude}`;
   }
 }

@@ -155,7 +155,7 @@ export default function Navbar({ user, onLogout }) {
         setShowNotifications(false);
       } catch (error) {
         console.error("Error fetching report details:", error);
-        showToast("Impossibile caricare i dettagli del report", "error");
+        showToast("Unable to load report details", "error");
       }
     }
   };

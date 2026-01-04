@@ -29,7 +29,7 @@ export default function NotFoundPage() {
               className="nf-btn primary" 
               onClick={() => navigate('/home')}
             >
-              <FaHome className="nf-btn-icon" /> Torna alla Home
+              <FaHome className="nf-btn-icon" /> Back to Home
             </button>
 
           </div>

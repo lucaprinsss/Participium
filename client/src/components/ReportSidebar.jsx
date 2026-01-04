@@ -36,7 +36,7 @@ const ReportSidebar = ({
   // Helper date
   const formatDate = (dateString) => {
     if (!dateString) return "-";
-    return new Intl.DateTimeFormat("it-IT", {
+    return new Intl.DateTimeFormat("en-GB", {
       day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
     }).format(new Date(dateString));
   };

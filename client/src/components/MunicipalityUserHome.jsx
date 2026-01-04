@@ -90,9 +90,9 @@ const ReportsTableBody = React.memo(({ reports, handleShow }) => {
         return (
             <tr>
                 <td colSpan="6" className="text-center p-5 text-muted"> {/* Aumentato colSpan */}
-                    <h5>Nessuna segnalazione trovata</h5>
+                    <h5>No reports found</h5>
                     <p className="mb-0">
-                        Nessuna segnalazione corrisponde ai criteri di ricerca.
+                        No reports match the search criteria.
                     </p>
                 </td>
             </tr>
