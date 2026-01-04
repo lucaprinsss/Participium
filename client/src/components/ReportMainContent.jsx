@@ -9,6 +9,7 @@ import {
 import ReportComments from "./ReportComments";
 import CitizenChat from "./CitizenChat";
 import { updateReportStatus } from "../api/reportApi";
+import { STATUS_LEGEND_ITEMS } from "../utils/statusStyles";
 
 const ReportMainContent = ({
     report,
@@ -30,6 +31,20 @@ const ReportMainContent = ({
     const [rejectionReason, setRejectionReason] = useState("");
     const [validationError, setValidationError] = useState("");
     const [assignmentWarning, setAssignmentWarning] = useState("");
+    const [showLegend, setShowLegend] = useState(false);
+
+    const handleLegendToggle = (event) => {
+        if (event) {
+            event.stopPropagation();
+        }
+        setShowLegend((prev) => !prev);
+    };
+
+    const stopLegendPropagation = (event) => {
+        if (event) {
+            event.stopPropagation();
+        }
+    };
 
     const photos = report?.photos // Controllato
         ? report.photos.map((p) => (typeof p === "string" ? p : p.storageUrl))
@@ -148,19 +163,58 @@ const ReportMainContent = ({
                     <h3 className="rdm-section-title mt-4"><FaMapMarkedAlt /> Map Location</h3>
                     <div className="rdm-map-container">
                         {showMap && mapCoordinates && (
-                            <MapContainer center={mapCoordinates} zoom={15} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
-                                <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                <Marker position={mapCoordinates}>
-                                    <Popup>
+                            <>
+                                <MapContainer center={mapCoordinates} zoom={15} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
+                                    <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                    <Marker position={mapCoordinates}>
+                                        <Popup>
                                         <div className="rdm-map-popup">
                                             <strong>{report?.title}</strong><br /> 
                                             <a href={`http://googleusercontent.com/maps.google.com/?q=${mapCoordinates[0]},${mapCoordinates[1]}`} target="_blank" rel="noopener noreferrer" className="map-link" style={{ color: "var(--rdm-brand)", fontWeight: "bold" }}>
                                                 <FaExternalLinkAlt style={{ marginRight: "5px" }} /> Open in Google Maps
                                             </a>
                                         </div>
-                                    </Popup>
-                                </Marker>
-                            </MapContainer>
+                                        </Popup>
+                                    </Marker>
+                                </MapContainer>
+                                {/* Info Button for Legend */}
+                                <div className="rdm-map-info-button">
+                                    <button
+                                        type="button"
+                                        className="rdm-btn-info"
+                                        onClick={handleLegendToggle}
+                                        onMouseDown={stopLegendPropagation}
+                                        onTouchStart={stopLegendPropagation}
+                                        title="Show Legend"
+                                        aria-label="Toggle report status legend"
+                                    >
+                                        <FaInfoCircle />
+                                    </button>
+                                    {showLegend && (
+                                        <div
+                                            className="rdm-legend-popover"
+                                            onClick={stopLegendPropagation}
+                                            onMouseDown={stopLegendPropagation}
+                                            onTouchStart={stopLegendPropagation}
+                                        >
+                                            <p className="rdm-legend-title">Report Status</p>
+                                            <div className="rdm-legend-list">
+                                                {STATUS_LEGEND_ITEMS.map((item) => (
+                                                    <div className="rdm-legend-item" key={item.label}>
+                                                        <img
+                                                            className="rdm-legend-icon"
+                                                            src={item.icon}
+                                                            alt={`${item.label} marker`}
+                                                            style={{ borderColor: item.color }}
+                                                        />
+                                                        <span>{item.label}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
                         )}
                         {showMap && !mapCoordinates && (
                             <div className="d-flex align-items-center justify-content-center h-100 text-muted bg-light"><FaExclamationCircle className="me-2" /> Location unavailable</div>
