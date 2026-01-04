@@ -554,11 +554,10 @@ const MapPage = () => {
         <div className="mp-header-content">
           <h1 className="mp-header-title">
             <FaMap className="mp-title-icon" />
-            Turin Map - Your Reports
+            Turin Map - Report Map
           </h1>
           <p className="mp-header-subtitle">
-            View the status of your reports or create a new one by selecting on
-            the map.
+            View the status of reports across the city or create a new one by selecting it on the map.
           </p>
         </div>
       </header>

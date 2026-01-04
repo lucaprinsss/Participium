@@ -36,7 +36,7 @@
   border-radius: var(--radius-xl);
   border: none;
   width: 100%;
-  max-width: 540px;
+  max-width: 432px;
   box-shadow: var(--shadow-lg);
   margin: 0 auto;
   overflow: hidden;
@@ -45,7 +45,7 @@
 }
 
 .reg-card-body {
-  padding: 2rem;
+  padding: 1.6rem;
   position: relative;
 }
 
@@ -70,23 +70,23 @@
 
 .reg-header {
   text-align: center;
-  margin-bottom: 2rem;
-  margin-top: 1rem;
+  margin-bottom: 1.6rem;
+  margin-top: 0.8rem;
 }
 
 .reg-logo {
-  max-height: 100px;
+  max-height: 80px;
   width: auto;
-  margin-bottom: -1rem;
+  margin-bottom: -0.8rem;
   transition: var(--transition);
 }
 
 .reg-title {
-  font-size: 1.75rem;
+  font-size: 1.4rem;
   font-weight: var(--font-bold);
   color: #212529;
-  margin-bottom: 0.5rem;
-  margin-top: 1.5rem
+  margin-bottom: 0.4rem;
+  margin-top: 1.2rem
 }
 
 .reg-subtitle {
@@ -103,11 +103,11 @@
 }
 
 .reg-form {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .reg-form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .reg-form-control-container {
@@ -123,12 +123,12 @@
   padding: 0 0.5rem;
   margin-left: -0.25rem;
   z-index: 2;
-  font-size: var(--font-sm);
+  font-size: 0.75rem;
 }
 
 .reg-input-icon {
   position: absolute;
-  left: 1rem;
+  left: 0.8rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-light);
@@ -143,11 +143,11 @@
 .reg-modern-input {
   border-radius: var(--radius-lg);
   border: 2px solid #e9ecef;
-  padding-left: 3rem !important;
-  padding-right: 3.5rem !important;
+  padding-left: 2.4rem !important;
+  padding-right: 2.8rem !important;
   transition: var(--transition);
   background: #fff;
-  height: 56px;
+  height: 45px;
   font-size: var(--font-base);
   position: relative;
   z-index: 2;
@@ -163,7 +163,7 @@
 
 .reg-floating-label {
   position: absolute;
-  left: 3rem;
+  left: 2.4rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-light);
@@ -177,7 +177,7 @@
 }
 
 .reg-password-input {
-  padding-right: 3.5rem !important;
+  padding-right: 2.8rem !important;
 }
 
 .reg-password-toggle-btn {
@@ -201,7 +201,7 @@
 .reg-btn {
   width: 100%;
   font-weight: var(--font-semibold);
-  padding: 0.875rem 1.5rem;
+  padding: 0.7rem 1.2rem;
   font-size: var(--font-base);
   border-radius: var(--radius-lg);
   border: none;
@@ -231,7 +231,7 @@
 
 .reg-footer {
   text-align: center;
-  padding-top: 1.5rem;
+  padding-top: 1.2rem;
   border-top: 1px solid #e9ecef;
 }
 
@@ -259,39 +259,39 @@
 
 @media (max-width: 768px) {
   .reg-card-body {
-    padding: 1.5rem;
+    padding: 1.2rem;
   }
   
   .reg-logo {
-    max-height: 80px;
+    max-height: 64px;
   }
   
   .reg-title {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
   }
   
   .reg-modern-input {
-    padding-left: 2.5rem !important;
-    padding-right: 3rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2.4rem !important;
     font-size: 16px; 
   }
   
   .reg-floating-label {
-    left: 2.5rem;
+    left: 2rem;
   }
   
   .reg-input-icon {
-    left: 0.75rem;
+    left: 0.6rem;
   }
 }
 
 @media (max-width: 576px) {
   .reg-card-body {
-    padding: 1.25rem;
+    padding: 1rem;
   }
   
   .reg-modern-input {
-    height: 52px;
+    height: 42px;
   }
 }
 
