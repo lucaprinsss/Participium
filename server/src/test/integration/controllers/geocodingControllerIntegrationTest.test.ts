@@ -118,7 +118,7 @@ describe('GeocodingController Integration Tests', () => {
             params: expect.objectContaining({
               street: 'Via Roma 42',
               city: 'Torino',
-              limit: 1 // House number present, so limit is 1
+              limit: 10 // House number present, limit is 10
             })
           })
         );
@@ -281,7 +281,7 @@ describe('GeocodingController Integration Tests', () => {
         });
       });
 
-      it('should return 404 if house number does not match', async () => {
+      it('should return street when house number does not match', async () => {
         const mockNominatimResponse = [
           {
             lat: '45.0703393',
@@ -303,14 +303,20 @@ describe('GeocodingController Integration Tests', () => {
 
         await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
 
-        expect(statusMock).toHaveBeenCalledWith(404);
-        expect(jsonMock).toHaveBeenCalledWith({
-          error: 'Address with specified house number not found',
-          details: 'House number 42 not found in the results'
-        });
+        expect(jsonMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            lat: 45.0703393,
+            lng: 7.6869005,
+            road: 'Via Roma',
+            house_number: null,
+            requestedHouseNumber: '42',
+            isSpecificAddress: false,
+            houseNumberNotFound: true
+          })
+        );
       });
 
-      it('should return 404 if result has no house number but one was requested', async () => {
+      it('should return street when result has no house number but one was requested', async () => {
         const mockNominatimResponse = [
           {
             lat: '45.0703393',
@@ -332,11 +338,17 @@ describe('GeocodingController Integration Tests', () => {
 
         await getCoordinatesFromAddress(mockRequest as Request, mockResponse as Response);
 
-        expect(statusMock).toHaveBeenCalledWith(404);
-        expect(jsonMock).toHaveBeenCalledWith({
-          error: 'Address with specified house number not found',
-          details: 'House number 42 not found in the results'
-        });
+        expect(jsonMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            lat: 45.0703393,
+            lng: 7.6869005,
+            road: 'Via Roma',
+            house_number: null,
+            requestedHouseNumber: '42',
+            isSpecificAddress: false,
+            houseNumberNotFound: true
+          })
+        );
       });
     });
 
