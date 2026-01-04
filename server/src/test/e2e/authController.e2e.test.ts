@@ -322,10 +322,12 @@ describe('AuthController E2E Tests', () => {
         .expect(200);
 
       // Assert - Try to access protected route
-      await request(app)
+      const response = await request(app)
         .get('/api/sessions/current')
         .set('Cookie', cookies)
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 401 when trying to logout without authentication', async () => {
@@ -340,10 +342,13 @@ describe('AuthController E2E Tests', () => {
 
     it('should handle logout with invalid session gracefully', async () => {
       // Act
-      await request(app)
+      const response = await request(app)
         .delete('/api/sessions/current')
         .set('Cookie', ['connect.sid=invalid-session'])
         .expect(401);
+
+      // Assert
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -378,10 +383,12 @@ describe('AuthController E2E Tests', () => {
       expect(logoutResponse.body.message).toContain('Logged out');
 
       // Step 4: Verify cannot access protected route
-      await request(app)
+      const loggedOutResponse = await request(app)
         .get('/api/sessions/current')
         .set('Cookie', cookies)
         .expect(401);
+
+      expect(loggedOutResponse.body).toHaveProperty('message');
     });
 
     it('should handle multiple login sessions for same user', async () => {
@@ -406,15 +413,19 @@ describe('AuthController E2E Tests', () => {
       const cookies2 = session2.headers['set-cookie'];
 
       // Assert - Both sessions should work independently
-      await request(app)
+      const response1 = await request(app)
         .get('/api/sessions/current')
         .set('Cookie', cookies1)
         .expect(200);
 
-      await request(app)
+      const response2 = await request(app)
         .get('/api/sessions/current')
         .set('Cookie', cookies2)
         .expect(200);
+
+      expect(response1.body.username).toBe('testcitizen');
+      expect(response2.body.username).toBe('testcitizen');
+      expect(cookies1).not.toEqual(cookies2);
     });
   });
 
@@ -664,13 +675,15 @@ describe('AuthController E2E Tests', () => {
 
     it('should complete full registration and verification flow', async () => {
       // Step 1: Verify cannot login before verification
-      await request(app)
+      const unverifiedResponse = await request(app)
         .post('/api/sessions')
         .send({
           username: unverifiedUser.username,
           password: unverifiedUser.password,
         })
         .expect(401);
+
+      expect(unverifiedResponse.body).toHaveProperty('message');
 
       // Step 2: Verify email
       await request(app)

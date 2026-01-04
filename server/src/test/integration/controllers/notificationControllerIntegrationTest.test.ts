@@ -216,7 +216,9 @@ describe('NotificationController Integration Tests', () => {
 
     it('should return 401 when user is not authenticated', async () => {
       const unauthenticatedAgent = request.agent(app);
-      await unauthenticatedAgent.get('/api/users/notifications').expect(401);
+      const response = await unauthenticatedAgent.get('/api/users/notifications').expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should include report details in notifications', async () => {
@@ -269,7 +271,9 @@ describe('NotificationController Integration Tests', () => {
     });
 
     it('should return 404 when notification does not exist', async () => {
-      await agent.patch('/api/users/notifications/99999').send({ is_read: true }).expect(404);
+      const response = await agent.patch('/api/users/notifications/99999').send({ is_read: true }).expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 403 when user does not own the notification', async () => {
@@ -282,7 +286,9 @@ describe('NotificationController Integration Tests', () => {
       createdNotificationIds.push(notification.id);
 
       // testUser tries to mark it as read
-      await agent.patch(`/api/users/notifications/${notification.id}`).send({ is_read: true }).expect(403);
+      const response = await agent.patch(`/api/users/notifications/${notification.id}`).send({ is_read: true }).expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 401 when user is not authenticated', async () => {
@@ -294,7 +300,9 @@ describe('NotificationController Integration Tests', () => {
       createdNotificationIds.push(notification.id);
 
       const unauthenticatedAgent = request.agent(app);
-      await unauthenticatedAgent.patch(`/api/users/notifications/${notification.id}`).expect(401);
+      const response = await unauthenticatedAgent.patch(`/api/users/notifications/${notification.id}`).expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should not throw error when marking already read notification', async () => {
@@ -314,7 +322,9 @@ describe('NotificationController Integration Tests', () => {
     });
 
     it('should return 400 for invalid notification ID format', async () => {
-      await agent.patch('/api/users/notifications/invalid').expect(400);
+      const response = await agent.patch('/api/users/notifications/invalid').expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 });

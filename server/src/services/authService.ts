@@ -35,7 +35,7 @@ class AuthService {
   async verifyEmailCode(email: string, otpCode: string): Promise<void> {
 
     // Check if already verified first
-    if(await userRepository.isUserVerified(email) == true) {
+    if(await userRepository.isUserVerified(email)) {
       throw new BadRequestError('Email is already verified.');
     }
 

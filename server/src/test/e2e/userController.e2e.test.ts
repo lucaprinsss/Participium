@@ -632,10 +632,12 @@ describe('UserController E2E Tests', () => {
       expect(logoutResponse.body.message).toContain('Logged out');
 
       // Step 5: Verify cannot access protected route after logout
-      await request(app)
+      const loggedOutResponse = await request(app)
         .get('/api/sessions/current')
         .set('Cookie', cookies)
         .expect(401);
+
+      expect(loggedOutResponse.body).toHaveProperty('message');
     });
 
     it('should not allow duplicate registration with same credentials', async () => {
@@ -796,13 +798,15 @@ describe('UserController E2E Tests', () => {
       expect(loginResponse.body.username).toBe(newUser.username);
 
       // Step 5: Verify wrong password fails
-      await request(app)
+      const wrongPasswordResponse = await request(app)
         .post('/api/sessions')
         .send({
           username: newUser.username,
           password: 'WrongPassword123!',
         })
         .expect(401);
+
+      expect(wrongPasswordResponse.body).toHaveProperty('message');
     });
   });
 
@@ -988,18 +992,22 @@ describe('UserController E2E Tests', () => {
     });
 
     it('should fail without authentication (401)', async () => {
-      await request(app)
+      const response = await request(app)
         .get('/api/users/external-maintainers')
         .query({ category: 'Public Lighting' })
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail as citizen (403)', async () => {
-      await request(app)
+      const response = await request(app)
         .get('/api/users/external-maintainers')
         .query({ category: 'Public Lighting' })
         .set('Cookie', citizenCookies)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return maintainers ordered by last_name', async () => {

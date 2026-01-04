@@ -175,8 +175,8 @@ const MapReportForm = ({
         description: formData.description.trim(),
         category: formData.category,
         location: {
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
+          latitude: Number.parseFloat(formData.latitude),
+          longitude: Number.parseFloat(formData.longitude),
           address: formData.address,
         },
         photos: base64Photos,

@@ -2,7 +2,6 @@
 import { AppDataSource } from '../database/connection';
 import { MessageEntity } from '@entity/messageEntity';
 import { Repository } from 'typeorm';
-import { NotFoundError } from '@models/errors/NotFoundError';
 
 /**
  * Message Repository

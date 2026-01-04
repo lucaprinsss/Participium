@@ -295,10 +295,12 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
         isAnonymous: false
       };
 
-      await request(app)
+      const response = await request(app)
         .post('/api/reports')
         .send(newReport)
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for invalid report data', async () => {
@@ -314,11 +316,13 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
         isAnonymous: false
       };
 
-      await request(app)
+      const response = await request(app)
         .post('/api/reports')
         .set('Cookie', citizenCookies)
         .send(invalidReport)
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -663,10 +667,12 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     });
 
     it('should return 403 for unauthorized role (CITIZEN)', async () => {
-      await request(app)
+      const response = await request(app)
         .get(`/api/reports/assigned/external/${externalMaintainerId}`)
         .set('Cookie', citizenCookies)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -818,7 +824,9 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     });
 
     it('should fail with non-existent maintainer (404)', async () => {
-      await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({ externalAssigneeId: 99999 }).expect(404);
+      const response = await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({ externalAssigneeId: 99999 }).expect(404);
+      
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with category mismatch (400)', async () => {
@@ -835,21 +843,29 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
 
     it('should fail without authentication (401)', async () => {
       const externalUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['testexternal']);
-      await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).send({ externalAssigneeId: externalUser[0].id }).expect(401);
+      const response = await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).send({ externalAssigneeId: externalUser[0].id }).expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail as citizen (403)', async () => {
       const externalUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['testexternal']);
-      await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', citizenCookies).send({ externalAssigneeId: externalUser[0].id }).expect(403);
+      const response = await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', citizenCookies).send({ externalAssigneeId: externalUser[0].id }).expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with missing externalAssigneeId (400)', async () => {
-      await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({}).expect(400);
+      const response = await request(app).patch(`/api/reports/${assignedReportId}/assign-external`).set('Cookie', techManagerCookies).send({}).expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with non-existent report (404)', async () => {
       const externalUser = await AppDataSource.query(`SELECT id FROM users WHERE username = $1`, ['testexternal']);
-      await request(app).patch('/api/reports/99999/assign-external').set('Cookie', techManagerCookies).send({ externalAssigneeId: externalUser[0].id }).expect(404);
+      const response = await request(app).patch('/api/reports/99999/assign-external').set('Cookie', techManagerCookies).send({ externalAssigneeId: externalUser[0].id }).expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -916,59 +932,73 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     });
 
     it('should fail when citizen tries to add internal comment (403)', async () => {
-      await request(app)
+      const response = await request(app)
         .post(`/api/reports/${testReportId}/internal-comments`)
         .set('Cookie', citizenCookies)
         .send({ content: 'Citizen should not see this' })
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail without authentication (401)', async () => {
-      await request(app)
+      const response = await request(app)
         .post(`/api/reports/${testReportId}/internal-comments`)
         .send({ content: 'Unauthenticated comment' })
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with empty content (400)', async () => {
-      await request(app)
+      const response = await request(app)
         .post(`/api/reports/${testReportId}/internal-comments`)
         .set('Cookie', technicianCookies)
         .send({ content: '' })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with missing content field (400)', async () => {
-      await request(app)
+      const response = await request(app)
         .post(`/api/reports/${testReportId}/internal-comments`)
         .set('Cookie', technicianCookies)
         .send({})
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with content exceeding max length (400)', async () => {
       const longContent = 'a'.repeat(2001);
-      await request(app)
+      const response = await request(app)
         .post(`/api/reports/${testReportId}/internal-comments`)
         .set('Cookie', technicianCookies)
         .send({ content: longContent })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with non-existent report (404)', async () => {
-      await request(app)
+      const response = await request(app)
         .post('/api/reports/99999/internal-comments')
         .set('Cookie', technicianCookies)
         .send({ content: 'Comment on non-existent report' })
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with invalid report ID (400)', async () => {
-      await request(app)
+      const response = await request(app)
         .post('/api/reports/invalid/internal-comments')
         .set('Cookie', technicianCookies)
         .send({ content: 'Invalid ID' })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -1063,30 +1093,38 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     });
 
     it('should fail when citizen tries to view internal comments (403)', async () => {
-      await request(app)
+      const response = await request(app)
         .get(`/api/reports/${testReportId}/internal-comments`)
         .set('Cookie', citizenCookies)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail without authentication (401)', async () => {
-      await request(app)
+      const response = await request(app)
         .get(`/api/reports/${testReportId}/internal-comments`)
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with non-existent report (404)', async () => {
-      await request(app)
+      const response = await request(app)
         .get('/api/reports/99999/internal-comments')
         .set('Cookie', technicianCookies)
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with invalid report ID (400)', async () => {
-      await request(app)
+      const response = await request(app)
         .get('/api/reports/invalid/internal-comments')
         .set('Cookie', technicianCookies)
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return comments ordered by creation date (oldest first)', async () => {
@@ -1167,10 +1205,12 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     });
 
     it('should fail when trying to delete another user\'s comment (403)', async () => {
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/${testReportId}/internal-comments/${otherUserCommentId}`)
         .set('Cookie', technicianCookies)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
 
       // Verify comment was NOT deleted
       const result = await AppDataSource.query(
@@ -1181,30 +1221,38 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
     });
 
     it('should fail when citizen tries to delete comment (403)', async () => {
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/${testReportId}/internal-comments/${commentId}`)
         .set('Cookie', citizenCookies)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail without authentication (401)', async () => {
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/${testReportId}/internal-comments/${commentId}`)
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with non-existent comment (404)', async () => {
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/${testReportId}/internal-comments/99999`)
         .set('Cookie', technicianCookies)
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with non-existent report (404)', async () => {
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/99999/internal-comments/${commentId}`)
         .set('Cookie', technicianCookies)
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail when comment does not belong to report (400)', async () => {
@@ -1224,27 +1272,33 @@ describe('ReportController E2E Tests - Assigned Reports', () => {
       );
       const anotherReportId = anotherReportResult[0].id;
 
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/${anotherReportId}/internal-comments/${commentId}`)
         .set('Cookie', technicianCookies)
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
 
       // Clean up
       await AppDataSource.query(`DELETE FROM reports WHERE id = $1`, [anotherReportId]);
     });
 
     it('should fail with invalid report ID (400)', async () => {
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/invalid/internal-comments/${commentId}`)
         .set('Cookie', technicianCookies)
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with invalid comment ID (400)', async () => {
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/${testReportId}/internal-comments/invalid`)
         .set('Cookie', technicianCookies)
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should allow PRO to delete their own comment', async () => {

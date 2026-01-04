@@ -8,9 +8,7 @@ import {
   cleanDatabase,
   ensureTestDatabase
 } from '../utils/dbTestUtils';
-import * as fs from 'fs';
-import * as path from 'path';
-
+import * as fs from 'node:fs';
 // E2E Tests for User Profile Update
 // Tests PATCH /api/users/me endpoint
 

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { isWithinTurinBoundaries } from '../utils/geoValidationUtils';
 
 // Nominatim reverse geocoding response interface
@@ -87,7 +87,7 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
     }
 
     // Extract house number from the search query (excluding 5-digit postal codes)
-    const houseNumberMatch = address.match(/\b(\d{1,4}[a-zA-Z]?)\b/);
+    const houseNumberMatch = /\b(\d{1,4}[a-zA-Z]?)\b/.exec(address);
     const requestedHouseNumber = houseNumberMatch ? houseNumberMatch[1] : null;
     const hasHouseNumber = requestedHouseNumber !== null;
     const searchLimit = hasHouseNumber ? 10 : 50; // Multiple results to filter, even with house number
@@ -116,8 +116,8 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
         if (response.data && response.data.length > 0) {
             // Filter results to only include coordinates within Turin boundaries
             const validResults = response.data.filter(result => {
-                const lat = parseFloat(result.lat);
-                const lon = parseFloat(result.lon);
+                const lat = Number.parseFloat(result.lat);
+                const lon = Number.parseFloat(result.lon);
                 return isWithinTurinBoundaries(lat, lon);
             });
 
@@ -150,8 +150,8 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
                     const isExactMatch = matchedResult.address?.house_number === requestedHouseNumber;
                     
                     res.json({
-                        lat: parseFloat(matchedResult.lat),
-                        lng: parseFloat(matchedResult.lon),
+                        lat: Number.parseFloat(matchedResult.lat),
+                        lng: Number.parseFloat(matchedResult.lon),
                         display_name: matchedResult.display_name,
                         road: matchedResult.address?.road,
                         house_number: matchedResult.address?.house_number,
@@ -164,8 +164,8 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
                 } else {
                     // House number not found at all - return street only
                     res.json({
-                        lat: parseFloat(firstResult.lat),
-                        lng: parseFloat(firstResult.lon),
+                        lat: Number.parseFloat(firstResult.lat),
+                        lng: Number.parseFloat(firstResult.lon),
                         display_name: firstResult.display_name,
                         road: firstResult.address?.road,
                         house_number: null,
@@ -184,7 +184,7 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
 
                 validResults.forEach(result => {
                     if (result.boundingbox) {
-                        const [south, north, west, east] = result.boundingbox.map(parseFloat);
+                        const [south, north, west, east] = result.boundingbox.map(Number.parseFloat);
                         minLat = Math.min(minLat, south);
                         maxLat = Math.max(maxLat, north);
                         minLon = Math.min(minLon, west);
@@ -193,13 +193,13 @@ export const getCoordinatesFromAddress = async (req: Request, res: Response): Pr
                 });
 
                 // If we have valid bounding box, use it; otherwise use first result's bbox
-                const overallBoundingBox = minLat !== Infinity 
-                    ? [minLat.toString(), maxLat.toString(), minLon.toString(), maxLon.toString()]
-                    : firstResult.boundingbox;
+                const overallBoundingBox = minLat === Infinity 
+                    ? firstResult.boundingbox
+                    : [minLat.toString(), maxLat.toString(), minLon.toString(), maxLon.toString()];
 
                 res.json({
-                    lat: parseFloat(firstResult.lat),
-                    lng: parseFloat(firstResult.lon),
+                    lat: Number.parseFloat(firstResult.lat),
+                    lng: Number.parseFloat(firstResult.lon),
                     display_name: firstResult.display_name,
                     road: firstResult.address?.road,
                     house_number: firstResult.address?.house_number,

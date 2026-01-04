@@ -218,7 +218,7 @@ describe('GeocodingController E2E Tests', () => {
       expect(boundingbox.length).toBe(4);
       
       // Bounding box should be [minLat, maxLat, minLon, maxLon]
-      const [south, north, west, east] = boundingbox.map(parseFloat);
+      const [south, north, west, east] = boundingbox.map(Number.parseFloat);
       expect(south).toBeLessThanOrEqual(north);
       expect(west).toBeLessThanOrEqual(east);
     }, 15000);

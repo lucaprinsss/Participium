@@ -25,26 +25,6 @@ describe('RoleController E2E Tests', () => {
     const MUNICIPALITY_USERNAME = 'testmunicipality';
     const MUNICIPALITY_PASSWORD = 'MuniPass123!';
 
-    // Expected municipality roles (from seed.sql/test-data.sql)
-    const EXPECTED_MUNICIPALITY_ROLES = [
-        'Municipal Public Relations Officer',
-        'Department Director',
-        'Water Network staff member',
-        'Sewer System staff member',
-        'Road Maintenance staff member',
-        'Accessibility staff member',
-        'Electrical staff member',
-        'Recycling Program staff member',
-        'Traffic management staff member',
-        'Parks Maintenance staff member',
-        'Customer Service staff member',
-        'Building Maintenance staff member',
-        'Support Officer',
-        'External Maintainer'
-    ];
-
-    // Roles that should NOT be included
-    const EXCLUDED_ROLES = ['Citizen', 'Administrator'];
 
     // Helper function to login and get cookies
     const loginAs = async (username: string, password: string): Promise<string[]> => {

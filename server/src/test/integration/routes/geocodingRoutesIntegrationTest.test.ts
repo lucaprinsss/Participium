@@ -57,8 +57,8 @@ describe('Geocoding Routes Integration Tests', () => {
             }
 
             // Validate coordinates format
-            const latNum = parseFloat(lat);
-            const lngNum = parseFloat(lng);
+            const latNum = Number.parseFloat(lat);
+            const lngNum = Number.parseFloat(lng);
 
             if (isNaN(latNum) || isNaN(lngNum)) {
                 return res.status(400).json({ error: 'Invalid coordinate format' });

@@ -203,15 +203,19 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: citizenCredentials.password
       });
 
-      await agent
+      const response = await agent
         .get(`/api/reports/${testReport.id}/internal-comments`)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 401 if not authenticated', async () => {
-      await request(app)
+      const response = await request(app)
         .get(`/api/reports/${testReport.id}/internal-comments`)
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for invalid report ID', async () => {
@@ -221,9 +225,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .get('/api/reports/invalid/internal-comments')
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 404 for non-existent report', async () => {
@@ -233,9 +239,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .get('/api/reports/999999/internal-comments')
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -295,10 +303,12 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({})
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for empty content', async () => {
@@ -308,10 +318,12 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({ content: '   ' })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for content too long', async () => {
@@ -322,10 +334,12 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       });
 
       const longContent = 'a'.repeat(2001);
-      await agent
+      const response = await agent
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({ content: longContent })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 403 for citizen', async () => {
@@ -335,17 +349,21 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: citizenCredentials.password
       });
 
-      await agent
+      const response = await agent
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({ content: 'Should not work' })
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 401 if not authenticated', async () => {
-      await request(app)
+      const response = await request(app)
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({ content: 'Test' })
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 404 for non-existent report', async () => {
@@ -355,10 +373,12 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .post('/api/reports/999999/internal-comments')
         .send({ content: 'Test' })
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -409,9 +429,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: proCredentials.password
       });
 
-      await proAgent
+      const response = await proAgent
         .delete(`/api/reports/${testReport.id}/internal-comments/${commentId}`)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 403 for citizen', async () => {
@@ -421,15 +443,19 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: citizenCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete(`/api/reports/${testReport.id}/internal-comments/1`)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 401 if not authenticated', async () => {
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/${testReport.id}/internal-comments/1`)
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for invalid report ID', async () => {
@@ -439,9 +465,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete('/api/reports/invalid/internal-comments/1')
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for invalid comment ID', async () => {
@@ -451,9 +479,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete(`/api/reports/${testReport.id}/internal-comments/invalid`)
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 404 for non-existent report', async () => {
@@ -463,9 +493,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete('/api/reports/999999/internal-comments/1')
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 404 for non-existent comment', async () => {
@@ -475,9 +507,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete(`/api/reports/${testReport.id}/internal-comments/999999`)
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 });

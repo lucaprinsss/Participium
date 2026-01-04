@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { BadRequestError } from '@models/errors/BadRequestError';
 
 /**
@@ -10,7 +10,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 /**
  * Allowed image MIME types
  */
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']);
 
 /**
  * Save a base64 encoded image to the filesystem
@@ -21,7 +21,7 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif',
 export async function saveBase64Image(base64Image: string, userId: number): Promise<string> {
   // Extract MIME type and base64 data
   const matches = base64Image.match(/^data:(.+);base64,(.+)$/);
-  if (!matches || matches.length !== 3) {
+  if (matches?.length !== 3) {
     throw new BadRequestError('Invalid base64 image format');
   }
 
@@ -29,7 +29,7 @@ export async function saveBase64Image(base64Image: string, userId: number): Prom
   const base64Data = matches[2];
 
   // Validate MIME type
-  if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
     throw new BadRequestError('Invalid image type.  Allowed types:  JPEG, PNG, GIF, WebP');
   }
 

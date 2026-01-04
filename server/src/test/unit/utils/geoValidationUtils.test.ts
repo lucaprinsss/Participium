@@ -384,20 +384,20 @@ describe('geoValidationUtils', () => {
       
       mockedAxios.get.mockResolvedValue(mockResponse);
       
-      await expect(geocodeAddress('NonExistentAddress')).rejects.toThrow('Indirizzo non trovato');
+      await expect(geocodeAddress('NonExistentAddress')).rejects.toThrow('Address not found');
     });
 
     it('should throw error when geocoding fails', async () => {
       mockedAxios.get.mockRejectedValue(new Error('Network error'));
       
-      await expect(geocodeAddress('Turin, Italy')).rejects.toThrow('Indirizzo non trovato');
+      await expect(geocodeAddress('Turin, Italy')).rejects.toThrow('Address not found');
     });
 
     it('should handle axios errors gracefully', async () => {
       const axiosError = new Error('Request failed');
       mockedAxios.get.mockRejectedValue(axiosError);
       
-      await expect(geocodeAddress('Invalid Address')).rejects.toThrow('Indirizzo non trovato');
+      await expect(geocodeAddress('Invalid Address')).rejects.toThrow('Address not found');
     });
 
     it('should parse coordinates as floats', async () => {
