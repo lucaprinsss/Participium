@@ -31,6 +31,7 @@ jest.mock('@telegramBot/reportHandler', () => ({
 jest.mock('@telegramBot/botConfig', () => ({
   botConfig: {
     BOT_TOKEN: 'test-token',
+    ENABLED: true,
   },
 }));
 
@@ -54,7 +55,10 @@ describe('Telegram Bot', () => {
       // Reset and mock botConfig without token
       jest.resetModules();
       jest.doMock('@telegramBot/botConfig', () => ({
-        botConfig: {},
+        botConfig: {
+          BOT_TOKEN: '',
+          ENABLED: true,
+        },
       }));
 
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
@@ -64,6 +68,25 @@ describe('Telegram Bot', () => {
       botModule.initBot();
 
       expect(consoleSpy).toHaveBeenCalledWith('TELEGRAM_BOT_TOKEN not set. Telegram bot will not be started.');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should not initialize bot when disabled', () => {
+      jest.resetModules();
+      jest.doMock('@telegramBot/botConfig', () => ({
+        botConfig: {
+          BOT_TOKEN: 'test-token',
+          ENABLED: false,
+        },
+      }));
+
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      const botModule = require('@telegramBot/bot');
+      botModule.initBot();
+
+      expect(consoleSpy).toHaveBeenCalledWith('Telegram bot disabled. Set TELEGRAM_BOT_ENABLED=true to enable it.');
 
       consoleSpy.mockRestore();
     });

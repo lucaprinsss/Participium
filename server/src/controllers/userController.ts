@@ -259,18 +259,6 @@ class UserController {
         emailNotificationsEnabled 
       } = req.body;
 
-      // At least one field must be provided
-      if (
-        firstName === undefined && 
-        lastName === undefined && 
-        email === undefined && 
-        personalPhoto === undefined && 
-        telegramUsername === undefined && 
-        emailNotificationsEnabled === undefined
-      ) {
-        throw new BadRequestError('At least one field must be provided');
-      }
-
       const updatedUser = await userService.updateUserProfile(userId, {
         firstName,
         lastName,

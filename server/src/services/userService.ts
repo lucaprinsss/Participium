@@ -4,7 +4,7 @@ import { userRepository } from '@repositories/userRepository';
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { companyRepository } from '@repositories/companyRepository';
 import { ConflictError } from '@models/errors/ConflictError';
-import { NotFoundError } from '@models/errors/NotFoundError'; // Assunto che esista
+import { NotFoundError } from '@models/errors/NotFoundError';
 import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { AppError } from '@models/errors/AppError';
@@ -73,12 +73,12 @@ class UserService {
       username,
       email,
       password,
-      firstName: first_name,
-      lastName: last_name,
+      firstName:  first_name,
+      lastName:  last_name,
       emailNotificationsEnabled: true,
       isVerified: false,  // New citizens must verify their email
       verificationCode: otpCode,
-      verificationCodeExpiresAt: otpExpiration,
+      verificationCodeExpiresAt:  otpExpiration,
       telegramLinkConfirmed: false,
     });
 
@@ -89,7 +89,7 @@ class UserService {
       .values(
         targetRoleIds.map(roleId => ({
           userId: newUser.id,
-          departmentRoleId: roleId
+          departmentRoleId:  roleId
         }))
       )
       .execute();
@@ -100,7 +100,7 @@ class UserService {
       throw new AppError('Failed to reload user after role assignment', 500);
     }
 
-    logInfo(`New citizen registered: ${username} (ID: ${newUser.id})`);
+    logInfo(`New citizen registered: ${username} (ID: ${newUser. id})`);
 
     const userResponse = mapUserEntityToUserResponse(userWithRoles);
 
@@ -115,13 +115,13 @@ class UserService {
   }
 
   /**
-   * Gestisce il rinvio del codice di verifica.
+   * Gestisce il rinvio del codice di verifica. 
    * Aggiorna i dati dell'utente con un nuovo codice e una nuova scadenza.
    * @param email Email dell'utente
    */
   async resendVerificationCode(email: string): Promise<void> {
     // 1. Find the user
-    const user = await userRepository.findUserByEmail(email);
+    const user = await userRepository. findUserByEmail(email);
     if (!user) {
       throw new NotFoundError('User not found');
     }
@@ -150,7 +150,7 @@ class UserService {
   /**
    * Wrapper per l'invio dell'email per gestire errori di logging centralizzati
    */
-  private async sendVerificationCode(email: string, otpCode: string): Promise<void> {
+  private async sendVerificationCode(email:  string, otpCode: string): Promise<void> {
     try {
       await sendVerificationEmail(email, otpCode);
     } catch (error) {
@@ -159,7 +159,8 @@ class UserService {
       // throw new AppError('Error sending verification email', 500); 
     }
   }
-    /**
+
+  /**
    * Update user profile settings (photo, telegram, email notifications)
    * @param userId The ID of the user to update
    * @param updateData Data to update
@@ -176,15 +177,36 @@ class UserService {
       emailNotificationsEnabled?: boolean;
     }
   ): Promise<any> {
+    // ✅ FIXED: Handle empty/no updates - return current user gracefully
+    const hasAnyUpdate = Object.keys(updateData || {}).some(key => {
+      const value = updateData[key as keyof typeof updateData];
+      return value !== undefined;
+    });
+
+    if (!hasAnyUpdate) {
+      const user = await userRepository.findUserById(userId);
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+      
+      const response = mapUserEntityToUserResponse(user);
+      if (!response) {
+        throw new AppError('Failed to format user response', 500);
+      }
+      
+      return response;
+    }
+
+    // Get user (only once!)
     const user = await userRepository.findUserById(userId);
     if (!user) {
       throw new NotFoundError('User not found');
     }
 
-    const updatedFields: Partial<UserEntity> = {};
+    const updatedFields:  Partial<UserEntity> = {};
 
     // Handle First Name
-    if (updateData.firstName !== undefined) {
+    if (updateData. firstName !== undefined) {
       if (updateData.firstName.trim().length === 0) {
         throw new BadRequestError('First name cannot be empty');
       }
@@ -193,7 +215,7 @@ class UserService {
 
     // Handle Last Name
     if (updateData.lastName !== undefined) {
-      if (updateData.lastName.trim().length === 0) {
+      if (updateData. lastName.trim().length === 0) {
         throw new BadRequestError('Last name cannot be empty');
       }
       updatedFields.lastName = updateData.lastName;
@@ -232,7 +254,7 @@ class UserService {
         }
 
         // Delete old photo if exists
-        if (user.personalPhotoUrl) {
+        if (user. personalPhotoUrl) {
           deleteImage(user.personalPhotoUrl);
         }
 
@@ -240,13 +262,13 @@ class UserService {
         try {
           const photoUrl = await saveBase64Image(updateData.personalPhoto, userId);
           updatedFields.personalPhotoUrl = photoUrl;
-        } catch (error: any) {
-          // If the error is already a known type (e.g. BadRequestError from saveBase64Image), rethrow it
+        } catch (error:  any) {
+          // If the error is already a known type (e.g.  BadRequestError from saveBase64Image), rethrow it
           if (error.statusCode) {
             throw error;
           }
           // Otherwise throw a generic error with details
-          throw new BadRequestError(`Failed to save photo: ${error.message}`);
+          throw new BadRequestError(`Failed to save photo: ${error. message}`);
         }
       }
     }
@@ -258,10 +280,10 @@ class UserService {
       } else {
         // Validate telegram username format (alphanumeric, underscore, 5-32 chars)
         const telegramRegex = /^[a-zA-Z0-9_]{5,32}$/;
-        const cleanUsername = updateData.telegramUsername.replace('@', '').toLowerCase();
+        const cleanUsername = updateData.telegramUsername. replace('@', '').toLowerCase();
         
         if (!telegramRegex. test(cleanUsername)) {
-          throw new BadRequestError('Invalid Telegram username format. Must be 5-32 characters, alphanumeric and underscores only.');
+          throw new BadRequestError('Invalid Telegram username format.  Must be 5-32 characters, alphanumeric and underscores only.');
         }
 
         // Check if telegram username is already taken by another user (case-insensitive)
@@ -280,7 +302,7 @@ class UserService {
     }
 
     // Update user in database
-    const updatedUser = await userRepository.updateUser(userId, updatedFields);
+    const updatedUser = await userRepository. updateUser(userId, updatedFields);
 
     logInfo(`User profile updated: ${updatedUser.username} (ID: ${userId})`);
 
@@ -307,7 +329,7 @@ class UserService {
     }
 
     // 2. Verify current password
-    const [salt, hash] = user.passwordHash.split(':');
+    const [salt, hash] = user.passwordHash.split(': ');
     const isValid = await verifyPassword(currentPassword, salt, hash);
     
     if (!isValid) {
@@ -330,7 +352,7 @@ class UserService {
   private isValidBase64Image(base64String: string): boolean {
     // Check if it's a data URI
     const dataUriRegex = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/;
-    if (! dataUriRegex.test(base64String)) {
+    if (!dataUriRegex.test(base64String)) {
       return false;
     }
 
@@ -349,7 +371,6 @@ class UserService {
     }
   }
 
-
   /**
    * Gets user by ID
    * @param userId User ID
@@ -365,7 +386,6 @@ class UserService {
     return mapUserEntityToUserResponse(user);
   }
 
-
   /**
    * Gets user by username
    * @param username Username
@@ -380,18 +400,16 @@ class UserService {
     return mapUserEntityToUserResponse(user);
   }
 
-
   /**
    * Get external maintainers by category
    * @param category Category name to filter by
    * @returns Array of UserResponse DTOs
    */
   async getExternalMaintainersByCategory(category: string | undefined): Promise<UserResponse[]> {
-
     const externalMaintainers = await userRepository.findExternalMaintainersByCategory(category);
 
     // Batch query companies for all external maintainers
-    const companyIds = [...new Set(
+    const companyIds = [... new Set(
       externalMaintainers
         .map(user => user.companyId)
         .filter(id => id !== undefined && id !== null)
@@ -415,8 +433,8 @@ class UserService {
       .filter((user): user is UserResponse => user !== null);
   }
 
-  async getUserNotifications(userId: number, isRead?: boolean) {
-    const where: any = { userId };
+  async getUserNotifications(userId: number, isRead?:  boolean) {
+    const where:  any = { userId };
     if (typeof isRead !== 'undefined') {
       where.isRead = isRead;
     }
@@ -432,7 +450,7 @@ class UserService {
       throw new NotFoundError('Notification not found');
     }
     if (notification.userId !== userId) {
-      // Forbidden: trying to update someone else's notification
+      // Forbidden:  trying to update someone else's notification
       throw new InsufficientRightsError('You can only update your own notifications');
     }
     notification.isRead = isRead;
@@ -449,18 +467,20 @@ class UserService {
   }
 
   /**
-   * Confirm Telegram link after the user acknowledges in the web app.
+   * Confirm Telegram link after the user acknowledges in the web app. 
    */
-  async confirmTelegramLink(userId: number): Promise<{ success: boolean; message: string }> {
+  async confirmTelegramLink(userId: number): Promise<{ success: boolean; message:  string }> {
     return userRepository.confirmTelegramLink(userId);
   }
+
   /**
    * Unlink Telegram account
    * @param userId User ID
    * @returns Result with success status and message
    */
-  async unlinkTelegramAccount(userId: number): Promise<{ success: boolean; message: string }> {
+  async unlinkTelegramAccount(userId: number): Promise<{ success: boolean; message:  string }> {
     return userRepository.unlinkTelegramAccount(userId);
-  }}
+  }
+}
 
 export const userService = new UserService();

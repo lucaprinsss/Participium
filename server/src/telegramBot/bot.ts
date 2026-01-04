@@ -7,6 +7,11 @@ let botInstance: Telegraf | null = null;
 let reportHandler: ReportHandler | null = null;
 
 export const initBot = () => {
+  if (!botConfig.ENABLED) {
+    console.log('Telegram bot disabled. Set TELEGRAM_BOT_ENABLED=true to enable it.');
+    return;
+  }
+
   if (!botConfig.BOT_TOKEN) {
     console.log('TELEGRAM_BOT_TOKEN not set. Telegram bot will not be started.');
     return;

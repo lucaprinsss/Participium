@@ -494,6 +494,222 @@ describe('UserController Unit Tests', () => {
     });
   });
 
+  describe('updateProfile', () => {
+    const validUpdateData = {
+      firstName: 'UpdatedFirst',
+      lastName: 'UpdatedLast',
+      email: 'updated@example.com',
+      personalPhoto: 'photo.jpg',
+      telegramUsername: 'updateduser',
+      emailNotificationsEnabled: true,
+    };
+
+    const mockUpdatedUser = {
+      id: 1,
+      username: 'testuser',
+      email: 'updated@example.com',
+      first_name: 'UpdatedFirst',
+      last_name: 'UpdatedLast',
+      personal_photo: 'photo.jpg',
+      telegram_username: 'updateduser',
+      email_notifications_enabled: true,
+    };
+
+    it('should update user profile successfully', async () => {
+      // Arrange
+      mockRequest.user = { id: 1 };
+      mockRequest.body = validUpdateData;
+      (userService.updateUserProfile as jest.Mock).mockResolvedValue(mockUpdatedUser);
+
+      // Act
+      await userController.updateProfile(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.updateUserProfile).toHaveBeenCalledWith(1, validUpdateData);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(mockUpdatedUser);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedError if user is not authenticated', async () => {
+      // Arrange
+      mockRequest.user = undefined;
+      mockRequest.body = validUpdateData;
+
+      // Act
+      await userController.updateProfile(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+      expect(userService.updateUserProfile).not.toHaveBeenCalled();
+      expect(statusMock).not.toHaveBeenCalled();
+    });
+
+    it('should handle service errors gracefully', async () => {
+      // Arrange
+      mockRequest.user = { id: 1 };
+      mockRequest.body = validUpdateData;
+      const serviceError = new Error('Update failed');
+      (userService.updateUserProfile as jest.Mock).mockRejectedValue(serviceError);
+
+      // Act
+      await userController.updateProfile(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.updateUserProfile).toHaveBeenCalledWith(1, validUpdateData);
+      expect(mockNext).toHaveBeenCalledWith(serviceError);
+      expect(statusMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updatePassword', () => {
+    const validPasswordData = {
+      currentPassword: 'oldPass123',
+      newPassword: 'newPass123',
+    };
+
+    it('should update password successfully', async () => {
+      // Arrange
+      mockRequest.user = { id: 1 };
+      mockRequest.body = validPasswordData;
+      (userService.updatePassword as jest.Mock).mockResolvedValue(undefined);
+
+      // Act
+      await userController.updatePassword(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.updatePassword).toHaveBeenCalledWith(1, 'oldPass123', 'newPass123');
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith({ message: 'Password updated successfully' });
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedError if user is not authenticated', async () => {
+      // Arrange
+      mockRequest.user = undefined;
+      mockRequest.body = validPasswordData;
+
+      // Act
+      await userController.updatePassword(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+      expect(userService.updatePassword).not.toHaveBeenCalled();
+      expect(statusMock).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError if currentPassword is missing', async () => {
+      // Arrange
+      mockRequest.user = { id: 1 };
+      mockRequest.body = {
+        newPassword: 'newPass123',
+      };
+
+      // Act
+      await userController.updatePassword(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Current password and new password are required',
+        })
+      );
+      expect(userService.updatePassword).not.toHaveBeenCalled();
+      expect(statusMock).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError if newPassword is missing', async () => {
+      // Arrange
+      mockRequest.user = { id: 1 };
+      mockRequest.body = {
+        currentPassword: 'oldPass123',
+      };
+
+      // Act
+      await userController.updatePassword(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+      expect(userService.updatePassword).not.toHaveBeenCalled();
+      expect(statusMock).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError if newPassword is too short', async () => {
+      // Arrange
+      mockRequest.user = { id: 1 };
+      mockRequest.body = {
+        currentPassword: 'oldPass123',
+        newPassword: '12345', // less than 6
+      };
+
+      // Act
+      await userController.updatePassword(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(mockNext).toHaveBeenCalledWith(expect.any(BadRequestError));
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'New password must be at least 6 characters long',
+        })
+      );
+      expect(userService.updatePassword).not.toHaveBeenCalled();
+      expect(statusMock).not.toHaveBeenCalled();
+    });
+
+    it('should handle service errors gracefully', async () => {
+      // Arrange
+      mockRequest.user = { id: 1 };
+      mockRequest.body = validPasswordData;
+      const serviceError = new Error('Password update failed');
+      (userService.updatePassword as jest.Mock).mockRejectedValue(serviceError);
+
+      // Act
+      await userController.updatePassword(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert
+      expect(userService.updatePassword).toHaveBeenCalledWith(1, 'oldPass123', 'newPass123');
+      expect(mockNext).toHaveBeenCalledWith(serviceError);
+      expect(statusMock).not.toHaveBeenCalled();
+    });
+  });
+
   describe('register - Input Validation Edge Cases', () => {
     const validRegistrationData = {
       username: 'newcitizen',

@@ -60,6 +60,8 @@ cp .env.example .env
 
 Open the newly created `.env` file and update the variables with your real credentials (especially `EMAIL_PASS` and `TELEGRAM_BOT_TOKEN`).
 
+Only one environment should own the Telegram polling session at a time. Keep `TELEGRAM_BOT_ENABLED=false` for local development and set it to `true` only on the deployment (or single dev machine) that must process Telegram updates.
+
 **2. Test Configuration:**
 
 To run automated tests, you must also configure the test environment variables:
