@@ -2,6 +2,14 @@
 
 **Participium** is a citizen reporting platform that enables residents to report urban issues (potholes, broken street lights, waste management, etc.) and allows municipal staff to manage, assign, and resolve these reports efficiently.
 
+## Features
+
+- **Web-based reporting**: Citizens can submit reports with photos and location data through the web interface.
+- **Telegram Bot Integration**: Users can link their Telegram accounts to receive notifications and potentially submit reports via Telegram for enhanced accessibility.
+- **Role-based access**: Supports multiple user roles including citizens, municipal staff, directors, and external maintainers.
+- **Geospatial features**: Utilizes PostGIS for location-based queries and mapping.
+- **Photo uploads**: Supports image attachments for detailed report documentation.
+
 ## Quick Start
 
 ### Prerequisites
