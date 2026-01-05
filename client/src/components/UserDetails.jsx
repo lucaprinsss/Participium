@@ -4,7 +4,7 @@ import { Dropdown } from "react-bootstrap";
 import { FaUser, FaEnvelope, FaUserShield, FaTrash, FaPlus, FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import "../css/UserDetails.css";
 
-export default function UserDetails({ user, departmentRolesMapping, onSave, onCancel, loading }) {
+export default function UserDetails({ user, departmentRolesMapping, onSave, onCancel, loading, onDirtyChange }) {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         firstName: "",
@@ -17,16 +17,32 @@ export default function UserDetails({ user, departmentRolesMapping, onSave, onCa
     const [newRoleDept, setNewRoleDept] = useState("");
     const [newRoleName, setNewRoleName] = useState("");
 
+    const [initialFormData, setInitialFormData] = useState(null);
+    const [isDirty, setIsDirty] = useState(false);
+
     useEffect(() => {
         if (user) {
-            setFormData({
+            const initial = {
                 firstName: user.first_name || "",
                 lastName: user.last_name || "",
                 email: user.email || "",
                 roles: user.roles ? [...user.roles] : []
-            });
+            };
+            setFormData(initial);
+            setInitialFormData(initial);
         }
     }, [user]);
+
+    useEffect(() => {
+        if (!initialFormData) return;
+        const dirty = 
+            formData.firstName !== initialFormData.firstName ||
+            formData.lastName !== initialFormData.lastName ||
+            formData.email !== initialFormData.email ||
+            JSON.stringify(formData.roles) !== JSON.stringify(initialFormData.roles);
+        setIsDirty(dirty);
+        if (onDirtyChange) onDirtyChange(dirty);
+    }, [formData, initialFormData, onDirtyChange]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -251,5 +267,6 @@ UserDetails.propTypes = {
     departmentRolesMapping: PropTypes.array,
     onSave: PropTypes.func.isRequired,
     onCancel: PropTypes.func.isRequired,
-    loading: PropTypes.bool
+    loading: PropTypes.bool,
+    onDirtyChange: PropTypes.func
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { Alert, Modal, Dropdown, InputGroup, Tooltip, OverlayTrigger, Form } from "react-bootstrap";
-import { FaFilter, FaBuilding, FaChevronDown, FaUndo } from "react-icons/fa";
+import { FaFilter, FaBuilding, FaChevronDown, FaUndo, FaExclamationTriangle } from "react-icons/fa";
 import {
     getAllMunicipalityUsers,
     deleteMunicipalityUser,
@@ -35,6 +35,9 @@ export default function MunicipalityUserList({ refreshTrigger }) {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingUser, setDeletingUser] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
+
+    const [showBlockerModal, setShowBlockerModal] = useState(false);
+    const [isEditDirty, setIsEditDirty] = useState(false);
 
     // --- MAIN DATA FETCH ---
     useEffect(() => {
@@ -98,6 +101,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
         }
 
         setEditLoading(true);
+        setIsEditDirty(false); // Reset dirty state when saving starts
         try {
             const payload = {
                 email: formData.email,
@@ -113,6 +117,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
             setTimeout(() => setSuccess(""), 5000);
         } catch (err) {
             setError(err.message || "Update failed.");
+            setIsEditDirty(true); // Re-enable if save fails
         } finally {
             setEditLoading(false);
         }
@@ -139,6 +144,24 @@ export default function MunicipalityUserList({ refreshTrigger }) {
             setShowDeleteModal(false);
         } finally {
             setDeleteLoading(false);
+        }
+    };
+
+    const handleBlockerConfirm = () => {
+        setShowEditModal(false);
+        setShowBlockerModal(false);
+        setIsEditDirty(false);
+    };
+
+    const handleBlockerCancel = () => {
+        setShowBlockerModal(false);
+    };
+
+    const handleEditModalClose = () => {
+        if (isEditDirty) {
+            setShowBlockerModal(true);
+        } else {
+            setShowEditModal(false);
         }
     };
 
@@ -320,14 +343,15 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                 </div>
             </div>
 
-            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered dialogClassName="mul-modal-content" size="lg">
+            <Modal show={showEditModal} onHide={handleEditModalClose} centered dialogClassName="mul-modal-content" size="lg">
                 <Modal.Body className="mul-modal-body p-0">
                     <UserDetails 
                         user={editingUser} 
                         departmentRolesMapping={departmentRolesMapping}
                         onSave={handleEditSubmit} 
-                        onCancel={() => setShowEditModal(false)}
+                        onCancel={() => handleEditModalClose()}
                         loading={editLoading} 
+                        onDirtyChange={setIsEditDirty}
                     />
                 </Modal.Body>
             </Modal>
@@ -340,6 +364,35 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                     <button className="mul-modal-btn mul-modal-btn-danger" onClick={handleDeleteConfirm}>{deleteLoading ? "Deleting..." : "Delete"}</button>
                 </Modal.Footer>
             </Modal>
+
+            {/* Unsaved Changes Modal */}
+            {showBlockerModal && (
+                <div className="up-modal-overlay">
+                    <div className="up-modal-content">
+                        <div className="up-modal-icon-wrapper">
+                            <FaExclamationTriangle className="up-modal-icon" />
+                        </div>
+                        <h3 className="up-modal-title">Unsaved Changes</h3>
+                        <p className="up-modal-text">
+                            You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+                        </p>
+                        <div className="up-modal-actions">
+                            <button 
+                                className="up-btn-modal-cancel" 
+                                onClick={handleBlockerCancel}
+                            >
+                                Stay
+                            </button>
+                            <button 
+                                className="up-btn-modal-confirm" 
+                                onClick={handleBlockerConfirm}
+                            >
+                                Leave
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

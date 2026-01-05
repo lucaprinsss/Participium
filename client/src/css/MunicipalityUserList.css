@@ -1042,3 +1042,112 @@
     margin-bottom: 1.5rem;
   }
 }
+
+/* --- CONFIRMATION MODAL --- */
+.up-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  animation: up-fadeIn 0.2s ease-out;
+}
+
+.up-modal-content {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  text-align: center;
+  animation: up-scaleIn 0.2s ease-out;
+}
+
+.up-modal-icon-wrapper {
+  width: 3.5rem;
+  height: 3.5rem;
+  background-color: #fff7ed; /* Orange-50 */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+}
+
+.up-modal-icon {
+  color: #f97316; /* Orange-500 */
+  font-size: 1.75rem;
+}
+
+.up-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.up-modal-text {
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.up-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.up-btn-modal-cancel {
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.up-btn-modal-cancel:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.up-btn-modal-confirm {
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background-color: var(--brand-red);
+  border: 1px solid transparent;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.up-btn-modal-confirm:hover {
+  background-color: var(--brand-red-hover);
+  transform: translateY(-1px);
+}
+
+@keyframes up-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes up-scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
