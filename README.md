@@ -2,6 +2,14 @@
 
 **Participium** is a citizen reporting platform that enables residents to report urban issues (potholes, broken street lights, waste management, etc.) and allows municipal staff to manage, assign, and resolve these reports efficiently.
 
+## Features
+
+- **Web-based reporting**: Citizens can submit reports with photos and location data through the web interface.
+- **Telegram Bot Integration**: Users can link their Telegram accounts to receive notifications and potentially submit reports via Telegram for enhanced accessibility.
+- **Role-based access**: Supports multiple user roles including citizens, municipal staff, directors, and external maintainers.
+- **Geospatial features**: Utilizes PostGIS for location-based queries and mapping.
+- **Photo uploads**: Supports image attachments for detailed report documentation.
+
 ## Quick Start
 
 ### Prerequisites
@@ -48,26 +56,64 @@ npm install
 
 #### Configure Environment Variables
 
-For security reasons, the `.env` files containing secrets are not included in the repository. You need to create them from the provided example files.
+For security reasons, the `.env` files containing secrets are not included in the repository. You need to create them manually.
 
 **1. Development Configuration:**
 
-Copy the example file to create your local `.env`:
+Create a `.env` file in the project root with the following content, and update the variables with your real credentials:
 
-```bash
-cp .env.example .env
+```dotenv
+# Database Configuration
+# Example of a local connection URL
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=your_db_name
+
+# Server Configuration
+PORT=3001
+NODE_ENV=development
+
+# Email Configuration
+# For Gmail, use an App Password, not your login password
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+
+# Telegram Bot Configuration
+# Get the token from @BotFather on Telegram
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+# Enables or disables the Telegram bot functionality
+TELEGRAM_BOT_ENABLED=false
 ```
-
-Open the newly created `.env` file and update the variables with your real credentials (especially `EMAIL_PASS` and `TELEGRAM_BOT_TOKEN`).
 
 Only one environment should own the Telegram polling session at a time. Keep `TELEGRAM_BOT_ENABLED=false` for local development and set it to `true` only on the deployment (or single dev machine) that must process Telegram updates.
 
 **2. Test Configuration:**
 
-To run automated tests, you must also configure the test environment variables:
+Create a `.env.test` file in the project root with the following content:
 
-```bash
-cp .env.test.example .env.test
+```dotenv
+# Database Configuration (Test)
+# Be sure these values match your test docker-compose
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+DB_USER=participium_test
+DB_PASSWORD=test_password_123
+DB_HOST=localhost
+DB_PORT=5433
+DB_NAME=participium_db_test
+
+# Server Configuration
+PORT=3001
+NODE_ENV=test
+
+# Session Configuration
+# For the tests, you can use any random string, but do not commit the real one if used elsewhere
+SESSION_SECRET=your_random_session_secret
+
+# Logging
+LOG_LEVEL=error
 ```
 
 #### Start development server:

@@ -19,7 +19,6 @@ const ReportSidebar = ({
   const [loadingExternal, setLoadingExternal] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // FIX S3776: Usato useCallback per stabilizzare l'handler
   const fetchExternalUsers = useCallback(async () => {
     setLoadingExternal(true);
     try {
@@ -121,7 +120,6 @@ const ReportSidebar = ({
     return <span className="text-muted">Not assigned</span>;
   }
 
-  // RISOLTO S3358: Estraggo la logica ternaria annidata in una funzione di rendering locale
   const renderDropdownContent = () => {
     if (loadingExternal) {
       return <div className="rdm-loading-state">Loading...</div>;
@@ -235,7 +233,6 @@ const ReportSidebar = ({
                 <FaChevronDown className={`rdm-chevron ${isDropdownOpen ? "rotate" : ""}`} />
               </Dropdown.Toggle>
               <Dropdown.Menu className="rdm-dropdown-menu shadow-lg border-0">
-                {/* Utilizzo della funzione estratta per risolvere S3358 */}
                 {renderDropdownContent()}
               </Dropdown.Menu>
             </Dropdown>
