@@ -768,7 +768,7 @@ VALUES (
     'Via Legnano, 1, Borgo Vittoria, Torino, Città Metropolitana di Torino, Piemonte, 10148, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_traffic'),
     (SELECT id FROM users WHERE username = 'atm'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -827,7 +827,7 @@ VALUES (
     'Via Giuseppe Giusti, 3, San Salvario, Torino, Città Metropolitana di Torino, Piemonte, 10133, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_waste'),
     (SELECT id FROM users WHERE username = 'hera'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -853,7 +853,7 @@ VALUES (
     'Corso Orbassano, 224a, Mirafiori Sud, Torino, Città Metropolitana di Torino, Piemonte, 10137, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_lighting'),
     (SELECT id FROM users WHERE username = 'enelx'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -911,7 +911,7 @@ VALUES (
     'Parco del Valentino, 1, Parco del Valentino, Torino, Città Metropolitana di Torino, Piemonte, 10126, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_parks'),
     (SELECT id FROM users WHERE username = 'giardinriverdi'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -962,7 +962,7 @@ VALUES (
     'Corso Vittorio Emanuele II, 1, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10123, Italia',
     false,
     'In Progress',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_water'),
     (SELECT id FROM users WHERE username = 'acea'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -988,7 +988,7 @@ VALUES (
     'Via Po, 1, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10123, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_support'),
     (SELECT id FROM users WHERE username = 'servizigenerali'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1064,7 +1064,7 @@ VALUES (
     'Via Guido Reni, 1, Barriera di Milano, Torino, Città Metropolitana di Torino, Piemonte, 10152, Italia',
     false,
     'In Progress',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_sewer'),
     (SELECT id FROM users WHERE username = 'fognaturepro'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1115,7 +1115,7 @@ VALUES (
     'Via Sacchi, 1, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10128, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_access'),
     (SELECT id FROM users WHERE username = 'accessibilita'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1241,7 +1241,7 @@ VALUES (
     'Via Filadelfia, 1, Mirafiori Nord, Torino, Città Metropolitana di Torino, Piemonte, 10137, Italia',
     true,
     'Resolved',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_sewer'),
     (SELECT id FROM users WHERE username = 'idraulicaexpress'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1267,7 +1267,7 @@ VALUES (
     'Via Alfredo Oriani, 1, Barriera di Milano, Torino, Città Metropolitana di Torino, Piemonte, 10152, Italia',
     false,
     'In Progress',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_lighting'),
     (SELECT id FROM users WHERE username = 'luceservice'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1293,7 +1293,7 @@ VALUES (
     'Via Garibaldi, 1, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10122, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_access'),
     (SELECT id FROM users WHERE username = 'barrierezero'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1319,7 +1319,7 @@ VALUES (
     'Corso Francia, 1, Crocetta, Torino, Città Metropolitana di Torino, Piemonte, 10138, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_road'),
     (SELECT id FROM users WHERE username = 'stradesicure'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1370,7 +1370,7 @@ VALUES (
     'Via Francesco Saverio Nitti, 1, Mirafiori Sud, Torino, Città Metropolitana di Torino, Piemonte, 10137, Italia',
     false,
     'In Progress',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_support'),
     (SELECT id FROM users WHERE username = 'manutenzioneuniv'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1421,7 +1421,7 @@ VALUES (
     'Giardini Cavour, 1, Centro, Torino, Città Metropolitana di Torino, Piemonte, 10123, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_parks'),
     (SELECT id FROM users WHERE username = 'parchibelli'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1522,7 +1522,7 @@ VALUES (
     'Corso Trapani, 1, Borgo San Paolo, Torino, Città Metropolitana di Torino, Piemonte, 10139, Italia',
     false,
     'Assigned',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_waste'),
     (SELECT id FROM users WHERE username = 'ecoservice'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1573,7 +1573,7 @@ VALUES (
     'Corso Stati Uniti, 1, Borgo Po, Torino, Città Metropolitana di Torino, Piemonte, 10127, Italia',
     false,
     'In Progress',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_traffic'),
     (SELECT id FROM users WHERE username = 'segnaletica'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1697,7 +1697,7 @@ VALUES (
     'Corso Bolzano, 87, San Paolo, Torino, Città Metropolitana di Torino, Piemonte, 10121, Italia',
     false,
     'In Progress',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_roads'),
     (SELECT id FROM users WHERE username = 'asfaltinord'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
@@ -1797,7 +1797,7 @@ VALUES (
     'Giardino Peppino Impastato, Torino, TO, Italy',
     false,
     'In Progress',
-    NULL,
+    (SELECT id FROM users WHERE username = 'staff_water'),
     (SELECT id FROM users WHERE username = 'acquatecnica'),
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP

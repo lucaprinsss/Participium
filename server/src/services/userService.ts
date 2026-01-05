@@ -35,6 +35,32 @@ class UserService {
   }
 
   /**
+   * Validates that role combination doesn't mix internal staff and external maintainer
+   * @param departmentRoles Array of department role entities
+   * @throws BadRequestError if invalid combination detected
+   */
+  private validateRoleCombination(departmentRoles: any[]): void {
+    const roleNames = departmentRoles
+      .map((dr: any) => dr.role?.name)
+      .filter(Boolean) as string[];
+    
+    const hasInternalStaff = roleNames.some(name => 
+      name !== 'Citizen' && 
+      name !== 'Administrator' && 
+      name !== 'Municipal Public Relations Officer' &&
+      name !== 'External Maintainer'
+    );
+    
+    const hasExternalMaintainer = roleNames.includes('External Maintainer');
+    
+    if (hasInternalStaff && hasExternalMaintainer) {
+      throw new BadRequestError(
+        'Cannot assign both Internal Staff and External Maintainer roles to the same user'
+      );
+    }
+  }
+
+  /**
    * Registers a new citizen
    * Validates uniqueness of username and email
    * @param registerData User registration data with department_role_ids
@@ -63,6 +89,17 @@ class UserService {
         throw new AppError('Default Citizen role not found', 500);
       }
       targetRoleIds = [citizenRole.id];
+    }
+
+    // Validate role combination if custom roles provided
+    if (department_role_ids && department_role_ids.length > 0) {
+      const departmentRoles = await Promise.all(
+        targetRoleIds.map(id => departmentRoleRepository.findById(id))
+      );
+      const validDepartmentRoles = departmentRoles.filter(
+        (dr): dr is NonNullable<typeof dr> => dr !== null
+      );
+      this.validateRoleCombination(validDepartmentRoles);
     }
 
     // Generate OTP data using the helper

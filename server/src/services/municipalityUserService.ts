@@ -31,6 +31,32 @@ class MunicipalityUserService {
   }
 
   /**
+   * Validates that role combination doesn't mix internal staff and external maintainer
+   * @param departmentRoles Array of department role entities
+   * @throws BadRequestError if invalid combination detected
+   */
+  private validateRoleCombination(departmentRoles: any[]): void {
+    const roleNames = departmentRoles
+      .map((dr: any) => dr.role?.name)
+      .filter(Boolean) as string[];
+    
+    const hasInternalStaff = roleNames.some(name => 
+      name !== 'Citizen' && 
+      name !== 'Administrator' && 
+      name !== 'Municipal Public Relations Officer' &&
+      name !== 'External Maintainer'
+    );
+    
+    const hasExternalMaintainer = roleNames.includes('External Maintainer');
+    
+    if (hasInternalStaff && hasExternalMaintainer) {
+      throw new BadRequestError(
+        'Cannot assign both Internal Staff and External Maintainer roles to the same user'
+      );
+    }
+  }
+
+  /**
    * Create a new municipality user
    * @param registerData User registration data
    * @returns The created user response
@@ -62,6 +88,9 @@ class MunicipalityUserService {
     if (departmentRoles.length !== department_role_ids.length) {
       throw new BadRequestError('One or more invalid department role IDs provided');
     }
+
+    // Validate role combination (cannot mix internal staff and external maintainer)
+    this.validateRoleCombination(departmentRoles);
 
     // Check that none of the roles are Citizen or Administrator
     for (const dr of departmentRoles) {
@@ -266,7 +295,8 @@ class MunicipalityUserService {
       if (departmentRoles.length !== updateData.department_role_ids.length) {
         throw new BadRequestError('One or more invalid department role IDs provided');
       }
-
+      // Validate role combination (cannot mix internal staff and external maintainer)
+      this.validateRoleCombination(departmentRoles);
       // Check that none of the new roles are Citizen or Administrator
       for (const dr of departmentRoles) {
         if (dr.role?.name === 'Citizen' || dr.role?.name === 'Administrator') {
