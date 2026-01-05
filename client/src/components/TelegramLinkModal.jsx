@@ -4,7 +4,7 @@ import { FaTelegram, FaTimes, FaCopy, FaCheck, FaClock, FaUnlink, FaExclamationT
 import { confirmTelegramLink, generateTelegramLinkCode, getTelegramStatus, unlinkTelegramAccount } from '../api/authApi';
 import '../css/TelegramLinkModal.css';
 
-const TelegramLinkModal = ({ onClose }) => {
+const TelegramLinkModal = ({ onClose, onUpdate }) => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -98,6 +98,9 @@ const TelegramLinkModal = ({ onClose }) => {
         setStatus((prev) => ({ ...(prev || {}), ...res }));
         setCode(null);
         setExpiresAt(null);
+        if (onUpdate) {
+          onUpdate(res.telegramUsername);
+        }
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         const msg = res.requiresConfirmation ? 'Link pending. Please finish the flow from the app.' : 'Not yet linked. Did you send the code to the bot?';
@@ -120,6 +123,9 @@ const TelegramLinkModal = ({ onClose }) => {
       setCode(null);
       setExpiresAt(null);
       await loadTelegramStatus();
+      if (onUpdate) {
+        onUpdate(null);
+      }
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       setError(err.message || 'Error during unlinking.');
@@ -290,6 +296,7 @@ const TelegramLinkModal = ({ onClose }) => {
 
 TelegramLinkModal.propTypes = {
   onClose: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func,
 };
 
 export default TelegramLinkModal;

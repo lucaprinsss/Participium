@@ -18,6 +18,7 @@ import {
 } from "react-icons/fa";
 import "../css/UserProfile.css";
 import { updateUserProfile, updatePassword } from "../api/userApi";
+import TelegramLinkModal from './TelegramLinkModal';
 
 export default function UserProfile({ user, onUpdateUser }) {
   // Stato locale per il form
@@ -57,6 +58,7 @@ export default function UserProfile({ user, onUpdateUser }) {
   const [initialFormData, setInitialFormData] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
   const [showBlockerModal, setShowBlockerModal] = useState(false);
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
 
   // Inizializza il form
   useEffect(() => {
@@ -588,9 +590,9 @@ export default function UserProfile({ user, onUpdateUser }) {
                     name="telegramUsername"
                     value={formData.telegramUsername}
                     readOnly
-                    disabled
                     placeholder="Not linked"
-                    title="Please link/unlink your Telegram account from the home page."
+                    onClick={() => setShowTelegramModal(true)}
+                    /*style={{ cursor: 'pointer' }}*/
                   />
                 </div>
               </div>
@@ -777,6 +779,25 @@ export default function UserProfile({ user, onUpdateUser }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Telegram Link Modal */}
+      {showTelegramModal && (
+        <TelegramLinkModal 
+          onClose={() => setShowTelegramModal(false)} 
+          onUpdate={(telegramUsername) => {
+            setFormData((prev) => ({
+              ...prev,
+              telegramUsername: telegramUsername || ""
+            }));
+            if (onUpdateUser && user) {
+              onUpdateUser({
+                ...user,
+                telegram_username: telegramUsername || null
+              });
+            }
+          }}
+        />
       )}
     </div>
   );
