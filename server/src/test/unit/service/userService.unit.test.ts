@@ -112,8 +112,18 @@ describe('UserService', () => {
         const mockUserWithRoles = createMockUserEntity({ id: 10, username: 'newuser' });
         const mockResponse = createMockUserResponse({ id: 10, username: 'newuser' });
 
+        const mockDepartmentRole = {
+          id: 1,
+          departmentId: 1,
+          roleId: 1,
+          department: { id: 1, name: 'Organization', departmentRoles: [] },
+          role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
+          userRoles: []
+        };
+
         (userRepository.existsUserByUsername as jest.Mock).mockResolvedValue(false);
         (userRepository.existsUserByEmail as jest.Mock).mockResolvedValue(false);
+        (departmentRoleRepository.findById as jest.Mock).mockResolvedValue(mockDepartmentRole);
         (userRepository.createUserWithPassword as jest.Mock).mockResolvedValue(mockCreatedUser);
         (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUserWithRoles);
         (mapperService.mapUserEntityToUserResponse as jest.Mock).mockReturnValue(mockResponse);
@@ -138,8 +148,18 @@ describe('UserService', () => {
         const mockUserWithRoles = createMockUserEntity({ id: 10 });
         const mockResponse = createMockUserResponse({ id: 10 });
 
+        const mockDepartmentRole = {
+          id: 1,
+          departmentId: 1,
+          roleId: 1,
+          department: { id: 1, name: 'Organization', departmentRoles: [] },
+          role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
+          userRoles: []
+        };
+
         (userRepository.existsUserByUsername as jest.Mock).mockResolvedValue(false);
         (userRepository.existsUserByEmail as jest.Mock).mockResolvedValue(false);
+        (departmentRoleRepository.findById as jest.Mock).mockResolvedValue(mockDepartmentRole);
         (userRepository.createUserWithPassword as jest.Mock).mockResolvedValue(mockCreatedUser);
         (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUserWithRoles);
         (mapperService.mapUserEntityToUserResponse as jest.Mock).mockReturnValue(mockResponse);
@@ -162,8 +182,18 @@ describe('UserService', () => {
         const mockUserWithRoles = createMockUserEntity({ id: 10 });
         const mockResponse = createMockUserResponse({ id: 10 });
 
+        const mockDepartmentRole = {
+          id: 1,
+          departmentId: 1,
+          roleId: 1,
+          department: { id: 1, name: 'Organization', departmentRoles: [] },
+          role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
+          userRoles: []
+        };
+
         (userRepository.existsUserByUsername as jest.Mock).mockResolvedValue(false);
         (userRepository.existsUserByEmail as jest.Mock).mockResolvedValue(false);
+        (departmentRoleRepository.findById as jest.Mock).mockResolvedValue(mockDepartmentRole);
         (userRepository.createUserWithPassword as jest.Mock).mockResolvedValue(mockCreatedUser);
         (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUserWithRoles);
         (mapperService.mapUserEntityToUserResponse as jest.Mock).mockReturnValue(mockResponse);
@@ -188,8 +218,38 @@ describe('UserService', () => {
         const mockUserWithRoles = createMockUserEntity({ id: 10 });
         const mockResponse = createMockUserResponse({ id: 10 });
 
+        const mockDepartmentRoles = [
+          {
+            id: 1,
+            departmentId: 1,
+            roleId: 1,
+            department: { id: 1, name: 'Organization', departmentRoles: [] },
+            role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
+            userRoles: []
+          },
+          {
+            id: 2,
+            departmentId: 1,
+            roleId: 2,
+            department: { id: 1, name: 'Organization', departmentRoles: [] },
+            role: { id: 2, name: 'Administrator', description: 'Admin role', departmentRoles: [] },
+            userRoles: []
+          },
+          {
+            id: 3,
+            departmentId: 2,
+            roleId: 3,
+            department: { id: 2, name: 'IT', departmentRoles: [] },
+            role: { id: 3, name: 'Developer', description: 'Developer role', departmentRoles: [] },
+            userRoles: []
+          }
+        ];
+
         (userRepository.existsUserByUsername as jest.Mock).mockResolvedValue(false);
         (userRepository.existsUserByEmail as jest.Mock).mockResolvedValue(false);
+        (departmentRoleRepository.findById as jest.Mock).mockImplementation((id: number) => {
+          return Promise.resolve(mockDepartmentRoles.find(dr => dr.id === id));
+        });
         (userRepository.createUserWithPassword as jest.Mock).mockResolvedValue(mockCreatedUser);
         (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUserWithRoles);
         (mapperService.mapUserEntityToUserResponse as jest.Mock).mockReturnValue(mockResponse);
@@ -310,8 +370,18 @@ describe('UserService', () => {
         // Arrange
         const mockCreatedUser = createMockUserEntity({ id: 10 });
 
+        const mockDepartmentRole = {
+          id: 1,
+          departmentId: 1,
+          roleId: 1,
+          department: { id: 1, name: 'Organization', departmentRoles: [] },
+          role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
+          userRoles: []
+        };
+
         (userRepository.existsUserByUsername as jest.Mock).mockResolvedValue(false);
         (userRepository.existsUserByEmail as jest.Mock).mockResolvedValue(false);
+        (departmentRoleRepository.findById as jest.Mock).mockResolvedValue(mockDepartmentRole);
         (userRepository.createUserWithPassword as jest.Mock).mockResolvedValue(mockCreatedUser);
         (userRepository.findUserById as jest.Mock).mockResolvedValue(null);
 
@@ -331,8 +401,18 @@ describe('UserService', () => {
         const mockCreatedUser = createMockUserEntity({ id: 10 });
         const mockUserWithRoles = createMockUserEntity({ id: 10 });
 
+        const mockDepartmentRole = {
+          id: 1,
+          departmentId: 1,
+          roleId: 1,
+          department: { id: 1, name: 'Organization', departmentRoles: [] },
+          role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
+          userRoles: []
+        };
+
         (userRepository.existsUserByUsername as jest.Mock).mockResolvedValue(false);
         (userRepository.existsUserByEmail as jest.Mock).mockResolvedValue(false);
+        (departmentRoleRepository.findById as jest.Mock).mockResolvedValue(mockDepartmentRole);
         (userRepository.createUserWithPassword as jest.Mock).mockResolvedValue(mockCreatedUser);
         (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUserWithRoles);
         (mapperService.mapUserEntityToUserResponse as jest.Mock).mockReturnValue(null);
@@ -363,8 +443,18 @@ describe('UserService', () => {
         // Arrange
         const error = new Error('Failed to create user');
 
+        const mockDepartmentRole = {
+          id: 1,
+          departmentId: 1,
+          roleId: 1,
+          department: { id: 1, name: 'Organization', departmentRoles: [] },
+          role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
+          userRoles: []
+        };
+
         (userRepository.existsUserByUsername as jest.Mock).mockResolvedValue(false);
         (userRepository.existsUserByEmail as jest.Mock).mockResolvedValue(false);
+        (departmentRoleRepository.findById as jest.Mock).mockResolvedValue(mockDepartmentRole);
         (userRepository.createUserWithPassword as jest.Mock).mockRejectedValue(error);
 
         // Act & Assert
@@ -396,8 +486,18 @@ describe('UserService', () => {
           last_name: "O'Brien",
         });
 
+        const mockDepartmentRole = {
+          id: 1,
+          departmentId: 1,
+          roleId: 1,
+          department: { id: 1, name: 'Organization', departmentRoles: [] },
+          role: { id: 1, name: 'Citizen', description: 'Citizen role', departmentRoles: [] },
+          userRoles: []
+        };
+
         (userRepository.existsUserByUsername as jest.Mock).mockResolvedValue(false);
         (userRepository.existsUserByEmail as jest.Mock).mockResolvedValue(false);
+        (departmentRoleRepository.findById as jest.Mock).mockResolvedValue(mockDepartmentRole);
         (userRepository.createUserWithPassword as jest.Mock).mockResolvedValue(mockCreatedUser);
         (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUserWithRoles);
         (mapperService.mapUserEntityToUserResponse as jest.Mock).mockReturnValue(mockResponse);
