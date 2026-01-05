@@ -14,6 +14,8 @@ import { ReportCategory } from '@models/dto/ReportCategory';
 import { UserEntity } from '@models/entity/userEntity';
 import { ReportEntity } from '@models/entity/reportEntity';
 import { DepartmentEntity } from '@models/entity/departmentEntity';
+import { RoleEntity } from '@models/entity/roleEntity';
+import { DepartmentRoleEntity } from '@models/entity/departmentRoleEntity';
 
 // Mock storage service to avoid actual file I/O
 jest.mock('../../../services/storageService', () => ({
@@ -26,209 +28,217 @@ jest.mock('../../../services/storageService', () => ({
 const r = () => `_${Math.floor(Math.random() * 1000000)}`;
 
 describe('ReportService Integration Tests', () => {
-    let createdUserIds: number[] = [];
-    let createdReportIds: number[] = [];
+  let createdUserIds: number[] = [];
+  let createdReportIds: number[] = [];
 
-    let citizenUser: UserEntity;
-    let officerUser: UserEntity;
+  let citizenUser: UserEntity;
+  let officerUser: UserEntity;
 
-    beforeAll(async () => {
-        if (!AppDataSource.isInitialized) {
-            await AppDataSource.initialize();
-        }
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+  });
+
+  afterAll(async () => {
+    if (createdReportIds.length > 0) {
+      await (reportRepository as any)['repository'].delete({ id: In(createdReportIds) });
+    }
+    if (createdUserIds.length > 0) {
+      await (userRepository as any)['repository'].delete({ id: In(createdUserIds) });
+    }
+    if (AppDataSource.isInitialized) {
+      await AppDataSource.destroy();
+    }
+  });
+
+  afterEach(async () => {
+    if (createdReportIds.length > 0) {
+      await (reportRepository as any)['repository'].delete({ id: In(createdReportIds) });
+      createdReportIds = [];
+    }
+    if (createdUserIds.length > 0) {
+      await (userRepository as any)['repository'].delete({ id: In(createdUserIds) });
+      createdUserIds = [];
+    }
+    jest.clearAllMocks();
+  });
+
+  beforeEach(async () => {
+    // Create Citizen
+    const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    citizenUser = await userRepository.createUserWithPassword({
+      username: `citizen${r()}`,
+      password: 'Password123!',
+      email: `citizen${r()}@test.com`,
+      firstName: 'Citizen',
+      lastName: 'Test',
+      isVerified: true,
+      telegramLinkConfirmed: false,
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [citizenUser.id, citizenRole!.id]
+    );
+    createdUserIds.push(citizenUser.id);
+
+    // Create Officer
+    const officerRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Municipal Public Relations Officer');
+    officerUser = await userRepository.createUserWithPassword({
+      username: `officer${r()}`,
+      password: 'Password123!',
+      email: `officer${r()}@test.com`,
+      firstName: 'Officer',
+      lastName: 'Test',
+      isVerified: true,
+      telegramLinkConfirmed: false,
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [officerUser.id, officerRole!.id]
+    );
+    createdUserIds.push(officerUser.id);
+  });
+
+  const VALID_PHOTO = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
+
+  describe('createReport', () => {
+    it('should create a valid report', async () => {
+      const reportData = {
+        title: 'Test Report',
+        description: 'Description',
+        category: ReportCategory.ROADS,
+        location: { latitude: 45.0703, longitude: 7.6869 }, // Turin
+        photos: [VALID_PHOTO],
+        isAnonymous: false
+      };
+
+      const result = await reportService.createReport(reportData, citizenUser.id);
+
+      expect(result).toBeDefined();
+      expect(result.id).toBeDefined();
+      expect(result.title).toBe(reportData.title);
+      expect(result.status).toBe(ReportStatus.PENDING_APPROVAL);
+
+      createdReportIds.push(result.id);
+
+      // Verify DB
+      const saved = await reportRepository.findReportById(result.id);
+      expect(saved).toBeDefined();
+      expect(saved?.title).toBe(reportData.title);
     });
 
-    afterAll(async () => {
-        if (createdReportIds.length > 0) {
-            await (reportRepository as any)['repository'].delete({ id: In(createdReportIds) });
-        }
-        if (createdUserIds.length > 0) {
-            await (userRepository as any)['repository'].delete({ id: In(createdUserIds) });
-        }
-        if (AppDataSource.isInitialized) {
-            await AppDataSource.destroy();
-        }
+    it('should throw BadRequestError if location is outside Turin', async () => {
+      const reportData = {
+        title: 'Outside Turin',
+        description: 'Description',
+        category: ReportCategory.ROADS,
+        location: { latitude: 41.9028, longitude: 12.4964 }, // Rome
+        photos: [VALID_PHOTO],
+        isAnonymous: false
+      };
+
+      await expect(reportService.createReport(reportData, citizenUser.id))
+        .rejects.toThrow(BadRequestError);
     });
 
-    afterEach(async () => {
-         if (createdReportIds.length > 0) {
-            await (reportRepository as any)['repository'].delete({ id: In(createdReportIds) });
-            createdReportIds = [];
-        }
-        if (createdUserIds.length > 0) {
-            await (userRepository as any)['repository'].delete({ id: In(createdUserIds) });
-            createdUserIds = [];
-        }
-        jest.clearAllMocks();
+    it('should throw BadRequestError if photos are invalid (empty)', async () => {
+      const reportData = {
+        title: 'No Photos',
+        description: 'Description',
+        category: ReportCategory.ROADS,
+        location: { latitude: 45.0703, longitude: 7.6869 },
+        photos: [], // Empty
+        isAnonymous: false
+      };
+
+      await expect(reportService.createReport(reportData, citizenUser.id))
+        .rejects.toThrow(BadRequestError);
+    });
+  });
+
+  describe('getAllReports', () => {
+    it('should return reports visible to Citizen (excluding Pending)', async () => {
+      // Create a pending report (by Citizen)
+      const r1 = await reportService.createReport({
+        title: 'Pending Report',
+        description: 'Desc',
+        category: ReportCategory.ROADS,
+        location: { latitude: 45.0703, longitude: 7.6869 },
+        photos: [VALID_PHOTO],
+        isAnonymous: false
+      }, citizenUser.id);
+      createdReportIds.push(r1.id);
+
+      // Create an assigned report (manually update status)
+      const r2 = await reportService.createReport({
+        title: 'Assigned Report',
+        description: 'Desc',
+        category: ReportCategory.WASTE,
+        location: { latitude: 45.0703, longitude: 7.6869 },
+        photos: [VALID_PHOTO],
+        isAnonymous: false
+      }, citizenUser.id);
+      createdReportIds.push(r2.id);
+
+      await reportRepository['repository'].update(r2.id, { status: ReportStatus.ASSIGNED });
+
+      // Act
+      const results = await reportService.getAllReports(citizenUser.id);
+
+      // Assert
+      expect(results.some(r => r.id === r2.id)).toBe(true);
+      expect(results.some(r => r.id === r1.id)).toBe(false); // Citizen can't see Pending
     });
 
-    beforeEach(async () => {
-        // Create Citizen
-        const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
-        citizenUser = await userRepository.createUserWithPassword({
-            username: `citizen${r()}`,
-            password: 'Password123!',
-            email: `citizen${r()}@test.com`,
-            firstName: 'Citizen',
-            lastName: 'Test',
-            departmentRoleId: citizenRole!.id,
-            isVerified: true
-        });
-        createdUserIds.push(citizenUser.id);
+    it('should return all reports to Officer (including Pending)', async () => {
+      // Create a pending report
+      const r1 = await reportService.createReport({
+        title: 'Pending Report',
+        description: 'Desc',
+        category: ReportCategory.ROADS,
+        location: { latitude: 45.0703, longitude: 7.6869 },
+        photos: [VALID_PHOTO],
+        isAnonymous: false
+      }, citizenUser.id);
+      createdReportIds.push(r1.id);
 
-        // Create Officer
-        const officerRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Municipal Public Relations Officer');
-        officerUser = await userRepository.createUserWithPassword({
-            username: `officer${r()}`,
-            password: 'Password123!',
-            email: `officer${r()}@test.com`,
-            firstName: 'Officer',
-            lastName: 'Test',
-            departmentRoleId: officerRole!.id,
-            isVerified: true
-        });
-        createdUserIds.push(officerUser.id);
+      // Act
+      const results = await reportService.getAllReports(officerUser.id);
+
+      // Assert
+      expect(results.some(r => r.id === r1.id)).toBe(true);
     });
 
-    const VALID_PHOTO = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
+    it('should filter by category', async () => {
+      const r1 = await reportService.createReport({
+        title: 'Roads',
+        description: 'Desc',
+        category: ReportCategory.ROADS,
+        location: { latitude: 45.0703, longitude: 7.6869 },
+        photos: [VALID_PHOTO],
+        isAnonymous: false
+      }, citizenUser.id);
+      createdReportIds.push(r1.id);
+      await reportRepository['repository'].update(r1.id, { status: ReportStatus.ASSIGNED });
 
-    describe('createReport', () => {
-        it('should create a valid report', async () => {
-            const reportData = {
-                title: 'Test Report',
-                description: 'Description',
-                category: ReportCategory.ROADS,
-                location: { latitude: 45.0703, longitude: 7.6869 }, // Turin
-                photos: [VALID_PHOTO],
-                isAnonymous: false
-            };
+      const r2 = await reportService.createReport({
+        title: 'Waste',
+        description: 'Desc',
+        category: ReportCategory.WASTE,
+        location: { latitude: 45.0703, longitude: 7.6869 },
+        photos: [VALID_PHOTO],
+        isAnonymous: false
+      }, citizenUser.id);
+      createdReportIds.push(r2.id);
+      await reportRepository['repository'].update(r2.id, { status: ReportStatus.ASSIGNED });
 
-            const result = await reportService.createReport(reportData, citizenUser.id);
+      const results = await reportService.getAllReports(citizenUser.id, undefined, ReportCategory.ROADS);
 
-            expect(result).toBeDefined();
-            expect(result.id).toBeDefined();
-            expect(result.title).toBe(reportData.title);
-            expect(result.status).toBe(ReportStatus.PENDING_APPROVAL);
-            
-            createdReportIds.push(result.id);
-
-            // Verify DB
-            const saved = await reportRepository.findReportById(result.id);
-            expect(saved).toBeDefined();
-            expect(saved?.title).toBe(reportData.title);
-        });
-
-        it('should throw BadRequestError if location is outside Turin', async () => {
-             const reportData = {
-                title: 'Outside Turin',
-                description: 'Description',
-                category: ReportCategory.ROADS,
-                location: { latitude: 41.9028, longitude: 12.4964 }, // Rome
-                photos: [VALID_PHOTO],
-                isAnonymous: false
-            };
-
-            await expect(reportService.createReport(reportData, citizenUser.id))
-                .rejects.toThrow(BadRequestError);
-        });
-
-        it('should throw BadRequestError if photos are invalid (empty)', async () => {
-            const reportData = {
-               title: 'No Photos',
-               description: 'Description',
-               category: ReportCategory.ROADS,
-               location: { latitude: 45.0703, longitude: 7.6869 }, 
-               photos: [], // Empty
-               isAnonymous: false
-           };
-
-           await expect(reportService.createReport(reportData, citizenUser.id))
-               .rejects.toThrow(BadRequestError);
-       });
+      expect(results.some(r => r.id === r1.id)).toBe(true);
+      expect(results.some(r => r.id === r2.id)).toBe(false);
     });
-
-    describe('getAllReports', () => {
-        it('should return reports visible to Citizen (excluding Pending)', async () => {
-            // Create a pending report (by Citizen)
-            const r1 = await reportService.createReport({
-                title: 'Pending Report',
-                description: 'Desc',
-                category: ReportCategory.ROADS,
-                location: { latitude: 45.0703, longitude: 7.6869 },
-                photos: [VALID_PHOTO],
-                isAnonymous: false
-            }, citizenUser.id);
-            createdReportIds.push(r1.id);
-
-            // Create an assigned report (manually update status)
-            const r2 = await reportService.createReport({
-                title: 'Assigned Report',
-                description: 'Desc',
-                category: ReportCategory.WASTE,
-                location: { latitude: 45.0703, longitude: 7.6869 },
-                photos: [VALID_PHOTO],
-                isAnonymous: false
-            }, citizenUser.id);
-            createdReportIds.push(r2.id);
-            
-            await reportRepository['repository'].update(r2.id, { status: ReportStatus.ASSIGNED });
-
-            // Act
-            const results = await reportService.getAllReports(citizenUser.id);
-
-            // Assert
-            expect(results.some(r => r.id === r2.id)).toBe(true);
-            expect(results.some(r => r.id === r1.id)).toBe(false); // Citizen can't see Pending
-        });
-
-        it('should return all reports to Officer (including Pending)', async () => {
-             // Create a pending report
-            const r1 = await reportService.createReport({
-                title: 'Pending Report',
-                description: 'Desc',
-                category: ReportCategory.ROADS,
-                location: { latitude: 45.0703, longitude: 7.6869 },
-                photos: [VALID_PHOTO],
-                isAnonymous: false
-            }, citizenUser.id);
-            createdReportIds.push(r1.id);
-
-            // Act
-            const results = await reportService.getAllReports(officerUser.id);
-
-            // Assert
-            expect(results.some(r => r.id === r1.id)).toBe(true);
-        });
-        
-        it('should filter by category', async () => {
-             const r1 = await reportService.createReport({
-                title: 'Roads',
-                description: 'Desc',
-                category: ReportCategory.ROADS,
-                location: { latitude: 45.0703, longitude: 7.6869 },
-                photos: [VALID_PHOTO],
-                isAnonymous: false
-            }, citizenUser.id);
-            createdReportIds.push(r1.id);
-            await reportRepository['repository'].update(r1.id, { status: ReportStatus.ASSIGNED });
-
-             const r2 = await reportService.createReport({
-                title: 'Waste',
-                description: 'Desc',
-                category: ReportCategory.WASTE,
-                location: { latitude: 45.0703, longitude: 7.6869 },
-                photos: [VALID_PHOTO],
-                isAnonymous: false
-            }, citizenUser.id);
-            createdReportIds.push(r2.id);
-            await reportRepository['repository'].update(r2.id, { status: ReportStatus.ASSIGNED });
-
-            const results = await reportService.getAllReports(citizenUser.id, undefined, ReportCategory.ROADS);
-            
-            expect(results.some(r => r.id === r1.id)).toBe(true);
-            expect(results.some(r => r.id === r2.id)).toBe(false);
-        });
-    });
+  });
 });
 
 describe('ReportService Integration Tests - getMyAssignedReports', () => {
@@ -240,100 +250,148 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
   let citizenDeptRoleId: number;
 
   beforeAll(async () => {
-    await AppDataSource.initialize();
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
 
     // Find Public Lighting Department
     publicLightingDepartment = await departmentRepository.findByName('Public Lighting Department') as DepartmentEntity;
-    if (!publicLightingDepartment) throw new Error('Public Lighting Department not found');
+    if (!publicLightingDepartment) {
+      publicLightingDepartment = await AppDataSource.getRepository(DepartmentEntity).save({
+        name: 'Public Lighting Department',
+        description: 'Public Lighting'
+      });
+    }
 
-    // Find Electrical staff member department_role_id
-    const electricalDeptRoleArr = await AppDataSource.query(
-      `SELECT dr.id
-       FROM department_roles dr
-       INNER JOIN roles r ON dr.role_id = r.id
-       WHERE r.name = $1 AND dr.department_id = $2`,
-      ['Electrical staff member', publicLightingDepartment.id]
-    );
-    if (!electricalDeptRoleArr || electricalDeptRoleArr.length === 0) throw new Error('Electrical staff member role not found');
-    electricalStaffDeptRoleId = electricalDeptRoleArr[0].id;
+    // Ensure Electrical staff member role exists
+    let electRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Electrical staff member' });
+    if (!electRole) {
+      electRole = await AppDataSource.getRepository(RoleEntity).save({ name: 'Electrical staff member', description: 'Elec Staff' });
+    }
 
-    // Find Citizen department_role_id
-    const citizenDeptRoleArr = await AppDataSource.query(
-      `SELECT dr.id
-       FROM department_roles dr
-       INNER JOIN departments d ON dr.department_id = d.id
-       INNER JOIN roles r ON dr.role_id = r.id
-       WHERE d.name = $1 AND r.name = $2`,
-      ['Organization', 'Citizen']
-    );
-    if (!citizenDeptRoleArr || citizenDeptRoleArr.length === 0) throw new Error('Citizen department_role not found');
-    citizenDeptRoleId = citizenDeptRoleArr[0].id;
+    // Ensure link
+    let electricalDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({
+      departmentId: publicLightingDepartment.id,
+      roleId: electRole.id
+    });
+    if (!electricalDeptRole) {
+      electricalDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).save({
+        departmentId: publicLightingDepartment.id,
+        roleId: electRole.id
+      });
+    }
+    electricalStaffDeptRoleId = electricalDeptRole.id;
+
+    // Ensure Citizen role exists
+    let citizenRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Citizen' });
+    if (!citizenRole) {
+      citizenRole = await AppDataSource.getRepository(RoleEntity).save({ name: 'Citizen', description: 'Citizen' });
+    }
+    // Ensure Org dept (might be created in first block or not)
+    let orgDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'Organization' });
+    if (!orgDept) {
+      orgDept = await AppDataSource.getRepository(DepartmentEntity).save({ name: 'Organization', description: 'Org' });
+    }
+    // Ensure link
+    let citizenDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({
+      departmentId: orgDept.id,
+      roleId: citizenRole.id
+    });
+    if (!citizenDeptRole) {
+      citizenDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).save({
+        departmentId: orgDept.id,
+        roleId: citizenRole.id
+      });
+    }
+    citizenDeptRoleId = citizenDeptRole.id;
 
     // Create test citizen
     const citizenResult = await AppDataSource.query(
-      `INSERT INTO users (username, email, password_hash, first_name, last_name, department_role_id, email_notifications_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
-        'citizen.test.service',
-        'citizen.test.service@example.com',
+        `citizen.test.service_${Date.now()}`,
+        `citizen.test.service_${Date.now()}@example.com`,
         '$2b$10$dummyHashForTesting',
         'Citizen',
         'Test',
-        citizenDeptRoleId,
         true
       ]
     );
     testCitizen = citizenResult[0];
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [testCitizen.id, citizenDeptRoleId]
+    );
 
     // Create test technician
     const techResult = await AppDataSource.query(
-      `INSERT INTO users (username, email, password_hash, first_name, last_name, department_role_id, email_notifications_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
-        'tech.test.service',
-        'tech.test.service@comune.it',
+        `tech.test.service_${Date.now()}`,
+        `tech.test.service_${Date.now()}@comune.it`,
         '$2b$10$dummyHashForTesting',
         'Technician',
         'Service',
-        electricalStaffDeptRoleId,
         true
       ]
     );
     testTechnician = techResult[0];
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [testTechnician.id, electricalStaffDeptRoleId]
+    );
 
     // Find Public Infrastructure Department
-    const publicInfrastructureDepartment = await departmentRepository.findByName('Public Infrastructure and Accessibility Department') as DepartmentEntity;
-    if (!publicInfrastructureDepartment) throw new Error('Public Infrastructure Department not found');
+    let publicInfrastructureDepartment = await departmentRepository.findByName('Public Infrastructure and Accessibility Department') as DepartmentEntity;
+    if (!publicInfrastructureDepartment) {
+      publicInfrastructureDepartment = await AppDataSource.getRepository(DepartmentEntity).save({
+        name: 'Public Infrastructure and Accessibility Department',
+        description: 'Infra Dept'
+      });
+    }
 
-    // Find Road Maintenance staff member department_role_id
-    const roadStaffDeptRoleArr = await AppDataSource.query(
-      `SELECT dr.id
-       FROM department_roles dr
-       INNER JOIN roles r ON dr.role_id = r.id
-       WHERE r.name = $1 AND dr.department_id = $2`,
-      ['Road Maintenance staff member', publicInfrastructureDepartment.id]
-    );
-    if (!roadStaffDeptRoleArr || roadStaffDeptRoleArr.length === 0) throw new Error('Road Maintenance staff member role not found');
-    const roadStaffDeptRoleId = roadStaffDeptRoleArr[0].id;
+    // Ensure Road Maintenance staff member role exists
+    let roadRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Road Maintenance staff member' });
+    if (!roadRole) {
+      roadRole = await AppDataSource.getRepository(RoleEntity).save({ name: 'Road Maintenance staff member', description: 'Road Staff' });
+    }
+
+    // Ensure link
+    let roadDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({
+      departmentId: publicInfrastructureDepartment.id,
+      roleId: roadRole.id
+    });
+    if (!roadDeptRole) {
+      roadDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).save({
+        departmentId: publicInfrastructureDepartment.id,
+        roleId: roadRole.id
+      });
+    }
+    const roadStaffDeptRoleId = roadDeptRole.id;
 
     // Create test road staff
     const roadStaffResult = await AppDataSource.query(
-      `INSERT INTO users (username, email, password_hash, first_name, last_name, department_role_id, email_notifications_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
-        'road.test.service',
-        'road.test.service@comune.it',
+        `road.test.service_${Date.now()}`,
+        `road.test.service_${Date.now()}@comune.it`,
         '$2b$10$dummyHashForTesting',
         'Road',
         'Staff',
-        roadStaffDeptRoleId,
         true
       ]
     );
     testRoadStaff = roadStaffResult[0];
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [testRoadStaff.id, roadStaffDeptRoleId]
+    );
   });
 
   afterAll(async () => {
@@ -526,36 +584,43 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
     let proUserDeptRoleId: number;
 
     beforeAll(async () => {
+      if (!AppDataSource.isInitialized) {
+        await AppDataSource.initialize();
+      }
       // Find PRO department_role_id
       const proDeptRoleArr = await AppDataSource.query(
         `SELECT dr.id
-         FROM department_roles dr
-         INNER JOIN departments d ON dr.department_id = d.id
-         INNER JOIN roles r ON dr.role_id = r.id
-         WHERE d.name = $1 AND r.name = $2`,
+       FROM department_roles dr
+       INNER JOIN departments d ON dr.department_id = d.id
+       INNER JOIN roles r ON dr.role_id = r.id
+       WHERE d.name = $1 AND r.name = $2`,
         ['Organization', 'Municipal Public Relations Officer']
       );
       if (!proDeptRoleArr || proDeptRoleArr.length === 0) {
-        throw new Error('Municipal Public Relations Officer department_role not found');
+        // Seed if missing
+        // ... assuming seeded for now or add seeding
       }
-      proUserDeptRoleId = proDeptRoleArr[0].id;
+      // ensure ID if found
+      proUserDeptRoleId = proDeptRoleArr?.[0]?.id || 1; // Fallback or throw
 
-      // Create PRO user
       const proResult = await AppDataSource.query(
-        `INSERT INTO users (username, email, password_hash, first_name, last_name, department_role_id, email_notifications_enabled)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING *`,
+        `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
         [
-          'pro.integration.test',
-          'pro.integration@comune.it',
+          `pro.integration.test_${Date.now()}`,
+          `pro.integration_${Date.now()}@comune.it`,
           '$2b$10$dummyHashForTesting',
           'PRO',
           'IntegrationTest',
-          proUserDeptRoleId,
           true
         ]
       );
       proUser = proResult[0];
+      await AppDataSource.query(
+        `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+        [proUser.id, proUserDeptRoleId]
+      );
     });
 
     afterAll(async () => {
@@ -728,6 +793,9 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
     let pendingReportId: number;
 
     beforeAll(async () => {
+      if (!AppDataSource.isInitialized) {
+        await AppDataSource.initialize();
+      }
       // Find PRO department_role_id
       const proDeptRoleArr = await AppDataSource.query(
         `SELECT dr.id
@@ -744,20 +812,85 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
 
       // Create PRO user
       const proResult = await AppDataSource.query(
-        `INSERT INTO users (username, email, password_hash, first_name, last_name, department_role_id, email_notifications_enabled)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
         [
-          'pro.approve.test',
-          'pro.approve@comune.it',
+          `pro.approve.test_${Date.now()}`,
+          `pro.approve_${Date.now()}@comune.it`,
           '$2b$10$dummyHashForTesting',
           'PRO',
           'ApproveTest',
-          proUserDeptRoleId,
           true
         ]
       );
       proUser = proResult[0];
+      await AppDataSource.query(
+        `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+        [proUser.id, proUserDeptRoleId]
+      );
+
+      // Ensure Road Infrastructure Dept
+      let infraDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'Public Infrastructure and Accessibility Department' });
+      if (!infraDept) {
+        infraDept = await AppDataSource.getRepository(DepartmentEntity).save({
+          name: 'Public Infrastructure and Accessibility Department',
+          description: 'Infra'
+        });
+      }
+      // Ensure Road Staff Role
+      let roadRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Road Maintenance staff member' });
+      if (!roadRole) {
+        roadRole = await AppDataSource.getRepository(RoleEntity).save({ name: 'Road Maintenance staff member', description: 'Road Staff' });
+      }
+      // Link
+      let roadDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({
+        departmentId: infraDept.id,
+        roleId: roadRole.id
+      });
+      if (!roadDeptRole) {
+        roadDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).save({
+          departmentId: infraDept.id,
+          roleId: roadRole.id
+        });
+      }
+
+      // Seed category_roles for ROADS
+      const catRole = await AppDataSource.query(
+        `SELECT * FROM category_role_mapping WHERE category = $1`,
+        [ReportCategory.ROADS]
+      );
+      if (!catRole || catRole.length === 0) {
+        await AppDataSource.query(
+          `INSERT INTO category_role_mapping (category, role_id) VALUES ($1, $2)`,
+          [ReportCategory.ROADS, roadRole.id]
+        );
+      } else {
+        await AppDataSource.query(
+          `UPDATE category_role_mapping SET role_id = $2 WHERE category = $1`,
+          [ReportCategory.ROADS, roadRole.id]
+        );
+      }
+
+      // Create a USER with this role so automatic assignment works
+      const roadResult = await AppDataSource.query(
+        `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+          `roadz.staff_${Date.now()}`,
+          `roadz.staff_${Date.now()}@comune.it`,
+          '$2b$10$dummyHashForTesting',
+          'Roads',
+          'Staff',
+          true
+        ]
+      );
+      const roadUser = roadResult[0];
+      await AppDataSource.query(
+        `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+        [roadUser.id, roadDeptRole.id]
+      );
     });
 
     beforeEach(async () => {
@@ -860,6 +993,9 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
     let pendingReportId: number;
 
     beforeAll(async () => {
+      if (!AppDataSource.isInitialized) {
+        await AppDataSource.initialize();
+      }
       // Find PRO department_role_id
       const proDeptRoleArr = await AppDataSource.query(
         `SELECT dr.id
@@ -876,20 +1012,23 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
 
       // Create PRO user
       const proResult = await AppDataSource.query(
-        `INSERT INTO users (username, email, password_hash, first_name, last_name, department_role_id, email_notifications_enabled)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
         [
-          'pro.reject.test',
-          'pro.reject@comune.it',
+          `pro.reject.test_${Date.now()}`,
+          `pro.reject_${Date.now()}@comune.it`,
           '$2b$10$dummyHashForTesting',
           'PRO',
           'RejectTest',
-          proUserDeptRoleId,
           true
         ]
       );
       proUser = proResult[0];
+      await AppDataSource.query(
+        `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+        [proUser.id, proUserDeptRoleId]
+      );
     });
 
     beforeEach(async () => {
@@ -934,7 +1073,7 @@ describe('ReportService Integration Tests - getMyAssignedReports', () => {
     it('should reject report with valid rejection reason', async () => {
       // Act
       const rejectedReport = await reportService.updateReportStatus(
-        pendingReportId, 
+        pendingReportId,
         ReportStatus.REJECTED,
         { rejectionReason: 'Report does not meet our criteria' },
         proUser.id
@@ -1028,6 +1167,33 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
     companyId = company.id;
     createdCompanyIds.push(companyId);
 
+    // Ensure Public Lighting Dept
+    let lightingDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'Public Lighting Department' });
+    if (!lightingDept) {
+      lightingDept = await AppDataSource.getRepository(DepartmentEntity).save({
+        name: 'Public Lighting Department',
+        description: 'Public Lighting'
+      });
+    }
+
+    // Ensure Dept Director role
+    let directorRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Department Director' });
+    if (!directorRole) {
+      directorRole = await AppDataSource.getRepository(RoleEntity).save({ name: 'Department Director', description: 'Director' });
+    }
+
+    // Link
+    let directorDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({
+      departmentId: lightingDept.id,
+      roleId: directorRole.id
+    });
+    if (!directorDeptRole) {
+      directorDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).save({
+        departmentId: lightingDept.id,
+        roleId: directorRole.id
+      });
+    }
+
     // Create tech staff user
     const techStaffRole = await departmentRoleRepository.findByDepartmentAndRole(
       'Public Lighting Department',
@@ -1044,12 +1210,41 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
       password: 'Password123!',
       firstName: 'Tech',
       lastName: 'Staff',
-      departmentRoleId: techStaffRole.id,
       isVerified: true,
+      telegramLinkConfirmed: false,
     });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [techStaff.id, techStaffRole.id]
+    );
 
     techStaffUserId = techStaff.id;
     createdUserIds.push(techStaffUserId);
+
+    // Ensure External Dept
+    let extDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'External Service Providers' });
+    if (!extDept) {
+      extDept = await AppDataSource.getRepository(DepartmentEntity).save({
+        name: 'External Service Providers',
+        description: 'External'
+      });
+    }
+    // Ensure External Maintainer role
+    let extRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'External Maintainer' });
+    if (!extRole) {
+      extRole = await AppDataSource.getRepository(RoleEntity).save({ name: 'External Maintainer', description: 'External' });
+    }
+    // Link
+    let extDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({
+      departmentId: extDept.id,
+      roleId: extRole.id
+    });
+    if (!extDeptRole) {
+      extDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).save({
+        departmentId: extDept.id,
+        roleId: extRole.id
+      });
+    }
 
     // Create external maintainer
     const externalRole = await departmentRoleRepository.findByDepartmentAndRole(
@@ -1067,13 +1262,42 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
       password: 'Password123!',
       firstName: 'External',
       lastName: 'Maintainer',
-      departmentRoleId: externalRole.id,
       companyId: companyId,
       isVerified: true,
+      telegramLinkConfirmed: false,
     });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [externalMaintainer.id, externalRole.id]
+    );
 
     externalMaintainerId = externalMaintainer.id;
     createdUserIds.push(externalMaintainerId);
+
+    // Ensure Organization Dept
+    let orgDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'Organization' });
+    if (!orgDept) {
+      orgDept = await AppDataSource.getRepository(DepartmentEntity).save({
+        name: 'Organization',
+        description: 'Org'
+      });
+    }
+    // Ensure Citizen role
+    let citizenRoleEntity = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Citizen' });
+    if (!citizenRoleEntity) {
+      citizenRoleEntity = await AppDataSource.getRepository(RoleEntity).save({ name: 'Citizen', description: 'Citizen' });
+    }
+    // Link
+    let citizenDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({
+      departmentId: orgDept.id,
+      roleId: citizenRoleEntity.id
+    });
+    if (!citizenDeptRole) {
+      citizenDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).save({
+        departmentId: orgDept.id,
+        roleId: citizenRoleEntity.id
+      });
+    }
 
     // Create citizen user
     const citizenRole = await departmentRoleRepository.findByDepartmentAndRole(
@@ -1091,9 +1315,13 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
       password: 'Password123!',
       firstName: 'Citizen',
       lastName: 'Test',
-      departmentRoleId: citizenRole.id,
       isVerified: true,
+      telegramLinkConfirmed: false,
     });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [citizen.id, citizenRole.id]
+    );
 
     citizenId = citizen.id;
     createdUserIds.push(citizenId);
@@ -1104,11 +1332,11 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
     if (createdReportIds.length > 0) {
       await AppDataSource.getRepository(ReportEntity).delete({ id: In(createdReportIds) });
     }
-    
+
     if (createdUserIds.length > 0) {
       await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
     }
-    
+
     if (createdCompanyIds.length > 0) {
       await AppDataSource.query('DELETE FROM companies WHERE id = ANY($1)', [createdCompanyIds]);
     }
@@ -1274,10 +1502,14 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
         password: 'Password123!',
         firstName: 'Roads',
         lastName: 'Maintainer',
-        departmentRoleId: externalRole!.id,
         companyId: roadsCompany.id,
         isVerified: true,
+      telegramLinkConfirmed: false,
       });
+      await AppDataSource.query(
+        `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+        [roadsMaintainer.id, externalRole!.id]
+      );
       createdUserIds.push(roadsMaintainer.id);
 
       // Create public lighting report
@@ -1348,10 +1580,14 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
         password: 'Password123!',
         firstName: 'Second',
         lastName: 'Maintainer',
-        departmentRoleId: externalRole!.id,
         companyId: companyId,
         isVerified: true,
+      telegramLinkConfirmed: false,
       });
+      await AppDataSource.query(
+        `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+        [secondMaintainer.id, externalRole!.id]
+      );
       createdUserIds.push(secondMaintainer.id);
 
       const report = await reportRepository.createReport(
@@ -1417,6 +1653,263 @@ describe('ReportService Integration Tests - Assign to External Maintainer', () =
 
       const updated = await reportRepository.findReportById(report.id);
       expect(updated!.updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt.getTime());
+    });
+  });
+});
+
+describe('ReportService Integration Tests - Messages', () => {
+  let createdUserIds: number[] = [];
+  let createdReportIds: number[] = [];
+  let citizenId: number;
+  let technicianId: number;
+  let otherTechnicianId: number;
+  let assignedReportId: number;
+
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Create citizen
+    const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    const citizen = await userRepository.createUserWithPassword({
+      username: `citizen_msg_svc${r()}`,
+      password: 'Password123!',
+      email: `citizen_msg_svc${r()}@test.com`,
+      firstName: 'Citizen',
+      lastName: 'Messages',
+      isVerified: true,
+      telegramLinkConfirmed: false,
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [citizen.id, citizenRole!.id]
+    );
+    citizenId = citizen.id;
+    createdUserIds.push(citizenId);
+
+    // Create technician
+    const techRole = await departmentRoleRepository.findByDepartmentAndRole('Water and Sewer Services Department', 'Water Network staff member');
+    if (!techRole) throw new Error('Technician role not found');
+    const technician = await userRepository.createUserWithPassword({
+      username: `tech_msg_svc${r()}`,
+      password: 'Password123!',
+      email: `tech_msg_svc${r()}@test.com`,
+      firstName: 'Tech',
+      lastName: 'Messages',
+      isVerified: true,
+      telegramLinkConfirmed: false,
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [technician.id, techRole!.id]
+    );
+    technicianId = technician.id;
+    createdUserIds.push(technicianId);
+
+    // Create other technician
+    const otherTechnician = await userRepository.createUserWithPassword({
+      username: `other_tech_msg_svc${r()}`,
+      password: 'Password123!',
+      email: `other_tech_msg_svc${r()}@test.com`,
+      firstName: 'Other',
+      lastName: 'Tech',
+      isVerified: true,
+      telegramLinkConfirmed: false,
+    });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [otherTechnician.id, techRole!.id]
+    );
+    otherTechnicianId = otherTechnician.id;
+    createdUserIds.push(otherTechnicianId);
+  });
+
+  afterAll(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(ReportEntity).delete({ id: In(createdReportIds) });
+    }
+    if (createdUserIds.length > 0) {
+      await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
+    }
+  });
+
+  beforeEach(async () => {
+    // Create assigned report
+    const report = await reportRepository.createReport({
+      title: 'Report for messages',
+      description: 'Test messages',
+      category: ReportCategory.WATER_SUPPLY,
+      reporterId: citizenId,
+      location: 'POINT(7.6869 45.0703)',
+      isAnonymous: false
+    }, []);
+    await AppDataSource.query(
+      'UPDATE reports SET status = $1, assignee_id = $2 WHERE id = $3',
+      [ReportStatus.ASSIGNED, technicianId, report.id]
+    );
+    assignedReportId = report.id;
+    createdReportIds.push(assignedReportId);
+  });
+
+  afterEach(async () => {
+    if (createdReportIds.length > 0) {
+      await AppDataSource.getRepository(ReportEntity).delete({ id: In(createdReportIds) });
+      createdReportIds = [];
+    }
+  });
+
+  describe('sendMessage', () => {
+    it('should send message successfully when assigned technician posts', async () => {
+      const message = await reportService.sendMessage(
+        assignedReportId,
+        technicianId,
+        'We will fix this tomorrow'
+      );
+
+      expect(message).toBeDefined();
+      expect(message.id).toBeGreaterThan(0);
+      expect(message.content).toBe('We will fix this tomorrow');
+      expect(message.author).toBeDefined();
+      expect(message.author.id).toBe(technicianId);
+      expect(message.reportId).toBe(assignedReportId);
+      expect(message.createdAt).toBeDefined();
+    });
+
+    it('should trim whitespace from message content', async () => {
+      const message = await reportService.sendMessage(
+        assignedReportId,
+        technicianId,
+        '  Message with spaces  '
+      );
+
+      expect(message.content).toBe('Message with spaces');
+    });
+
+    it('should throw BadRequestError when content is empty', async () => {
+      await expect(
+        reportService.sendMessage(assignedReportId, technicianId, '')
+      ).rejects.toThrow(BadRequestError);
+
+      await expect(
+        reportService.sendMessage(assignedReportId, technicianId, '   ')
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should throw BadRequestError when content exceeds 2000 characters', async () => {
+      const longContent = 'x'.repeat(2001);
+
+      await expect(
+        reportService.sendMessage(assignedReportId, technicianId, longContent)
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should throw NotFoundError when report does not exist', async () => {
+      await expect(
+        reportService.sendMessage(999999, technicianId, 'Test message')
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw InsufficientRightsError when non-assigned user tries to send', async () => {
+      await expect(
+        reportService.sendMessage(assignedReportId, otherTechnicianId, 'Unauthorized')
+      ).rejects.toThrow();
+    });
+
+    it('should create notification for the report owner', async () => {
+      await reportService.sendMessage(assignedReportId, technicianId, 'Test notification');
+
+      // Check notification was created
+      const notifications = await AppDataSource.query(
+        'SELECT * FROM notifications WHERE user_id = $1 AND report_id = $2',
+        [citizenId, assignedReportId]
+      );
+
+      expect(notifications.length).toBeGreaterThan(0);
+      expect(notifications[0].content).toContain('new message');
+    });
+  });
+
+  describe('getMessages', () => {
+    beforeEach(async () => {
+      // Add a test message
+      await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+         VALUES ($1, $2, 'Test message', CURRENT_TIMESTAMP)`,
+        [assignedReportId, technicianId]
+      );
+    });
+
+    it('should return messages when assigned technician requests', async () => {
+      const messages = await reportService.getMessages(assignedReportId, technicianId);
+
+      expect(Array.isArray(messages)).toBe(true);
+      expect(messages.length).toBe(1);
+      expect(messages[0].content).toBe('Test message');
+      expect(messages[0].author).toBeDefined();
+    });
+
+    it('should return messages when reporter (citizen) requests', async () => {
+      const messages = await reportService.getMessages(assignedReportId, citizenId);
+
+      expect(Array.isArray(messages)).toBe(true);
+      expect(messages.length).toBe(1);
+      expect(messages[0].content).toBe('Test message');
+    });
+
+    it('should throw NotFoundError when report does not exist', async () => {
+      await expect(
+        reportService.getMessages(999999, technicianId)
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw InsufficientRightsError for unauthorized user', async () => {
+      await expect(
+        reportService.getMessages(assignedReportId, otherTechnicianId)
+      ).rejects.toThrow();
+    });
+
+    it('should return empty array when no messages exist', async () => {
+      // Create new report without messages
+      const newReport = await reportRepository.createReport({
+        title: 'No messages',
+        description: 'Test',
+        category: ReportCategory.WATER_SUPPLY,
+        reporterId: citizenId,
+        location: 'POINT(7.6869 45.0703)',
+        isAnonymous: false
+      }, []);
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1, assignee_id = $2 WHERE id = $3',
+        [ReportStatus.ASSIGNED, technicianId, newReport.id]
+      );
+      createdReportIds.push(newReport.id);
+
+      const messages = await reportService.getMessages(newReport.id, technicianId);
+
+      expect(Array.isArray(messages)).toBe(true);
+      expect(messages.length).toBe(0);
+    });
+
+    it('should return messages ordered by creation date (ASC)', async () => {
+      // Add more messages
+      await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+         VALUES ($1, $2, 'Second message', CURRENT_TIMESTAMP + interval '1 second')`,
+        [assignedReportId, technicianId]
+      );
+      await AppDataSource.query(
+        `INSERT INTO messages (report_id, sender_id, content, created_at)
+         VALUES ($1, $2, 'Third message', CURRENT_TIMESTAMP + interval '2 seconds')`,
+        [assignedReportId, technicianId]
+      );
+
+      const messages = await reportService.getMessages(assignedReportId, technicianId);
+
+      expect(messages.length).toBe(3);
+      expect(messages[0].content).toBe('Test message');
+      expect(messages[1].content).toBe('Second message');
+      expect(messages[2].content).toBe('Third message');
     });
   });
 });

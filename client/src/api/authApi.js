@@ -79,10 +79,62 @@ export async function logout() {
 
     return await handleResponse(response);
   } catch (error) {
-    // Anche se la chiamata fallisce, rimuoviamo l'indizio per sicurezza lato client
+    // Even if the call fails, we remove the hint for client-side security
     localStorage.removeItem("isLoggedIn");
     throw error;
   }
 }
 
-export default { login, getCurrentUser, logout };
+// POST /api/users/telegram-link-code
+export async function generateTelegramLinkCode() {
+  const response = await fetch(`/api/users/telegram-link-code`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  return await handleResponse(response);
+}
+
+// GET /api/users/telegram-status
+export async function getTelegramStatus() {
+  const response = await fetch(`/api/users/telegram-status`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  return await handleResponse(response);
+}
+
+// POST /api/users/telegram-confirm
+export async function confirmTelegramLink() {
+  const response = await fetch(`/api/users/telegram-confirm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  return await handleResponse(response);
+}
+
+// DELETE /api/users/telegram-unlink
+export async function unlinkTelegramAccount() {
+  const response = await fetch(`/api/users/telegram-unlink`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+
+  return await handleResponse(response);
+}
+
+export default { login, getCurrentUser, logout, generateTelegramLinkCode, getTelegramStatus, unlinkTelegramAccount, confirmTelegramLink };

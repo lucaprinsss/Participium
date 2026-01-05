@@ -55,11 +55,17 @@ describe('CompanyController Integration Tests', () => {
       email: `admin${r()}@test.com`,
       firstName: 'Admin',
       lastName: 'User',
-      departmentRoleId: adminRole.id,
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
     createdUserIds.push(adminUser.id);
+
+    // Assign admin role using user_roles table (V5.0 multi-role support)
+    await AppDataSource.getRepository('user_roles').save({
+      userId: adminUser.id,
+      departmentRoleId: adminRole.id
+    });
 
     adminAgent = request.agent(app);
     await adminAgent.post('/api/sessions').send({
@@ -77,11 +83,17 @@ describe('CompanyController Integration Tests', () => {
       email: `techstaff${r()}@test.com`,
       firstName: 'Tech',
       lastName: 'Staff',
-      departmentRoleId: techStaffRole.id,
       emailNotificationsEnabled: true,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false
     });
     createdUserIds.push(techStaffUser.id);
+
+    // Assign tech staff role using user_roles table (V5.0 multi-role support)
+    await AppDataSource.getRepository('user_roles').save({
+      userId: techStaffUser.id,
+      departmentRoleId: techStaffRole.id
+    });
 
     techStaffAgent = request.agent(app);
     await techStaffAgent.post('/api/sessions').send({
@@ -193,7 +205,7 @@ describe('CompanyController Integration Tests', () => {
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
-      
+
       const createdCompany = response.body.find((c: any) => c.id === createResponse.body.id);
       expect(createdCompany).toBeDefined();
       expect(createdCompany.name).toBe(companyData.name);

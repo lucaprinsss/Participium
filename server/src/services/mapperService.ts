@@ -1,3 +1,5 @@
+import { MessageEntity } from '@models/entity/messageEntity';
+import { MessageResponse } from '@models/dto/output/MessageResponse';
 import { ErrorDTO } from "@models/errors/ErrorDTO";
 import { UserResponse } from "@models/dto/output/UserResponse";
 import { ReportResponse, PhotoResponse } from "@models/dto/output/ReportResponse";
@@ -30,13 +32,13 @@ export function createErrorDTO(
 
 /**
  * Generate full URL for photo storage path
- */ 
-function getPhotoUrl(storageUrl: string): string {
+ */
+export function getPhotoUrl(storageUrl: string): string {
   // If the storage URL already includes the protocol (http/https), return as-is
   if (storageUrl.startsWith('http://') || storageUrl.startsWith('https://')) {
     return storageUrl;
   }
-  
+
   // Otherwise, construct the full URL using the base URL
   const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3001';
   return `${baseUrl}${storageUrl}`;
@@ -89,16 +91,22 @@ export function mapRoleEntityToDTO(entity: RoleEntity): Role {
 /**
  * Maps a userEntity to UserResponse DTO
  * Excludes sensitive information like password hash
+ * Handles multiple roles through user_roles join table
  */
 export function mapUserEntityToUserResponse(entity: UserEntity | null | undefined, companyName?: string): UserResponse | null {
-  
+
   if (!entity) {
     return null;
   }
 
-  // Extract role name from the department_role relation
-  const roleName = entity.departmentRole?.role?.name;
-  const departmentName = entity.departmentRole?.department?.name;
+  // Map multiple roles from userRoles relation
+  const roles = entity.userRoles?.map(userRole => ({
+    department_role_id: userRole.departmentRoleId,
+    department_name: userRole.departmentRole?.department?.name || '',
+    role_name: userRole.departmentRole?.role?.name || ''
+  })) || [];
+
+  const primaryRole = roles.length > 0 ? roles[0].role_name : 'Citizen';
 
   return removeNullAttributes({
     id: entity.id,
@@ -106,18 +114,23 @@ export function mapUserEntityToUserResponse(entity: UserEntity | null | undefine
     email: entity.email,
     first_name: entity.firstName,
     last_name: entity.lastName,
-    department_name: departmentName,
-    role_name: roleName,
-    company_name: companyName
+    personal_photo_url: entity.personalPhotoUrl,
+    roles: roles,
+    role_name: primaryRole,
+    company_name: companyName,
+    telegram_username: entity.telegramUsername,
+    email_notifications_enabled: entity.emailNotificationsEnabled,
+    created_at: entity.createdAt,
+    is_verified: entity.isVerified
   }) as UserResponse;
 }
 
 /**
  * Maps a Photo DTO (snake_case) to API response format (camelCase)
- * @param photo - Photo DTO from database
+ * @param photo - Photo DTO from database or repository
  * @returns PhotoResponse for API
  */
-export function mapPhotoToResponse(photo: Photo): PhotoResponse {
+export function mapPhotoToResponse(photo: any): PhotoResponse {
   return {
     id: photo.id,
     reportId: photo.report_id,
@@ -159,7 +172,7 @@ export function mapReportEntityToResponse(report: ReportEntity, photos: any[], l
 export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCompanyName?: string): ReportResponse {
   // Parse PostGIS geography point to lat/lng
   let location = { latitude: 0, longitude: 0 };
-  
+
   if (typeof entity.location === 'string') {
     const match = new RegExp(/POINT\(([^ ]+) ([^ ]+)\)/).exec(entity.location);
     if (match) {
@@ -173,34 +186,16 @@ export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCo
   }
 
   // Map reporter info if available and not anonymous
-  const reporter = !entity.isAnonymous && entity.reporter ? {
-    id: entity.reporter.id,
-    first_name: entity.reporter.firstName,
-    last_name: entity.reporter.lastName,
-    username: entity.reporter.username,
-    // Aggiungo email anche qui per sicurezza, se UserResponse lo richiede sempre
-    email: entity.reporter.email 
-  } : null;
+  const reporter = !entity.isAnonymous && entity.reporter ?
+    mapUserEntityToUserResponse(entity.reporter) : null;
 
   // Map INTERNAL assignee info if available
-  const assignee = entity.assignee ? {
-    id: entity.assignee.id,
-    first_name: entity.assignee.firstName,
-    last_name: entity.assignee.lastName,
-    username: entity.assignee.username,
-    email: entity.assignee.email, // <--- AGGIUNTO: Obbligatorio per UserResponse
-    company_name: assigneeCompanyName 
-  } : null;
+  const assignee = entity.assignee ?
+    mapUserEntityToUserResponse(entity.assignee, assigneeCompanyName) : null;
 
   // Map EXTERNAL assignee info if available
-  const externalAssignee = entity.externalAssignee ? {
-    id: entity.externalAssignee.id,
-    first_name: entity.externalAssignee.firstName,
-    last_name: entity.externalAssignee.lastName,
-    username: entity.externalAssignee.username,
-    email: entity.externalAssignee.email, // <--- AGGIUNTO: Obbligatorio per UserResponse
-    company_name: assigneeCompanyName 
-  } : null;
+  const externalAssignee = entity.externalAssignee ?
+    mapUserEntityToUserResponse(entity.externalAssignee, assigneeCompanyName) : null;
 
   // Map photos if available with full URLs
   const photos = entity.photos ? entity.photos.map(photo => ({
@@ -223,7 +218,7 @@ export function mapReportEntityToReportResponse(entity: ReportEntity, assigneeCo
     isAnonymous: entity.isAnonymous,
     status: entity.status as ReportStatus,
     rejectionReason: entity.rejectionReason || null,
-    
+
     // Internal Assignee fields
     assigneeId: entity.assigneeId || null,
     assignee,
@@ -271,6 +266,26 @@ function removeNullAttributes<T extends Record<string, any>>(
       value !== undefined &&
       (!Array.isArray(value) || value.length > 0)
   );
-  
+
   return Object.fromEntries(filtered) as Partial<T>;
+}
+
+/**
+ * Maps a MessageEntity to MessageResponse DTO
+ */
+export function mapMessageToResponse(message: MessageEntity): MessageResponse {
+  return {
+    id: message.id,
+    reportId: message.reportId,
+    author: {
+      id: message.sender.id,
+      username: message.sender.username,
+      firstName: message.sender.firstName,
+      lastName: message.sender.lastName,
+      role: message.sender.userRoles?.[0]?.departmentRole?.role?.name || 'Unknown',
+      personalPhotoUrl: message.sender.personalPhotoUrl ? getPhotoUrl(message.sender.personalPhotoUrl) : undefined
+    },
+    content: message.content,
+    createdAt: message.createdAt,
+  };
 }

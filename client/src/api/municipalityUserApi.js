@@ -138,6 +138,39 @@ export const getAllRoles = async () => {
 };
 
 /**
+ * Removes a specific role from a user.
+ * @param {*} userId 
+ * @param {*} roleId 
+ * @returns 
+ */
+export const removeRoleFromUser = async (userId, roleId) => {
+  const response = await fetch(`/api/municipality/users/${userId}/roles`, {
+    method: "DELETE",
+    credentials: "include",
+    body: JSON.stringify({ roleId }),
+  });
+
+  return handleResponse(response);
+}
+
+/**
+ * Replaces ALL existing roles with the provided list of department_role_ids. 
+ * @param {number} userId
+ * @param {Array<number>} departmentRoleIds
+ */
+export const setUserRoles = async (userId, departmentRoleIds) => {
+  const response = await fetch(`/api/municipality/users/${userId}/roles`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ departmentRoleIds }),
+  });
+  return handleResponse(response);
+}
+
+/**
  * 
  * @returns {Promise<Array>} List of external maintainers
  */

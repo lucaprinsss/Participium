@@ -12,6 +12,9 @@ import { commentRepository } from '@repositories/commentRepository';
 import { ReportCategory } from '@models/dto/ReportCategory';
 import { UserEntity } from '@models/entity/userEntity';
 import { ReportEntity } from '@models/entity/reportEntity';
+import { DepartmentEntity } from '@models/entity/departmentEntity';
+import { DepartmentRoleEntity } from '@models/entity/departmentRoleEntity';
+import { RoleEntity } from '@models/entity/roleEntity';
 
 const r = () => `_${Math.floor(Math.random() * 1000000)}`;
 
@@ -29,6 +32,54 @@ describe('ReportService - Internal Comments Integration Tests', () => {
   beforeAll(async () => {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
+    }
+
+    // Seed Organization and PRO/Citizen roles
+    let orgDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'Organization' });
+    if (!orgDept) {
+      orgDept = await AppDataSource.getRepository(DepartmentEntity).save({ name: 'Organization', description: 'Organization' });
+    }
+
+    const roleNames = ['Municipal Public Relations Officer', 'Citizen', 'Water Network staff member', 'External Maintainer'];
+    for (const name of roleNames) {
+      let role = await AppDataSource.getRepository(RoleEntity).findOneBy({ name });
+      if (!role) {
+        await AppDataSource.getRepository(RoleEntity).save({ name, description: name });
+      }
+    }
+
+    const proRoleEntity = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Municipal Public Relations Officer' });
+    let proDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({ departmentId: orgDept.id, roleId: proRoleEntity!.id });
+    if (!proDeptRole) {
+      await AppDataSource.getRepository(DepartmentRoleEntity).save({ departmentId: orgDept.id, roleId: proRoleEntity!.id });
+    }
+
+    const citizenRoleEntity = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Citizen' });
+    let citizenDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({ departmentId: orgDept.id, roleId: citizenRoleEntity!.id });
+    if (!citizenDeptRole) {
+      await AppDataSource.getRepository(DepartmentRoleEntity).save({ departmentId: orgDept.id, roleId: citizenRoleEntity!.id });
+    }
+
+    // Seed Water Dept
+    let waterDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'Water and Sewer Services Department' });
+    if (!waterDept) {
+      waterDept = await AppDataSource.getRepository(DepartmentEntity).save({ name: 'Water and Sewer Services Department', description: 'Water Dept' });
+    }
+    const waterStaffRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'Water Network staff member' });
+    let waterDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({ departmentId: waterDept.id, roleId: waterStaffRole!.id });
+    if (!waterDeptRole) {
+      await AppDataSource.getRepository(DepartmentRoleEntity).save({ departmentId: waterDept.id, roleId: waterStaffRole!.id });
+    }
+
+    // Seed External Dept
+    let extDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'External Service Providers' });
+    if (!extDept) {
+      extDept = await AppDataSource.getRepository(DepartmentEntity).save({ name: 'External Service Providers', description: 'External' });
+    }
+    const extRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'External Maintainer' });
+    let extDeptRole = await AppDataSource.getRepository(DepartmentRoleEntity).findOneBy({ departmentId: extDept.id, roleId: extRole!.id });
+    if (!extDeptRole) {
+      await AppDataSource.getRepository(DepartmentRoleEntity).save({ departmentId: extDept.id, roleId: extRole!.id });
     }
   });
 
@@ -68,9 +119,13 @@ describe('ReportService - Internal Comments Integration Tests', () => {
       email: `tech${r()}@test.com`,
       firstName: 'Tech',
       lastName: 'Staff',
-      departmentRoleId: techRole!.id,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [techStaffUser.id, techRole!.id]
+    );
     createdUserIds.push(techStaffUser.id);
 
     // Create PRO user
@@ -81,9 +136,13 @@ describe('ReportService - Internal Comments Integration Tests', () => {
       email: `pro${r()}@test.com`,
       firstName: 'PRO',
       lastName: 'User',
-      departmentRoleId: proRole!.id,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [proUser.id, proRole!.id]
+    );
     createdUserIds.push(proUser.id);
 
     // Create external maintainer
@@ -94,9 +153,13 @@ describe('ReportService - Internal Comments Integration Tests', () => {
       email: `external${r()}@test.com`,
       firstName: 'External',
       lastName: 'User',
-      departmentRoleId: externalRole!.id,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [externalUser.id, externalRole!.id]
+    );
     createdUserIds.push(externalUser.id);
 
     // Create citizen user
@@ -107,9 +170,13 @@ describe('ReportService - Internal Comments Integration Tests', () => {
       email: `citizen${r()}@test.com`,
       firstName: 'Citizen',
       lastName: 'User',
-      departmentRoleId: citizenRole!.id,
-      isVerified: true
+      isVerified: true,
+      telegramLinkConfirmed: false,
     });
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [citizenUser.id, citizenRole!.id]
+    );
     createdUserIds.push(citizenUser.id);
 
     // Create test report
@@ -237,7 +304,7 @@ describe('ReportService - Internal Comments Integration Tests', () => {
 
     it('should throw BadRequestError for content exceeding max length', async () => {
       const longContent = 'a'.repeat(2001);
-      
+
       await expect(
         reportService.addInternalComment(testReport.id, techStaffUser.id, longContent)
       ).rejects.toThrow(BadRequestError);
@@ -245,7 +312,7 @@ describe('ReportService - Internal Comments Integration Tests', () => {
 
     it('should accept content at max length (2000 chars)', async () => {
       const maxContent = 'a'.repeat(2000);
-      
+
       const comment = await reportService.addInternalComment(
         testReport.id,
         techStaffUser.id,

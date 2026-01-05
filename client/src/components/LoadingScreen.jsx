@@ -1,5 +1,5 @@
 import React from 'react';
-import PropTypes from 'prop-types'; // Importato per la validazione delle props
+import PropTypes from 'prop-types'; // Imported for props validation
 import "../css/LoadingScreen.css";
 
 const LoadingScreen = ({ message = "Loading the page..." }) => {
@@ -11,9 +11,9 @@ const LoadingScreen = ({ message = "Loading the page..." }) => {
   );
 };
 
-// Aggiunta la validazione delle props
+// Added props validation
 LoadingScreen.propTypes = {
-  // La prop 'message' è opzionale e deve essere una stringa.
+  // The 'message' prop is optional and must be a string.
   message: PropTypes.string,
 };
 

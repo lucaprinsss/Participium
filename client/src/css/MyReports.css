@@ -1,0 +1,249 @@
+:root {
+    --mr-bg: #f8f9fa;
+    --mr-card-bg: #ffffff;
+    --mr-text-dark: #212529;
+    --mr-text-muted: #6c757d;
+    --mr-brand-red: #A12B32;
+    --mr-brand-red-hover: #b40612;
+    --mr-brand-red-light: rgba(161, 43, 50, 0.08);
+    --mr-border-color: #e9ecef;
+    --mr-shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
+    --mr-shadow-md: 0 10px 15px rgba(0, 0, 0, 0.08);
+    --mr-radius: 0.75rem;
+    /* --mr-font-serif: 'Cinzel', serif; REMOVED to match other pages */
+}
+
+.mr-page-wrapper {
+    background-color: var(--mr-bg);
+    min-height: 100vh;
+    padding: 80px 20px 40px; /* Top padding for navbar */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin-top: -4.5rem;
+}
+
+.mr-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header */
+.mr-header {
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.mr-title {
+    /* font-family: var(--mr-font-serif); REMOVED */
+    font-family: inherit; /* Use default sans-serif */
+    font-weight: 800;
+    color: #1a1a1a;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.mr-subtitle {
+    color: var(--mr-text-muted);
+    font-size: 1.1rem;
+}
+
+/* Filters Container */
+.mr-filters-container {
+    margin-bottom: 1.5rem;
+}
+
+/* Grid Layout */
+.mr-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 992px) {
+    .mr-content-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Reports Section - Table View */
+.mr-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.mr-section-header h2 {
+    font-size: 1.5rem;
+    color: var(--mr-text-dark);
+    margin: 0;
+}
+
+.mr-badge-count {
+    background-color: var(--mr-brand-red);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Table styles removed - using MunicipalityUserList.css (mul-) classes */
+
+.mr-table-title {
+    font-weight: 600;
+    color: var(--mr-text-dark);
+    font-size: 1rem;
+}
+
+.mr-table-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--mr-text-muted);
+    font-size: 0.9rem;
+}
+
+.mr-meta-icon {
+    color: var(--mr-text-muted);
+    font-size: 0.85rem;
+}
+
+.mr-status-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.mr-status-open { background-color: #e3f2fd; color: #1976d2; }
+.mr-status-resolved { background-color: #e8f5e9; color: #2e7d32; }
+.mr-status-rejected { background-color: #ffebee; color: #c62828; }
+.mr-status-assigned { background-color: #fff3e0; color: #ef6c00; }
+.mr-status-pending { background-color: #fff8e1; color: #fbc02d; }
+.mr-status-suspended { background-color: #f3e5f5; color: #7b1fa2; }
+
+.mr-chat-indicator-table {
+    color: var(--mr-brand-red);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background-color: var(--mr-brand-red-light);
+    border-radius: 50%;
+}
+
+/* Sidebar */
+.mr-chats-sidebar {
+    background: var(--mr-card-bg);
+    border-radius: var(--mr-radius);
+    box-shadow: var(--mr-shadow-sm);
+    padding: 1.5rem;
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+}
+
+.mr-sidebar-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--mr-border-color);
+}
+
+.mr-sidebar-header h2 {
+    font-size: 1.25rem;
+    color: var(--mr-text-dark);
+    margin: 0;
+}
+
+.mr-chats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.mr-chat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: var(--mr-bg);
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+.mr-chat-item:hover {
+    background-color: #e9ecef;
+}
+
+.mr-chat-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: var(--mr-brand-red-light);
+    color: var(--mr-brand-red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mr-chat-info {
+    overflow: hidden;
+}
+
+.mr-chat-title {
+    font-weight: 600;
+    color: var(--mr-text-dark);
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mr-chat-preview {
+    font-size: 0.85rem;
+    color: var(--mr-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mr-no-chats {
+    text-align: center;
+    color: var(--mr-text-muted);
+    padding: 2rem 0;
+}
+
+/* Loading */
+.mr-loading-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: var(--mr-text-muted);
+}
+
+.mr-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--mr-border-color);
+    border-top-color: var(--mr-brand-red);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

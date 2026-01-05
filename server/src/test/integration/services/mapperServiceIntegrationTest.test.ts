@@ -9,7 +9,7 @@ import { createMockMunicipalityUser } from '@test/utils/mockEntities';
 
 describe('Mapper Service', () => {
   describe('mapUserEntityToUserResponse', () => {
-    
+
     it('should return null if the entity is null', () => {
       // Act
       const result = mapUserEntityToUserResponse(null as any);
@@ -26,6 +26,7 @@ describe('Mapper Service', () => {
 
     it('should correctly map a userEntity to a UserResponse', () => {
       // Arrange
+      const creationDate = new Date('2023-01-01T12:00:00Z');
       const mockEntity = createMockMunicipalityUser('Administrator', 'Administration', {
         id: 123,
         username: 'testuser',
@@ -33,25 +34,43 @@ describe('Mapper Service', () => {
         firstName: 'Mario',
         lastName: 'Rossi',
         telegramUsername: 'tele_user',
+        createdAt: creationDate,
       });
       mockEntity.passwordHash = 'hash_segreto';
-      
+
       const expectedResponse: UserResponse = {
         id: 123,
         username: 'testuser',
         email: 'test@example.com',
         first_name: 'Mario',
-        last_name: 'Rossi', 
+        last_name: 'Rossi',
         role_name: 'Administrator',
-        department_name: 'Administration',
+        telegram_username: 'tele_user',
+        email_notifications_enabled: true,
+        created_at: creationDate.toISOString(),
+        is_verified: true,
+        roles: [
+          {
+            department_role_id: 1,
+            department_name: "Administration",
+            role_name: "Administrator",
+          },
+        ],
       };
 
       // Act
       const result = mapUserEntityToUserResponse(mockEntity);
 
+      const normalizedResult = {
+        ...result,
+        created_at: (result as any)?.created_at instanceof Date
+          ? (result as any).created_at.toISOString()
+          : (result as any)?.created_at,
+      } as UserResponse;
+
       // Assert
-      expect(result).toEqual(expectedResponse);
-      
+      expect(normalizedResult).toEqual(expectedResponse);
+
       expect(result).not.toHaveProperty('passwordHash');
       expect(result).not.toHaveProperty('createdAt');
       expect(result).not.toHaveProperty('telegramUsername');
@@ -59,7 +78,7 @@ describe('Mapper Service', () => {
   });
 
   describe('createErrorDTO', () => {
-    
+
     it('should create a full ErrorDTO with all properties', () => {
       // Arrange
       const expectedDTO: ErrorDTO = {
@@ -67,10 +86,10 @@ describe('Mapper Service', () => {
         name: 'NotFound',
         message: 'Resource not found',
       };
-      
+
       // Act
       const result = createErrorDTO(404, 'Resource not found', 'NotFound');
-      
+
       // Assert
       expect(result).toEqual(expectedDTO);
     });
@@ -83,7 +102,7 @@ describe('Mapper Service', () => {
 
       // Act
       const result = createErrorDTO(500);
-      
+
       // Assert
       expect(result).toEqual(expectedDTO);
       expect(result).not.toHaveProperty('name');
@@ -96,10 +115,10 @@ describe('Mapper Service', () => {
         code: 401,
         name: 'AuthError',
       };
-      
+
       // Act
       const result = createErrorDTO(401, null as any, 'AuthError');
-      
+
       // Assert
       expect(result).toEqual(expectedDTO);
       expect(result).not.toHaveProperty('message');

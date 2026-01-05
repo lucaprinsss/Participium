@@ -11,10 +11,14 @@ import {
 } from 'react-icons/fa';
 
 export default function MainPage() {
-  const navigate = useNavigate();
+  const navigate = useNavigate();  
 
   const handleNavigateToLogin = () => {
     navigate('/login');
+  };
+
+  const handleNavigateToReports = () => {
+    navigate('/reports-map');
   };
 
   return (
@@ -34,8 +38,15 @@ export default function MainPage() {
 
             <div className="hero-actions">
               <button
-                className="hp-btn"
+                className="hp-btn hp-btn-outline"
                 onClick={handleNavigateToLogin}
+              >
+                Join Participium
+              </button>
+
+              <button
+                className="hp-btn hp-btn-primary"
+                onClick={handleNavigateToReports}
               >
                 Start Making Reports
               </button>
@@ -187,14 +198,8 @@ export default function MainPage() {
             one report at a time.
           </p>
           <button
-            className="hp-btn"
+            className="hp-btn hp-btn-white"
             onClick={handleNavigateToLogin}
-            style={{
-              backgroundColor: '#ffffff',
-              color: 'var(--brand-red)',
-              padding: '0.8rem 2rem',
-              fontSize: '1.05rem'
-            }}
           >
             Get Started Now
           </button>

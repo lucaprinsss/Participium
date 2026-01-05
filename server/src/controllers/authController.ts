@@ -7,6 +7,8 @@ import { NotFoundError } from '@models/errors/NotFoundError';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { UserEntity } from '@models/entity/userEntity';
 
+import { userService } from '@services/userService';
+
 /**
  * Controller for Authentication-related HTTP requests
  */
@@ -14,6 +16,7 @@ class AuthController {
   /**
    * Login handler
    * Authenticates user with Passport LocalStrategy
+   * Note: Returns user with all assigned roles (supports multiple roles per user)
    */
   login(req: Request, res: Response, next: NextFunction): void {
     passport.authenticate('local', (err: Error | null, user: Express.User | false, info: { message: string }) => {
@@ -43,6 +46,7 @@ class AuthController {
   /**
    * Get current authenticated user
    * Returns user data from session
+   * Note: User response includes all assigned roles (supports multiple roles per user)
    */
   getCurrentUser(req: Request, res: Response, next: NextFunction): void {
     try {
@@ -106,6 +110,24 @@ class AuthController {
       await authService.verifyEmailCode(email, otpCode);
 
       res.status(200).json({ message: 'Email verified successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+/**
+   * Resend verification code
+   */
+  async resendVerificationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        throw new BadRequestError('Email is required');
+      }
+
+      await userService.resendVerificationCode(email);
+
+      res.status(200).json({ message: 'Verification code sent successfully' });
     } catch (error) {
       next(error);
     }

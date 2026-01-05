@@ -3,7 +3,7 @@ import axios from 'axios';
 // URL del tuo backend locale (o da variabile d'ambiente)
 const API_BASE_URL = 'http://localhost:3001/api'; 
 
-// Definizione dei tipi per i dati che ci aspettiamo dal nostro Backend Proxy
+// Definition of types for data we expect from our Backend Proxy
 interface AddressDetails {
     road?: string;
     house_number?: string;
@@ -36,41 +36,8 @@ export async function calculateAddress(latitude: number, longitude: number): Pro
     try {
         const response = await axios.get<GeocodingResponse>(url);
 
-        if (response.status === 200 && (response.data.address || response.data.display_name)) {
-            
-            const data = response.data;
-            const address = data.address;
-            let extractedAddress = '';
-
-            if (address) {
-                // Priorità 1: Via e Civico
-                if (address.road && address.house_number) {
-                    extractedAddress = `${address.road}, ${address.house_number}`;
-                } 
-                // Priorità 2: Solo Via
-                else if (address.road) {
-                    extractedAddress = address.road;
-                } 
-                // Priorità 3: Aree pedonali
-                else if (address.pedestrian || address.footway || address.path) {
-                    extractedAddress = address.pedestrian || address.footway || address.path || '';
-                } 
-                // Priorità 4: Display Name parziale
-                else if (data.display_name) {
-                    extractedAddress = data.display_name.split(',')[0];
-                }
-            }
-            
-            // Aggiunta Città se manca
-            const city = address?.city || address?.town || address?.village || address?.suburb;
-            
-            if (extractedAddress && city && !extractedAddress.includes(city)) {
-                extractedAddress += `, ${city}`;
-            }
-
-            if (extractedAddress) {
-                return extractedAddress;
-            }
+        if (response.status === 200 && response.data.display_name) {
+            return response.data.display_name;
         }
         
         return fallbackAddress;

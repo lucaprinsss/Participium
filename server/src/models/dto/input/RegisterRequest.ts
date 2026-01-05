@@ -10,7 +10,6 @@
  *         - password
  *         - first_name
  *         - last_name
- *         - role_name
  *       properties:
  *         username:
  *           type: string
@@ -33,14 +32,13 @@
  *           type: string
  *           description: Last name
  *           example: "Rossi"
- *         role_name:
- *           type: string
- *           description: Role name
- *           example: "Citizen"
- *         department_name:
- *           type: string
- *           description: Department name (optional)
- *           example: "Organization"
+
+ *         department_role_ids:
+ *           type: array
+ *           items:
+ *             type: integer
+ *           description: Array of department role IDs (optional for Citizen, required for Municipality Users)
+ *           example: [1]
  *         company_name:
  *           type: string
  *           description: Company name (optional, required for External Maintainers)
@@ -52,7 +50,6 @@ export interface RegisterRequest {
     password: string;
     first_name: string;
     last_name: string;
-    role_name: string;
-    department_name?: string;
+    department_role_ids?: number[];
     company_name?: string;
 }

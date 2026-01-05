@@ -130,11 +130,21 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
     const [commentToDelete, setCommentToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const commentsEndRef = useRef(null);
+    const scrollContainerRef = useRef(null);
+    
+    // Ref to track comments for comparison without triggering re-renders/dependency changes
+    const commentsRef = useRef(comments);
+    useEffect(() => { commentsRef.current = comments; }, [comments]);
 
     // --- UTILITY ---
     const scrollToBottom = useCallback((behavior = "smooth") => {
-        commentsEndRef.current?.scrollIntoView({ behavior: behavior });
+        if (scrollContainerRef.current) {
+            const { scrollHeight, clientHeight } = scrollContainerRef.current;
+            scrollContainerRef.current.scrollTo({
+                top: scrollHeight - clientHeight,
+                behavior: behavior
+            });
+        }
     }, []);
 
     const formatCommentDate = useCallback((dateString) => {
@@ -142,51 +152,72 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
         const now = new Date();
         const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
         if (isToday) return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-        return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(date);
+        return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(date);
     }, []);
 
     // --- FETCH LOGIC ---
-    const fetchComments = useCallback(async (isInitialLoad = false) => {
-        setLoadingComments(true);
-        const oldCommentsCount = comments.length; 
+    const fetchComments = useCallback(async (isInitialLoad = false, isPolling = false) => {
+        if (!isPolling) setLoadingComments(true);
+        
+        const currentComments = commentsRef.current;
+        const oldCommentsCount = currentComments.length; 
         let data = [];
 
         try {
             data = await getAllReportComments(reportId);
-            setComments(data || []);
             
-            // Logica Semplificata di Scroll:
-            const newCommentAdded = data.length > oldCommentsCount && oldCommentsCount > 0;
-            
-            if (newCommentAdded) {
-                // Scroll liscio solo quando viene aggiunto un commento DA FUORI (es. reload)
-                setTimeout(() => scrollToBottom("smooth"), 50); 
-            } else if (isInitialLoad && isExpanded) {
-                 // Scrolla subito 'auto' all'apertura iniziale se non ci sono commenti freschi
-                setTimeout(() => scrollToBottom("auto"), 300);
+            const hasChanges = data.length !== currentComments.length || 
+                (data.length > 0 && currentComments.length > 0 && data[data.length-1].id !== currentComments[currentComments.length-1].id);
+
+            if (!isPolling || hasChanges) {
+                setComments(data || []);
+                
+                // Logica Semplificata di Scroll:
+                const newCommentAdded = data.length > oldCommentsCount && oldCommentsCount > 0;
+                
+                if (newCommentAdded) {
+                    // Smooth scroll only when a comment is added FROM OUTSIDE (e.g. reload)
+                    setTimeout(() => scrollToBottom("smooth"), 50); 
+                } else if (isInitialLoad && isExpanded) {
+                     // Scrolla subito 'auto' all'apertura iniziale se non ci sono commenti freschi
+                    setTimeout(() => scrollToBottom("auto"), 300);
+                }
             }
             
         } catch (error) {
             console.error("Failed to load comments", error);
         } finally {
-            setLoadingComments(false);
+            if (!isPolling) setLoadingComments(false);
         }
         return data;
-    }, [reportId, comments.length, isExpanded, scrollToBottom]);
+    }, [reportId, isExpanded, scrollToBottom]); // Removed 'comments' dependency
 
     // Carica i commenti all'avvio del componente (dipendenza corretta)
     useEffect(() => {
         if (reportId) fetchComments(true);
     }, [reportId, fetchComments]);
 
-    // Scrolla in basso quando si apre la tendina (gestisce l'animazione)
+    // Polling for new comments
     useEffect(() => {
-        // Scrolla solo se aperto E ci sono commenti
+        let interval;
+        if (isExpanded && reportId) {
+            interval = setInterval(() => {
+                fetchComments(false, true);
+            }, 3000);
+        }
+        return () => clearInterval(interval);
+    }, [isExpanded, reportId, fetchComments]);
+
+    // Scroll down when the dropdown opens (handles animation)
+    useEffect(() => {
+        // Scroll only if open AND there are comments
         if (isExpanded && comments.length > 0) {
-            // Un breve timeout per permettere all'animazione CSS di finire prima dello scroll
+            // A brief timeout to allow the CSS animation to finish before scrolling
             setTimeout(() => scrollToBottom("smooth"), 300);
         }
-    }, [isExpanded, comments.length, scrollToBottom]); 
+        // Removed comments.length dependency to prevent auto-scroll on every poll if length changes but user is scrolling up
+        // The fetchComments logic already handles "newCommentAdded" scrolling.
+    }, [isExpanded, scrollToBottom]); 
 
     // --- HANDLERS ---
     const handlePostComment = async (e) => {
@@ -196,15 +227,16 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
         
         setSubmittingComment(true);
         try {
-            await addReportComment(reportId, { content });
+            const newComment = await addReportComment(reportId, { content });
             setNewCommentText("");
             
-            // Ricarica la lista e gestisce lo scroll internamente alla chiamata fetch
-            const data = await fetchComments(); 
-            
-            // Forza lo scroll alla fine (risolve il glitch post-invio)
-            if (data && data.length > 0) {
-                 setTimeout(() => scrollToBottom("smooth"), 50);
+            // Optimistically update UI with the returned comment
+            if (newComment) {
+                setComments(prev => [...prev, newComment]);
+                setTimeout(() => scrollToBottom("smooth"), 50);
+            } else {
+                // Fallback if no comment returned
+                await fetchComments();
             }
 
             showToast("Comment added successfully!", "success");
@@ -235,7 +267,7 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
         try {
             await deleteReportComment(reportId, commentToDelete);
             
-            // Aggiorna lo stato in base alla risposta, anche in caso di risposta non-JSON attesa (API DELETE)
+            // Update state based on response, even for non-JSON expected response (DELETE API)
             setComments((prev) => prev.filter((c) => c.id !== commentToDelete));
             
             showToast("Comment deleted.", "success");
@@ -243,7 +275,7 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
 
         } catch (error) {
             console.error("Error deleting comment:", error);
-             // Gestione esplicita di successo anche se la risposta non è JSON (comune nelle API DELETE)
+             // Explicit success handling even if response is not JSON (common in DELETE APIs)
             if (error.message && error.message.includes("JSON")) {
                  setComments((prev) => prev.filter((c) => c.id !== commentToDelete));
                  showToast("Comment deleted.", "success");
@@ -279,7 +311,7 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
         }
 
         return (
-            <div className="rdm-comments-list">
+            <div className="rdm-comments-list" ref={scrollContainerRef}>
                 {comments.map((comment) => (
                     <CommentItem 
                         key={comment.id} 
@@ -290,7 +322,6 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
                         formatCommentDate={formatCommentDate}
                     />
                 ))}
-                <div ref={commentsEndRef} />
             </div>
         );
     }, [loadingComments, comments, currentUserId, formatCommentDate, isCommentOwner, requestDelete]);

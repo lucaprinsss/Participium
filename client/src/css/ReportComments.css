@@ -21,11 +21,7 @@
   background-color: #ffffff;
 }
 
-/* Scrollbar Sottile e Rossa */
-.rdm-comments-list::-webkit-scrollbar { width: 5px; }
-.rdm-comments-list::-webkit-scrollbar-track { background: transparent; }
-.rdm-comments-list::-webkit-scrollbar-thumb { background-color: var(--rdm-brand); border-radius: 10px; }
-.rdm-comments-list::-webkit-scrollbar-thumb:hover { background-color: var(--rdm-brand-dark); }
+
 
 /* --- ITEM GENERICO --- */
 .rdm-comment-item {
@@ -182,7 +178,7 @@
   cursor: pointer;
   user-select: none; /* Evita la selezione del testo col doppio click */
   padding: 8px 0; /* Un po' di padding verticale per il target del click */
-  margin-bottom: 0; /* Rimuoviamo il margine bottom perché lo gestirà il wrapper */
+  margin-bottom: 0; /* Remove bottom margin because the wrapper will handle it */
   transition: opacity 0.2s;
 }
 
@@ -209,7 +205,7 @@
 
 .rdm-chevron-toggle.rotate {
   transform: rotate(180deg);
-  color: var(--rdm-brand); /* Diventa rossa quando aperta */
+  color: var(--rdm-brand); /* Becomes red when open */
 }
 
 /* --- ANIMAZIONE ALTEZZA FLUIDA (CSS Grid Trick) --- */
@@ -223,10 +219,10 @@
 
 .rdm-collapsible-wrapper.open {
   grid-template-rows: 1fr;
-  margin-top: 1rem; /* Spazio sopra solo quando è aperto */
+  margin-top: 1rem; /* Space above only when open */
 }
 
 .rdm-collapsible-inner {
   min-height: 0;
-  overflow: hidden; /* Importante per nascondere il contenuto mentre si chiude */
+  overflow: hidden; /* Important to hide content while closing */
 }

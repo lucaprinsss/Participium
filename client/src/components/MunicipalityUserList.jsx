@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
-import PropTypes from "prop-types"; // Importato per la validazione delle props
-import { Alert, Modal, Dropdown, InputGroup, Tooltip, OverlayTrigger } from "react-bootstrap";
-import { FaFilter, FaBuilding, FaChevronDown, FaUndo } from "react-icons/fa";
+import PropTypes from "prop-types";
+import { Alert, Modal, Dropdown, InputGroup, Tooltip, OverlayTrigger, Form } from "react-bootstrap";
+import { FaFilter, FaBuilding, FaChevronDown, FaUndo, FaExclamationTriangle } from "react-icons/fa";
 import {
     getAllMunicipalityUsers,
     deleteMunicipalityUser,
     updateMunicipalityUser,
     getAllRoles,
 } from "../api/municipalityUserApi";
-import { getRolesByDepartment, getAllDepartments } from "../api/departmentAPI";
+import { getAllDepartments, getAllDepartmentRolesMapping } from "../api/departmentAPI";
 import UserDetails from "./UserDetails";
 
 import "../css/MunicipalityUserList.css";
@@ -22,35 +22,42 @@ export default function MunicipalityUserList({ refreshTrigger }) {
     // Filters
     const [roles, setRoles] = useState([]);
     const [departments, setDepartments] = useState([]);
-    const [roleFilter, setRoleFilter] = useState("");
-    const [departmentFilter, setDepartmentFilter] = useState("");
-    const [loadingRoles, setLoadingRoles] = useState(false);
+    const [departmentRolesMapping, setDepartmentRolesMapping] = useState([]);
+    
+    const [selectedRoles, setSelectedRoles] = useState([]);
+    const [selectedDepartments, setSelectedDepartments] = useState([]);
 
     // Modals
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const [editForm, setEditForm] = useState({ username: "", email: "", firstName: "", lastName: "", role: "" });
     const [editLoading, setEditLoading] = useState(false);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingUser, setDeletingUser] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
 
-    // --- FETCH DATA PRINCIPALE ---
+    const [showBlockerModal, setShowBlockerModal] = useState(false);
+    const [isEditDirty, setIsEditDirty] = useState(false);
+
+    // --- MAIN DATA FETCH ---
     useEffect(() => {
         let isMounted = true;
         const initData = async () => {
             setLoading(true);
             setError("");
             try {
-                const [usersData, departmentsData] = await Promise.all([
+                const [usersData, departmentsData, rolesData, mappingData] = await Promise.all([
                     getAllMunicipalityUsers(),
-                    getAllDepartments()
+                    getAllDepartments(),
+                    getAllRoles(),
+                    getAllDepartmentRolesMapping()
                 ]);
 
                 if (isMounted) {
                     setUsers(usersData);
                     setDepartments(departmentsData);
+                    setRoles(rolesData);
+                    setDepartmentRolesMapping(mappingData);
                 }
             } catch (err) {
                 if (isMounted) {
@@ -64,37 +71,9 @@ export default function MunicipalityUserList({ refreshTrigger }) {
 
         initData();
         return () => { isMounted = false; };
-    }, [refreshTrigger]); // Dipendenza da refreshTrigger
+    }, [refreshTrigger]);
 
-    // --- FETCH RUOLI (Dipende dai dipartimenti, non dal refresh principale) ---
-    useEffect(() => {
-        let isMounted = true;
-        const fetchRoles = async () => {
-            setLoadingRoles(true);
-            setRoleFilter("");
-            try {
-                let rolesList;
-                if (departmentFilter) {
-                    rolesList = await getRolesByDepartment(departmentFilter);
-                } else {
-                    rolesList = await getAllRoles();
-                }
-                if (isMounted) setRoles(rolesList);
-            } catch (err) {
-                if (isMounted) {
-                    console.error("Failed to fetch roles:", err);
-                    setRoles([]);
-                }
-            } finally {
-                if (isMounted) setLoadingRoles(false);
-            }
-        };
-
-        fetchRoles();
-        return () => { isMounted = false; };
-    }, [departmentFilter]);
-
-    // Helper per refresh silenzioso dopo edit/delete
+    // Helper for silent refresh after edit/delete
     const reloadUsers = async () => {
         try {
             const list = await getAllMunicipalityUsers();
@@ -103,53 +82,42 @@ export default function MunicipalityUserList({ refreshTrigger }) {
     };
 
     const handleResetFilters = () => {
-        setDepartmentFilter("");
-        setRoleFilter("");
+        setSelectedDepartments([]);
+        setSelectedRoles([]);
     };
 
     const handleEdit = (user) => {
         setEditingUser(user);
-        setEditForm({
-            username: user.username,
-            email: user.email,
-            firstName: user.first_name || "",
-            lastName: user.last_name || "",
-            role: user.role_name,
-        });
         setShowEditModal(true);
     };
 
-    const handleEditChange = (e) => {
-        const { name, value } = e.target;
-        setEditForm(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleEditSubmit = async (e) => {
-        if (e && e.preventDefault) e.preventDefault();
+    const handleEditSubmit = async (formData) => {
         setError("");
         setSuccess("");
 
-        if (!editForm.email.trim() || !editForm.firstName.trim() || !editForm.lastName.trim()) {
+        if (!formData.email.trim() || !formData.firstName.trim() || !formData.lastName.trim()) {
             setError("All fields are required");
             return;
         }
 
         setEditLoading(true);
+        setIsEditDirty(false); // Reset dirty state when saving starts
         try {
             const payload = {
-                email: editForm.email,
-                first_name: editForm.firstName,
-                last_name: editForm.lastName,
-                role: editForm.role,
+                email: formData.email,
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                department_role_ids: formData.roles.map(r => r.department_role_id)
             };
 
             await updateMunicipalityUser(editingUser.id, payload);
-            setSuccess(`User "${editForm.username}" updated successfully!`);
+            setSuccess(`User "${editingUser.username}" updated successfully!`);
             setShowEditModal(false);
-            await reloadUsers(); // Reload locale
+            await reloadUsers();
             setTimeout(() => setSuccess(""), 5000);
         } catch (err) {
             setError(err.message || "Update failed.");
+            setIsEditDirty(true); // Re-enable if save fails
         } finally {
             setEditLoading(false);
         }
@@ -169,7 +137,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
             setSuccess(`User "${deletingUser.username}" deleted successfully!`);
             setShowDeleteModal(false);
             setDeletingUser(null);
-            await reloadUsers(); // Reload locale
+            await reloadUsers();
             setTimeout(() => setSuccess(""), 5000);
         } catch (err) {
             setError(err.message || "Delete failed.");
@@ -179,40 +147,56 @@ export default function MunicipalityUserList({ refreshTrigger }) {
         }
     };
 
-    const handleDepartmentSelect = (value) => setDepartmentFilter(value);
-    const getSelectedDepartmentName = () => {
-        if (!departmentFilter) return "All Departments";
-        // Correzione S7773
-        return departments.find(d => d.id === Number.parseInt(departmentFilter))?.name;
+    const handleBlockerConfirm = () => {
+        setShowEditModal(false);
+        setShowBlockerModal(false);
+        setIsEditDirty(false);
     };
 
-    const handleRoleFilterSelect = (value) => setRoleFilter(value);
-    const getRoleFilterName = () => {
-        if (!roleFilter) return "All Roles";
-        return roleFilter.name || roleFilter;
+    const handleBlockerCancel = () => {
+        setShowBlockerModal(false);
+    };
+
+    const handleEditModalClose = () => {
+        if (isEditDirty) {
+            setShowBlockerModal(true);
+        } else {
+            setShowEditModal(false);
+        }
+    };
+
+    const toggleDepartmentFilter = (deptId) => {
+        setSelectedDepartments(prev => {
+            if (prev.includes(deptId)) return prev.filter(id => id !== deptId);
+            return [...prev, deptId];
+        });
+    };
+
+    const toggleRoleFilter = (roleName) => {
+        setSelectedRoles(prev => {
+            if (prev.includes(roleName)) return prev.filter(r => r !== roleName);
+            return [...prev, roleName];
+        });
     };
 
     const filteredUsers = users.filter(user => {
-        if (user.department_name === "external service providers") return false;
-        const roleName = user.role_name ? user.role_name.toLowerCase() : "";
-        if (roleName === "external maintainer") return false;
+        const userRoles = user.roles || [];
+        const isExternalServiceProvider = userRoles.some(r => (r.department_name || "").toLowerCase() === "external service providers");
+        if (isExternalServiceProvider) return false;
+        
+        const isExternalMaintainer = userRoles.some(r => (r.role_name || "").toLowerCase() === "external maintainer");
+        if (isExternalMaintainer) return false;
 
-        const selectedDeptName = departmentFilter
-            // Correzione S7773
-            ? departments.find(d => d.id === Number.parseInt(departmentFilter))?.name
-            : null;
+        // Department Filter (OR logic)
+        const departmentMatch = selectedDepartments.length === 0 || 
+            userRoles.some(r => {
+                const dept = departments.find(d => d.name === r.department_name);
+                return dept && selectedDepartments.includes(dept.id.toString());
+            });
 
-        const departmentMatch = !departmentFilter || user.department_name === selectedDeptName;
-
-        // Correzione S3358: Estrarre l'operatore ternario nidificato per chiarezza
-        const isRoleMatch = (filter, userRoleName) => {
-            if (!filter) return true;
-            if (typeof filter === 'string') {
-                return userRoleName === filter;
-            }
-            return userRoleName === filter.name;
-        };
-        const roleMatch = isRoleMatch(roleFilter, user.role_name);
+        // Role Filter (OR logic)
+        const roleMatch = selectedRoles.length === 0 || 
+            userRoles.some(r => selectedRoles.includes(r.role_name));
 
         return departmentMatch && roleMatch;
     });
@@ -224,20 +208,27 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                 <div className="mul-filters">
                     <InputGroup className="mul-filter-group">
                         <InputGroup.Text className="mul-filter-icon"><FaBuilding /></InputGroup.Text>
-                        <Dropdown onSelect={handleDepartmentSelect} className="mul-custom-dropdown">
+                        <Dropdown className="mul-custom-dropdown" autoClose="outside">
                             <Dropdown.Toggle variant="light" className="mul-filter-toggle">
                                 <div className="d-flex align-items-center justify-content-between w-100">
-                                    <span className="text-truncate">{getSelectedDepartmentName()}</span>
+                                    <span className="text-truncate">
+                                        {selectedDepartments.length === 0 ? "All Departments" : `${selectedDepartments.length} Selected`}
+                                    </span>
                                     <FaChevronDown className="mul-dropdown-arrow ms-2" />
                                 </div>
                             </Dropdown.Toggle>
                             <Dropdown.Menu className="modern-dropdown-menu">
-                                <Dropdown.Item eventKey="" active={departmentFilter === ""}>All Departments</Dropdown.Item>
                                 {departments
                                     .filter(dept => (dept.name || "").toLowerCase() !== "external service providers")
                                     .map((dept) => (
-                                        <Dropdown.Item key={dept.id} eventKey={dept.id} active={departmentFilter === dept.id.toString()}>
-                                            {dept.name}
+                                        <Dropdown.Item key={dept.id} onClick={() => toggleDepartmentFilter(dept.id.toString())}>
+                                            <Form.Check 
+                                                type="checkbox"
+                                                label={dept.name}
+                                                checked={selectedDepartments.includes(dept.id.toString())}
+                                                onChange={() => {}} // Handled by onClick
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
                                         </Dropdown.Item>
                                     ))}
                             </Dropdown.Menu>
@@ -246,23 +237,30 @@ export default function MunicipalityUserList({ refreshTrigger }) {
 
                     <InputGroup className="mul-filter-group">
                         <InputGroup.Text className="mul-filter-icon"><FaFilter /></InputGroup.Text>
-                        <Dropdown onSelect={handleRoleFilterSelect} className="mul-custom-dropdown">
-                            <Dropdown.Toggle variant="light" className="mul-filter-toggle" disabled={loadingRoles}>
+                        <Dropdown className="mul-custom-dropdown" autoClose="outside">
+                            <Dropdown.Toggle variant="light" className="mul-filter-toggle">
                                 <div className="d-flex align-items-center justify-content-between w-100">
-                                    <span className="text-truncate">{loadingRoles ? "Loading..." : getRoleFilterName()}</span>
+                                    <span className="text-truncate">
+                                        {selectedRoles.length === 0 ? "All Roles" : `${selectedRoles.length} Selected`}
+                                    </span>
                                     <FaChevronDown className="mul-dropdown-arrow ms-2" />
                                 </div>
                             </Dropdown.Toggle>
                             <Dropdown.Menu className="modern-dropdown-menu">
-                                <Dropdown.Item eventKey="" active={roleFilter === ""}>All Roles</Dropdown.Item>
                                 {roles
                                     .filter(role => ((typeof role === 'object' ? role.name : role) || "").toLowerCase() !== "external maintainer")
                                     .map((role) => {
                                         const roleValue = typeof role === 'object' ? role.name : role;
                                         const roleKey = typeof role === 'object' ? role.id : role;
                                         return (
-                                            <Dropdown.Item key={roleKey} eventKey={roleValue} active={roleFilter === roleValue}>
-                                                {roleValue}
+                                            <Dropdown.Item key={roleKey} onClick={() => toggleRoleFilter(roleValue)}>
+                                                <Form.Check 
+                                                    type="checkbox"
+                                                    label={roleValue}
+                                                    checked={selectedRoles.includes(roleValue)}
+                                                    onChange={() => {}}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
                                             </Dropdown.Item>
                                         );
                                     })}
@@ -271,7 +269,7 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                     </InputGroup>
 
                     <OverlayTrigger placement="top" overlay={<Tooltip>Reset Filters</Tooltip>}>
-                        <button className="mul-btn-reset" onClick={handleResetFilters} disabled={!departmentFilter && !roleFilter}>
+                        <button className="mul-btn-reset" onClick={handleResetFilters} disabled={selectedDepartments.length === 0 && selectedRoles.length === 0}>
                             <FaUndo />
                         </button>
                     </OverlayTrigger>
@@ -286,51 +284,76 @@ export default function MunicipalityUserList({ refreshTrigger }) {
 
             <div className="mul-card">
                 <div className="mul-card-body">
-                    {loading ? (
-                        <div className="mul-loading"><div className="mul-loading-spinner"></div>Loading users...</div>
-                    ) : filteredUsers.length === 0 ? (
-                        <div className="mul-empty"><div>👥</div>No users found.</div>
-                    ) : (
-                        <div className="mul-table-wrapper">
-                            <table className="mul-table">
-                                <thead>
+                    <div className="mul-table-wrapper mul-table-wrapper-scrollable">
+                        <table className="mul-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th><th>Username</th><th>Email</th><th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
                                     <tr>
-                                        <th>ID</th><th>Username</th><th>Email</th><th>Department</th><th>Role</th><th>Actions</th>
+                                        <td colSpan="4">
+                                            <div className="mul-loading">
+                                                <div className="mul-loading-content">
+                                                    <div className="mul-loading-spinner"></div>
+                                                    <div>Loading users...</div>
+                                                </div>
+                                            </div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredUsers.map((user) => (
-                                        <tr key={user.id}>
+                                ) : filteredUsers.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="4">
+                                            <div className="mul-empty">
+                                                <div className="mul-empty-content">
+                                                    <div className="mul-empty-icon">👥</div>
+                                                    <div>No users found.</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredUsers.map((user) => (
+                                        <tr 
+                                            key={user.id} 
+                                            onClick={() => handleEdit(user)} 
+                                            className="mul-table-row"
+                                        >
                                             <td><span className="text-muted">#{user.id}</span></td>
                                             <td><strong>{user.username}</strong></td>
                                             <td>{user.email}</td>
-                                            <td>{user.department_name}</td>
-                                            <td><span className="mul-role-badge">{user.role_name}</span></td>
                                             <td>
                                                 <div className="mul-actions">
-                                                    <button className="mul-btn mul-btn-edit" onClick={() => handleEdit(user)}>Edit</button>
-                                                    <button className="mul-btn mul-btn-delete" onClick={() => handleDeleteClick(user)}>Delete</button>
+                                                    <button 
+                                                        className="mul-btn mul-btn-delete" 
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(user); }}
+                                                    >
+                                                        Delete
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            {/* MODALS (Edit/Delete) omesse per brevità ma identiche a prima, usando UserDetails */}
-            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered dialogClassName="mul-modal-content">
-                <Modal.Header closeButton className="mul-modal-header"><Modal.Title>Edit User</Modal.Title></Modal.Header>
-                <Modal.Body className="mul-modal-body">
-                    <UserDetails formData={editForm} onChange={handleEditChange} onSubmit={handleEditSubmit} loading={editLoading} />
+            <Modal show={showEditModal} onHide={handleEditModalClose} centered dialogClassName="mul-modal-content" size="lg">
+                <Modal.Body className="mul-modal-body p-0">
+                    <UserDetails 
+                        user={editingUser} 
+                        departmentRolesMapping={departmentRolesMapping}
+                        onSave={handleEditSubmit} 
+                        onCancel={() => handleEditModalClose()}
+                        loading={editLoading} 
+                        onDirtyChange={setIsEditDirty}
+                    />
                 </Modal.Body>
-                <Modal.Footer>
-                    <button className="mul-modal-btn mul-modal-btn-cancel" onClick={() => setShowEditModal(false)}>Cancel</button>
-                    <button className="mul-modal-btn mul-modal-btn-confirm" onClick={handleEditSubmit}>{editLoading ? "Saving..." : "Save"}</button>
-                </Modal.Footer>
             </Modal>
 
             <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
@@ -341,11 +364,39 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                     <button className="mul-modal-btn mul-modal-btn-danger" onClick={handleDeleteConfirm}>{deleteLoading ? "Deleting..." : "Delete"}</button>
                 </Modal.Footer>
             </Modal>
+
+            {/* Unsaved Changes Modal */}
+            {showBlockerModal && (
+                <div className="up-modal-overlay">
+                    <div className="up-modal-content">
+                        <div className="up-modal-icon-wrapper">
+                            <FaExclamationTriangle className="up-modal-icon" />
+                        </div>
+                        <h3 className="up-modal-title">Unsaved Changes</h3>
+                        <p className="up-modal-text">
+                            You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+                        </p>
+                        <div className="up-modal-actions">
+                            <button 
+                                className="up-btn-modal-cancel" 
+                                onClick={handleBlockerCancel}
+                            >
+                                Stay
+                            </button>
+                            <button 
+                                className="up-btn-modal-confirm" 
+                                onClick={handleBlockerConfirm}
+                            >
+                                Leave
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
-// Aggiungi la validazione delle props
 MunicipalityUserList.propTypes = {
     refreshTrigger: PropTypes.oneOfType([
         PropTypes.bool,

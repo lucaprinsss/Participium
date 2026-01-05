@@ -64,14 +64,17 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       password: 'Password123!',
       email: `tech${r()}@test.com`,
       firstName: 'Tech',
-      lastName: 'Staff',
-      departmentRoleId: techRole!.id
+      lastName: 'Staff'
     };
     techStaffUser = await userRepository.createUserWithPassword({
       ...techStaffCredentials,
       isVerified: true
     });
     createdUserIds.push(techStaffUser.id);
+    await AppDataSource.getRepository('user_roles').save({
+      userId: techStaffUser.id,
+      departmentRoleId: techRole!.id
+    });
 
     // Create PRO user
     const proRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Municipal Public Relations Officer');
@@ -80,14 +83,17 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       password: 'Password123!',
       email: `pro${r()}@test.com`,
       firstName: 'PRO',
-      lastName: 'User',
-      departmentRoleId: proRole!.id
+      lastName: 'User'
     };
     proUser = await userRepository.createUserWithPassword({
       ...proCredentials,
       isVerified: true
     });
     createdUserIds.push(proUser.id);
+    await AppDataSource.getRepository('user_roles').save({
+      userId: proUser.id,
+      departmentRoleId: proRole!.id
+    });
 
     // Create external maintainer
     const externalRole = await departmentRoleRepository.findByDepartmentAndRole('External Service Providers', 'External Maintainer');
@@ -96,14 +102,17 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       password: 'Password123!',
       email: `external${r()}@test.com`,
       firstName: 'External',
-      lastName: 'User',
-      departmentRoleId: externalRole!.id
+      lastName: 'User'
     };
     externalUser = await userRepository.createUserWithPassword({
       ...externalCredentials,
       isVerified: true
     });
     createdUserIds.push(externalUser.id);
+    await AppDataSource.getRepository('user_roles').save({
+      userId: externalUser.id,
+      departmentRoleId: externalRole!.id
+    });
 
     // Create citizen user
     const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
@@ -112,14 +121,17 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       password: 'Password123!',
       email: `citizen${r()}@test.com`,
       firstName: 'Citizen',
-      lastName: 'User',
-      departmentRoleId: citizenRole!.id
+      lastName: 'User'
     };
     citizenUser = await userRepository.createUserWithPassword({
       ...citizenCredentials,
       isVerified: true
     });
     createdUserIds.push(citizenUser.id);
+    await AppDataSource.getRepository('user_roles').save({
+      userId: citizenUser.id,
+      departmentRoleId: citizenRole!.id
+    });
 
     // Create test report
     testReport = await reportRepository.createReport({
@@ -191,15 +203,19 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: citizenCredentials.password
       });
 
-      await agent
+      const response = await agent
         .get(`/api/reports/${testReport.id}/internal-comments`)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 401 if not authenticated', async () => {
-      await request(app)
+      const response = await request(app)
         .get(`/api/reports/${testReport.id}/internal-comments`)
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for invalid report ID', async () => {
@@ -209,9 +225,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .get('/api/reports/invalid/internal-comments')
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 404 for non-existent report', async () => {
@@ -221,9 +239,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .get('/api/reports/999999/internal-comments')
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -283,10 +303,12 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({})
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for empty content', async () => {
@@ -296,10 +318,12 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({ content: '   ' })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for content too long', async () => {
@@ -310,10 +334,12 @@ describe('ReportController - Internal Comments Integration Tests', () => {
       });
 
       const longContent = 'a'.repeat(2001);
-      await agent
+      const response = await agent
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({ content: longContent })
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 403 for citizen', async () => {
@@ -323,17 +349,21 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: citizenCredentials.password
       });
 
-      await agent
+      const response = await agent
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({ content: 'Should not work' })
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 401 if not authenticated', async () => {
-      await request(app)
+      const response = await request(app)
         .post(`/api/reports/${testReport.id}/internal-comments`)
         .send({ content: 'Test' })
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 404 for non-existent report', async () => {
@@ -343,10 +373,12 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .post('/api/reports/999999/internal-comments')
         .send({ content: 'Test' })
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -397,9 +429,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: proCredentials.password
       });
 
-      await proAgent
+      const response = await proAgent
         .delete(`/api/reports/${testReport.id}/internal-comments/${commentId}`)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 403 for citizen', async () => {
@@ -409,15 +443,19 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: citizenCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete(`/api/reports/${testReport.id}/internal-comments/1`)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 401 if not authenticated', async () => {
-      await request(app)
+      const response = await request(app)
         .delete(`/api/reports/${testReport.id}/internal-comments/1`)
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for invalid report ID', async () => {
@@ -427,9 +465,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete('/api/reports/invalid/internal-comments/1')
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 400 for invalid comment ID', async () => {
@@ -439,9 +479,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete(`/api/reports/${testReport.id}/internal-comments/invalid`)
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 404 for non-existent report', async () => {
@@ -451,9 +493,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete('/api/reports/999999/internal-comments/1')
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return 404 for non-existent comment', async () => {
@@ -463,9 +507,11 @@ describe('ReportController - Internal Comments Integration Tests', () => {
         password: techStaffCredentials.password
       });
 
-      await agent
+      const response = await agent
         .delete(`/api/reports/${testReport.id}/internal-comments/999999`)
         .expect(404);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 });

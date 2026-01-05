@@ -12,10 +12,12 @@ import reportRoutes from '@routes/reportRoutes';
 import departmentRoutes from "@routes/departmentRoutes";
 import municipalityUserRoutes from "@routes/municipalityUserRoutes";
 import companyRoutes from "@routes/companyRoutes";
-import geocodingRoutes from './routes/geocodingRoutes';
+import geocodingRoutes from '@routes/geocodingRoutes';
+import notificationRoutes from "@routes/notificationRoutes";
 import {errorHandler} from "@middleware/errorMiddleware";
 
-import "./utils/deleteUnverifiedAccounts"; // Import the scheduled job to delete unverified accounts
+import "@utils/deleteUnverifiedAccounts";     // Import the scheduled job to delete unverified accounts
+import { initBot } from './telegramBot/bot';  // Import bot initialization
 
 const app: Application = express();
 
@@ -71,6 +73,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/proxy', geocodingRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Check endpoint to verify server is running
 app.get("/health", (req: Request, res: Response) => {
@@ -79,5 +82,8 @@ app.get("/health", (req: Request, res: Response) => {
 
 // Error handling middleware (must be last!)
 app.use(errorHandler);
+
+// Initialize Telegram bot if token is present
+initBot();
 
 export default app;

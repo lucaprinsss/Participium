@@ -9,10 +9,13 @@ import {
     Alert,
     Dropdown,
     InputGroup,
+    Tab,
+    Nav
 } from "react-bootstrap";
 import { BsEye } from "react-icons/bs";
-import { FaFilter, FaList, FaChevronDown } from "react-icons/fa";
+import { FaFilter, FaList, FaChevronDown, FaUserTie, FaHardHat, FaInfoCircle } from "react-icons/fa";
 import "../css/MunicipalityUserHome.css";
+import "../css/MunicipalityUserList.css";
 
 // Componenti
 import ReportDetails from "./ReportDetails";
@@ -35,7 +38,7 @@ const ALL_STATUSES = [
     "Resolved",
 ];
 
-// FIX: Rimosso "All Statuses" da qui per evitare la duplicazione nel Dropdown
+// FIX: Removed "All Statuses" from here to avoid duplication in the Dropdown
 const STAFF_MEMBER_STATUSES_LIST = [
     "Assigned",
     "In Progress",
@@ -81,52 +84,65 @@ const formatStatusForApi = (uiStatus) => {
 
 // --- SUB-COMPONENTI ESTRATTI PER RIDURRE LA COMPLESSITÀ ---
 
-// 1. Componente per il corpo della tabella
+// 1. Component for table body
 const ReportsTableBody = React.memo(({ reports, handleShow }) => {
     if (reports.length === 0) {
         return (
             <tr>
-                <td colSpan="6" className="text-center p-5 text-muted"> {/* Aumentato colSpan */}
-                    <h5>Nessuna segnalazione trovata</h5>
+                <td colSpan="6" className="text-center p-5 text-muted">
+                    <h5>No reports found</h5>
                     <p className="mb-0">
-                        Nessuna segnalazione corrisponde ai criteri di ricerca.
+                        No reports match the search criteria.
                     </p>
                 </td>
             </tr>
         );
     }
 
+    const getStatusClass = (status) => {
+        const s = status?.toLowerCase().replace(/_/g, " ");
+        if (s === "pending approval") return "mul-status-pending";
+        if (s === "assigned") return "mul-status-assigned";
+        if (s === "in progress") return "mul-status-assigned"; // Using same blue for progress
+        if (s === "resolved") return "mul-status-resolved";
+        if (s === "rejected") return "mul-status-rejected";
+        if (s === "suspended") return "mul-status-suspended";
+        return "mul-status-open";
+    };
+
     return reports.map((report) => (
-        <tr key={report.id}>
+        <tr 
+            key={report.id} 
+            className="mul-table-row"
+            onClick={() => handleShow(report)}
+        >
             <td className="ps-4">
                 <span className="fw-semibold text-dark">{report.category}</span>
             </td>
-            <td>{report.title}</td>
+            <td><strong>{report.title}</strong></td>
             <td>{report.createdAt.toLocaleDateString()}</td>
             <td>
-                {/* Colonna Aggiunta per l'Assegnatario */}
                 {report.assignee?.username || report.assignee?.id || (
                     <span className="text-muted fst-italic">N/A</span>
                 )}
             </td>
             <td>
-                <Badge
-                    bg={getStatusBadgeVariant(report.status)}
-                    className="fw-normal"
-                >
-                    {/* Correzione S7781: Uso replaceAll() per sostituire tutti gli underscore */}
-                    {report.status.replaceAll("_", " ")}
-                </Badge>
+                <span className={`mul-status-badge ${getStatusClass(report.status)}`}>
+                    {report.status.replace(/_/g, " ")}
+                </span>
             </td>
             <td className="text-end pe-4">
-                <Button
-                    variant="outline-primary"
-                    size="sm"
-                    className="rounded-pill px-3 d-inline-flex align-items-center"
-                    onClick={() => handleShow(report)}
-                >
-                    <BsEye className="me-2" /> View
-                </Button>
+                <div className="mul-actions justify-content-end">
+                    <button
+                        className="mul-btn mul-btn-edit"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleShow(report);
+                        }}
+                    >
+                        <BsEye className="me-2" /> View
+                    </button>
+                </div>
             </td>
         </tr>
     ));
@@ -150,19 +166,19 @@ ReportsTableBody.propTypes = {
 
 // 2. Componente per i filtri
 const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, statusFilter, allCategories, availableStatuses, setCategoryFilter, setStatusFilter }) => (
-    <div className="mu-filters">
+    <div className="mul-filters">
         {/* Category Filter */}
-        <InputGroup className="mu-filter-group">
-            <InputGroup.Text className="mu-filter-icon">
+        <InputGroup className="mul-filter-group">
+            <InputGroup.Text className="mul-filter-icon">
                 <FaList />
             </InputGroup.Text>
             <Dropdown
                 onSelect={setCategoryFilter}
-                className="mu-custom-dropdown"
+                className="mul-custom-dropdown"
             >
                 <Dropdown.Toggle
                     variant="light"
-                    className="mu-filter-toggle"
+                    className="mul-filter-toggle"
                     id="category-filter"
                     disabled={isCategoryFilterDisabled}
                 >
@@ -170,14 +186,14 @@ const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, s
                         <span className="text-truncate">
                             {categoryFilter || "All Categories"}
                         </span>
-                        <FaChevronDown className="mu-dropdown-arrow ms-2" />
+                        <FaChevronDown className="mul-dropdown-arrow ms-2" />
                     </div>
                 </Dropdown.Toggle>
                 <Dropdown.Menu className="modern-dropdown-menu">
                     <Dropdown.Item eventKey="" active={categoryFilter === ""}>
                         All Categories
                     </Dropdown.Item>
-                    {/* Correzione S6479: Uso cat come chiave */}
+                    {/* Correction S6479: Use cat as key */}
                     {allCategories.map((cat) => (
                         <Dropdown.Item
                             key={cat}
@@ -192,24 +208,24 @@ const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, s
         </InputGroup>
 
         {/* Status Filter */}
-        <InputGroup className="mu-filter-group">
-            <InputGroup.Text className="mu-filter-icon">
+        <InputGroup className="mul-filter-group">
+            <InputGroup.Text className="mul-filter-icon">
                 <FaFilter />
             </InputGroup.Text>
             <Dropdown
                 onSelect={setStatusFilter}
-                className="mu-custom-dropdown"
+                className="mul-custom-dropdown"
             >
                 <Dropdown.Toggle
                     variant="light"
-                    className="mu-filter-toggle"
+                    className="mul-filter-toggle"
                     id="status-filter"
                 >
                     <div className="d-flex align-items-center justify-content-between w-100">
                         <span className="text-truncate">
                             {statusFilter || "All Statuses"}
                         </span>
-                        <FaChevronDown className="mu-dropdown-arrow ms-2" />
+                        <FaChevronDown className="mul-dropdown-arrow ms-2" />
                     </div>
                 </Dropdown.Toggle>
                 <Dropdown.Menu className="modern-dropdown-menu">
@@ -217,7 +233,7 @@ const ReportsFilters = React.memo(({ isCategoryFilterDisabled, categoryFilter, s
                     <Dropdown.Item eventKey="" active={statusFilter === ""}>
                         All Statuses
                     </Dropdown.Item>
-                    {/* Correzione S6479: Uso st come chiave */}
+                    {/* Correction S6479: Use st as key */}
                     {availableStatuses.map((st) => (
                         <Dropdown.Item
                             key={st}
@@ -244,44 +260,99 @@ ReportsFilters.propTypes = {
 };
 
 
+// --- HELPER: Get Views based on Roles ---
+const getViews = (user) => {
+    const views = [];
+    const roles = user?.roles || [];
+
+    const isAdmin = roles.some(r => (r.role_name || "").toLowerCase() === 'administrator');
+    const isPR = roles.some(r => (r.role_name || "").toLowerCase() === 'municipal public relations officer');
+    const isDirector = roles.some(r => (r.role_name || "").includes('Director'));
+
+    if (isAdmin || isPR) {
+        views.push({
+            key: 'global',
+            label: isAdmin ? 'Admin Dashboard' : 'Public Relations Dashboard',
+            icon: <FaUserTie className="me-2" />,
+            fetchMethod: 'getAll',
+            fixedCategory: null,
+            availableStatuses: ALL_STATUSES,
+            canFilterCategory: true,
+            defaultStatus: 'Pending Approval'
+        });
+    }
+
+    if (isDirector) {
+        views.push({
+            key: 'director-dashboard',
+            label: 'Director Dashboard',
+            icon: <FaUserTie className="me-2" />,
+            fetchMethod: 'none',
+            fixedCategory: null,
+            availableStatuses: [],
+            canFilterCategory: false,
+            defaultStatus: ''
+        });
+    }
+
+    roles.forEach((role, index) => {
+        const roleName = (role.role_name || "").toLowerCase();
+        if (roleName === 'administrator' || roleName === 'municipal public relations officer') return;
+
+        const category = ROLE_DEPARTMENT_MAPPING[roleName];
+        if (category) {
+            // Avoid duplicates if user has multiple roles mapping to same category
+            const existing = views.find(v => v.label === category);
+            if (!existing) {
+                views.push({
+                    key: `dept-${index}`,
+                    label: category,
+                    icon: <FaHardHat className="me-2" />,
+                    fetchMethod: 'getAssigned',
+                    fixedCategory: category,
+                    availableStatuses: STAFF_MEMBER_STATUSES_LIST,
+                    canFilterCategory: false,
+                    defaultStatus: ''
+                });
+            }
+        }
+    });
+
+    return views;
+};
+
 // --- COMPONENTE PRINCIPALE ---
 
 export default function MunicipalityUserHome({ user }) {
 
-    // --- DERIVED USER INFO (USATA PER DEFINIZIONE INIZIALE) ---
-    const userRole = user?.role_name?.toLowerCase();
-    const isAdministrator = userRole === "administrator";
-    const isPublicRelations = userRole === "municipal public relations officer";
+    // 1. Calculate Views
+    const views = useMemo(() => getViews(user), [user]);
+    
+    // 2. State for Active View
+    const [activeViewKey, setActiveViewKey] = useState(() => views.length > 0 ? views[0].key : 'default');
 
-    const isStaffMember = useMemo(() => {
-        return (
-            userRole &&
-            !isAdministrator &&
-            !isPublicRelations
-        );
-    }, [userRole, isAdministrator, isPublicRelations]);
+    // 3. Get Current View Config
+    const currentView = useMemo(() => 
+        views.find(v => v.key === activeViewKey) || views[0]
+    , [views, activeViewKey]);
 
-    // NUOVA VAR: Il filtro categoria è disabilitato SOLO se è un semplice staff member.
-    const isCategoryFilterDisabled = useMemo(() => isStaffMember && !isPublicRelations && !isAdministrator, [isStaffMember, isPublicRelations, isAdministrator]);
-
-
-    const userDepartmentCategory = useMemo(() => {
-        return isStaffMember ? getDepartmentCategory(user?.role_name) : null;
-    }, [isStaffMember, user?.role_name]);
-
-    const availableStatuses = useMemo(() => {
-        return isStaffMember ? STAFF_MEMBER_STATUSES_LIST : ALL_STATUSES; // Aggiornato a LIST
-    }, [isStaffMember]);
-
-    // --- STATE ---
-    const [categoryFilter, setCategoryFilter] = useState(() => userDepartmentCategory || "");
-
-    const [statusFilter, setStatusFilter] = useState(() => {
-        if (isAdministrator || isPublicRelations) {
-            return "Pending Approval";
-        }
-        return ""; // Include "All Statuses"
+    // 4. Filters State
+    const [categoryFilter, setCategoryFilter] = useState(() => {
+        const initialView = views.length > 0 ? views[0] : null;
+        return initialView?.fixedCategory || "";
     });
+    const [statusFilter, setStatusFilter] = useState(() => {
+        const initialView = views.length > 0 ? views[0] : null;
+        return initialView?.defaultStatus || "";
+    });
+
+    // Effect to reset/set filters when currentView changes
+    useEffect(() => {
+        if (currentView) {
+            setCategoryFilter(currentView.fixedCategory || "");
+            setStatusFilter(currentView.defaultStatus || "");
+        }
+    }, [currentView]);
 
     const [reports, setReports] = useState([]);
     const [allCategories, setAllCategories] = useState([]);
@@ -291,26 +362,6 @@ export default function MunicipalityUserHome({ user }) {
     // Modal State
     const [showModal, setShowModal] = useState(false);
     const [selectedReport, setSelectedReport] = useState(null);
-
-    // --- EFFECT: Sincronizzazione Iniziale Categoria Staff Member ---
-    useEffect(() => {
-        if (isStaffMember && !isPublicRelations && !isAdministrator) {
-            // Aggiorna il filtro categoria in base al dipartimento dell'utente staff (SOLO se è un semplice StaffMember)
-            if (categoryFilter !== userDepartmentCategory) {
-                setCategoryFilter(userDepartmentCategory || "");
-            }
-            // Assicura che lo stato sia valido per lo staff (evita Pending Approval ecc.)
-            if (!STAFF_MEMBER_STATUSES_LIST.includes(statusFilter) && statusFilter !== "") { // Aggiornato a LIST
-                setStatusFilter(""); // Reset a "All Statuses"
-            }
-        } else if (isAdministrator || isPublicRelations) {
-            // Se non sono staff o sono Admin/PR, assicuriamoci che la categoria sia generale (se non selezionata)
-            if (categoryFilter === userDepartmentCategory) {
-                setCategoryFilter("");
-            }
-        }
-    }, [isStaffMember, userDepartmentCategory, isAdministrator, isPublicRelations, categoryFilter, statusFilter]);
-
 
     // 1. Fetch Categories
     useEffect(() => {
@@ -325,26 +376,23 @@ export default function MunicipalityUserHome({ user }) {
         fetchCategories();
     }, []);
 
-    // 2. Fetch Reports (Memoized/Cache function)
+    // 2. Fetch Reports
     const fetchReportsData = useCallback(async () => {
-        if (!user) return;
+        if (!user || !currentView) return;
 
         setIsLoading(true);
         setApiError(null);
 
         try {
-            // Conversione Filtri per API
             const apiStatusParam = formatStatusForApi(statusFilter);
             const apiCategoryParam = categoryFilter === "" || categoryFilter === "All Categories" ? null : categoryFilter;
 
             let reportsData;
 
-            if (isStaffMember) {
-                // Staff members usano getReportsAssignedToMe
-                reportsData = await getReportsAssignedToMe(apiStatusParam, apiCategoryParam);
-            } else {
-                // Admin e PR usano getReports
+            if (currentView.fetchMethod === 'getAll') {
                 reportsData = await getReports(apiStatusParam, apiCategoryParam);
+            } else {
+                reportsData = await getReportsAssignedToMe(apiStatusParam, apiCategoryParam);
             }
 
             const formattedReports = (reportsData || []).map((report) => ({
@@ -356,9 +404,7 @@ export default function MunicipalityUserHome({ user }) {
                     ) || [],
             }));
 
-            // Sort by date descending
             formattedReports.sort((a, b) => b.createdAt - a.createdAt);
-
             setReports(formattedReports);
         } catch (err) {
             console.error("Error fetching reports:", err);
@@ -366,9 +412,8 @@ export default function MunicipalityUserHome({ user }) {
         } finally {
             setIsLoading(false);
         }
-    }, [user, isStaffMember, statusFilter, categoryFilter]); // Dipendenze chiare e minime
+    }, [user, currentView, statusFilter, categoryFilter]);
 
-    // Trigger fetch when filters change
     useEffect(() => {
         fetchReportsData();
     }, [fetchReportsData]);
@@ -409,90 +454,159 @@ export default function MunicipalityUserHome({ user }) {
 
     const handleReportUpdateFromModal = async (reportId, updates) => {
         await fetchReportsData();
-        // Aggiorna anche il report selezionato per consistenza visiva se il modal resta aperto
         setSelectedReport(prev => (
             prev && prev.id === reportId ? { ...prev, ...updates } : prev
         ));
     };
 
-
     // --- RENDER CONTENT HELPER ---
     const renderTable = (tableReports, handleView) => {
         return (
-            <Table responsive hover className="mu-table mb-0 align-middle">
-                <thead className="bg-light text-uppercase small text-muted">
-                    <tr>
-                        <th className="ps-4">Category</th>
-                        <th>Title</th>
-                        <th>Date</th>
-                        <th>Assigned External </th> {/* COLONNA AGGIUNTA */}
-                        <th>Status</th>
-                        <th className="text-end pe-4">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <ReportsTableBody reports={tableReports} handleShow={handleView} />
-                </tbody>
-            </Table>
+            <div className="mul-table-wrapper mul-table-wrapper-scrollable">
+                <Table hover className="mul-table mb-0 align-middle">
+                    <thead className="bg-light text-uppercase small text-muted">
+                        <tr>
+                            <th className="ps-4">Category</th>
+                            <th>Title</th>
+                            <th>Date</th>
+                            <th>Assigned To</th>
+                            <th>Status</th>
+                            <th className="text-end pe-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <ReportsTableBody reports={tableReports} handleShow={handleView} />
+                    </tbody>
+                </Table>
+            </div>
+        );
+    };
+
+    const renderContent = () => {
+        if (currentView?.key === 'director-dashboard') {
+            return (
+                <>
+                    <div className="mul-header">
+                        <div>
+                            <h2 className="mul-title">Director Dashboard</h2>
+                            <p className="text-muted">Department overview and analytics.</p>
+                        </div>
+                    </div>
+                    <Card className="mul-card border-0 shadow-sm p-5 text-center d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
+                        <div className="mb-4" style={{ fontSize: '3rem', color: '#cbd5e1' }}>
+                            <FaInfoCircle />
+                        </div>
+                        <h3 className="text-muted">Feature Coming Soon</h3>
+                        <p className="text-muted" style={{ maxWidth: '500px' }}>
+                            We apologize, but the Director Dashboard is currently under development.<br/>
+                            Our team is working to bring you this feature as soon as possible.
+                        </p>
+                    </Card>
+                </>
+            );
+        }
+
+        return (
+            <>
+                 {/* Header Section */}
+                 <div className="mul-header">
+                    <div>
+                        <h2 className="mul-title">{currentView?.label || "Officer Dashboard"}</h2>
+                        <p className="text-muted">
+                            Manage and validate citizen reports.
+                        </p>
+                    </div>
+    
+                    <ReportsFilters
+                        isCategoryFilterDisabled={!currentView?.canFilterCategory}
+                        categoryFilter={categoryFilter}
+                        statusFilter={statusFilter}
+                        allCategories={allCategories}
+                        availableStatuses={currentView?.availableStatuses || ALL_STATUSES}
+                        setCategoryFilter={setCategoryFilter}
+                        setStatusFilter={setStatusFilter}
+                    />
+                </div>
+    
+                {/* Error Alert */}
+                {apiError && (
+                    <Alert variant="danger" onClose={() => setApiError(null)} dismissible>
+                        {apiError}
+                    </Alert>
+                )}
+    
+                {/* Table Card */}
+                <Card className="mul-card border-0 shadow-sm" style={{ minHeight: '300px' }}>
+                    {isLoading ? (
+                        <div className="text-center p-5"></div>
+                    ) : (
+                        <Card.Body className="p-0">
+                            {reports.length === 0 ? (
+                                <div className="text-center p-5 text-muted">
+                                    <h5>No reports found</h5>
+                                    <p className="mb-0">
+                                        There are no reports matching the current criteria ({statusFilter || "All Statuses"}).
+                                    </p>
+                                </div>
+                            ) : (
+                                renderTable(reports, handleShow)
+                            )}
+                        </Card.Body>
+                    )}
+                </Card>
+            </>
         );
     };
 
     // --- MAIN RENDER ---
-    return (
-        <Container className="mu-home-container">
-            {/* Header Section */}
-            <div className="mu-header-wrapper">
-                <div>
-                    <h2 className="mu-home-title">Officer Dashboard</h2>
-                    <p className="mu-home-subtitle">
-                        Manage and validate citizen reports.
-                    </p>
-                </div>
+    if (views.length > 1) {
+        return (
+            <Container fluid className="mul-page-wrapper">
+                <Tab.Container activeKey={activeViewKey} onSelect={setActiveViewKey}>
+                    <div className="mul-layout-wrapper">
+                        {/* Sidebar */}
+                        <div className="mul-sidebar">
+                            <Nav variant="pills" className="flex-column mul-nav-pills">
+                                <div className="mul-nav-group-label">Views</div>
+                                {views.map(view => (
+                                    <Nav.Item key={view.key}>
+                                        <Nav.Link eventKey={view.key}>
+                                            {view.icon} {view.label}
+                                        </Nav.Link>
+                                    </Nav.Item>
+                                ))}
+                            </Nav>
+                        </div>
 
-                {/* Filtri Estratti nel Componente ReportsFilters */}
-                <ReportsFilters
-                    isCategoryFilterDisabled={isCategoryFilterDisabled}
-                    categoryFilter={categoryFilter}
-                    statusFilter={statusFilter}
-                    allCategories={allCategories}
-                    availableStatuses={availableStatuses}
-                    setCategoryFilter={setCategoryFilter}
-                    setStatusFilter={setStatusFilter}
-                />
-            </div>
-
-            {/* Error Alert */}
-            {apiError && (
-                <Alert variant="danger" onClose={() => setApiError(null)} dismissible>
-                    {apiError}
-                </Alert>
-            )}
-
-            {/* Table Card */}
-            <Card className="mu-home-card border-0 shadow-sm" style={{ minHeight: '300px' }}>
-
-                {/* Blocco Caricamento Sostituito: lo spinner e il messaggio sono mostrati solo se isLoading è vero */}
-                {isLoading ? (
-                    <div className="text-center p-5">
-                        {/* Ho omesso lo Spinner e il testo perché sono stati commentati nell'input originale */}
+                        {/* Content */}
+                        <div className="mul-content">
+                            <Tab.Content>
+                                <Tab.Pane eventKey={activeViewKey}>
+                                    {renderContent()}
+                                </Tab.Pane>
+                            </Tab.Content>
+                        </div>
                     </div>
-                ) : (
-                    <Card.Body className="p-0">
-                        {reports.length === 0 ? (
-                            <div className="text-center p-5 text-muted">
-                                <h5>No reports found</h5>
-                                <p className="mb-0">
-                                    There are no reports matching the current criteria ({statusFilter || "All Statuses"}).
-                                </p>
-                            </div>
-                        ) : (
-                            renderTable(reports, handleShow)
-                        )}
-                    </Card.Body>
-                )}
-            </Card>
+                </Tab.Container>
 
-            {/* Report Detail Modal */}
+                <ReportDetails
+                    show={showModal}
+                    onHide={handleClose}
+                    report={selectedReport}
+                    user={user}
+                    onApprove={handleAcceptReport}
+                    onReject={handleRejectReport}
+                    onReportUpdated={handleReportUpdateFromModal}
+                    onStatusUpdate={fetchReportsData}
+                />
+            </Container>
+        );
+    }
+
+    // Single View Layout
+    return (
+        <Container className="mul-page-wrapper">
+            {renderContent()}
             <ReportDetails
                 show={showModal}
                 onHide={handleClose}
@@ -509,7 +623,9 @@ export default function MunicipalityUserHome({ user }) {
 
 MunicipalityUserHome.propTypes = {
     user: PropTypes.shape({
-        role_name: PropTypes.string,
-        // Aggiungi qui altre props di user se necessarie, ma role_name è cruciale
+        roles: PropTypes.arrayOf(PropTypes.shape({
+            role_name: PropTypes.string,
+            department_name: PropTypes.string
+        })),
     }).isRequired,
 };

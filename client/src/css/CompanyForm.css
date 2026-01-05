@@ -1,0 +1,312 @@
+/* CompanyForm.css */
+
+:root {
+  --cf-brand: #8A1E2B;
+  --cf-brand-hover: #701823;
+  --cf-text-dark: #1a1a1a;
+  --cf-text-muted: #6c757d;
+  --cf-border: #e2e8f0;
+  --cf-bg-white: #ffffff;
+  --cf-radius: 12px;
+  --cf-error-color: var(--cf-brand); 
+  --cf-error-bg: #FFF8F8; 
+  --cf-blue-accent: #3b82f6;
+}
+
+/* --- CONTAINER E LAYOUT --- */
+.cf-container-styled {
+  background: var(--cf-bg-white);
+  border-radius: var(--cf-radius);
+  border: 1px solid var(--cf-border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  overflow: visible; 
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.cf-header-styled {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--cf-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(to right, #ffffff, #fafafa);
+  border-radius: var(--cf-radius) var(--cf-radius) 0 0;
+}
+
+.cf-title {
+  margin: 0;
+  color: var(--cf-brand);
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.5px;
+}
+
+.cf-body-styled {
+  padding: 2rem;
+}
+
+.cf-section-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--cf-text-muted);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f1f1f1;
+}
+
+@media (min-width: 992px) {
+  .cf-col-left { 
+    border-right: 1px solid #f0f0f0; 
+    padding-right: 2rem; 
+    max-width: 30rem; 
+  }
+}
+
+/* --- LABELS E INPUT --- */
+.cf-label {
+  font-weight: 700;
+  color: var(--cf-text-dark);
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.cf-label.text-danger {
+  color: var(--cf-error-color) !important;
+}
+
+.req { 
+  color: var(--cf-brand); 
+  margin-left: 2px; 
+}
+
+/* Input Group Container */
+.cf-input-group {
+  border-radius: var(--cf-radius);
+  display: flex;
+  flex-wrap: nowrap;
+  transition: all 0.2s ease;
+  position: relative; 
+}
+
+/* Icona a sinistra */
+.cf-icon {
+  background-color: #f8f9fa;
+  border: 2px solid var(--cf-border);
+  border-right: none;
+  color: var(--cf-text-muted);
+  font-size: 0.9rem;
+  padding-left: 1rem;
+  padding-right: 0.75rem;
+  border-top-left-radius: var(--cf-radius) !important;
+  border-bottom-left-radius: var(--cf-radius) !important;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  z-index: 1; 
+}
+
+/* Input Field Standard */
+.cf-input {
+  border: 2px solid var(--cf-border);
+  border-left: none;
+  background-color: var(--cf-bg-white);
+  color: var(--cf-text-dark);
+  font-size: 0.9rem;
+  padding: 0.75rem 0.75rem 0.75rem 0.5rem; 
+  height: auto;
+  font-weight: 500;
+  border-top-right-radius: var(--cf-radius) !important;
+  border-bottom-right-radius: var(--cf-radius) !important;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.cf-input:focus {
+  border-color: var(--cf-brand);
+  box-shadow: none;
+  background-color: #fff;
+}
+
+.cf-input-group:focus-within .cf-icon {
+  border-color: var(--cf-brand);
+  color: var(--cf-brand);
+  background-color: #fff;
+}
+
+/* Hover Effects Unificati */
+.cf-input-group:hover .cf-icon {
+  border-color: var(--cf-brand) !important;
+  color: var(--cf-brand) !important;
+  background-color: #fff;
+  border-right: none !important; 
+}
+
+.cf-input-group:hover .cf-input,
+.cf-input-group:hover .cf-dropdown-toggle {
+  border-color: var(--cf-brand) !important;
+  border-left: none !important; 
+}
+
+/* --- ERROR STATES --- */
+.cf-input-error {
+  border-color: var(--cf-error-color) !important;
+  background-color: var(--cf-error-bg) !important; 
+  box-shadow: none !important; 
+}
+
+.cf-input-group.has-error .cf-icon {
+  border-color: var(--cf-error-color) !important;
+  color: var(--cf-error-color) !important;
+  background-color: var(--cf-error-bg) !important;
+}
+
+.cf-field-error {
+  color: var(--cf-error-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 4px;
+  margin-left: 4px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* --- DROPDOWN CUSTOM STYLE --- */
+.cf-custom-dropdown {
+  flex: 1; 
+  min-width: 0;
+  position: static !important;
+}
+
+.dropdown-toggle.cf-dropdown-toggle::after {
+  display: none;
+}
+
+.dropdown-toggle.cf-dropdown-toggle {
+  background: white !important; 
+  color: var(--cf-text-dark) !important;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top-left-radius: 0 !important; 
+  border-bottom-left-radius: 0 !important;
+  width: 100%;
+  white-space: nowrap; 
+  overflow: hidden;
+}
+
+.dropdown-toggle.cf-dropdown-toggle:hover:not(:disabled) {
+  border-color: var(--cf-brand);
+  z-index: 2;
+}
+
+.cf-dropdown-arrow {
+  font-size: 0.7rem;
+  color: var(--cf-text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.dropdown-toggle.cf-dropdown-toggle[aria-expanded="true"] {
+  border-color: var(--cf-brand) !important;
+}
+
+.cf-placeholder-text {
+  color: var(--cf-text-muted) !important;
+  opacity: 1; 
+}
+
+/* Menu del Dropdown */
+.cf-dropdown-menu {
+  border: 1px solid var(--cf-border);
+  border-radius: var(--cf-radius);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  padding: 0.5rem;
+  margin-top: 2px !important;
+  position: absolute;
+  top: 100%;
+  max-width: 100%;
+  background: white;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1050;
+  max-height: 250px;
+  margin-left: -40px;
+  left: 0;
+  width: 100%;
+}
+
+
+
+.cf-dropdown-item {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  color: var(--cf-text-dark);
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.cf-dropdown-item:hover, 
+.cf-dropdown-item:focus {
+  background-color: rgba(138, 30, 43, 0.08);
+  color: var(--cf-brand);
+}
+
+.cf-dropdown-item.active, 
+.cf-dropdown-item:active {
+  background-color: var(--cf-brand) !important;
+  color: white !important;
+}
+
+/* --- PULSANTI E FOOTER --- */
+.cf-footer-actions {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--cf-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.cf-btn-primary {
+  background: linear-gradient(135deg, var(--cf-brand) 0%, #a02332 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  transition: transform 0.2s;
+  color: white;
+}
+.cf-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(138, 30, 43, 0.3);
+}
+
+.cf-btn-text {
+  background: none;
+  border: none;
+  color: var(--cf-text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.cf-btn-text:hover { 
+  color: var(--cf-text-dark); 
+}
+
+/* --- ANIMAZIONI --- */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}

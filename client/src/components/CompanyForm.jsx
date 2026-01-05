@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import PropTypes from "prop-types"; // Importato per la validazione delle props
+import PropTypes from "prop-types";
 import { Row, Col, Form, Button, Alert, InputGroup, Dropdown } from "react-bootstrap";
 import { createCompany } from "../api/companyApi";
-import { FaBuilding, FaTag, FaSave, FaTimes, FaChevronDown } from "react-icons/fa";
-import "../css/MunicipalityUserForm.css";
-
 import { getAllCategories } from "../api/reportApi";
+import { FaBuilding, FaTag, FaSave, FaTimes, FaChevronDown } from "react-icons/fa";
+import "../css/CompanyForm.css"; // Assicurati che il nome del file CSS corrisponda
 
-const getLabelClass = (hasError) => hasError ? "muf-label text-danger" : "muf-label";
+// Updated helper with cf- classes
+const getLabelClass = (hasError) => hasError ? "cf-label text-danger" : "cf-label";
 
-// Aggiunta la validazione delle props per la funzione helper
 getLabelClass.propTypes = {
     hasError: PropTypes.bool,
 };
@@ -71,9 +70,7 @@ export default function CompanyForm({ onSuccess, onCancel }) {
 
             setFormData(initialFormState);
 
-            // Chiamata al genitore per triggerare refresh e cambio tab
             if (onSuccess) {
-                // Piccolo timeout per far leggere il messaggio di successo (opzionale)
                 setTimeout(() => onSuccess(), 1000);
             }
 
@@ -84,15 +81,15 @@ export default function CompanyForm({ onSuccess, onCancel }) {
     };
 
     return (
-        <div className="muf-container-styled fade-in">
-            <div className="muf-header-styled">
-                <h4 className="muf-title">
+        <div className="cf-container-styled fade-in">
+            <div className="cf-header-styled">
+                <h4 className="cf-title">
                     <FaBuilding className="me-2" />New Company
                 </h4>
-                <div className="muf-header-actions d-flex align-items-center gap-3">
+                <div className="cf-header-actions d-flex align-items-center gap-3">
                     <button
                         type="button"
-                        className="muf-btn-text"
+                        className="cf-btn-text"
                         onClick={onCancel}
                         disabled={status.loading}
                     >
@@ -101,66 +98,66 @@ export default function CompanyForm({ onSuccess, onCancel }) {
                 </div>
             </div>
 
-            <Form noValidate onSubmit={handleSubmit} className="muf-body-styled">
+            <Form noValidate onSubmit={handleSubmit} className="cf-body-styled">
                 {(status.error || status.success) && (
-                    <Alert variant={status.error ? "danger" : "success"} className="muf-alert mb-4">
+                    <Alert variant={status.error ? "danger" : "success"} className="cf-alert mb-4">
                         {status.error || status.success}
                     </Alert>
                 )}
 
                 <Row className="g-4">
-                    <Col md={6} className="muf-col-left">
-                        <h6 className="muf-section-header">Company Details</h6>
+                    <Col md={6} className="cf-col-left">
+                        <h6 className="cf-section-header">Company Details</h6>
                         <Form.Group className="mb-3">
                             <Form.Label className={getLabelClass(errors.name)}>
                                 Company Name <span className="req">*</span>
                             </Form.Label>
-                            <InputGroup className={`muf-input-group ${errors.name ? 'has-error' : ''}`}>
-                                <InputGroup.Text className="muf-icon"><FaBuilding /></InputGroup.Text>
+                            <InputGroup className={`cf-input-group ${errors.name ? 'has-error' : ''}`}>
+                                <InputGroup.Text className="cf-icon"><FaBuilding /></InputGroup.Text>
                                 <Form.Control
                                     placeholder="e.g. Acme Construction Ltd."
                                     value={formData.name}
                                     onChange={e => updateField('name', e.target.value)}
-                                    className={`muf-input ${errors.name ? 'muf-input-error' : ''}`}
+                                    className={`cf-input ${errors.name ? 'cf-input-error' : ''}`}
                                 />
                             </InputGroup>
-                            {errors.name && <div className="muf-field-error">{errors.name}</div>}
+                            {errors.name && <div className="cf-field-error">{errors.name}</div>}
                         </Form.Group>
                     </Col>
 
                     <Col md={6}>
-                        <h6 className="muf-section-header">Classification</h6>
+                        <h6 className="cf-section-header">Classification</h6>
                         <Form.Group className="mb-3">
                             <Form.Label className={getLabelClass(errors.category)}>
                                 Category <span className="req">*</span>
                             </Form.Label>
-                            <InputGroup className={`muf-input-group ${errors.category ? 'has-error' : ''}`}>
-                                <InputGroup.Text className="muf-icon"><FaTag /></InputGroup.Text>
+                            <InputGroup className={`cf-input-group ${errors.category ? 'has-error' : ''}`}>
+                                <InputGroup.Text className="cf-icon"><FaTag /></InputGroup.Text>
                                 <Dropdown
                                     onSelect={(val) => updateField('category', val)}
-                                    className="muf-custom-dropdown"
+                                    className="cf-custom-dropdown"
                                 >
                                     <Dropdown.Toggle
                                         variant="light"
-                                        className={`muf-input muf-dropdown-toggle ${errors.category ? 'muf-input-error' : ''}`}
+                                        className={`cf-input cf-dropdown-toggle ${errors.category ? 'cf-input-error' : ''}`}
                                     >
                                         <div className="d-flex align-items-center justify-content-between w-100">
                                             <span
-                                                className={`text-truncate ${formData.category ? '' : 'muf-placeholder-text'}`}
+                                                className={`text-truncate ${formData.category ? '' : 'cf-placeholder-text'}`}
                                                 style={{ flex: 1, textAlign: 'left' }}
                                             >
                                                 {formData.category || "Select Category"}
                                             </span>
-                                            <FaChevronDown className="muf-dropdown-arrow ms-2" />
+                                            <FaChevronDown className="cf-dropdown-arrow ms-2" />
                                         </div>
                                     </Dropdown.Toggle>
-                                    <Dropdown.Menu className="muf-dropdown-menu">
+                                    <Dropdown.Menu className="cf-dropdown-menu">
                                         {categories.map((cat) => (
                                             <Dropdown.Item
                                                 key={cat}
                                                 eventKey={cat}
                                                 active={formData.category === cat}
-                                                className="muf-dropdown-item"
+                                                className="cf-dropdown-item"
                                             >
                                                 {cat}
                                             </Dropdown.Item>
@@ -168,13 +165,13 @@ export default function CompanyForm({ onSuccess, onCancel }) {
                                     </Dropdown.Menu>
                                 </Dropdown>
                             </InputGroup>
-                            {errors.category && <div className="muf-field-error">{errors.category}</div>}
+                            {errors.category && <div className="cf-field-error">{errors.category}</div>}
                         </Form.Group>
                     </Col>
                 </Row>
 
-                <div className="muf-footer-actions">
-                    <Button type="submit" className="muf-btn-primary" disabled={status.loading}>
+                <div className="cf-footer-actions">
+                    <Button type="submit" className="cf-btn-primary" disabled={status.loading}>
                         {status.loading ? "Creating..." : <><FaSave className="me-2" /> Create Company</>}
                     </Button>
                 </div>
@@ -183,8 +180,7 @@ export default function CompanyForm({ onSuccess, onCancel }) {
     );
 }
 
-// Aggiunta la validazione delle props per il componente principale
 CompanyForm.propTypes = {
-    onSuccess: PropTypes.func, // Funzione chiamata in caso di successo
-    onCancel: PropTypes.func.isRequired, // Funzione chiamata per annullare
+    onSuccess: PropTypes.func,
+    onCancel: PropTypes.func.isRequired,
 };

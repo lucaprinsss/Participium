@@ -108,10 +108,12 @@ describe('CompanyController E2E Tests', () => {
         category: ReportCategory.ROADS
       };
 
-      await request(app)
+      const response = await request(app)
         .post('/api/companies')
         .send(newCompany)
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail as non-admin user (403)', async () => {
@@ -120,11 +122,13 @@ describe('CompanyController E2E Tests', () => {
         category: ReportCategory.OTHER
       };
 
-      await request(app)
+      const response = await request(app)
         .post('/api/companies')
         .set('Cookie', citizenCookies)
         .send(newCompany)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail with missing required fields (400)', async () => {
@@ -133,11 +137,13 @@ describe('CompanyController E2E Tests', () => {
         // missing category
       };
 
-      await request(app)
+      const response = await request(app)
         .post('/api/companies')
         .set('Cookie', adminCookies)
         .send(invalidCompany)
         .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
@@ -168,16 +174,20 @@ describe('CompanyController E2E Tests', () => {
     });
 
     it('should fail without authentication (401)', async () => {
-      await request(app)
+      const response = await request(app)
         .get('/api/companies')
         .expect(401);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should fail as non-admin user (403)', async () => {
-      await request(app)
+      const response = await request(app)
         .get('/api/companies')
         .set('Cookie', citizenCookies)
         .expect(403);
+
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should return companies ordered by name', async () => {

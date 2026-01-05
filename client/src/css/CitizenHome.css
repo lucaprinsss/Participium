@@ -1,265 +1,322 @@
 :root {
+  /* Palette Brand */
   --brand-red: #A12B32;
   --brand-red-hover: #b40612;
-  --bg-page: #ffffff;
-  --bg-card-static: #f8f9fa; /* Sfondo grigio leggero per card non cliccabili */
-  --bg-card-interactive: #ffffff; /* Sfondo bianco puro per card cliccabili */
-  --text-muted: #6c757d;
-  --text-dark: #212529;
-  --text-darker: #1a1a1a;
-  --border-light: rgba(0, 0, 0, 0.08);
-  --border-brand: rgba(161, 43, 50, 0.2);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-hover: 0 12px 24px rgba(161, 43, 50, 0.12);
+  --brand-telegram: #229ED9; /* Colore ufficiale Telegram */
+  --brand-telegram-hover: #1b86b8;
+
+  /* Sfondi e Testi */
+  --bg-page: #f4f6f8; /* Leggermente grigio per dare profondità alle card bianche */
+  --bg-card: #ffffff;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6c757d;
   
-  /* Misure */
-  --spacing-xs: 0.5rem;
-  --spacing-sm: 1rem;
-  --spacing-md: 1.5rem;
-  --spacing-lg: 2rem;
-  --spacing-xl: 3rem;
+  /* Bordi e Ombre */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Spaziature Responsive */
+  --spacing-container: clamp(1rem, 5vw, 2rem);
+  --radius-md: 0.75rem;
   --radius-lg: 1rem;
+}
+
+/* --- LAYOUT GENERALE --- */
+body {
+  background-color: var(--bg-page);
+  margin: 0; /* Reset base */
 }
 
 .ch-wrapper {
   width: 100%;
-  max-width: min(1200px, 95vw);
+  max-width: 1200px;
   margin: 0 auto;
-  padding: var(--spacing-md);
+  padding: var(--spacing-container);
+  box-sizing: border-box;
+
+  /* CHANGE HERE: Instead of 100vh, subtract navbar height */
+  min-height: calc(100vh - var(--navbar-height, 80px));
+  
+  display: flex;
+  flex-direction: column;
 }
 
-/* Header */
+/* --- HEADER --- */
 .ch-header {
-  margin-bottom: var(--spacing-xl);
-  padding-bottom: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-light);
-  text-align: center;
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+  text-align: left;
 }
 
 .ch-title {
-  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
   font-weight: 800;
-  color: var(--text-darker);
-  margin: 0 0 var(--spacing-xs) 0;
-  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
 }
 
 .ch-subtitle {
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
-  color: var(--text-muted);
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  color: var(--text-secondary);
   line-height: 1.6;
-  max-width: 650px;
-  margin: 0 auto;
+  max-width: 600px;
+  margin: 0;
 }
 
-/* Main Grid */
+/* --- GRID SYSTEM RESPONSIVE --- */
 .ch-main-grid {
   display: grid;
+  /* Su mobile 1 colonna, su desktop divide lo spazio */
   grid-template-columns: 1fr;
-  gap: var(--spacing-xl);
+  gap: 2rem;
+  align-items: start;
 }
 
-/* Titles */
+@media (min-width: 900px) {
+  .ch-main-grid {
+    grid-template-columns: 1fr 1fr; /* 50% - 50% bilanciato */
+    gap: 3rem;
+  }
+}
+
 .ch-section-title {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   font-weight: 700;
-  color: var(--text-muted);
-  margin: 0 0 var(--spacing-md) 0;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-/* --- DIFFERENZIAZIONE VISIVA --- */
+.ch-section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
 
-/* 1. Feature Card (Statica/Informativa) */
+/* --- FEATURE CARDS (Info) --- */
 .ch-features-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 1rem;
 }
 
 .ch-feature-card {
+  background: var(--bg-card);
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
   display: flex;
   align-items: flex-start;
-  /* Visualmente "piatta" per suggerire non-cliccabilità */
-  background: var(--bg-card-static); 
-  border: 1px solid transparent; 
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
-  /* Nessuna ombra forte */
+  gap: 1rem;
 }
 
 .ch-feature-icon {
   flex-shrink: 0;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3rem;
+  height: 3rem;
+  background: rgba(161, 43, 50, 0.08);
+  color: var(--brand-red);
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(161, 43, 50, 0.08);
-  color: var(--brand-red);
-  margin-right: var(--spacing-md);
-  font-size: 1.1rem;
+  font-size: 1.25rem;
 }
 
 .ch-feature-text h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-darker);
   margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
 }
 
 .ch-feature-text p {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  line-height: 1.5;
   margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
-/* 2. Action Card (Interattiva/Cliccabile) */
+/* --- ACTION CARDS (Interattive) --- */
 .ch-actions-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 1rem;
 }
 
 .ch-action-card {
-  /* Visualmente "elevata" e bianca per attirare l'attenzione */
-  background: var(--bg-card-interactive);
-  border: 1px solid var(--border-light);
-  border-left: 4px solid var(--brand-red); /* Accento visuale */
+  background: var(--bg-card);
+  padding: 1.5rem;
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  border: 1px solid var(--border-subtle);
+  border-left: 5px solid var(--brand-red);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease-in-out;
   position: relative;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.ch-action-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
-  border-color: var(--border-brand);
+.ch-action-card .content-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* Effetto scia sul click/hover */
-.ch-action-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(161, 43, 50, 0.03), transparent);
-  transform: translateX(-100%);
-  transition: transform 0.6s ease;
+/* Hover effect only if device supports hover */
+@media (hover: hover) {
+  .ch-action-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-left-color: var(--brand-red-hover);
+  }
+  
+  .ch-action-card:hover .ch-action-icon-wrapper {
+    background: var(--brand-red);
+    color: white;
+    transform: translateX(5px);
+  }
 }
 
-.ch-action-card:hover::after {
-  transform: translateX(100%);
+.ch-action-card:active {
+    transform: scale(0.98);
 }
 
 .ch-action-title {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: var(--text-darker);
   margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
 }
 
 .ch-action-desc {
   font-size: 0.95rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .ch-action-icon-wrapper {
-  color: var(--brand-red);
-  font-size: 1.2rem;
-  background: rgba(161, 43, 50, 0.05);
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  background: rgba(161, 43, 50, 0.1);
+  color: var(--brand-red);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.3s, transform 0.3s;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  margin-left: 1rem;
 }
 
-.ch-action-card:hover .ch-action-icon-wrapper {
-  background: var(--brand-red);
-  color: white;
-  transform: translateX(5px);
-}
-
-/* --- MODAL STYLES --- */
+/* --- MODALS (Migliorato) --- */
 .ch-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(26, 26, 26, 0.6); /* Backdrop dimming */
-  backdrop-filter: blur(4px); /* Glassmorphism blur */
+  inset: 0; /* top, right, bottom, left = 0 */
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease;
+  z-index: 2000;
+  padding: 1rem; /* Padding per evitare che tocchi i bordi su mobile */
+  animation: fadeIn 0.2s ease-out;
 }
 
 .ch-modal-content {
-  background: #ffffff;
-  width: 90%;
-  max-width: 450px;
-  padding: 2.5rem 2rem;
+  background: white;
+  width: 100%;
+  max-width: 480px;
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-lg);
+  padding: 2.5rem 2rem;
   text-align: center;
   position: relative;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 90vh; /* Previeni che esca dallo schermo su telefoni bassi */
+  overflow-y: auto; /* Scroll if content is too long */
 }
 
+/* Stile Specifico per TELEGRAM */
+.ch-modal-content--telegram {
+    border-top: 8px solid var(--brand-telegram);
+    max-width: 420px;
+    background: linear-gradient(to bottom, #ffffff 0%, #f7fbff 100%);
+}
+
+.ch-modal-content--telegram .ch-modal-icon-box {
+    background: rgba(34, 158, 217, 0.1);
+    color: var(--brand-telegram);
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem;
+}
+
+.ch-modal-content--telegram .ch-modal-title {
+    color: var(--brand-telegram);
+}
+
+.ch-modal-content--telegram .ch-modal-action-btn {
+    background: var(--brand-telegram);
+    box-shadow: 0 4px 12px rgba(34, 158, 217, 0.3);
+}
+
+.ch-modal-content--telegram .ch-modal-action-btn:hover {
+    background: var(--brand-telegram-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(34, 158, 217, 0.4);
+}
+
+/* Elementi Comuni Modale */
 .ch-modal-close-btn {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.2rem;
-  color: var(--text-muted);
+  font-size: 1.25rem;
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: color 0.2s;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  transition: background 0.2s;
 }
 
 .ch-modal-close-btn:hover {
-  color: var(--text-darker);
+  background: rgba(0,0,0,0.05);
+  color: var(--text-primary);
 }
 
 .ch-modal-icon-box {
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
   background: rgba(161, 43, 50, 0.1);
   color: var(--brand-red);
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 1.75rem;
   margin: 0 auto 1.5rem auto;
 }
 
 .ch-modal-title {
   font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text-darker);
-  margin-bottom: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
 }
 
 .ch-modal-desc {
-  color: var(--text-muted);
   font-size: 1rem;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 2rem;
 }
@@ -267,14 +324,14 @@
 .ch-modal-action-btn {
   background: var(--brand-red);
   color: white;
+  width: 100%;
+  padding: 0.9rem;
   border: none;
-  padding: 0.8rem 2rem;
+  border-radius: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
-  border-radius: 0.5rem;
   cursor: pointer;
-  transition: background 0.2s;
-  width: 100%;
+  transition: all 0.2s;
 }
 
 .ch-modal-action-btn:hover {
@@ -288,19 +345,25 @@
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scale(0.95) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Media Queries */
-@media (min-width: 768px) {
-  .ch-wrapper { padding: var(--spacing-xl); }
-  .ch-main-grid { grid-template-columns: 1.2fr 1fr; } /* Più spazio alle features */
-  .ch-header { text-align: left; }
-  .ch-subtitle { margin: 0; }
-}
+/* Media Queries per Mobile molto piccolo */
+@media (max-width: 480px) {
+    .ch-wrapper {
+        padding: 1rem;
+    }
+    
+    .ch-feature-card {
+        flex-direction: column;
+    }
+    
+    .ch-feature-icon {
+        margin-bottom: 0.5rem;
+    }
 
-@media (max-width: 767px) {
-  .ch-feature-card { flex-direction: column; }
-  .ch-feature-icon { margin-bottom: var(--spacing-sm); }
+    .ch-modal-content {
+        padding: 2rem 1.5rem;
+    }
 }

@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import municipalityUserController from '@controllers/municipalityUserController';
 import { municipalityUserService } from '@services/municipalityUserService';
+import { departmentService } from '@services/departmentService';
 import { BadRequestError } from '@models/errors/BadRequestError';
 import { NotFoundError } from '@models/errors/NotFoundError';
-import { RoleUtils } from '@utils/roleUtils';
 
 // Mock del service
 jest.mock('@services/municipalityUserService');
-jest.mock('@utils/roleUtils');
+jest.mock('@services/departmentService');
 
 describe('MunicipalityUserController Unit Tests', () => {
   let mockRequest: Partial<Request>;
@@ -15,7 +15,7 @@ describe('MunicipalityUserController Unit Tests', () => {
   let mockNext: NextFunction;
 
   beforeEach(() => {
-    // Reset dei mock prima di ogni test
+    // Reset mocks before each test
     jest.clearAllMocks();
 
     // Setup mock request
@@ -44,7 +44,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         password: 'Password123!',
         first_name: 'John',
         last_name: 'Doe',
-        role_name: 'Municipal Administrator',
+        department_role_ids: [1, 2], // Multi-role: array of department role IDs
       };
 
       const expectedResponse = {
@@ -53,7 +53,10 @@ describe('MunicipalityUserController Unit Tests', () => {
         email: 'municipality@test.com',
         firstName: 'John',
         lastName: 'Doe',
-        role_name: 'Municipal Administrator',
+        userRoles: [
+          { departmentRoleId: 1, departmentName: 'Water Department', roleName: 'Department Director' },
+          { departmentRoleId: 2, departmentName: 'Water Department', roleName: 'Water Network staff member' },
+        ],
       };
 
       mockRequest.body = requestData;
@@ -67,10 +70,46 @@ describe('MunicipalityUserController Unit Tests', () => {
       );
 
       // Assert
-      expect(municipalityUserService.createMunicipalityUser).toHaveBeenCalledWith(requestData);
+      expect(municipalityUserService.createMunicipalityUser).toHaveBeenCalledWith({
+        username: 'municipality_user',
+        email: 'municipality@test.com',
+        password: 'Password123!',
+        first_name: 'John',
+        last_name: 'Doe',
+        department_role_ids: [1, 2],
+        company_name: undefined,
+      });
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalledWith(expectedResponse);
       expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should reject request without department_role_ids', async () => {
+      // Arrange
+      const requestData = {
+        username: 'municipality_user',
+        email: 'municipality@test.com',
+        password: 'Password123!',
+        first_name: 'John',
+        last_name: 'Doe',
+        // Missing department_role_ids
+      };
+
+      mockRequest.body = requestData;
+
+      // Act
+      await municipalityUserController.createMunicipalityUser(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      // Assert - Controller validates and throws BadRequestError
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'department_role_ids must be a non-empty array of role IDs',
+        })
+      );
     });
 
     it('should handle service errors', async () => {
@@ -81,11 +120,11 @@ describe('MunicipalityUserController Unit Tests', () => {
         password: 'Password123!',
         first_name: 'John',
         last_name: 'Doe',
-        role_name: 'Citizen', // Ruolo non valido
+        department_role_ids: [999], // Invalid role ID
       };
 
       mockRequest.body = requestData;
-      const error = new BadRequestError('Cannot create a municipality user with Citizen role');
+      const error = new BadRequestError('Invalid department role ID: 999');
       (municipalityUserService.createMunicipalityUser as jest.Mock).mockRejectedValue(error);
 
       // Act
@@ -211,7 +250,7 @@ describe('MunicipalityUserController Unit Tests', () => {
         first_name: 'UpdatedName',
         last_name: 'UpdatedLastName',
         email: 'updated@test.com',
-        role_name: 'Infrastructure Manager',
+        department_role_ids: [3, 4], // Multi-role: array of department role IDs
       };
 
       const expectedResponse = {
@@ -220,7 +259,10 @@ describe('MunicipalityUserController Unit Tests', () => {
         email: 'updated@test.com',
         firstName: 'UpdatedName',
         lastName: 'UpdatedLastName',
-        role_name: 'Infrastructure Manager',
+        userRoles: [
+          { departmentRoleId: 3, departmentName: 'Infrastructure', roleName: 'Road Maintenance staff member' },
+          { departmentRoleId: 4, departmentName: 'Infrastructure', roleName: 'Department Director' },
+        ],
       };
 
       mockRequest.params = { id: '1' };
@@ -239,8 +281,8 @@ describe('MunicipalityUserController Unit Tests', () => {
         first_name: 'UpdatedName',
         last_name: 'UpdatedLastName',
         email: 'updated@test.com',
-        role_name: 'Infrastructure Manager',
-        department_name: undefined,
+        department_role_ids: [3, 4],
+        company_name: undefined,
       });
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith(expectedResponse);
@@ -277,7 +319,11 @@ describe('MunicipalityUserController Unit Tests', () => {
 
       // Assert
       expect(municipalityUserService.updateMunicipalityUser).toHaveBeenCalledWith(1, {
+        first_name: undefined,
+        last_name: undefined,
         email: 'newemail@test.com',
+        department_role_ids: undefined,
+        company_name: undefined,
       });
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith(expectedResponse);
@@ -302,7 +348,13 @@ describe('MunicipalityUserController Unit Tests', () => {
       );
 
       // Assert
-      expect(municipalityUserService.updateMunicipalityUser).toHaveBeenCalledWith(999, updateData);
+      expect(municipalityUserService.updateMunicipalityUser).toHaveBeenCalledWith(999, {
+        first_name: undefined,
+        last_name: undefined,
+        email: 'newemail@test.com',
+        department_role_ids: undefined,
+        company_name: undefined,
+      });
       expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
@@ -384,8 +436,8 @@ describe('MunicipalityUserController Unit Tests', () => {
       // Arrange
       mockRequest.params = { id: '1' };
       mockRequest.body = { role_name: 'InvalidRole' };
-      
-      // Mock service per simulare errore
+
+      // Mock service to simulate error
       (municipalityUserService.assignRole as jest.Mock).mockRejectedValueOnce(
         new BadRequestError('Invalid role specified')
       );
@@ -416,8 +468,8 @@ describe('MunicipalityUserController Unit Tests', () => {
         'Water Network staff member',
         'Parks Maintenance staff member',
       ];
-      
-      (RoleUtils.getAllMunicipalityRoles as jest.Mock).mockResolvedValueOnce(expectedRoles);
+
+      (departmentService.getAllMunicipalityRoles as jest.Mock).mockResolvedValueOnce(expectedRoles);
 
       // Act
       await municipalityUserController.getAllRoles(
@@ -439,9 +491,9 @@ describe('MunicipalityUserController Unit Tests', () => {
         'Department Director',
         'Water Network staff member',
       ];
-      
-      (RoleUtils.getAllMunicipalityRoles as jest.Mock).mockResolvedValueOnce(municipalityRoles);
-      
+
+      (departmentService.getAllMunicipalityRoles as jest.Mock).mockResolvedValueOnce(municipalityRoles);
+
       // Act
       await municipalityUserController.getAllRoles(
         mockRequest as Request,
@@ -458,7 +510,7 @@ describe('MunicipalityUserController Unit Tests', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Internal error');
-      (RoleUtils.getAllMunicipalityRoles as jest.Mock).mockRejectedValueOnce(error);
+      (departmentService.getAllMunicipalityRoles as jest.Mock).mockRejectedValueOnce(error);
 
       // Act
       await municipalityUserController.getAllRoles(

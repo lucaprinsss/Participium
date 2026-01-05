@@ -4,13 +4,14 @@ import { snakeCase } from "typeorm/util/StringUtils";
 import * as dotenv from 'dotenv';
 import { logger } from "@services/loggingService";
 import { CategoryRoleEntity } from "../models/entity/categoryRoleEntity";
+import { NotificationEntity } from '../models/entity/notificationEntity';
 
 dotenv.config({ debug: false });
 
 /**
  * Custom naming strategy that converts camelCase property names to snake_case column names
  */
-class SnakeCaseNamingStrategy extends DefaultNamingStrategy implements NamingStrategyInterface {
+export class SnakeCaseNamingStrategy extends DefaultNamingStrategy implements NamingStrategyInterface {
   columnName(propertyName: string, customName: string, embeddedPrefixes: string[]): string {
     return customName || snakeCase(embeddedPrefixes.concat(propertyName).join("_"));
   }
@@ -31,8 +32,10 @@ export const AppDataSource = new DataSource({
     logging: false,
     entities: [
       CategoryRoleEntity,
-      __dirname + '/../models/entity/**/*.{ts,js}'],
-    migrations: [],
+      NotificationEntity,
+      __dirname + '/../models/entity/**/*.{ts,js}'
+    ],
+    migrations: [__dirname + '/../migrations/*.{ts,js}'],
     subscribers: [],
     namingStrategy: new SnakeCaseNamingStrategy(),
 });

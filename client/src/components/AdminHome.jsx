@@ -18,7 +18,7 @@ export default function AdminHome() {
   const [activeTab, setActiveTab] = useState('users');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Funzione centralizzata per gestire il successo di un'operazione
+  // Centralized function to handle operation success
   const handleOperationSuccess = useCallback((targetTab) => {
     setRefreshTrigger(prev => prev + 1);
     if (targetTab) {
@@ -101,7 +101,7 @@ export default function AdminHome() {
               {/* TAB 2: ADD OFFICER */}
               <Tab.Pane eventKey="add-user">
                 <MunicipalityUserForm 
-                  // >>> MODIFICA QUI: Passiamo il refreshTrigger <<<
+                  // >>> CHANGE HERE: Pass the refreshTrigger <<<
                   refreshTrigger={refreshTrigger}
                   onSuccess={(isExternal) => handleOperationSuccess(isExternal ? 'externals' : 'users')}
                   onCancel={() => setActiveTab('users')} 

@@ -1,45 +1,17 @@
+import { UserEntity } from "@models/entity/userEntity";
 import { roleRepository } from "@repositories/roleRepository";
-import { departmentRoleRepository } from "@repositories/departmentRoleRepository";
 
 /**
- * Class providing utility functions for user roles.
+ * Utility class providing helper functions for user role operations.
+ * These are pure utility functions that operate on UserEntity instances.
+ * For database queries to retrieve role catalogs, use DepartmentService instead.
  */
 export class RoleUtils {
- 
-    /**
-     * Get all available roles included Citizen and Administrator
-     * @returns {Promise<string[]>} Array of all user role names
-     */
-    public static async getAllRoles(): Promise<string[]> {
-        const roles = await roleRepository.findAll();
-        return roles.map(role => role.name);
-    }
-
-    /**
-     * Get all available municipality staff roles excluding Citizen and Administrator
-     * @returns {Promise<string[]>} Array of municipality staff role names
-     */
-    public static async getAllMunicipalityRoles(): Promise<string[]> {
-        const roles = await roleRepository.findMunicipalityRoles();
-        return roles.map(role => role.name);
-    }
-
-    /**
-     * Get all available department roles (positions) for municipality staff
-     * @returns {Promise<Array<{id: number, department: string, role: string}>>} Array of department role objects
-     */
-    public static async getAllMunicipalityDepartmentRoles(): Promise<Array<{id: number, department: string, role: string}>> {
-        const departmentRoles = await departmentRoleRepository.findMunicipalityDepartmentRoles();
-        return departmentRoles.map(dr => ({
-            id: dr.id,
-            department: dr.department?.name || '',
-            role: dr.role?.name || ''
-        }));
-    }
 
     /**
      * Check if the provided role name is valid
-     * @returns {Promise<boolean>} True if the role is valid, false otherwise
+     * @param roleName The role name to validate
+     * @returns True if the role is valid, false otherwise
      */
     public static async isRoleValid(roleName: string): Promise<boolean> {
         const role = await roleRepository.findByName(roleName);
@@ -47,14 +19,49 @@ export class RoleUtils {
     }
 
     /**
-     * Get the department role ID for a given department and role name
-     * @param departmentName The department name
-     * @param roleName The role name
-     * @returns {Promise<number | null>} The department role ID or null if not found
+     * Helper: Check if user works in a specific department
+     * @param user - User entity with loaded userRoles
+     * @param departmentName - Department name to check (e.g., "Water Network")
+     * @returns true if user works in the department
      */
-    public static async getDepartmentRoleId(departmentName: string, roleName: string): Promise<number | null> {
-        const departmentRole = await departmentRoleRepository.findByDepartmentAndRole(departmentName, roleName);
-        return departmentRole?.id || null;
+    public static userInDepartment(user: UserEntity, departmentName: string): boolean {
+      return user.userRoles?.some(
+        ur => ur.departmentRole?.department?.name === departmentName
+      ) || false;
+    }
+    
+    /**
+     * Helper: Get all role names for a user
+     * @param user - User entity with loaded userRoles
+     * @returns Array of role names
+     */
+    public static getUserRoleNames(user: UserEntity): string[] {
+      return user.userRoles?.map(
+        ur => ur.departmentRole?.role?.name || ''
+      ).filter(name => name !== '') || [];
+    }
+    
+    /**
+     * Helper: Get all department names for a user
+     * @param user - User entity with loaded userRoles
+     * @returns Array of department names
+     */
+    public static getUserDepartmentNames(user: UserEntity): string[] {
+      return user.userRoles?.map(
+        ur => ur.departmentRole?.department?.name || ''
+      ).filter(name => name !== '') || [];
+    }
+
+    /**
+     * Helper: Check if user has a specific role
+     * @param user - User entity with loaded userRoles
+     * @param roleName - Role name to check (e.g., "Administrator", "Staff Member")
+     * @returns true if user has the role
+     */
+    public static userHasRole(user: UserEntity, roleName: string): boolean {
+      return user.userRoles?.some(
+        ur => ur.departmentRole?.role?.name === roleName
+      ) || false;
     }
 
 }

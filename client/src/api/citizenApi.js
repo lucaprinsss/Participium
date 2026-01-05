@@ -3,12 +3,11 @@
  */
 const handleResponse = async (response) => {
   if (!response.ok) {
-    // Correzione S7722: Inizializza Error con un messaggio
     const error = new Error(` `);
     try {
       const data = await response.json();
 
-      // Aggiorna il messaggio con il dettaglio API
+      // Update message with API detail
       error.message = data.message || data.error || `Request failed with status ${response.status}`;
 
       error.status = response.status;
@@ -64,5 +63,36 @@ export async function verifyEmailCode(email, otpCode) {
     console.error('Error verifying OTP:', error);
     throw error;
   }
+}
 
+export async function resendVerificationCode(email) {
+  try {
+    const response = await fetch(`/api/sessions/resend-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error resending OTP:', error);
+    throw error;
+  }
+}
+
+export async function findUserByUsername(username) {
+  try {
+    const response = await fetch(`/api/users/username/${encodeURIComponent(username)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error finding user by username:', error);
+    throw error;
+  }
 }

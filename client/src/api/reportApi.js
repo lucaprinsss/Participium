@@ -36,6 +36,17 @@ export const getAllCategories = async () => {
 };
 
 /**
+ * Get a specific report by ID
+ */
+export const getReportById = async (id) => {
+  const response = await fetch(`/api/reports/${id}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
+/**
  * Create a new report
  */
 export const createReport = async (reportData) => {
@@ -74,6 +85,18 @@ export const getReports = async (status, category) => {
 };
 
 /**
+ * Get reports created by the current user
+ */
+export const getMyReports = async (status, category) => {
+  const queryString = buildQueryString(status, category);
+  const response = await fetch(`/api/reports/me${queryString}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return handleResponse(response);
+};
+
+/**
  * Update the status of a report
  * @param {string|number} reportId - ID of the report to update
  * @param {string} status - The new status of the report
@@ -86,13 +109,13 @@ export const updateReportStatus = async (reportId, status, reason = null) => {
     if (status === 'Rejected') {
         bodyData.rejectionReason = reason;
     } else {
-        bodyData.reason = reason; // Fallback per altri stati se necessario
+        bodyData.reason = reason; // Fallback for other states if necessary
     }
   }
 
   const response = await fetch(`/api/reports/${reportId}/status`, {
     method: "PUT",
-    credentials: "include", // Importante per i cookie di sessione
+    credentials: "include", // Important for session cookies
     headers: {
       "Content-Type": "application/json",
     },
@@ -123,10 +146,22 @@ export const getReportsAssignedToMe = async (status, category) => {
  * @returns {Promise<string>} The formatted address or coordinates fallback
  */
 export const getAddressFromCoordinates = async (latitude, longitude) => {
-    // Utilizza direttamente la logica già definita in retriveAddressUtilis
-    // Non è necessario usare handleResponse qui perché calculateAddress 
-    // gestisce già il try/catch e restituisce una stringa pulita.
+    // Uses the logic defined in retriveAddressUtils
+    // No need for handleResponse as calculateAddress handles try/catch internally
     return await calculateAddress(latitude, longitude);
+};
+
+/**
+ * Get coordinates from address (forward geocoding)
+ * @param {string} address - The address to search for
+ * @returns {Promise<{lat: number, lng: number, display_name: string}>}
+ */
+export const getCoordinatesFromAddress = async (address) => {
+  const response = await fetch(`/api/proxy/coordinates?address=${encodeURIComponent(address)}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return handleResponse(response);
 };
 
 /**
@@ -160,7 +195,7 @@ export const assignToExternalUser = async (reportId, externalUserId) => {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    // MODIFICA QUI: Mappa externalUserId nella chiave attesa dal backend
+    // CHANGE HERE: Map externalUserId to the key expected by the backend
     body: JSON.stringify({ externalAssigneeId: externalUserId }), 
   }); 
 
@@ -196,3 +231,21 @@ export const deleteReportComment = async (reportId, commentId) => {
   
   return handleResponse(response);
 }
+
+/**
+ * Retrieve reports located near a specific address
+ * @param {string} address - The human-readable address (e.g., "Via Roma 10, Torino")
+ */
+export const getReportsByAddress = async (address) => {
+  
+  // Encode the address for the URL
+  const encodedAddress = encodeURIComponent(address);
+  
+  // CORREZIONE: Aggiunto '/search?address='
+  const response = await fetch(`/api/reports/search?address=${encodedAddress}`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  return handleResponse(response);
+};

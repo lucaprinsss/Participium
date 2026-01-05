@@ -2,6 +2,14 @@
 
 **Participium** is a citizen reporting platform that enables residents to report urban issues (potholes, broken street lights, waste management, etc.) and allows municipal staff to manage, assign, and resolve these reports efficiently.
 
+## Features
+
+- **Web-based reporting**: Citizens can submit reports with photos and location data through the web interface.
+- **Telegram Bot Integration**: Users can link their Telegram accounts to receive notifications and potentially submit reports via Telegram for enhanced accessibility.
+- **Role-based access**: Supports multiple user roles including citizens, municipal staff, directors, and external maintainers.
+- **Geospatial features**: Utilizes PostGIS for location-based queries and mapping.
+- **Photo uploads**: Supports image attachments for detailed report documentation.
+
 ## Quick Start
 
 ### Prerequisites
@@ -46,17 +54,66 @@ From the server directory install dependencies:
 npm install
 ```
 
-#### Configure environment variables:
+#### Configure Environment Variables
 
-Create a `.env` file in the `server/` directory:
+For security reasons, the `.env` files containing secrets are not included in the repository. You need to create them manually.
 
-```env
+**1. Development Configuration:**
+
+Create a `.env` file in the *server folder* with the following content, and update the variables with your real credentials:
+
+```dotenv
+# Database Configuration
+# Example of a local connection URL
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=your_db_name
+
+# Server Configuration
 PORT=3001
+NODE_ENV=development
+
+# Email Configuration
+# For Gmail, use an App Password, not your login password
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+
+# Telegram Bot Configuration
+# Get the token from @BotFather on Telegram
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+# Enables or disables the Telegram bot functionality
+TELEGRAM_BOT_ENABLED=false
+```
+
+Only one environment should own the Telegram polling session at a time. Keep `TELEGRAM_BOT_ENABLED=false` for local development and set it to `true` only on the deployment (or single dev machine) that must process Telegram updates.
+
+**2. Test Configuration:**
+
+Create a `.env.test` file in the project root with the following content:
+
+```dotenv
+# Database Configuration (Test)
+# Be sure these values match your test docker-compose
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+DB_USER=participium_test
+DB_PASSWORD=test_password_123
 DB_HOST=localhost
 DB_PORT=5433
-DB_USER=user
-DB_PASSWORD=password
-DB_NAME=participium_db
+DB_NAME=participium_db_test
+
+# Server Configuration
+PORT=3001
+NODE_ENV=test
+
+# Session Configuration
+# For the tests, you can use any random string, but do not commit the real one if used elsewhere
+SESSION_SECRET=your_random_session_secret
+
+# Logging
+LOG_LEVEL=error
 ```
 
 #### Start development server:
@@ -78,8 +135,7 @@ The backend will start on **`http://localhost:3001`**
 - Every photo uploaded via the app is saved inside the backend container, in `/app/uploads/reports/{reportId}/`.
 - There is **no synchronization** with your local filesystem and **no cloud storage**: all images live only in the container.
 - The backend automatically serves images via the API endpoint:
-
-  `http://localhost:3001/uploads/reports/{reportId}/{filename}`
+`http://localhost:3001/uploads/reports/{reportId}/{filename}`
 
 **Usage:**
 - To display a photo in the frontend, use the above URL format (replace `{reportId}` and `{filename}` with actual values).
@@ -126,7 +182,6 @@ npm run dev
 
 The frontend will start on **`http://localhost:5173`**
 
-
 ## Testing
 
 The backend includes unit and E2E tests with a separate test database.
@@ -159,7 +214,6 @@ npm run test:coverage
 
 View coverage report: `server/coverage/index.html`
 
-
 ## Database Management
 
 ### Reset Database (deletes all data)
@@ -188,7 +242,8 @@ docker-compose logs -f db
 The database uses PostgreSQL with PostGIS for geolocation features.
 
 **Detailed schema documentation:** [`server/src/docs/database.md`](server/src/docs/database.md)
-
+ 
+ **Telegram linking:** The `users` table now includes `telegram_link_confirmed` to ensure Telegram accounts are usable for reports only after the user confirms linking from the web app.
 
 ## Deployment
 

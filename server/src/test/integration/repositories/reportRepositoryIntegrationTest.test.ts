@@ -14,398 +14,403 @@ import { ReportEntity } from '@models/entity/reportEntity';
 const r = () => `_${Math.floor(Math.random() * 1000000)}`;
 
 describe('ReportRepository Integration Tests', () => {
-    let createdUserIds: number[] = [];
-    let createdReportIds: number[] = [];
-    let testUser: UserEntity;
+  let createdUserIds: number[] = [];
+  let createdReportIds: number[] = [];
+  let testUser: UserEntity;
 
-    beforeAll(async () => {
-        if (!AppDataSource.isInitialized) {
-            await AppDataSource.initialize();
-        }
+  beforeAll(async () => {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+  });
+
+  afterAll(async () => {
+    if (createdReportIds.length > 0) {
+      await (reportRepository as any)['repository'].delete({ id: In(createdReportIds) });
+    }
+    if (createdUserIds.length > 0) {
+      await (userRepository as any)['repository'].delete({ id: In(createdUserIds) });
+    }
+    if (AppDataSource.isInitialized) {
+      await AppDataSource.destroy();
+    }
+  });
+
+  afterEach(async () => {
+    if (createdReportIds.length > 0) {
+      await (reportRepository as any)['repository'].delete({ id: In(createdReportIds) });
+      createdReportIds = [];
+    }
+    if (createdUserIds.length > 0) {
+      await (userRepository as any)['repository'].delete({ id: In(createdUserIds) });
+      createdUserIds = [];
+    }
+  });
+
+  beforeEach(async () => {
+    const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
+    testUser = await userRepository.createUserWithPassword({
+      username: `user${r()}`,
+      password: 'Password123!',
+      email: `user${r()}@test.com`,
+      firstName: 'Test',
+      lastName: 'User',
+      isVerified: true,
+      telegramLinkConfirmed:false,
+    });
+    // Manually insert role
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [testUser.id, citizenRole!.id]
+    );
+    createdUserIds.push(testUser.id);
+  });
+
+  describe('createReport', () => {
+    it('should create a report with photos', async () => {
+      const reportData = {
+        reporterId: testUser.id,
+        reporter: testUser,
+        title: 'Test Repository Report',
+        description: 'Description',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869 45.0703)', // WKT format
+        isAnonymous: false
+      };
+      const photoPaths = ['path/to/photo1.jpg', 'path/to/photo2.jpg'];
+
+      const createdReport = await reportRepository.createReport(reportData, photoPaths);
+      createdReportIds.push(createdReport.id);
+
+      expect(createdReport).toBeDefined();
+      expect(createdReport.id).toBeDefined();
+      expect(createdReport.title).toBe(reportData.title);
+      expect(createdReport.status).toBe(ReportStatus.PENDING_APPROVAL);
+
+      // Verify photos were saved using findReportById which loads relations
+      const fetchedReport = await reportRepository.findReportById(createdReport.id);
+      expect(fetchedReport).toBeDefined();
+      expect(fetchedReport!.photos).toHaveLength(2);
+      expect(fetchedReport!.photos.map(p => p.storageUrl)).toEqual(expect.arrayContaining(photoPaths));
+    });
+  });
+
+  describe('findAllReports', () => {
+    it('should return all reports', async () => {
+      // Create two reports
+      const report1Data = {
+        reporterId: testUser.id,
+        reporter: testUser,
+        title: 'Report 1',
+        description: 'Desc 1',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869 45.0703)',
+        isAnonymous: false
+      };
+      const r1 = await reportRepository.createReport(report1Data, []);
+      createdReportIds.push(r1.id);
+
+      const report2Data = {
+        reporterId: testUser.id,
+        reporter: testUser,
+        title: 'Report 2',
+        description: 'Desc 2',
+        category: ReportCategory.WASTE,
+        location: 'POINT(7.6869 45.0703)',
+        isAnonymous: false
+      };
+      const r2 = await reportRepository.createReport(report2Data, []);
+      createdReportIds.push(r2.id);
+
+      const reports = await reportRepository.findAllReports();
+
+      // Filter to check only created ones (in case DB is not empty)
+      const createdIds = new Set([r1.id, r2.id]);
+      const foundReports = reports.filter(r => createdIds.has(r.id));
+
+      expect(foundReports).toHaveLength(2);
+      // Verify order (DESC createdAt)
+      expect(foundReports[0].id).toBe(r2.id);
+      expect(foundReports[1].id).toBe(r1.id);
     });
 
-    afterAll(async () => {
-        if (createdReportIds.length > 0) {
-            await (reportRepository as any)['repository'].delete({ id: In(createdReportIds) });
-        }
-        if (createdUserIds.length > 0) {
-            await (userRepository as any)['repository'].delete({ id: In(createdUserIds) });
-        }
-        if (AppDataSource.isInitialized) {
-            await AppDataSource.destroy();
-        }
+    it('should filter by status', async () => {
+      const report1Data = {
+        reporterId: testUser.id,
+        reporter: testUser,
+        title: 'Pending Report',
+        description: 'Desc',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869 45.0703)',
+        isAnonymous: false
+      };
+      const r1 = await reportRepository.createReport(report1Data, []);
+      createdReportIds.push(r1.id);
+
+      // Manually update status to ASSIGNED for test
+      await (reportRepository as any)['repository'].update(r1.id, { status: ReportStatus.ASSIGNED });
+
+      const report2Data = {
+        reporterId: testUser.id,
+        reporter: testUser,
+        title: 'Pending Report 2',
+        description: 'Desc',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869 45.0703)',
+        isAnonymous: false
+      };
+      const r2 = await reportRepository.createReport(report2Data, []);
+      createdReportIds.push(r2.id);
+
+      const assignedReports = await reportRepository.findAllReports(ReportStatus.ASSIGNED);
+      const foundAssigned = assignedReports.filter(r => r.id === r1.id);
+      const foundPending = assignedReports.filter(r => r.id === r2.id);
+
+      expect(foundAssigned).toHaveLength(1);
+      expect(foundPending).toHaveLength(0);
     });
 
-    afterEach(async () => {
-        if (createdReportIds.length > 0) {
-            await (reportRepository as any)['repository'].delete({ id: In(createdReportIds) });
-            createdReportIds = [];
-        }
-        if (createdUserIds.length > 0) {
-            await (userRepository as any)['repository'].delete({ id: In(createdUserIds) });
-            createdUserIds = [];
-        }
+    it('should filter by category', async () => {
+      const r1 = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Roads Report',
+        description: 'Desc',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869 45.0703)',
+        isAnonymous: false
+      }, []);
+      createdReportIds.push(r1.id);
+
+      const r2 = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Waste Report',
+        description: 'Desc',
+        category: ReportCategory.WASTE,
+        location: 'POINT(7.6869 45.0703)',
+        isAnonymous: false
+      }, []);
+      createdReportIds.push(r2.id);
+
+      const wasteReports = await reportRepository.findAllReports(undefined, ReportCategory.WASTE);
+      const foundWaste = wasteReports.filter(r => r.id === r2.id);
+      const foundRoads = wasteReports.filter(r => r.id === r1.id);
+
+      expect(foundWaste).toHaveLength(1);
+      expect(foundRoads).toHaveLength(0);
+    });
+  });
+
+  describe('getApprovedReportsForMap', () => {
+    it('should return only approved reports (exclude PENDING_APPROVAL and REJECTED)', async () => {
+      // Create reports with different statuses
+      const assignedReport = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Assigned Report',
+        description: 'This is assigned',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: false
+      }, []);
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, assignedReport.id]
+      );
+
+      const pendingReport = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Pending Report',
+        description: 'This is pending',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: false
+      }, []);
+
+      const rejectedReport = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Rejected Report',
+        description: 'This is rejected',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: false
+      }, []);
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1, rejection_reason = $2 WHERE id = $3',
+        [ReportStatus.REJECTED, 'Test rejection', rejectedReport.id]
+      );
+
+      createdReportIds.push(assignedReport.id, pendingReport.id, rejectedReport.id);
+
+      const result = await reportRepository.getApprovedReportsForMap();
+
+      expect(result).toBeDefined();
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      const reportIds = result.map(r => r.id);
+      expect(reportIds).toContain(assignedReport.id);
+      expect(reportIds).not.toContain(pendingReport.id);
+      expect(reportIds).not.toContain(rejectedReport.id);
     });
 
-    beforeEach(async () => {
-        const citizenRole = await departmentRoleRepository.findByDepartmentAndRole('Organization', 'Citizen');
-        testUser = await userRepository.createUserWithPassword({
-            username: `user${r()}`,
-            password: 'Password123!',
-            email: `user${r()}@test.com`,
-            firstName: 'Test',
-            lastName: 'User',
-            departmentRoleId: citizenRole!.id,
-            isVerified: true
-        });
-        createdUserIds.push(testUser.id);
+    it('should filter by category', async () => {
+      const roadsReport = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Roads Report',
+        description: 'Roads issue',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: false
+      }, []);
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, roadsReport.id]
+      );
+
+      const lightingReport = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Lighting Report',
+        description: 'Lighting issue',
+        category: ReportCategory.PUBLIC_LIGHTING,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: false
+      }, []);
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, lightingReport.id]
+      );
+
+      createdReportIds.push(roadsReport.id, lightingReport.id);
+
+      const result = await reportRepository.getApprovedReportsForMap({
+        category: ReportCategory.ROADS
+      });
+
+      expect(result).toBeDefined();
+      const categories = result.map(r => r.category);
+      expect(categories.every(c => c === ReportCategory.ROADS)).toBe(true);
     });
 
-    describe('createReport', () => {
-        it('should create a report with photos', async () => {
-            const reportData = {
-                reporterId: testUser.id,
-                reporter: testUser,
-                title: 'Test Repository Report',
-                description: 'Description',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869 45.0703)', // WKT format
-                isAnonymous: false
-            };
-            const photoPaths = ['path/to/photo1.jpg', 'path/to/photo2.jpg'];
+    it('should return reporter name for non-anonymous reports', async () => {
+      const report = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Non-anonymous Report',
+        description: 'Test',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: false
+      }, []);
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, report.id]
+      );
+      createdReportIds.push(report.id);
 
-            const createdReport = await reportRepository.createReport(reportData, photoPaths);
-            createdReportIds.push(createdReport.id);
+      const result = await reportRepository.getApprovedReportsForMap();
+      const foundReport = result.find(r => r.id === report.id);
 
-            expect(createdReport).toBeDefined();
-            expect(createdReport.id).toBeDefined();
-            expect(createdReport.title).toBe(reportData.title);
-            expect(createdReport.status).toBe(ReportStatus.PENDING_APPROVAL);
-
-            // Verify photos were saved using findReportById which loads relations
-            const fetchedReport = await reportRepository.findReportById(createdReport.id);
-            expect(fetchedReport).toBeDefined();
-            expect(fetchedReport!.photos).toHaveLength(2);
-            expect(fetchedReport!.photos.map(p => p.storageUrl)).toEqual(expect.arrayContaining(photoPaths));
-        });
+      expect(foundReport).toBeDefined();
+      // Reporter name should be set (either from user data or placeholder)
+      // Note: May be 'undefined undefined' if user fields not loaded properly
+      expect(foundReport?.reporterName).toBeDefined();
+      // isAnonymous may be undefined if not explicitly set
+      expect([false, undefined]).toContain(foundReport?.isAnonymous);
     });
 
-    describe('findAllReports', () => {
-        it('should return all reports', async () => {
-            // Create two reports
-            const report1Data = {
-                reporterId: testUser.id,
-                reporter: testUser,
-                title: 'Report 1',
-                description: 'Desc 1',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869 45.0703)',
-                isAnonymous: false
-            };
-            const r1 = await reportRepository.createReport(report1Data, []);
-            createdReportIds.push(r1.id);
+    it('should return "Anonymous" for anonymous reports', async () => {
+      const report = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Anonymous Report',
+        description: 'Test',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: true
+      }, []);
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, report.id]
+      );
+      createdReportIds.push(report.id);
 
-            const report2Data = {
-                reporterId: testUser.id,
-                reporter: testUser,
-                title: 'Report 2',
-                description: 'Desc 2',
-                category: ReportCategory.WASTE,
-                location: 'POINT(7.6869 45.0703)',
-                isAnonymous: false
-            };
-            const r2 = await reportRepository.createReport(report2Data, []);
-            createdReportIds.push(r2.id);
+      const result = await reportRepository.getApprovedReportsForMap();
+      const foundReport = result.find(r => r.id === report.id);
 
-            const reports = await reportRepository.findAllReports();
-            
-            // Filter to check only created ones (in case DB is not empty)
-            const createdIds = new Set([r1.id, r2.id]);
-            const foundReports = reports.filter(r => createdIds.has(r.id));
-            
-            expect(foundReports).toHaveLength(2);
-            // Verify order (DESC createdAt)
-            expect(foundReports[0].id).toBe(r2.id);
-            expect(foundReports[1].id).toBe(r1.id);
-        });
+      expect(foundReport).toBeDefined();
+      // Should be Anonymous, but may be 'undefined undefined' if user not loaded
+      expect(['Anonymous', 'undefined undefined']).toContain(foundReport?.reporterName);
+      // isAnonymous may be undefined if not loaded properly
+      expect([true, undefined]).toContain(foundReport?.isAnonymous);
+    });
+  });
 
-        it('should filter by status', async () => {
-            const report1Data = {
-                reporterId: testUser.id,
-                reporter: testUser,
-                title: 'Pending Report',
-                description: 'Desc',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869 45.0703)',
-                isAnonymous: false
-            };
-            const r1 = await reportRepository.createReport(report1Data, []);
-            createdReportIds.push(r1.id);
+  describe('getClusteredReports', () => {
+    it('should return clustered reports for low zoom level', async () => {
+      // Create multiple reports in similar locations
+      const report1 = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Report 1',
+        description: 'Test',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: false
+      }, []);
+      const report2 = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Report 2',
+        description: 'Test',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6870000 45.0704000)',
+        isAnonymous: false
+      }, []);
 
-            // Manually update status to ASSIGNED for test
-            await (reportRepository as any)['repository'].update(r1.id, { status: ReportStatus.ASSIGNED });
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = ANY($2::int[])',
+        [ReportStatus.ASSIGNED, [report1.id, report2.id]]
+      );
+      createdReportIds.push(report1.id, report2.id);
 
-            const report2Data = {
-                reporterId: testUser.id,
-                reporter: testUser,
-                title: 'Pending Report 2',
-                description: 'Desc',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869 45.0703)',
-                isAnonymous: false
-            };
-            const r2 = await reportRepository.createReport(report2Data, []);
-            createdReportIds.push(r2.id);
+      const result = await reportRepository.getClusteredReports(5);
 
-            const assignedReports = await reportRepository.findAllReports(ReportStatus.ASSIGNED);
-            const foundAssigned = assignedReports.filter(r => r.id === r1.id);
-            const foundPending = assignedReports.filter(r => r.id === r2.id);
-
-            expect(foundAssigned).toHaveLength(1);
-            expect(foundPending).toHaveLength(0);
-        });
-
-        it('should filter by category', async () => {
-            const r1 = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Roads Report',
-                description: 'Desc',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869 45.0703)',
-                isAnonymous: false
-            }, []);
-            createdReportIds.push(r1.id);
-
-            const r2 = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Waste Report',
-                description: 'Desc',
-                category: ReportCategory.WASTE,
-                location: 'POINT(7.6869 45.0703)',
-                isAnonymous: false
-            }, []);
-            createdReportIds.push(r2.id);
-
-            const wasteReports = await reportRepository.findAllReports(undefined, ReportCategory.WASTE);
-            const foundWaste = wasteReports.filter(r => r.id === r2.id);
-            const foundRoads = wasteReports.filter(r => r.id === r1.id);
-
-            expect(foundWaste).toHaveLength(1);
-            expect(foundRoads).toHaveLength(0);
-        });
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      if (result.length > 0) {
+        expect(result[0]).toHaveProperty('clusterId');
+        expect(result[0]).toHaveProperty('location');
+        expect(result[0]).toHaveProperty('reportCount');
+        expect(result[0]).toHaveProperty('reportIds');
+      }
     });
 
-    describe('getApprovedReportsForMap', () => {
-        it('should return only approved reports (exclude PENDING_APPROVAL and REJECTED)', async () => {
-            // Create reports with different statuses
-            const assignedReport = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Assigned Report',
-                description: 'This is assigned',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: false
-            }, []);
-            await AppDataSource.query(
-                'UPDATE reports SET status = $1 WHERE id = $2',
-                [ReportStatus.ASSIGNED, assignedReport.id]
-            );
+    it('should exclude pending and rejected reports from clusters', async () => {
+      const assignedReport = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Assigned for cluster',
+        description: 'Test',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: false
+      }, []);
+      await AppDataSource.query(
+        'UPDATE reports SET status = $1 WHERE id = $2',
+        [ReportStatus.ASSIGNED, assignedReport.id]
+      );
 
-            const pendingReport = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Pending Report',
-                description: 'This is pending',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: false
-            }, []);
+      const pendingReport = await reportRepository.createReport({
+        reporterId: testUser.id,
+        title: 'Pending for cluster',
+        description: 'Test',
+        category: ReportCategory.ROADS,
+        location: 'POINT(7.6869005 45.0703393)',
+        isAnonymous: false
+      }, []);
 
-            const rejectedReport = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Rejected Report',
-                description: 'This is rejected',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: false
-            }, []);
-            await AppDataSource.query(
-                'UPDATE reports SET status = $1, rejection_reason = $2 WHERE id = $3',
-                [ReportStatus.REJECTED, 'Test rejection', rejectedReport.id]
-            );
+      createdReportIds.push(assignedReport.id, pendingReport.id);
 
-            createdReportIds.push(assignedReport.id, pendingReport.id, rejectedReport.id);
+      const result = await reportRepository.getClusteredReports(5);
 
-            const result = await reportRepository.getApprovedReportsForMap();
-
-            expect(result).toBeDefined();
-            expect(result.length).toBeGreaterThanOrEqual(1);
-            const reportIds = result.map(r => r.id);
-            expect(reportIds).toContain(assignedReport.id);
-            expect(reportIds).not.toContain(pendingReport.id);
-            expect(reportIds).not.toContain(rejectedReport.id);
-        });
-
-        it('should filter by category', async () => {
-            const roadsReport = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Roads Report',
-                description: 'Roads issue',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: false
-            }, []);
-            await AppDataSource.query(
-                'UPDATE reports SET status = $1 WHERE id = $2',
-                [ReportStatus.ASSIGNED, roadsReport.id]
-            );
-
-            const lightingReport = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Lighting Report',
-                description: 'Lighting issue',
-                category: ReportCategory.PUBLIC_LIGHTING,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: false
-            }, []);
-            await AppDataSource.query(
-                'UPDATE reports SET status = $1 WHERE id = $2',
-                [ReportStatus.ASSIGNED, lightingReport.id]
-            );
-
-            createdReportIds.push(roadsReport.id, lightingReport.id);
-
-            const result = await reportRepository.getApprovedReportsForMap({
-                category: ReportCategory.ROADS
-            });
-
-            expect(result).toBeDefined();
-            const categories = result.map(r => r.category);
-            expect(categories.every(c => c === ReportCategory.ROADS)).toBe(true);
-        });
-
-        it('should return reporter name for non-anonymous reports', async () => {
-            const report = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Non-anonymous Report',
-                description: 'Test',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: false
-            }, []);
-            await AppDataSource.query(
-                'UPDATE reports SET status = $1 WHERE id = $2',
-                [ReportStatus.ASSIGNED, report.id]
-            );
-            createdReportIds.push(report.id);
-
-            const result = await reportRepository.getApprovedReportsForMap();
-            const foundReport = result.find(r => r.id === report.id);
-
-            expect(foundReport).toBeDefined();
-            // Reporter name should be set (either from user data or placeholder)
-            // Note: May be 'undefined undefined' if user fields not loaded properly
-            expect(foundReport?.reporterName).toBeDefined();
-            // isAnonymous may be undefined if not explicitly set
-            expect([false, undefined]).toContain(foundReport?.isAnonymous);
-        });
-
-        it('should return "Anonymous" for anonymous reports', async () => {
-            const report = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Anonymous Report',
-                description: 'Test',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: true
-            }, []);
-            await AppDataSource.query(
-                'UPDATE reports SET status = $1 WHERE id = $2',
-                [ReportStatus.ASSIGNED, report.id]
-            );
-            createdReportIds.push(report.id);
-
-            const result = await reportRepository.getApprovedReportsForMap();
-            const foundReport = result.find(r => r.id === report.id);
-
-            expect(foundReport).toBeDefined();
-            // Should be Anonymous, but may be 'undefined undefined' if user not loaded
-            expect(['Anonymous', 'undefined undefined']).toContain(foundReport?.reporterName);
-            // isAnonymous may be undefined if not loaded properly
-            expect([true, undefined]).toContain(foundReport?.isAnonymous);
-        });
+      // Check that pending reports are not included in clusters
+      const allClusteredIds = result.flatMap(cluster => cluster.reportIds);
+      expect(allClusteredIds).toContain(assignedReport.id);
+      expect(allClusteredIds).not.toContain(pendingReport.id);
     });
-
-    describe('getClusteredReports', () => {
-        it('should return clustered reports for low zoom level', async () => {
-            // Create multiple reports in similar locations
-            const report1 = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Report 1',
-                description: 'Test',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: false
-            }, []);
-            const report2 = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Report 2',
-                description: 'Test',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6870000 45.0704000)',
-                isAnonymous: false
-            }, []);
-
-            await AppDataSource.query(
-                'UPDATE reports SET status = $1 WHERE id = ANY($2::int[])',
-                [ReportStatus.ASSIGNED, [report1.id, report2.id]]
-            );
-            createdReportIds.push(report1.id, report2.id);
-
-            const result = await reportRepository.getClusteredReports(5);
-
-            expect(result).toBeDefined();
-            expect(Array.isArray(result)).toBe(true);
-            if (result.length > 0) {
-                expect(result[0]).toHaveProperty('clusterId');
-                expect(result[0]).toHaveProperty('location');
-                expect(result[0]).toHaveProperty('reportCount');
-                expect(result[0]).toHaveProperty('reportIds');
-            }
-        });
-
-        it('should exclude pending and rejected reports from clusters', async () => {
-            const assignedReport = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Assigned for cluster',
-                description: 'Test',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: false
-            }, []);
-            await AppDataSource.query(
-                'UPDATE reports SET status = $1 WHERE id = $2',
-                [ReportStatus.ASSIGNED, assignedReport.id]
-            );
-
-            const pendingReport = await reportRepository.createReport({
-                reporterId: testUser.id,
-                title: 'Pending for cluster',
-                description: 'Test',
-                category: ReportCategory.ROADS,
-                location: 'POINT(7.6869005 45.0703393)',
-                isAnonymous: false
-            }, []);
-
-            createdReportIds.push(assignedReport.id, pendingReport.id);
-
-            const result = await reportRepository.getClusteredReports(5);
-
-            // Check that pending reports are not included in clusters
-            const allClusteredIds = result.flatMap(cluster => cluster.reportIds);
-            expect(allClusteredIds).toContain(assignedReport.id);
-            expect(allClusteredIds).not.toContain(pendingReport.id);
-        });
-    });
+  });
 });
 
 describe('ReportRepository Integration Tests - getMyAssignedReports', () => {
@@ -448,8 +453,8 @@ describe('ReportRepository Integration Tests - getMyAssignedReports', () => {
 
     // Create test citizen
     const citizenResult = await AppDataSource.query(
-      `INSERT INTO users (username, email, password_hash, first_name, last_name, department_role_id, email_notifications_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
         'citizen.test.repo',
@@ -457,16 +462,19 @@ describe('ReportRepository Integration Tests - getMyAssignedReports', () => {
         '$2b$10$dummyHashForTesting',
         'Citizen',
         'Test',
-        citizenDeptRoleId,
         true
       ]
     );
     testCitizen = citizenResult[0];
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [testCitizen.id, citizenDeptRoleId]
+    );
 
     // Create test technicians
     const tech1Result = await AppDataSource.query(
-      `INSERT INTO users (username, email, password_hash, first_name, last_name, department_role_id, email_notifications_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
         'tech.test1.repo',
@@ -474,15 +482,18 @@ describe('ReportRepository Integration Tests - getMyAssignedReports', () => {
         '$2b$10$dummyHashForTesting',
         'Technician',
         'One',
-        electricalStaffDeptRoleId,
         true
       ]
     );
     testTechnician1 = tech1Result[0];
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [testTechnician1.id, electricalStaffDeptRoleId]
+    );
 
     const tech2Result = await AppDataSource.query(
-      `INSERT INTO users (username, email, password_hash, first_name, last_name, department_role_id, email_notifications_enabled)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO users (username, email, password_hash, first_name, last_name, email_notifications_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
         'tech.test2.repo',
@@ -490,11 +501,14 @@ describe('ReportRepository Integration Tests - getMyAssignedReports', () => {
         '$2b$10$dummyHashForTesting',
         'Technician',
         'Two',
-        electricalStaffDeptRoleId,
         true
       ]
     );
     testTechnician2 = tech2Result[0];
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [testTechnician2.id, electricalStaffDeptRoleId]
+    );
   });
 
   afterAll(async () => {
@@ -826,33 +840,33 @@ describe('ReportRepository Integration Tests - getMyAssignedReports', () => {
 
     it('should maintain chronological order with status filter', async () => {
       await AppDataSource.query(
-       `INSERT INTO reports 
+        `INSERT INTO reports 
     (reporter_id, title, description, category, location, status, assignee_id, is_anonymous, created_at) 
    VALUES 
     ($1, $2, $3, $4, ST_GeogFromText($5), $6, $7, $8, $9),
     ($1, $10, $11, $4, ST_GeogFromText($12), $13, $7, $8, $14),
     ($1, $15, $16, $4, ST_GeogFromText($17), $18, $7, $8, $19)`,
-   [
-    testCitizen.id,
-    'Oldest assigned',
-    'First',
-    ReportCategory.PUBLIC_LIGHTING,
-    'POINT(7.6869005 45.0703393)',
-    ReportStatus.ASSIGNED,
-    testTechnician1.id,
-    false,
-    new Date('2024-01-01T10:00:00'),
-    'Middle in progress',
-    'Second',
-    'POINT(7.6932941 45.0692403)',
-    ReportStatus.IN_PROGRESS,
-    new Date('2024-01-02T10:00:00'),
-    'Newest assigned',
-    'Third',
-    'POINT(7.6782069 45.0625748)',
-    ReportStatus.ASSIGNED,
-    new Date('2024-01-03T10:00:00')
-  ]
+        [
+          testCitizen.id,
+          'Oldest assigned',
+          'First',
+          ReportCategory.PUBLIC_LIGHTING,
+          'POINT(7.6869005 45.0703393)',
+          ReportStatus.ASSIGNED,
+          testTechnician1.id,
+          false,
+          new Date('2024-01-01T10:00:00'),
+          'Middle in progress',
+          'Second',
+          'POINT(7.6932941 45.0692403)',
+          ReportStatus.IN_PROGRESS,
+          new Date('2024-01-02T10:00:00'),
+          'Newest assigned',
+          'Third',
+          'POINT(7.6782069 45.0625748)',
+          ReportStatus.ASSIGNED,
+          new Date('2024-01-03T10:00:00')
+        ]
       );
 
       const result = await reportRepository.findByAssigneeId(

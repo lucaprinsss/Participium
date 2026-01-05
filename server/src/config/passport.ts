@@ -3,11 +3,12 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import { userRepository } from '@repositories/userRepository';
 import { UserEntity } from '@models/entity/userEntity';
 
-// Tipo per i dati dell'utente serializzati in sessione
+// Type for user data serialized in session
+// Supporta ruoli multipli (PT10)
 interface SessionUser {
   id: number;
   username: string;
-  departmentRoleId?: number;
+  departmentRoleIds?: number[];  // Array of role IDs for multiple roles support
 }
 
 export const configurePassport = (): void => {
@@ -36,22 +37,24 @@ export const configurePassport = (): void => {
     )
   );
 
-  // Serializza l'utente in sessione (salva solo i dati essenziali)
+  // Serialize user in session (save only essential data)
   passport.serializeUser((user: Express.User, done) => {
     // Esegui un cast al tuo tipo specifico userEntity
     const u = user as UserEntity;
+    // Supports multiple roles - extracts all departmentRoleIds
+    const departmentRoleIds = u.userRoles?.map(ur => ur.departmentRoleId) || [];
     const sessionUser: SessionUser = {
       id: u.id,
       username: u.username,
-      departmentRoleId: u.departmentRoleId,
+      departmentRoleIds: departmentRoleIds,
     };
     done(null, sessionUser);
   });
 
-  // Deserializza l'utente dalla sessione
+  // Deserialize user from session
   passport.deserializeUser(async (sessionUser: SessionUser, done) => {
     try {
-      // Trova l'utente completo dal repository usando l'ID
+      // Find the complete user from repository using the ID
       const user = await userRepository.findUserById(sessionUser.id);
       if (!user) {
         return done(new Error('User not found'));
@@ -63,4 +66,4 @@ export const configurePassport = (): void => {
   });
 };
 
-export {default} from 'passport';
+export { default } from 'passport';

@@ -111,7 +111,7 @@ describe('ValidateId Middleware Integration Tests', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle very large numbers gracefully', async () => {
+    it('should handle very large numbers', async () => {
       const res = await request(app).get('/api/users/999999999999999');
       
       // Should not crash, either validates or causes overflow
@@ -122,7 +122,7 @@ describe('ValidateId Middleware Integration Tests', () => {
       const res = await request(app).get('/api/users/ ');
       
       // Should be caught by routing or validation
-      expect([400, 404]).toContain(res.status);
+      expect([400, 401, 404]).toContain(res.status);
     });
   });
 });

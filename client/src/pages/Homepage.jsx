@@ -22,13 +22,14 @@ export default function Home() {
       return null;
     }
     
-    const actualRole = (user.role_name || "").toString().toLowerCase();
-    const isAdmin = actualRole.includes("administrator");
+    const roles = user.roles || [];
+    const hasCitizenRole = roles.some(r => r.role_name.toLowerCase() === 'citizen');
+    const hasAdminRole = roles.some(r => r.role_name.toLowerCase() === 'administrator');
     
-    if (actualRole.includes("citizen") || actualRole.includes("Citizen")) {
+    if (hasCitizenRole) {
       return <CitizenHome user={user} />;
     }
-    if (isAdmin) {
+    if (hasAdminRole) {
       return <AdminHome />;
     }
     

@@ -34,9 +34,14 @@ describe('CompanyService Integration Tests', () => {
       password: 'Password123!',
       firstName: 'Admin',
       lastName: 'Test',
-      departmentRoleId: adminRole.id,
       isVerified: true,
+      telegramLinkConfirmed: false,
     });
+
+    await AppDataSource.query(
+      `INSERT INTO user_roles (user_id, department_role_id) VALUES ($1, $2)`,
+      [admin.id, adminRole.id]
+    );
 
     adminUserId = admin.id;
     createdUserIds.push(adminUserId);
@@ -47,7 +52,7 @@ describe('CompanyService Integration Tests', () => {
     if (createdUserIds.length > 0) {
       await AppDataSource.getRepository(UserEntity).delete({ id: In(createdUserIds) });
     }
-    
+
     if (createdCompanyIds.length > 0) {
       await AppDataSource.query('DELETE FROM companies WHERE id = ANY($1)', [createdCompanyIds]);
     }
@@ -125,7 +130,7 @@ describe('CompanyService Integration Tests', () => {
   describe('getAllCompanies', () => {
     it('should retrieve all companies', async () => {
       const timestamp = Date.now();
-      
+
       const companies = [
         { name: `Company A ${timestamp}`, category: 'Public Lighting' },
         { name: `Company B ${timestamp}`, category: 'Roads and Urban Furnishings' },
@@ -142,7 +147,7 @@ describe('CompanyService Integration Tests', () => {
       expect(result.length).toBeGreaterThanOrEqual(3);
       const createdNames = companies.map(c => c.name);
       const resultNames = result.map(c => c.name);
-      
+
       for (const name of createdNames) {
         expect(resultNames).toContain(name);
       }
@@ -150,7 +155,7 @@ describe('CompanyService Integration Tests', () => {
 
     it('should return companies ordered by name', async () => {
       const timestamp = Date.now();
-      
+
       // Create companies with specific names to test ordering
       const testCompanies = [
         { name: `ZZZ Test Company ${timestamp}`, category: 'Waste' },
@@ -166,11 +171,11 @@ describe('CompanyService Integration Tests', () => {
       }
 
       const result = await companyService.getAllCompanies();
-      
+
       // Filter only our test companies
       const ourCompanies = result.filter(c => createdIds.includes(c.id));
       expect(ourCompanies.length).toBe(3);
-      
+
       // Check ordering of our companies
       expect(ourCompanies[0].name).toContain('AAA Test Company');
       expect(ourCompanies[1].name).toContain('MMM Test Company');

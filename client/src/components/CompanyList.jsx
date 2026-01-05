@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import PropTypes from "prop-types"; // Importato per la validazione delle props
+import PropTypes from "prop-types"; // Imported for props validation
 import { Alert, InputGroup, Tooltip, OverlayTrigger } from "react-bootstrap";
 import { FaSearch, FaBuilding, FaTag, FaUndo } from "react-icons/fa";
 import { getAllCompanies } from "../api/companyApi";
@@ -50,36 +50,8 @@ export default function CompanyList({ refreshTrigger }) {
 
   // Correzione S3358: Logica di rendering estratta in una funzione separata
   const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="mul-loading">
-          <div className="mul-loading-content">
-            <div className="mul-loading-spinner"></div>
-            <div>Loading companies...</div>
-          </div>
-        </div>
-      );
-    }
-
-    if (filteredCompanies.length === 0) {
-      const emptyMessage = searchText
-        ? "No companies match your search."
-        : "No companies found in the registry.";
-
-      return (
-        <div className="mul-empty">
-          <div className="mul-empty-content">
-            <div className="mul-empty-icon">🏢</div>
-            <div>
-              {emptyMessage}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     return (
-      <div className="mul-table-wrapper">
+      <div className="mul-table-wrapper mul-table-wrapper-scrollable">
         <table className="mul-table">
           <thead>
             <tr>
@@ -89,29 +61,60 @@ export default function CompanyList({ refreshTrigger }) {
             </tr>
           </thead>
           <tbody>
-            {filteredCompanies.map((company) => (
-              <tr key={company.id || company.name}>
-                <td>
-                  <div className="d-flex align-items-center gap-2">
-                    <FaBuilding className="text-muted" />
-                    <strong>{company.name}</strong>
-                  </div>
-                </td>
-                <td>
-                  <span className="mul-role-badge">
-                    <FaTag className="me-1" style={{ fontSize: '0.7rem' }} />
-                    {company.category}
-                  </span>
-                </td>
-                <td>
-                  <div className="mul-actions">
-                    <button className="mul-btn mul-btn-edit" style={{ opacity: 0.5, cursor: 'not-allowed' }} disabled>
-                      Edit
-                    </button>
+            {loading ? (
+              <tr>
+                <td colSpan="3">
+                  <div className="mul-loading">
+                    <div className="mul-loading-content">
+                      <div className="mul-loading-spinner"></div>
+                      <div>Loading companies...</div>
+                    </div>
                   </div>
                 </td>
               </tr>
-            ))}
+            ) : filteredCompanies.length === 0 ? (
+              <tr>
+                <td colSpan="3">
+                  <div className="mul-empty">
+                    <div className="mul-empty-content">
+                      <div className="mul-empty-icon">🏢</div>
+                      <div>
+                        {searchText
+                          ? "No companies match your search."
+                          : "No companies found in the registry."}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredCompanies.map((company) => (
+                <tr 
+                  key={company.id || company.name} 
+                  className="mul-table-row"
+                >
+                  <td>
+                    <div className="d-flex align-items-center gap-2">
+                      <FaBuilding className="text-muted" />
+                      <strong>{company.name}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="mul-role-badge">
+                      <FaTag className="me-1" style={{ fontSize: '0.7rem' }} />
+                      {company.category}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="mul-actions">
+                      <button className="mul-btn mul-btn-edit" style={{ opacity: 0.5, cursor: 'not-allowed' }} disabled>
+                        Edit
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -156,7 +159,7 @@ export default function CompanyList({ refreshTrigger }) {
 
       <div className="mul-card">
         <div className="mul-card-body">
-          {/* Chiamata alla funzione di rendering estratta */}
+          {/* Call to extracted rendering function */}
           {renderContent()}
         </div>
       </div>
@@ -164,7 +167,7 @@ export default function CompanyList({ refreshTrigger }) {
   );
 }
 
-// Aggiunta la validazione delle props (S6774)
+// Added props validation (S6774)
 CompanyList.propTypes = {
   refreshTrigger: PropTypes.oneOfType([
     PropTypes.bool,

@@ -1,6 +1,6 @@
-# Participium - Database Structure (v4.3)
+# Participium - Database Structure (v5.0)
 
-This document describes the database schema (Version 4.3) designed for the **Participium** application.
+This document describes the database schema (Version 5.0) designed for the **Participium** application.
 
 * **Database System:** PostgreSQL (v15+)
 * **Required Extensions:** `postgis` (for geolocation data)
@@ -11,20 +11,16 @@ This document describes the database schema (Version 4.3) designed for the **Par
 
 Participium is a citizen reporting system that allows users to submit reports about urban issues (potholes, broken street lights, etc.). The database is designed to support:
 
-- **User Management** (citizens, staff, administrators)
+- **User Management** (citizens, staff, administrators) with **multiple roles per user**
 - **Report Lifecycle** (submission, approval, assignment, resolution)
 - **Media Attachments** (photos)
-- **Communication** (comments, messages, notifications)
+- **Communication** (comments, messages, notifications, Telegram integration)
 - **Geolocation** (using PostGIS for spatial data)
 - **Automatic Assignment Workflow**
 
 ---
 
 ## Custom Data Types (ENUMs)
-
-To ensure data integrity and consistency, the following enumerated types have been defined.
-
-> **Note:** The `user_role` ENUM has been removed in V3. User roles are now managed through the relational tables `departments`, `roles`, and `department_roles`.
 
 ### `report_category`
 Predefined categories for citizen reports.
@@ -53,30 +49,79 @@ Represents the lifecycle states of a report.
 | `Rejected` | Report rejected by organization staff |
 | `Resolved` | Issue has been fixed |
 
-**Note:** External maintenance is not a separate status. When a report is delegated to an external maintainer, the `external_assignee_id` field is populated while the status remains 'In Progress'.
+---
 
 ## Tables
 
-### 1. `companies`
-Stores information about external maintenance companies that handle specific report categories.
+### 1. `departments`
+Stores municipality departments that handle different types of reports.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique department identifier |
+| `name` | `VARCHAR(100)` | NOT NULL, UNIQUE | Department name |
+
+**Pre-populated Departments (9 total):**
+1. Organization (for system roles like Citizen and Administrator)
+2. Water and Sewer Services Department
+3. Public Infrastructure and Accessibility Department
+4. Public Lighting Department
+5. Waste Management Department
+6. Mobility and Traffic Management Department
+7. Parks, Green Areas and Recreation Department
+8. General Services Department
+9. External Service Providers
+
+---
+
+### 2. `roles`
+Stores permission levels and job roles that can be assigned to users.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique role identifier |
+| `name` | `VARCHAR(100)` | NOT NULL, UNIQUE | Role name |
+| `description` | `TEXT` | NULLABLE | Role description |
+
+**System Roles:**
+- Citizen, Administrator, Municipal Public Relations Officer
+
+**Technical Roles:**
+- Department Director, Water Network staff member, Sewer System staff member, Road Maintenance staff member, Accessibility staff member, Electrical staff member, Recycling Program staff member, Traffic management staff member, Parks Maintenance staff member, Customer Service staff member, Building Maintenance staff member, Support Officer, External Maintainer
+
+---
+
+### 3. `department_roles`
+Defines valid "positions" by linking departments to roles.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique position identifier |
+| `department_id` | `INT` | **FOREIGN KEY** -> `departments(id)` ON DELETE CASCADE | Department |
+| `role_id` | `INT` | **FOREIGN KEY** -> `roles(id)` ON DELETE CASCADE | Role within the department |
+
+**Constraints:**
+- UNIQUE on `(department_id, role_id)` to prevent duplicate combinations
+
+---
+
+### 4. `companies`
+Stores external maintenance companies.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `SERIAL` | **PRIMARY KEY** | Unique company identifier |
-| `name` | `VARCHAR(255)` | NOT NULL, UNIQUE | Company name (e.g., "Enel X", "Acea") |
+| `name` | `VARCHAR(255)` | NOT NULL, UNIQUE | Company name |
 | `category` | `report_category` | NOT NULL | Report category the company specializes in |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Company registration date |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Registration date |
 
-**Notes:**
-- **NEW in V4.3**: Separates company entities from user accounts
-- Each company specializes in one report category, but multiple companies can handle the same category
-- External maintainer users reference this table via `users.company_id`
-- MUST be created BEFORE users table because of foreign key dependency
+**Pre-populated Companies:**
+- Enel X (Public Lighting), Acea (Water Supply), Hera (Waste), ATM (Road Signs)
 
 ---
 
-### 2. `users`
-Stores information for all system actors (citizens, operators, administrators).
+### 5. `users`
+Stores information for all system actors.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -85,10 +130,12 @@ Stores information for all system actors (citizens, operators, administrators).
 | `first_name` | `VARCHAR(100)` | NOT NULL | User's first name |
 | `last_name` | `VARCHAR(100)` | NOT NULL | User's last name |
 | `password_hash` | `VARCHAR(255)` | NOT NULL | Hashed password |
-| `department_role_id` | `INT` | **FOREIGN KEY** → `department_roles(id)`, NOT NULL | User's position (department + role combination) |
-| `email` | `VARCHAR(255)` | NOT NULL, UNIQUE | Email address (used for notifications) |
+| `email` | `VARCHAR(255)` | NOT NULL, UNIQUE | Email address |
 | `personal_photo_url` | `TEXT` | NULLABLE | URL to user's profile photo |
 | `telegram_username` | `VARCHAR(100)` | NULLABLE, UNIQUE | Telegram username for bot integration |
+| `telegram_link_code` | `VARCHAR(6)` | NULLABLE | 6-digit code for linking Telegram account |
+| `telegram_link_code_expires_at` | `TIMESTAMPTZ` | NULLABLE | Expiration timestamp for the Telegram link code |
+| `telegram_link_confirmed` | `BOOLEAN` | NOT NULL, DEFAULT false | Flag set to true only after the user confirms linking from the web app |
 | `email_notifications_enabled` | `BOOLEAN` | NOT NULL, DEFAULT true | Flag to enable/disable email notifications |
 | `company_id` | `INT` | **FOREIGN KEY** → `companies(id)`, NULLABLE | Reference to external company (only for External Maintainer role) |
 | `is_verified` | `BOOLEAN` | NOT NULL, DEFAULT false | Indicates if the user's email has been verified |
@@ -96,11 +143,15 @@ Stores information for all system actors (citizens, operators, administrators).
 | `verification_code_expires_at` | `TIMESTAMPTZ` | NULLABLE | Expiration timestamp for the verification code (30 minutes from generation) |
 | `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Registration date |
 
+**Note:** User roles are now managed through the `user_roles` table (many-to-many relationship).
+
+
 **Indexes:**
 - Primary key on `id`
 - Unique index on `username`
 - Unique index on `email`
 - Unique index on `telegram_username` (where not null)
+- Index on `telegram_link_code` (where not null)
 - Foreign key index on `department_role_id`
 
 **Notes:**
@@ -110,424 +161,141 @@ Stores information for all system actors (citizens, operators, administrators).
 - **V4.1**: External maintainers are now regular users with the 'External Maintainer' role in the 'External Service Providers' department
 - **V4.2**: Email verification system added. New users must verify their email within 30 minutes using a 6-digit code. Users cannot use the system until `is_verified` is true. Pre-existing users (admin, external maintainers) are automatically verified
 - **V4.3**: Added `company_id` foreign key to link external maintainers to their companies. The `companies` table now stores company data separately from user accounts
+- **V4.4**: Added Telegram integration fields. Users can link their Telegram account using a temporary 6-digit code that expires after 10 minutes. The `telegram_username` is used for bot notifications, while `telegram_link_code` facilitates the linking process.
 
 ---
 
-### 3. `reports`
+### 6. `user_roles` (NEW in V5.0)
+Join table for many-to-many relationship between users and department_roles.
+Enables a single user to have multiple roles (PT10).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | `SERIAL` | **PRIMARY KEY** | Unique assignment identifier |
+| `user_id` | `INT` | **FOREIGN KEY** -> `users(id)` ON DELETE CASCADE | User ID |
+| `department_role_id` | `INT` | **FOREIGN KEY** -> `department_roles(id)` ON DELETE CASCADE | Position ID |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Assignment date |
+
+**Constraints:**
+- UNIQUE on `(user_id, department_role_id)` - a user cannot have the same role twice
+
+**Indexes:**
+- `idx_user_roles_user_id` on `user_id`
+- `idx_user_roles_department_role_id` on `department_role_id`
+
+---
+
+### 7. `reports`
 Central table containing all citizen-submitted reports.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `SERIAL` | **PRIMARY KEY** | Unique report identifier |
-| `reporter_id` | `INT` | **FOREIGN KEY** → `users(id)`, NOT NULL | ID of the citizen who created the report |
-| `title` | `TEXT` | NOT NULL | Report title/summary |
-| `description` | `TEXT` | NOT NULL | Detailed description of the issue |
-| `category` | `report_category` | NOT NULL | Issue category (see ENUM) |
-| `location` | `GEOGRAPHY(Point, 4326)` | NOT NULL | GPS coordinates (longitude/latitude) of the issue |
-| `address` | `VARCHAR(500)` | NULLABLE | Human-readable address of the report location |
-| `is_anonymous` | `BOOLEAN` | NOT NULL, DEFAULT false | Flag to hide reporter's name from public view |
-| `status` | `report_status` | NOT NULL, DEFAULT 'Pending Approval' | Current report status (see ENUM) |
-| `rejection_reason` | `TEXT` | NULLABLE | Required text if `status` is 'Rejected' |
-| `assignee_id` | `INT` | **FOREIGN KEY** → `users(id)`, NULLABLE | ID of internal technical staff member assigned to manage the case |
-| `external_assignee_id` | `INT` | **FOREIGN KEY** → `users(id)`, NULLABLE | ID of external maintainer assigned to perform the intervention (if delegated externally) |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Report submission date |
-| `updated_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Date of last status change |
-
-**Additional Constraints:**
-- `check_rejection_reason`: Ensures `rejection_reason` is provided when status is 'Rejected'
-  ```sql
-  CHECK ( (status <> 'Rejected') OR (rejection_reason IS NOT NULL) )
-  ```
-
-**Indexes:**
-- Primary key on `id`
-- Foreign key index on `reporter_id`
-- Foreign key index on `assignee_id`
-- Foreign key index on `external_assignee_id`
-- Spatial index on `location` (automatically created by PostGIS)
-
-**Notes:**
-- The `assignee_id` field references the internal technical staff member responsible for managing the report
-- The `external_assignee_id` field references an external maintainer (user with 'External Maintainer' role) if the intervention is delegated externally
-- Both fields can coexist: internal staff can delegate to external maintainer while maintaining responsibility
-- When `external_assignee_id` is set, the report status should typically be 'In Progress' (the external assignment is tracked via the field, not the status)
+| `reporter_id` | `INT` | **FOREIGN KEY** -> `users(id)`, NOT NULL | Reporter ID |
+| `title` | `TEXT` | NOT NULL | Report title |
+| `description` | `TEXT` | NOT NULL | Issue description |
+| `category` | `report_category` | NOT NULL | Issue category |
+| `location` | `GEOGRAPHY(Point, 4326)` | NOT NULL | GPS coordinates |
+| `address` | `VARCHAR(500)` | NULLABLE | Human-readable address |
+| `is_anonymous` | `BOOLEAN` | NOT NULL, DEFAULT false | Hide reporter identity |
+| `status` | `report_status` | NOT NULL, DEFAULT 'Pending Approval' | Current status |
+| `rejection_reason` | `TEXT` | NULLABLE | Required if status is 'Rejected' |
+| `assignee_id` | `INT` | **FOREIGN KEY** -> `users(id)`, NULLABLE | Internal staff assignee |
+| `external_assignee_id` | `INT` | **FOREIGN KEY** -> `users(id)`, NULLABLE | External maintainer assignee |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Submission date |
+| `updated_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Last update date |
 
 ---
 
-### 4. `photos`
-Stores URLs of photos attached to a report (minimum 1, maximum 3 photos per report).
+### 8. `photos`
+Stores photos attached to reports (1-3 per report).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `SERIAL` | **PRIMARY KEY** | Unique photo identifier |
-| `report_id` | `INT` | **FOREIGN KEY** → `reports(id)` ON DELETE CASCADE, NOT NULL | Report to which the photo is attached |
-| `storage_url` | `TEXT` | NOT NULL | URL to the image (e.g., S3, Firebase Storage) |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Photo upload date |
-
-**Indexes:**
-- Primary key on `id`
-- Foreign key index on `report_id`
-
-**Business Rules:**
-- Each report must have between 1 and 3 photos (enforced at application level)
+| `report_id` | `INT` | **FOREIGN KEY** -> `reports(id)` ON DELETE CASCADE | Report ID |
+| `storage_url` | `TEXT` | NOT NULL | Image URL |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Upload date |
 
 ---
 
-### 5. `comments`
-Internal comments from staff operators related to report management (not visible to citizens).
+### 9. `comments`
+Internal comments from staff operators.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `SERIAL` | **PRIMARY KEY** | Unique comment identifier |
-| `report_id` | `INT` | **FOREIGN KEY** → `reports(id)` ON DELETE CASCADE, NOT NULL | Report to which the comment refers |
-| `author_id` | `INT` | **FOREIGN KEY** → `users(id)`, NOT NULL | Staff member (technical or organization) who wrote the comment |
+| `report_id` | `INT` | **FOREIGN KEY** -> `reports(id)` ON DELETE CASCADE | Report ID |
+| `author_id` | `INT` | **FOREIGN KEY** -> `users(id)` | Staff member ID |
 | `content` | `TEXT` | NOT NULL | Comment text |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Comment creation date |
-
-**Indexes:**
-- Primary key on `id`
-- Foreign key index on `report_id`
-- Foreign key index on `author_id`
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Creation date |
 
 ---
 
-### 6. `notifications`
-In-app notifications for citizens (e.g., "Your report has been approved").
+### 10. `notifications`
+In-app notifications for citizens.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `SERIAL` | **PRIMARY KEY** | Unique notification identifier |
-| `user_id` | `INT` | **FOREIGN KEY** → `users(id)` ON DELETE CASCADE, NOT NULL | Recipient (citizen) of the notification |
-| `report_id` | `INT` | **FOREIGN KEY** → `reports(id)` ON DELETE CASCADE, NULLABLE | Report related to the notification |
-| `content` | `TEXT` | NOT NULL | Notification text (e.g., "Your report status is now 'Resolved'") |
-| `is_read` | `BOOLEAN` | NOT NULL, DEFAULT false | Flag indicating if the notification has been read |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Notification creation date |
-
-**Indexes:**
-- Primary key on `id`
-- Foreign key index on `user_id`
-- Foreign key index on `report_id`
-- Composite index on `(user_id, is_read)` for efficient querying of unread notifications
+| `user_id` | `INT` | **FOREIGN KEY** -> `users(id)` ON DELETE CASCADE | Recipient ID |
+| `report_id` | `INT` | **FOREIGN KEY** -> `reports(id)` ON DELETE CASCADE, NULLABLE | Related report |
+| `content` | `TEXT` | NOT NULL | Notification text |
+| `is_read` | `BOOLEAN` | NOT NULL, DEFAULT false | Read status |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Creation date |
 
 ---
 
-### 7. `messages`
-Bidirectional messaging between a citizen and an operator, related to a specific report.
+### 11. `messages`
+Bidirectional messaging between citizens and operators.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `SERIAL` | **PRIMARY KEY** | Unique message identifier |
-| `report_id` | `INT` | **FOREIGN KEY** → `reports(id)` ON DELETE CASCADE, NOT NULL | Report that serves as the "chat room" |
-| `sender_id` | `INT` | **FOREIGN KEY** → `users(id)`, NOT NULL | Sender (can be citizen or operator) |
+| `report_id` | `INT` | **FOREIGN KEY** -> `reports(id)` ON DELETE CASCADE | Report (chat room) |
+| `sender_id` | `INT` | **FOREIGN KEY** -> `users(id)` | Sender ID |
 | `content` | `TEXT` | NOT NULL | Message text |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Message send date |
-
-**Indexes:**
-- Primary key on `id`
-- Foreign key index on `report_id`
-- Foreign key index on `sender_id`
-- Composite index on `(report_id, created_at)` for efficient message thread retrieval
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Send date |
 
 ---
 
-### 8. `departments`
-Stores municipality departments that handle different types of reports.
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `SERIAL` | **PRIMARY KEY** | Unique department identifier |
-| `name` | `VARCHAR(100)` | NOT NULL, UNIQUE | Department name (e.g., "Water and Sewer Services Department", "Public Infrastructure and Accessibility Department") |
-
-**Indexes:**
-- Primary key on `id`
-- Unique index on `name`
-
-**Pre-populated Departments:**
-- `Organization` (for system roles like Citizen and Administrator)
-- `Water and Sewer Services Department`
-- `Public Infrastructure and Accessibility Department`
-- `Public Lighting Department`
-- `Waste Management Department`
-- `Mobility and Traffic Management Department`
-- `Parks, Green Areas and Recreation Department`
-- `General Services Department`
-- `External Service Providers` (for external maintainer companies)
-
----
-
-### 9. `roles`
-Stores permission levels and job roles that can be assigned to users across departments.
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `SERIAL` | **PRIMARY KEY** | Unique role identifier |
-| `name` | `VARCHAR(100)` | NOT NULL, UNIQUE | Role name (e.g., "Department Director", "Water Network staff member", "Civil Engineer") |
-| `description` | `TEXT` | NULLABLE | Role description |
-
-**Indexes:**
-- Primary key on `id`
-- Unique index on `name`
-
-**System roles:**
-- `Citizen` - Standard citizen user
-- `Administrator` - System Administrator with full access
-- `Municipal Public Relations Officer` - Reviews and approves/rejects citizen reports
-
-**Department-specific roles:**
-- `Department Director` - Director of a department (applicable to all technical departments)
-- `Water Network staff member` - Manages water network maintenance
-- `Sewer System staff member` - Manages sewer system maintenance
-- `Road Maintenance staff member` - Maintains road infrastructure
-- `Accessibility staff member` - Ensures accessibility compliance
-- `Electrical staff member` - Manages electrical systems
-- `Recycling Program staff member` - Coordinates recycling programs
-- `Traffic management staff member` - Manages traffic systems
-- `Parks Maintenance staff member` - Maintains parks and green areas
-- `Customer Service staff member` - Provides customer service
-- `Building Maintenance staff member` - Maintains building facilities
-- `Support Officer` - Provides general support services
-- `External Maintainer` - External company contractor specialized in specific report categories
-
----
-
-### 10. `department_roles`
-Defines valid "positions" by linking departments to roles. This table represents which role types are applicable within each department (e.g., a "Water Network staff member" role exists within the "Water and Sewer Services Department").
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `SERIAL` | **PRIMARY KEY** | Unique position identifier |
-| `department_id` | `INT` | **FOREIGN KEY** → `departments(id)` ON DELETE CASCADE, NOT NULL | Department |
-| `role_id` | `INT` | **FOREIGN KEY** → `roles(id)` ON DELETE CASCADE, NOT NULL | Role within the department |
-
-**Constraints:**
-- **UNIQUE** constraint `uq_department_role` on `(department_id, role_id)` to prevent duplicate department-role combinations
-
-**Indexes:**
-- Primary key on `id`
-- Foreign key index on `department_id`
-- Foreign key index on `role_id`
-- Unique index on `(department_id, role_id)`
-
-**Notes:**
-- This is NOT a user assignment table; it defines valid position types
-- Users are assigned to positions via the `users.department_role_id` foreign key
-- The Admin UI can use this table to show only valid roles when filtering by department
-
----
-
-### 11. `category_role_mapping`
-**NEW in V4:** Maps report categories to specific technical roles for automatic assignment.
+### 12. `category_role_mapping`
+Maps report categories to technical roles for automatic assignment.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `SERIAL` | **PRIMARY KEY** | Unique mapping identifier |
-| `category` | `report_category` | NOT NULL, UNIQUE | Report category (from ENUM) |
-| `role_id` | `INT` | **FOREIGN KEY** → `roles(id)`, NOT NULL | Technical role responsible for this category |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Mapping creation date |
-
-**Indexes:**
-- Primary key on `id`
-- Unique index on `category`
-- Foreign key index on `role_id`
-
----
-
-### 12. `company_categories`
-**NEW in V4.3:** Maps external maintainer companies to the report categories they can handle. This is a future enhancement table (not yet implemented in current init.sql).
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | `SERIAL` | **PRIMARY KEY** | Unique mapping identifier |
-| `company_id` | `INT` | **FOREIGN KEY** → `companies(id)` ON DELETE CASCADE, NOT NULL | Company ID |
-| `category` | `report_category` | NOT NULL | Report category the company can handle |
-| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Mapping creation date |
-
-**Constraints:**
-- **UNIQUE** constraint `uq_company_category` on `(company_id, category)` to prevent duplicate mappings
-
-**Indexes:**
-- Primary key on `id`
-- Index on `company_id`
-- Index on `category`
-- Unique index on `(company_id, category)`
-
-**Notes:**
-- **PLANNED FEATURE**: This table will enable filtering external maintainers by category
-- Currently, each company has one category in the `companies` table
-- Future implementation will allow companies to be associated with multiple categories
-- Will be used by the `/api/users/external-maintainers?categoryId=X` endpoint to return only qualified external maintainers
+| `category` | `report_category` | NOT NULL, UNIQUE | Report category |
+| `role_id` | `INT` | **FOREIGN KEY** -> `roles(id)` | Responsible role |
+| `created_at` | `TIMESTAMPTZ` | DEFAULT CURRENT_TIMESTAMP | Creation date |
 
 ---
 
 ## Entity Relationships
 
 ```
-companies (1) ──────────< (N) users [company_id] (for External Maintainers)
-companies (1) ──────────< (N) company_categories [company_id] (future)
+departments (1) ────────< (N) department_roles [department_id]
+roles (1) ──────────────< (N) department_roles [role_id]
+
+department_roles (1) ───< (N) user_roles [department_role_id]
+users (1) ──────────────< (N) user_roles [user_id]
+
+companies (1) ──────────< (N) users [company_id]
 
 users (1) ──────────────< (N) reports [reporter_id]
-users (1) ──────────────< (N) reports [assignee_id] (internal staff)
-users (1) ──────────────< (N) reports [external_assignee_id] (external maintainers)
-users (1) ──────────────< (N) comments [author_id]
-users (1) ──────────────< (N) notifications [user_id]
-users (1) ──────────────< (N) messages [sender_id]
+users (1) ──────────────< (N) reports [assignee_id]
+users (1) ──────────────< (N) reports [external_assignee_id]
 
 reports (1) ────────────< (N) photos
 reports (1) ────────────< (N) comments
 reports (1) ────────────< (N) notifications
 reports (1) ────────────< (N) messages
-
-departments (1) ────────────< (N) department_roles [department_id]
-
-roles (1) ──────────────< (N) department_roles [role_id]
-roles (1) ──────────────< (N) category_role_mapping [role_id]
-
-department_roles (1) ───< (N) users [department_role_id]
 ```
 
-**Key Relationship:**
-- Each user has ONE `department_role_id` that references a specific position in `department_roles`
-- Each position in `department_roles` defines a valid combination of department and role
-- Multiple users can share the same position (e.g., multiple "Water Network staff members" in the same department)
-
----
-
-## Default Data
-
-The initialization script populates the following default data:
-
-### Departments (9 total)
-1. **Organization** - For system-level roles (Admin, Citizen)
-2. **Water and Sewer Services Department**
-3. **Public Infrastructure and Accessibility Department**
-4. **Public Lighting Department**
-5. **Waste Management Department**
-6. **Mobility and Traffic Management Department**
-7. **Parks, Green Areas and Recreation Department**
-8. **General Services Department**
-9. **External Service Providers** - For external maintainer companies
-
-
-
-
-**Pre-populated Position Combinations (22 total):**
-
-**Organization Department:**
-- Citizen
-- Administrator
-- Municipal Public Relations Officer
-
-**Water and Sewer Services Department:**
-- Department Director
-- Water Network staff member
-- Sewer System staff member
-
-**Public Infrastructure and Accessibility Department:**
-- Department Director
-- Road Maintenance staff member
-- Accessibility staff member
-
-**Public Lighting Department:**
-- Department Director
-- Electrical staff member
-
-**Waste Management Department:**
-- Department Director
-- Recycling Program staff member
-
-**Mobility and Traffic Management Department:**
-- Department Director
-- Traffic management staff member
-
-**Parks, Green Areas and Recreation Department:**
-- Department Director
-- Parks Maintenance staff member
-
-**General Services Department:**
-- Department Director
-- Customer Service staff member
-- Building Maintenance staff member
-- Support Officer
-
----
-
-
-### Default Users
-
-The database is pre-populated with default users for testing and development purposes, including:
-- 1 System Administrator
-- 1 Municipal Public Relations Officer
-- 7 Department Directors
-- 9 Technical Staff Members
-- 4 External Maintainers
-- 2 Test Citizens
-
-**For complete list of default users with credentials, see:** [`default-users.md`](default-users.md)
-- **Position:** Organization / Administrator
-- **Name:** System Administrator
-
-### Default Companies (V4.3)
-Pre-populated external maintenance companies:
-
-1. **Enel X** - Specializes in `Public Lighting`
-2. **Acea** - Specializes in `Water Supply - Drinking Water`
-3. **Hera** - Specializes in `Waste`
-4. **ATM** - Specializes in `Road Signs and Traffic Lights`
-
-### Default External Maintainer Users (V4.3)
-Pre-populated external maintainer users in the 'External Service Providers' department, each linked to their respective company:
-
-1. **Enel X Support Team** (Company: Enel X)
-   - Username: `enelx` | Password: `maintainer123`
-   - Email: `interventions@enelx.com`
-   - Category: `Public Lighting`
-
-2. **Acea Water Services** (Company: Acea)
-   - Username: `acea` | Password: `maintainer123`
-   - Email: `water@acea.it`
-   - Category: `Water Supply - Drinking Water`
-
-3. **Hera Waste Management** (Company: Hera)
-   - Username: `hera` | Password: `maintainer123`
-   - Email: `waste@hera.it`
-   - Category: `Waste`
-
-4. **ATM Traffic Management** (Company: ATM)
-   - Username: `atm` | Password: `maintainer123`
-   - Email: `traffic@atm.it`
-   - Category: `Road Signs and Traffic Lights`
-
-**Note:** All external maintainer passwords should be changed in production!
-
----
-
-## Automatic Assignment Workflow
-
-**NEW in V4:** The system supports automatic assignment of approved reports:
-
-1. **Citizen submits report** → Status: "Pending Approval"
-2. **Municipal Public Relations Officer reviews** → Can optionally modify category
-3. **Officer approves report** → System uses `category_role_mapping` to find responsible department
-4. **System assigns to technical staff** → Finds available staff member in that department
-5. **Status changes to "Assigned"** → Technical staff receives the task
-
-**V4.2 Enhancement - External Maintainer Assignment:**
-- Technical office staff can manually assign reports to external maintainers
-- External maintainers are users with the 'External Maintainer' role
-- External maintainers can log in, view assigned reports, update status, and add internal comments
-
-**V4.3 Enhancement - Company Management:**
-- External maintainers are linked to companies via `users.company_id` foreign key
-- Each company specializes in one category (stored in `companies.category`)
-- The `companies` table stores company information separately from user accounts
-- Future implementation will add `company_categories` table for many-to-many category mapping
-- The `/api/users/external-maintainers?categoryId=X` endpoint will filter external maintainers by their company's category
-
-## Database Initialization
-
-The database is initialized using the [`init.sql`](server/src/database/init.sql ) script.
-
-The [`docker-compose.yml`](server/docker-compose.yml ) file automatically runs [`init.sql`](server/src/database/init.sql ) when the database container is first created:
+**Key Relationship (V5.0):**
+- Each user can have MULTIPLE positions via `user_roles` table
+- Each position in `department_roles` defines a valid department + role combination
+- This enables flexible staff assignment (e.g., a user can be both Water Network staff member AND Electrical staff member)
 
 ---
 
@@ -536,12 +304,11 @@ The [`docker-compose.yml`](server/docker-compose.yml ) file automatically runs [
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2025-11 | Initial schema design |
-| 1.1 | 2025-11-08 | Updated user roles - expanded from 4 to 10 roles with specific municipal responsibilities |
-| 2.0 | 2025-01-12 | Added geolocation support with PostGIS for citizen reports |
-| 3.0 | 2025-11-17 | **Major refactoring:** Replaced ENUM-based roles with relational role system. Added `departments`, `roles`, and `department_roles` tables. Changed `users.role` to `users.department_role_id` for flexible role-department assignments. Pre-populated 8 departments and 24+ roles covering various municipal services. |
-| 4.0 | 2025-11-22 | **Added automatic assignment:** Added `category_role_mapping` table to map report categories to departments. Reduced role count from 24 to 15 (consolidated similar roles). |
-| 4.1 | 2025-12-02 | **Integrated external maintainers as users (PT24, PT25, PT26):** Removed separate `external_maintainers` table. External maintainers are now regular users with 'External Maintainer' role. Added `company_name` field to `users` table. Removed `external_maintainer_id` and `single_assignment` constraint from `reports` table. External maintainers can now authenticate, update report status, and exchange internal comments with technical staff. |
-| 4.2 | 2025-12-02 | **Added email verification system (PT27) and dual assignment tracking:** Added `is_verified`, `verification_code`, and `verification_code_expires_at` fields to `users` table. New citizens must verify their email with a 6-digit code valid for 30 minutes before accessing the system. Pre-existing users are automatically marked as verified. Added `external_assignee_id` to `reports` table to maintain both internal staff assignee and external maintainer references, preserving the full chain of responsibility. |
-| 4.3 | 2025-12-05 | **Separated company entities from user accounts:** Created `companies` table to store external maintenance company information separately. Replaced `users.company_name` VARCHAR field with `users.company_id` foreign key. Each company specializes in one report category. Pre-populated 4 companies (Enel X, Acea, Hera, ATM). External maintainer users now reference companies via foreign key. Documented planned `company_categories` table for future many-to-many category mapping. |
-
-
+| 2.0 | 2025-11-12 | Added geolocation support with PostGIS |
+| 3.0 | 2025-11-17 | Replaced ENUM-based roles with relational system |
+| 4.0 | 2025-11-22 | Added `category_role_mapping` for automatic assignment |
+| 4.1 | 2025-12-02 | Integrated external maintainers as users |
+| 4.2 | 2025-12-02 | Added email verification system |
+| 4.3 | 2025-12-05 | Separated company entities from user accounts |
+| 4.4 | 2025-12-22 | **Added Telegram integration:** Added `telegram_link_code` and `telegram_link_code_expires_at` fields to `users` table. Users can link their Telegram accounts using a temporary 6-digit code that expires after 10 minutes. Added corresponding indexes for efficient querying. |
+| 5.0 | 2025-12-24 | **Multi-role support (PT10):** Added `user_roles` table for many-to-many user-role relationship. Removed `department_role_id` from `users` table. Users can now have multiple roles simultaneously. |

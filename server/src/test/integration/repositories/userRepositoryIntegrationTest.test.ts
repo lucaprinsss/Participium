@@ -4,7 +4,11 @@ import { userRepository } from "@repositories/userRepository";
 import { departmentRoleRepository } from '@repositories/departmentRoleRepository';
 import { companyRepository } from '@repositories/companyRepository';
 import { UserEntity } from "@models/entity/userEntity";
-import { In } from 'typeorm'; 
+import { UserRoleEntity } from "@models/entity/userRoleEntity";
+import { RoleEntity } from "@models/entity/roleEntity";
+import { DepartmentEntity } from "@models/entity/departmentEntity";
+import { DepartmentRoleEntity } from "@models/entity/departmentRoleEntity";
+import { In } from 'typeorm';
 
 type CreateUserInput = Parameters<typeof userRepository.createUserWithPassword>[0];
 
@@ -18,11 +22,23 @@ const buildUserData = (overrides: Partial<CreateUserInput> = {}): CreateUserInpu
   lastName: "User",
   email: `test.user.${random()}@example.com`,
   password: "securePass123",
-  departmentRoleId: defaultCitizenRoleId,
   emailNotificationsEnabled: true,
   isVerified: false,
+  telegramLinkConfirmed:false,
   ...overrides,
 });
+
+const createUserWithRole = async (overrides: Partial<CreateUserInput> = {}, roleId: number = defaultCitizenRoleId): Promise<UserEntity> => {
+  const userData = buildUserData(overrides);
+  const user = await userRepository.createUserWithPassword(userData);
+  await AppDataSource.getRepository(UserRoleEntity).save({
+    userId: user.id,
+    departmentRoleId: roleId
+  });
+  const savedUser = await userRepository.findUserById(user.id);
+  if (!savedUser) throw new Error("User not found after creation");
+  return savedUser;
+};
 
 describe('UserRepository Integration Tests', () => {
   // Array to track created user IDs for cleanup
@@ -66,16 +82,16 @@ describe('UserRepository Integration Tests', () => {
   // ---- SAVE ----
   describe('save', () => {
     it('should save changes to an existing user entity', async () => {
-      const newUser = await userRepository.createUserWithPassword(buildUserData());
+      const newUser = await createUserWithRole();
       createdUserIds.push(newUser.id);
-      
+
       newUser.firstName = 'ManuallyUpdated';
-      
+
       const savedUser = await userRepository.save(newUser);
-      
+
       expect(savedUser.id).toBe(newUser.id);
       expect(savedUser.firstName).toBe('ManuallyUpdated');
-      
+
       const dbUser = await userRepository.findUserById(newUser.id);
       expect(dbUser?.firstName).toBe('ManuallyUpdated');
     });
@@ -87,7 +103,7 @@ describe('UserRepository Integration Tests', () => {
     it('should create a new user with hashed password', async () => {
       const newUser = buildUserData();
       const savedUser = await userRepository.createUserWithPassword(newUser);
-      
+
       createdUserIds.push(savedUser.id);
 
       expect(savedUser).toBeDefined();
@@ -98,7 +114,9 @@ describe('UserRepository Integration Tests', () => {
       expect(savedUser.email).toBe(newUser.email);
       expect(savedUser.passwordHash).toBeDefined();
       expect(savedUser.passwordHash).not.toContain(newUser.password);
-      expect(savedUser.departmentRoleId).toBe(1);
+      expect(savedUser.userRoles).toBeDefined();
+      // Expect no roles initially if using raw createUserWithPassword
+      expect(savedUser.userRoles!.length).toBe(0);
       expect(savedUser.emailNotificationsEnabled).toBe(true);
       expect(savedUser.createdAt).toBeInstanceOf(Date);
     });
@@ -106,9 +124,9 @@ describe('UserRepository Integration Tests', () => {
     it('should not allow duplicate username', async () => {
       const dynamicUsername = `duplicateUser_${random()}`;
       const newUser = buildUserData({ username: dynamicUsername });
-      
+
       const savedUser = await userRepository.createUserWithPassword(newUser);
-      createdUserIds.push(savedUser.id); 
+      createdUserIds.push(savedUser.id);
 
       const duplicate = { ...buildUserData(), username: dynamicUsername };
       await expect(userRepository.createUserWithPassword(duplicate)).rejects.toThrow();
@@ -138,7 +156,7 @@ describe('UserRepository Integration Tests', () => {
   // ---- FIND BY ID ----
   describe('findUserById', () => {
     it('should return user for valid ID', async () => {
-      const newUser = await userRepository.createUserWithPassword(buildUserData());
+      const newUser = await createUserWithRole();
       createdUserIds.push(newUser.id);
 
       const savedUser = await userRepository.findUserById(newUser.id);
@@ -151,7 +169,7 @@ describe('UserRepository Integration Tests', () => {
       expect(savedUser).toBeNull();
     });
 
-    it('should handle invalid ID type gracefully', async () => {
+    it('should handle invalid ID type', async () => {
       await expect(userRepository.findUserById("invalid" as unknown as number)).rejects.toThrow();
     });
   });
@@ -159,8 +177,8 @@ describe('UserRepository Integration Tests', () => {
   // ---- FIND BY USERNAME ----
   describe('findUserByUsername', () => {
     it('should return user for valid username', async () => {
-      const user = await userRepository.createUserWithPassword(buildUserData({ username: `finduser_${random()}` }));
-      createdUserIds.push(user.id); 
+      const user = await createUserWithRole({ username: `finduser_${random()}` });
+      createdUserIds.push(user.id);
 
       const savedUser = await userRepository.findUserByUsername(user.username);
       expect(savedUser).not.toBeNull();
@@ -181,8 +199,8 @@ describe('UserRepository Integration Tests', () => {
   // ---- FIND BY EMAIL ----
   describe('findUserByEmail', () => {
     it('should return user for valid email', async () => {
-      const newUser = await userRepository.createUserWithPassword(buildUserData({ email: `emailtest_${random()}@example.com` }));
-      createdUserIds.push(newUser.id); 
+      const newUser = await createUserWithRole({ email: `emailtest_${random()}@example.com` });
+      createdUserIds.push(newUser.id);
 
       const savedUser = await userRepository.findUserByEmail(newUser.email);
       expect(savedUser).not.toBeNull();
@@ -203,7 +221,7 @@ describe('UserRepository Integration Tests', () => {
   // ---- EXISTS BY USERNAME ----
   describe('existsUserByUsername', () => {
     it('should return true if username exists', async () => {
-      const newUser = await userRepository.createUserWithPassword(buildUserData({ username: `existuser_${random()}` }));
+      const newUser = await createUserWithRole({ username: `existuser_${random()}` });
       createdUserIds.push(newUser.id);
 
       const exist = await userRepository.existsUserByUsername(newUser.username);
@@ -219,8 +237,8 @@ describe('UserRepository Integration Tests', () => {
   // ---- EXISTS BY EMAIL ----
   describe('existsUserByEmail', () => {
     it('should return true if email exists', async () => {
-      const newUser = await userRepository.createUserWithPassword(buildUserData({ email: `exists_${random()}@example.com` }));
-      createdUserIds.push(newUser.id); 
+      const newUser = await createUserWithRole({ email: `exists_${random()}@example.com` });
+      createdUserIds.push(newUser.id);
 
       const exists = await userRepository.existsUserByEmail(newUser.email);
       expect(exists).toBe(true);
@@ -236,9 +254,10 @@ describe('UserRepository Integration Tests', () => {
   describe('verifyCredentials', () => {
     it('should verify valid username/password', async () => {
       const data = buildUserData({ username: `loginuser_${random()}`, password: 'validpass' });
+      // We can use createUserWithRole or createUserWithPassword, using createUserWithPassword is fine here as verification checks passwordHash
       const newUser = await userRepository.createUserWithPassword(data);
-      createdUserIds.push(newUser.id); 
-      
+      createdUserIds.push(newUser.id);
+
       const verified = await userRepository.verifyCredentials(data.username, 'validpass');
       expect(verified).not.toBeNull();
       expect(verified?.username).toBe(data.username);
@@ -247,8 +266,8 @@ describe('UserRepository Integration Tests', () => {
     it('should return null for wrong password', async () => {
       const data = buildUserData({ username: `wrongpass_${random()}`, password: 'correctpass' });
       const newUser = await userRepository.createUserWithPassword(data);
-      createdUserIds.push(newUser.id); 
-      
+      createdUserIds.push(newUser.id);
+
       const verified = await userRepository.verifyCredentials(data.username, 'badpass');
       expect(verified).toBeNull();
     });
@@ -262,10 +281,10 @@ describe('UserRepository Integration Tests', () => {
       const data = buildUserData();
       const user = await userRepository.createUserWithPassword(data);
       createdUserIds.push(user.id);
-      
+
       user.passwordHash = 'justahashnofsalt';
       await userRepository.save(user);
-      
+
       const verified = await userRepository.verifyCredentials(data.username, data.password);
       expect(verified).toBeNull();
     });
@@ -274,26 +293,26 @@ describe('UserRepository Integration Tests', () => {
   // ---- UPDATE USER ----
   describe('updateUser', () => {
     it('should update an existing user', async () => {
-      const user = await userRepository.createUserWithPassword(buildUserData());
+      const user = await createUserWithRole();
       createdUserIds.push(user.id);
-      
+
       const updatedUser = await userRepository.updateUser(user.id, { firstName: 'UpdatedName' });
-      
+
       expect(updatedUser.id).toBe(user.id);
       expect(updatedUser.firstName).toBe('UpdatedName');
-      expect(updatedUser.lastName).toBe(user.lastName); 
+      expect(updatedUser.lastName).toBe(user.lastName);
     });
 
     it('should throw if user not found after update (internal state error)', async () => {
-      const user = await userRepository.createUserWithPassword(buildUserData());
+      const user = await createUserWithRole();
       createdUserIds.push(user.id);
-      
+
       jest.spyOn(userRepository, 'findUserById').mockResolvedValue(null);
-      
+
       await expect(
         userRepository.updateUser(user.id, { firstName: 'NewName' })
       ).rejects.toThrow('User not found after update');
-      
+
       expect(userRepository.findUserById).toHaveBeenCalledWith(user.id);
     });
   });
@@ -301,11 +320,11 @@ describe('UserRepository Integration Tests', () => {
   // ---- DELETE USER ----
   describe('deleteUser', () => {
     it('should delete an existing user', async () => {
-      const user = await userRepository.createUserWithPassword(buildUserData());
+      const user = await createUserWithRole();
       const id = user.id;
-      
+
       await userRepository.deleteUser(id);
-      
+
       const deletedUser = await userRepository.findUserById(id);
       expect(deletedUser).toBeNull();
     });
@@ -318,12 +337,12 @@ describe('UserRepository Integration Tests', () => {
   // ---- FIND ALL USERS ----
   describe('findAllUsers', () => {
     it('should return an array of all users', async () => {
-      const user1 = await userRepository.createUserWithPassword(buildUserData());
-      const user2 = await userRepository.createUserWithPassword(buildUserData());
+      const user1 = await createUserWithRole();
+      const user2 = await createUserWithRole();
       createdUserIds.push(user1.id, user2.id);
-      
+
       const users = await userRepository.findAllUsers();
-      
+
       expect(users).toBeInstanceOf(Array);
       expect(users.length).toBeGreaterThanOrEqual(2);
       expect(users.map(u => u.id)).toContain(user1.id);
@@ -332,12 +351,12 @@ describe('UserRepository Integration Tests', () => {
 
     it('should return users matching a where clause', async () => {
       const specificUsername = `findme_${random()}`;
-      const user1 = await userRepository.createUserWithPassword(buildUserData({ username: specificUsername }));
-      const user2 = await userRepository.createUserWithPassword(buildUserData());
+      const user1 = await createUserWithRole({ username: specificUsername });
+      const user2 = await createUserWithRole();
       createdUserIds.push(user1.id, user2.id);
-      
+
       const users = await userRepository.findAllUsers({ where: { username: specificUsername } });
-      
+
       expect(users.length).toBe(1);
       expect(users[0].username).toBe(specificUsername);
     });
@@ -349,6 +368,25 @@ describe('UserRepository Integration Tests', () => {
     let externalRoleId: number;
 
     beforeAll(async () => {
+      // Ensure dependencies exist
+      let extDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'External Service Providers' });
+      if (!extDept) {
+        extDept = await AppDataSource.getRepository(DepartmentEntity).save({ name: 'External Service Providers' });
+      }
+
+      let extRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'External Maintainer' });
+      if (!extRole) {
+        extRole = await AppDataSource.getRepository(RoleEntity).save({ name: 'External Maintainer' });
+      }
+
+      let extDeptRole = await departmentRoleRepository.findByDepartmentAndRole('External Service Providers', 'External Maintainer');
+      if (!extDeptRole) {
+        await AppDataSource.getRepository(DepartmentRoleEntity).save({
+          departmentId: extDept.id,
+          roleId: extRole.id
+        });
+      }
+
       // Create companies
       const lightingCompany = await AppDataSource.query(
         'INSERT INTO companies (name, category) VALUES ($1, $2) RETURNING id',
@@ -386,41 +424,38 @@ describe('UserRepository Integration Tests', () => {
       const timestamp = Date.now();
 
       // Create lighting maintainers
-      const lightingM1 = await userRepository.createUserWithPassword({
+      const lightingM1 = await createUserWithRole({
         username: `lighting_m1_${timestamp}`,
         email: `lighting_m1_${timestamp}@test.com`,
         password: 'Password123!',
         firstName: 'Lighting',
         lastName: 'M1',
-        departmentRoleId: externalRoleId,
         companyId: lightingCompanyId,
         isVerified: true,
-      });
+      }, externalRoleId);
       createdUserIds.push(lightingM1.id);
 
-      const lightingM2 = await userRepository.createUserWithPassword({
+      const lightingM2 = await createUserWithRole({
         username: `lighting_m2_${timestamp}`,
         email: `lighting_m2_${timestamp}@test.com`,
         password: 'Password123!',
         firstName: 'Lighting',
         lastName: 'M2',
-        departmentRoleId: externalRoleId,
         companyId: lightingCompanyId,
         isVerified: true,
-      });
+      }, externalRoleId);
       createdUserIds.push(lightingM2.id);
 
       // Create roads maintainer
-      const roadsM1 = await userRepository.createUserWithPassword({
+      const roadsM1 = await createUserWithRole({
         username: `roads_m1_${timestamp}`,
         email: `roads_m1_${timestamp}@test.com`,
         password: 'Password123!',
         firstName: 'Roads',
         lastName: 'M1',
-        departmentRoleId: externalRoleId,
         companyId: roadsCompanyId,
         isVerified: true,
-      });
+      }, externalRoleId);
       createdUserIds.push(roadsM1.id);
 
       const result = await userRepository.findExternalMaintainersByCategory('Public Lighting');
@@ -441,25 +476,25 @@ describe('UserRepository Integration Tests', () => {
     it('should include all user relations', async () => {
       const timestamp = Date.now();
 
-      const maintainer = await userRepository.createUserWithPassword({
+      const maintainer = await createUserWithRole({
         username: `maintainer_rel_${timestamp}`,
         email: `maintainer_rel_${timestamp}@test.com`,
         password: 'Password123!',
         firstName: 'Test',
         lastName: 'Maintainer',
-        departmentRoleId: externalRoleId,
         companyId: lightingCompanyId,
         isVerified: true,
-      });
+      }, externalRoleId);
       createdUserIds.push(maintainer.id);
 
       const result = await userRepository.findExternalMaintainersByCategory('Public Lighting');
 
       const found = result.find(u => u.id === maintainer.id);
       expect(found).toBeDefined();
-      expect(found?.departmentRole).toBeDefined();
-      expect(found?.departmentRole?.department).toBeDefined();
-      expect(found?.departmentRole?.role).toBeDefined();
+      expect(found?.userRoles).toBeDefined();
+      expect(found?.userRoles![0].departmentRole).toBeDefined();
+      expect(found?.userRoles![0].departmentRole.department).toBeDefined();
+      expect(found?.userRoles![0].departmentRole.role).toBeDefined();
       expect(found?.companyId).toBe(lightingCompanyId);
     });
 
@@ -467,7 +502,9 @@ describe('UserRepository Integration Tests', () => {
       const result = await userRepository.findExternalMaintainersByCategory('Public Lighting');
 
       for (const user of result) {
-        expect(user.departmentRole?.role?.name).toBe('External Maintainer');
+        expect(user.userRoles).toBeDefined();
+        const role = user.userRoles!.find(ur => ur.departmentRole?.role?.name === 'External Maintainer');
+        expect(role).toBeDefined();
       }
     });
 
@@ -476,31 +513,67 @@ describe('UserRepository Integration Tests', () => {
 
       expect(Array.isArray(result)).toBe(true);
       for (const user of result) {
-        expect(user.departmentRole?.role?.name).toBe('External Maintainer');
+        expect(user.userRoles).toBeDefined();
+        const role = user.userRoles!.find(ur => ur.departmentRole?.role?.name === 'External Maintainer');
+        expect(role).toBeDefined();
       }
     });
   });
 
   describe('removeCompanyFromUser', () => {
-    it('should remove company assignment from an external maintainer', async () => {
-      // Get External Maintainer role and a company
-      const externalMaintainerRole = await departmentRoleRepository.findByDepartmentAndRole(
-        'External Service Providers', 
+    let testCompanies: any[] = [];
+    let externalMaintainerRoleId: number;
+
+    beforeAll(async () => {
+      // Ensure External Maintainer role exists
+      const role = await departmentRoleRepository.findByDepartmentAndRole(
+        'External Service Providers',
         'External Maintainer'
       );
-      expect(externalMaintainerRole).toBeDefined();
 
-      const companies = await companyRepository.findAll();
-      expect(companies.length).toBeGreaterThan(0);
-      const company = companies[0];
+      if (role) {
+        externalMaintainerRoleId = role.id;
+      } else {
+        let extDept = await AppDataSource.getRepository(DepartmentEntity).findOneBy({ name: 'External Service Providers' });
+        if (!extDept) {
+          extDept = await AppDataSource.getRepository(DepartmentEntity).save({ name: 'External Service Providers' });
+        }
+
+        let extRole = await AppDataSource.getRepository(RoleEntity).findOneBy({ name: 'External Maintainer' });
+        if (!extRole) {
+          extRole = await AppDataSource.getRepository(RoleEntity).save({ name: 'External Maintainer' });
+        }
+
+        const newRole = await AppDataSource.getRepository(DepartmentRoleEntity).save({
+          departmentId: extDept.id,
+          roleId: extRole.id
+        });
+        externalMaintainerRoleId = newRole.id;
+      }
+
+      // Create test companies
+      const c1 = await AppDataSource.query("INSERT INTO companies (name, category) VALUES ($1, 'Public Lighting') RETURNING id", [`Co1_${Date.now()}`]);
+      const c2 = await AppDataSource.query("INSERT INTO companies (name, category) VALUES ($1, 'Roads and Urban Furnishings') RETURNING id", [`Co2_${Date.now()}`]);
+      testCompanies.push({ id: c1[0].id }, { id: c2[0].id });
+    });
+
+    afterAll(async () => {
+      for (const c of testCompanies) {
+        await AppDataSource.query('DELETE FROM companies WHERE id = $1', [c.id]);
+      }
+    });
+
+    it('should remove company assignment from an external maintainer', async () => {
+      expect(externalMaintainerRoleId).toBeDefined();
+      expect(testCompanies.length).toBeGreaterThan(0);
+      const company = testCompanies[0];
 
       // Create user with company
       const userData = buildUserData({
-        departmentRoleId: externalMaintainerRole!.id,
         companyId: company.id
       });
 
-      const createdUser = await userRepository.createUserWithPassword(userData);
+      const createdUser = await createUserWithRole(userData, externalMaintainerRoleId);
       createdUserIds.push(createdUser.id);
 
       // Verify user has company
@@ -517,8 +590,7 @@ describe('UserRepository Integration Tests', () => {
 
     it('should not throw error when removing company from user without company', async () => {
       // Create user without company
-      const userData = buildUserData();
-      const createdUser = await userRepository.createUserWithPassword(userData);
+      const createdUser = await createUserWithRole();
       createdUserIds.push(createdUser.id);
 
       // Verify user has no company
@@ -545,28 +617,19 @@ describe('UserRepository Integration Tests', () => {
     });
 
     it('should only affect the specified user', async () => {
-      // Get External Maintainer role and companies
-      const externalMaintainerRole = await departmentRoleRepository.findByDepartmentAndRole(
-        'External Service Providers', 
-        'External Maintainer'
-      );
-      expect(externalMaintainerRole).toBeDefined();
-
-      const companies = await companyRepository.findAll();
-      expect(companies.length).toBeGreaterThanOrEqual(2);
+      expect(externalMaintainerRoleId).toBeDefined();
+      expect(testCompanies.length).toBeGreaterThanOrEqual(2);
 
       // Create two users with companies
       const user1Data = buildUserData({
-        departmentRoleId: externalMaintainerRole!.id,
-        companyId: companies[0].id
+        companyId: testCompanies[0].id
       });
       const user2Data = buildUserData({
-        departmentRoleId: externalMaintainerRole!.id,
-        companyId: companies[1].id
+        companyId: testCompanies[1].id
       });
 
-      const user1 = await userRepository.createUserWithPassword(user1Data);
-      const user2 = await userRepository.createUserWithPassword(user2Data);
+      const user1 = await createUserWithRole(user1Data, externalMaintainerRoleId);
+      const user2 = await createUserWithRole(user2Data, externalMaintainerRoleId);
       createdUserIds.push(user1.id, user2.id);
 
       // Remove company from user1 only
@@ -578,9 +641,10 @@ describe('UserRepository Integration Tests', () => {
 
       // Verify user2 still has company
       const updatedUser2 = await userRepository.findUserById(user2.id);
-      expect(updatedUser2!.companyId).toBe(companies[1].id);
+      expect(updatedUser2!.companyId).toBe(testCompanies[1].id);
     });
   });
+
 
   // ---- VERIFY EMAIL CODE ----
   describe('verifyEmailCode', () => {

@@ -32,7 +32,7 @@ class UserRepository {
    * @returns The created user entity.
    */
   public async createUserWithPassword(
-    userData: Omit<UserEntity, 'id' | 'createdAt' | 'passwordHash' | 'emailNotificationsEnabled' | 'departmentRole'> & { password: string; emailNotificationsEnabled?: boolean }
+    userData: Omit<UserEntity, 'id' | 'createdAt' | 'passwordHash' | 'emailNotificationsEnabled'> & { password: string; emailNotificationsEnabled?: boolean }
   ): Promise<UserEntity> {
     const { password, ...userFields } = userData;
     const { salt, hash } = await generatePasswordData(password);
@@ -47,7 +47,8 @@ class UserRepository {
     // Reload the user with relations and passwordHash
     const userWithRelations = await this.repository
       .createQueryBuilder("user")
-      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("user.userRoles", "userRoles")
+      .leftJoinAndSelect("userRoles.departmentRole", "departmentRole")
       .leftJoinAndSelect("departmentRole.department", "department")
       .leftJoinAndSelect("departmentRole.role", "role")
       .where("user.id = :id", { id: savedUser.id })
@@ -69,8 +70,21 @@ class UserRepository {
   public async findUserById(id: number): Promise<UserEntity | null> {
     return this.repository.findOne({
       where: { id },
-      relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      relations: ['userRoles', 'userRoles.departmentRole', 'userRoles.departmentRole.department', 'userRoles.departmentRole.role']
     });
+  }
+
+  /**
+   * Finds a user by their ID, including the password hash.
+   * @param id The ID of the user.
+   * @returns The user entity or null if not found.
+   */
+  public async findUserByIdWithPassword(id: number): Promise<UserEntity | null> {
+    return this.repository
+      .createQueryBuilder("user")
+      .where("user.id = :id", { id })
+      .addSelect("user.passwordHash")
+      .getOne();
   }
 
   /**
@@ -83,10 +97,29 @@ class UserRepository {
     // 'addSelect' is used to explicitly include fields that might be excluded by default
     return this.repository
       .createQueryBuilder("user")
-      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("user.userRoles", "userRoles")
+      .leftJoinAndSelect("userRoles.departmentRole", "departmentRole")
       .leftJoinAndSelect("departmentRole.department", "department")
       .leftJoinAndSelect("departmentRole.role", "role")
       .where("user.username = :username", { username })
+      .addSelect("user.passwordHash")
+      .getOne();
+  }
+
+  /**
+   * Finds a user by their Telegram username.
+   * @param telegramUsername The Telegram username of the user.
+   * @returns The user entity or null if not found.
+   */
+  public async findUserByTelegramUsername(telegramUsername: string): Promise<UserEntity | null> {
+    // Case-insensitive lookup to avoid casing mismatches with Telegram usernames
+    return this.repository
+      .createQueryBuilder("user")
+      .leftJoinAndSelect("user.userRoles", "userRoles")
+      .leftJoinAndSelect("userRoles.departmentRole", "departmentRole")
+      .leftJoinAndSelect("departmentRole.department", "department")
+      .leftJoinAndSelect("departmentRole.role", "role")
+      .where("LOWER(user.telegram_username) = LOWER(:telegramUsername)", { telegramUsername })
       .addSelect("user.passwordHash")
       .getOne();
   }
@@ -99,7 +132,7 @@ class UserRepository {
   public async findUserByEmail(email: string): Promise<UserEntity | null> {
     return this.repository.findOne({
       where: { email },
-      relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      relations: ['userRoles', 'userRoles.departmentRole', 'userRoles.departmentRole.department', 'userRoles.departmentRole.role']
     });
   }
 
@@ -157,7 +190,7 @@ class UserRepository {
    */
   public async updateUser(
     id: number,
-    updateData: Partial<Omit<UserEntity, 'id' | 'createdAt' | 'passwordHash' | 'departmentRole'>>
+    updateData: Partial<Omit<UserEntity, 'id' | 'createdAt' | 'passwordHash'>>
   ): Promise<UserEntity> {
     await this.repository.update(id, updateData);
 
@@ -196,16 +229,32 @@ class UserRepository {
     }
   }
 
- /**
- * Deletes all unverified users whose verification code has expired.
- * @returns void
- */
+  /**
+  * Deletes all unverified users whose verification code has expired.
+  * @returns void
+  */
   public async deleteUnverifiedUsers(): Promise<void> {
     await this.repository.createQueryBuilder()
       .delete()
       .from(UserEntity)
       .where('isVerified = :verifiedStatus', { verifiedStatus: false })
       .andWhere('verificationCodeExpiresAt < NOW()')
+      .execute();
+  }
+
+  /**
+   * Clears expired Telegram link codes from all users.
+   * @returns void
+   */
+  public async clearExpiredTelegramLinkCodes(): Promise<void> {
+    await this.repository.createQueryBuilder()
+      .update(UserEntity)
+      .set({
+        telegramLinkCode: null as any,
+        telegramLinkCodeExpiresAt: null as any
+      })
+      .where('telegramLinkCodeExpiresAt < NOW()')
+      .andWhere('telegramLinkCode IS NOT NULL')
       .execute();
   }
 
@@ -221,7 +270,7 @@ class UserRepository {
   }): Promise<UserEntity[]> {
     return this.repository.find({
       ...options,
-      relations: ['departmentRole', 'departmentRole.department', 'departmentRole.role']
+      relations: ['userRoles', 'userRoles.departmentRole', 'userRoles.departmentRole.department', 'userRoles.departmentRole.role']
     });
   }
 
@@ -233,10 +282,11 @@ class UserRepository {
   public async findUsersByDepartmentRoleIds(departmentRoleIds: number[]): Promise<UserEntity[]> {
     return this.repository
       .createQueryBuilder("user")
-      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("user.userRoles", "userRoles")
+      .leftJoinAndSelect("userRoles.departmentRole", "departmentRole")
       .leftJoinAndSelect("departmentRole.department", "department")
       .leftJoinAndSelect("departmentRole.role", "role")
-      .where("user.departmentRoleId IN (:...ids)", { ids: departmentRoleIds })
+      .where("userRoles.departmentRoleId IN (:...ids)", { ids: departmentRoleIds })
       .orderBy("user.createdAt", "DESC")
       .getMany();
   }
@@ -249,7 +299,8 @@ class UserRepository {
   public async findUsersByRoleName(roleName: string): Promise<UserEntity[]> {
     return this.repository
       .createQueryBuilder("user")
-      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("user.userRoles", "userRoles")
+      .leftJoinAndSelect("userRoles.departmentRole", "departmentRole")
       .leftJoinAndSelect("departmentRole.department", "department")
       .leftJoinAndSelect("departmentRole.role", "role")
       .where("role.name = :roleName", { roleName })
@@ -265,7 +316,8 @@ class UserRepository {
   public async findUsersExcludingRoles(excludedRoleNames: string[]): Promise<UserEntity[]> {
     return this.repository
       .createQueryBuilder("user")
-      .leftJoinAndSelect("user.departmentRole", "departmentRole")
+      .leftJoinAndSelect("user.userRoles", "userRoles")
+      .leftJoinAndSelect("userRoles.departmentRole", "departmentRole")
       .leftJoinAndSelect("departmentRole.department", "department")
       .leftJoinAndSelect("departmentRole.role", "role")
       .where("role.name NOT IN (:...excludedRoleNames)", { excludedRoleNames })
@@ -282,13 +334,15 @@ class UserRepository {
   async findAvailableStaffByRoleId(roleId: number): Promise<UserEntity | null> {
     return this.repository
       .createQueryBuilder("user")
-      .innerJoinAndSelect("user.departmentRole", "dr")
+      .innerJoinAndSelect("user.userRoles", "userRoles")
+      .innerJoinAndSelect("userRoles.departmentRole", "dr")
       .innerJoinAndSelect("dr.role", "role")
       .leftJoin("reports", "r", "r.assignee_id = user.id AND r.status IN (:...statuses)", {
         statuses: [ReportStatus.ASSIGNED, ReportStatus.IN_PROGRESS, ReportStatus.SUSPENDED]
       })
-      .where("dr.role_id = :roleId", { roleId })
+      .where("role.id = :roleId", { roleId })
       .groupBy("user.id")
+      .addGroupBy("userRoles.id")
       .addGroupBy("dr.id")
       .addGroupBy("role.id")
       .addSelect("COUNT(r.id)", "report_count")
@@ -308,7 +362,8 @@ class UserRepository {
     if (!category) {
       return await this.repository
         .createQueryBuilder('user')
-        .leftJoinAndSelect('user.departmentRole', 'departmentRole')
+        .leftJoinAndSelect('user.userRoles', 'userRoles')
+        .leftJoinAndSelect('userRoles.departmentRole', 'departmentRole')
         .leftJoinAndSelect('departmentRole.department', 'department')
         .leftJoinAndSelect('departmentRole.role', 'role')
         .innerJoin(
@@ -323,7 +378,8 @@ class UserRepository {
 
     return await this.repository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.departmentRole', 'departmentRole')
+      .leftJoinAndSelect('user.userRoles', 'userRoles')
+      .leftJoinAndSelect('userRoles.departmentRole', 'departmentRole')
       .leftJoinAndSelect('departmentRole.department', 'department')
       .leftJoinAndSelect('departmentRole.role', 'role')
       .innerJoin(
@@ -364,10 +420,10 @@ class UserRepository {
     await this.repository
       .createQueryBuilder()
       .update(UserEntity)
-      .set({ 
-        isVerified, 
-        verificationCode: null as any, 
-        verificationCodeExpiresAt: null as any 
+      .set({
+        isVerified,
+        verificationCode: null as any,
+        verificationCodeExpiresAt: null as any
       })
       .where('email = :email', { email })
       .execute();
@@ -386,6 +442,171 @@ class UserRepository {
     }
 
     return user.isVerified;
+  }
+
+  /**
+   * Updates the verification code and expiration date for a user.
+   * Used when resending the OTP.
+   * @param userId The ID of the user to update.
+   * @param data Object containing the new code and expiration.
+   */
+  public async updateVerificationData(
+    userId: number,
+    data: { verificationCode: string; verificationCodeExpiresAt: Date }
+  ): Promise<void> {
+    await this.repository.update(userId, {
+      verificationCode: data.verificationCode,
+      verificationCodeExpiresAt: data.verificationCodeExpiresAt,
+    });
+  }
+
+  /**
+   * Links a Telegram username to a user account.
+   * @param username The username of the user.
+   * @param telegramUsername The Telegram username to link.
+   * @returns True if the link was successful, false if the user was not found or already linked.
+   */
+  public async linkTelegramUsername(username: string, telegramUsername: string): Promise<boolean> {
+    const normalized = telegramUsername.toLowerCase();
+
+    const user = await this.repository.findOne({ where: { username } });
+    if (!user) {
+      return false;
+    }
+
+    // Check if another user already has this telegram username
+    const existingUser = await this.repository.createQueryBuilder("user")
+      .where("LOWER(user.telegram_username) = LOWER(:telegramUsername)", { telegramUsername: normalized })
+      .getOne();
+    if (existingUser && existingUser.id !== user.id) {
+      throw new Error('This Telegram username is already linked to another account.');
+    }
+
+    user.telegramUsername = normalized;
+    await this.repository.save(user);
+    return true;
+  }
+
+  /**
+   * Generates a verification code for linking Telegram account.
+   * @param userId The ID of the user.
+   * @returns The generated code or null if user not found.
+   */
+  public async generateTelegramLinkCode(userId: number): Promise<string | null> {
+    const user = await this.repository.findOne({ where: { id: userId } });
+    if (!user) {
+      return null;
+    }
+
+    // Generate a 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Set expiration to 10 minutes from now
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+    user.telegramLinkCode = code;
+    user.telegramLinkCodeExpiresAt = expiresAt;
+    user.telegramLinkConfirmed = false;
+
+    await this.repository.save(user);
+    return code;
+  }
+
+  /**
+   * Verifies and links Telegram account using the verification code.
+   * @param telegramUsername The Telegram username.
+   * @param code The verification code.
+   * @returns Object with success status and message.
+   */
+  public async verifyAndLinkTelegram(telegramUsername: string, code: string): Promise<{ success: boolean; message: string }> {
+    const normalized = telegramUsername.toLowerCase();
+
+    // Check if another user already has this telegram username
+    const existingUser = await this.repository.createQueryBuilder("user")
+      .where("LOWER(user.telegram_username) = LOWER(:telegramUsername)", { telegramUsername: normalized })
+      .getOne();
+    if (existingUser) {
+      return { success: false, message: 'This Telegram username is already linked to an account.' };
+    }
+
+    // Find user by verification code
+    const user = await this.repository
+      .createQueryBuilder("user")
+      .where("user.telegram_link_code = :code", { code })
+      .andWhere("user.telegram_link_code_expires_at > :now", { now: new Date() })
+      .getOne();
+
+    if (!user) {
+      return { success: false, message: 'Invalid or expired code.' };
+    }
+
+    // Check if code is expired
+    if (!user.telegramLinkCodeExpiresAt || user.telegramLinkCodeExpiresAt < new Date()) {
+      return { success: false, message: 'Code expired. Please generate a new one.' };
+    }
+
+    // Link the account
+    user.telegramUsername = normalized;
+    user.telegramLinkCode = undefined;
+    user.telegramLinkCodeExpiresAt = undefined;
+    user.telegramLinkConfirmed = false;
+
+    await this.repository.save(user);
+
+    return { success: true, message: `*Account linked successfully!*\n\nYour Telegram username is now associated with the account "${user.username}".\n\nPlease open the Participium app and tap "I sent the code" to confirm the link before creating reports via Telegram.` };
+  }
+
+  /**
+   * Marks the Telegram link as confirmed from the web app.
+   */
+  public async confirmTelegramLink(userId: number): Promise<{ success: boolean; message: string }> {
+    const user = await this.repository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      return { success: false, message: 'User not found.' };
+    }
+
+    if (!user.telegramUsername) {
+      return { success: false, message: 'No Telegram account to confirm.' };
+    }
+
+    if (user.telegramLinkConfirmed) {
+      return { success: true, message: 'Telegram account already confirmed.' };
+    }
+
+    user.telegramLinkConfirmed = true;
+    user.telegramLinkCode = null as any;
+    user.telegramLinkCodeExpiresAt = null as any;
+
+    await this.repository.save(user);
+
+    return { success: true, message: 'Telegram account confirmed successfully.' };
+  }
+
+  /**
+   * Unlinks the Telegram account for a user.
+   * @param userId The ID of the user.
+   * @returns Object with success status and message.
+   */
+  public async unlinkTelegramAccount(userId: number): Promise<{ success: boolean; message: string }> {
+    const user = await this.repository.findOne({ where: { id: userId } });
+    if (!user) {
+      return { success: false, message: 'User not found.' };
+    }
+
+    if (!user.telegramUsername) {
+      return { success: false, message: 'No Telegram account linked.' };
+    }
+
+    user.telegramUsername = null as any;
+    user.telegramLinkCode = null as any;
+    user.telegramLinkCodeExpiresAt = null as any;
+    user.telegramLinkConfirmed = false;
+
+    await this.repository.save(user);
+
+    return { success: true, message: 'Telegram account unlinked successfully.' };
   }
 
 }

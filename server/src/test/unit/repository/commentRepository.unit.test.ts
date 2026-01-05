@@ -66,11 +66,15 @@ describe('CommentRepository', () => {
             username: 'testuser',
             firstName: 'Test',
             lastName: 'User',
-            departmentRole: {
-              role: {
-                name: 'Citizen'
+            userRoles: [
+              {
+                departmentRole: {
+                  role: {
+                    name: 'Citizen'
+                  }
+                }
               }
-            }
+            ]
           } as any,
           createdAt: new Date()
         }
@@ -83,7 +87,7 @@ describe('CommentRepository', () => {
       expect(result[0].author).toBeDefined();
       expect(result[0].author.id).toBe(1);
       expect(result[0].author.username).toBe('testuser');
-      expect(result[0].author.departmentRole).toBeDefined();
+      expect(result[0].author.userRoles).toBeDefined();
     });
 
     it('should return comments ordered by createdAt ascending', async () => {

@@ -1,74 +1,69 @@
 import { useState, useEffect } from "react";
-import PropTypes from "prop-types"; // Importato PropTypes
+import PropTypes from "prop-types";
 import { Alert, Card, Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
 import { login } from "../api/authApi";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaUser, FaLock, FaArrowLeft } from "react-icons/fa";
+import OtpVerification from "../components/OtpVerification"; // Assicurati che il percorso sia corretto
 import "../css/Login.css";
 
 export default function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
-  const location = useLocation(); // Hook to read navigation state (incoming errors)
+  const location = useLocation();
 
+  // --- STATO ---
   const [formData, setFormData] = useState({
-    username: "",
+    username: "", // This field also serves as email in many systems, or use separate email if necessary
     password: ""
   });
+  
+  // State to manage the view: 'login' or 'verification'
+  const [viewState, setViewState] = useState('login'); 
 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // Specific flag to show action button in error
+  const [isUnverifiedError, setIsUnverifiedError] = useState(false);
+
   const [isFocused, setIsFocused] = useState({
     username: false,
     password: false
   });
 
-  // EFFECT: Check if there are errors passed on page load
-  // (e.g. redirect from an axios interceptor or another page for server error)
+  // --- EFFECT: Gestione errori in ingresso ---
   useEffect(() => {
     if (location.state?.error) {
       setError(location.state.error);
-      // Clear history state to avoid showing error if user refreshes the page
-      // FIX S7764: Usare history (che è globale) o globalThis.history invece di window.history
-      history.replaceState({}, document.title);
+      window.history.replaceState({}, document.title);
     }
   }, [location]);
 
+  // --- HANDLERS UI ---
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    // Hide error as soon as user starts typing to correct
-    if (error) setError("");
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (error) {
+      setError("");
+      setIsUnverifiedError(false);
+    }
   };
 
-  const handleFocus = (field) => {
-    setIsFocused(prev => ({
-      ...prev,
-      [field]: true
-    }));
-  };
+  const handleFocus = (field) => setIsFocused(prev => ({ ...prev, [field]: true }));
+  const handleBlur = (field) => setIsFocused(prev => ({ ...prev, [field]: false }));
 
-  const handleBlur = (field) => {
-    setIsFocused(prev => ({
-      ...prev,
-      [field]: false
-    }));
-  };
-
+  // --- LOGICA LOGIN ---
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setIsUnverifiedError(false);
 
     const trimmedUsername = formData.username.trim();
 
-    // Update UI if necessary
     if (trimmedUsername !== formData.username) {
       setFormData(prev => ({ ...prev, username: trimmedUsername }));
     }
 
-    // Client-side Validation
     if (!trimmedUsername) {
       setError("Please enter your username.");
       return;
@@ -84,46 +79,45 @@ export default function Login({ onLoginSuccess }) {
       const userData = await login(trimmedUsername, formData.password);
 
       localStorage.setItem("isLoggedIn", "true");
-
-      if (onLoginSuccess) {
-        onLoginSuccess(userData);
-      }
-
+      if (onLoginSuccess) onLoginSuccess(userData);
       navigate("/home");
+
     } catch (err) {
       console.error("Login failed:", err);
-
-      // Reset password on error for security
       setFormData(prev => ({ ...prev, password: "" }));
 
-      // --- LOGICA AGGIORNATA ---
+      const serverMessage = err.data?.error || err.data?.message || err.message || "";
+      
+      // Controllo se l'errore riguarda la verifica dell'account
+      // Note: Adapt these strings based on what EXACTLY the backend responds (e.g. status 403)
+      const isUnverified = 
+        err.status === 403 || 
+        serverMessage.toLowerCase().includes("verified") || 
+        serverMessage.toLowerCase().includes("active");
 
-      // 1. Cerchiamo prima un messaggio specifico dal server.
-      const serverMessage = err.data?.error || err.data?.message || err.message;
-
-      // Se l'errore è di rete (fetch failed), lo gestiamo specificamente
-      if (!err.status && (err.message === "Failed to fetch" || err.message.includes("Network"))) {
+      if (isUnverified) {
+        setError("Account not verified. Please complete the verification process.");
+        setIsUnverifiedError(true);
+      } else if (!err.status && (serverMessage === "Failed to fetch" || serverMessage.includes("Network"))) {
         setError("Unable to contact the server. Check your connection.");
-      }
-      // 2. Se il server ci ha mandato un messaggio specifico (es. "Email not verified"), usiamo quello!
-      else if (serverMessage && serverMessage !== "Failed to fetch") {
+      } else if (serverMessage && serverMessage !== "Failed to fetch") {
         setError(serverMessage);
-      }
-      // 3. Fallback sui codici di stato (se il server non ha mandato un messaggio chiaro)
-      else if (err.status === 401) {
+      } else if (err.status === 401) {
         setError("Invalid username or password.");
-      } else if (err.status === 400) {
-        setError("Missing or invalid data.");
-      } else if (err.status === 403) {
-        setError("Account access restricted.");
-      } else if (err.status >= 500) {
-        setError("Internal server error. Please try again later.");
       } else {
         setError("An unexpected error occurred.");
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  // --- LOGICA PASSAGGIO A VERIFICA ---
+  const handleSwitchToVerification = async () => {
+    // Before changing view, we send the code (optional, or we can let the user do it in the next view)
+    // For smooth UX, go to the view and the user can click "Resend" if they don't have the code.
+    setViewState('verification');
+    setError("");
   };
 
   return (
@@ -133,131 +127,125 @@ export default function Login({ onLoginSuccess }) {
           <Card className="log-card">
             <Card.Body className="log-card-body">
 
-              {/* Back Button */}
+              {/* Back Button (Gestito in base alla vista) */}
               <Button
                 variant="link"
                 className="log-back-btn"
-                onClick={() => navigate("/")}
+                onClick={() => viewState === 'verification' ? setViewState('login') : navigate("/")}
                 disabled={loading}
               >
                 <FaArrowLeft className="me-2" />
-                Back to Home
+                {viewState === 'verification' ? "Back to Login" : "Back to Home"}
               </Button>
 
               {/* Header */}
               <div className="log-header">
                 <div className="log-logo-container">
-                  <img
-                    src="/participium-logo.png"
-                    alt="Participium Logo"
-                    className="log-logo"
-                  />
+                  <img src="/participium-logo.png" alt="Logo" className="log-logo" />
                 </div>
-                <h1 className="log-title">Welcome Back</h1>
+                <h1 className="log-title">
+                  {viewState === 'verification' ? "Verify Account" : "Welcome Back"}
+                </h1>
                 <p className="log-subtitle">
-                  Sign in to your account
+                  {viewState === 'verification' 
+                    ? "Enter the code sent to your email" 
+                    : "Sign in to your account"}
                 </p>
               </div>
 
-              {/* Error Alert - Now also shows server and loading errors */}
-              {error && (
-                <Alert
-                  variant="danger"
-                  onClose={() => setError("")}
-                  dismissible
-                  className="log-alert log-animated-alert"
-                >
-                  <div className="d-flex align-items-center">
-                    <div className="log-alert-message"> {error} </div>
-                  </div>
-                </Alert>
-              )}
+              {/* --- VISTA: LOGIN FORM --- */}
+              {viewState === 'login' && (
+                <>
+                  {error && (
+                    <Alert variant="danger" onClose={() => setError("")} dismissible className="log-alert log-animated-alert">
+                      <div className="d-flex flex-column">
+                        <span>{error}</span>
+                        {/* PULSANTE "NON TROPPO INVASIVO" PER VERIFICA */}
+                        {isUnverifiedError && (
+                          <Button 
+                            variant="link" 
+                            className="p-0 text-start mt-1 text-decoration-underline text-danger fw-bold"
+                            style={{ fontSize: '0.9rem' }}
+                            onClick={handleSwitchToVerification}
+                          >
+                            Is that you? Verify your account now &rarr;
+                          </Button>
+                        )}
+                      </div>
+                    </Alert>
+                  )}
 
-              {/* Login Form */}
-              <Form onSubmit={handleLogin} noValidate className="log-form">
-                {/* Username Field */}
-                <Form.Group className="log-form-group log-floating-label-group">
-                  <div className={`log-form-control-container ${isFocused.username || formData.username ? 'focused' : ''}`}>
-                    <FaUser className="log-input-icon" />
-                    <Form.Control
-                      type="text"
-                      placeholder={(isFocused.username ? '' : 'username')}
-                      value={formData.username}
-                      onChange={(e) => handleInputChange('username', e.target.value)}
-                      onFocus={() => handleFocus('username')}
-                      onBlur={() => handleBlur('username')}
-                      disabled={loading}
-                      className="log-modern-input"
-                    />
-                    <Form.Label className="log-floating-label">
-                      Username
-                    </Form.Label>
-                  </div>
-                </Form.Group>
+                  <Form onSubmit={handleLogin} noValidate className="log-form">
+                    <Form.Group className="log-form-group log-floating-label-group">
+                      <div className={`log-form-control-container ${isFocused.username || formData.username ? 'focused' : ''}`}>
+                        <FaUser className="log-input-icon" />
+                        <Form.Control
+                          type="text"
+                          placeholder={isFocused.username ? '' : 'username'}
+                          value={formData.username}
+                          onChange={(e) => handleInputChange('username', e.target.value)}
+                          onFocus={() => handleFocus('username')}
+                          onBlur={() => handleBlur('username')}
+                          disabled={loading}
+                          className="log-modern-input"
+                        />
+                        <Form.Label className="log-floating-label">Username </Form.Label>
+                      </div>
+                    </Form.Group>
 
-                {/* Password Field */}
-                <Form.Group className="log-form-group log-floating-label-group">
-                  <div className={`log-form-control-container ${isFocused.password || formData.password ? 'focused' : ''}`}>
-                    <FaLock className="log-input-icon" />
-                    <Form.Control
-                      type={showPassword ? "text" : "password"}
-                      placeholder={(isFocused.password ? '' : 'password')}
-                      value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      onFocus={() => handleFocus('password')}
-                      onBlur={() => handleBlur('password')}
-                      disabled={loading}
-                      className="log-modern-input log-password-input"
-                    />
-                    <Form.Label className="log-floating-label">
-                      Password
-                    </Form.Label>
+                    <Form.Group className="log-form-group log-floating-label-group">
+                      <div className={`log-form-control-container ${isFocused.password || formData.password ? 'focused' : ''}`}>
+                        <FaLock className="log-input-icon" />
+                        <Form.Control
+                          type={showPassword ? "text" : "password"}
+                          placeholder={isFocused.password ? '' : 'password'}
+                          value={formData.password}
+                          onChange={(e) => handleInputChange('password', e.target.value)}
+                          onFocus={() => handleFocus('password')}
+                          onBlur={() => handleBlur('password')}
+                          disabled={loading}
+                          className="log-modern-input log-password-input"
+                        />
+                        <Form.Label className="log-floating-label">Password</Form.Label>
+                        <Button
+                          variant="outline-secondary"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={loading}
+                          className="log-password-toggle-btn"
+                        >
+                          {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </Button>
+                      </div>
+                    </Form.Group>
+
+                    <button type="submit" className="btn log-btn-custom-primary log-btn log-modern-btn" disabled={loading}>
+                      {loading ? <><Spinner animation="border" size="sm" className="me-2" /> Signing in...</> : "Sign In"}
+                    </button>
+                  </Form>
+
+                  <div className="log-footer">
+                    <span className="log-footer-text">Don't have an account? </span>
                     <Button
-                      variant="outline-secondary"
-                      onClick={() => setShowPassword(!showPassword)}
+                      variant="link"
+                      className="log-link-btn"
+                      onClick={() => !loading && navigate("/register")}
                       disabled={loading}
-                      className="log-password-toggle-btn"
                     >
-                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      Sign Up
                     </Button>
                   </div>
-                </Form.Group>
+                </>
+              )}
 
-                {/* Login Button */}
-                <button
-                  type="submit"
-                  className="btn log-btn-custom-primary log-btn log-btn-primary log-modern-btn"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Spinner
-                        animation="border"
-                        size="sm"
-                        className="me-2"
-                      />
-                      Signing in...
-                    </>
-                  ) : (
-                    "Sign In"
-                  )}
-                </button>
-              </Form>
+              {/* --- VISTA: OTP VERIFICATION --- */}
+              {viewState === 'verification' && (
+                <div className="fade-in-animation">
+                   <OtpVerification 
+                      username={formData.username} 
+                   />
+                </div>
+              )}
 
-              {/* Footer */}
-              <div className="log-footer">
-                <span className="log-footer-text">
-                  Don't have an account?{" "}
-                </span>
-                <Button
-                  variant="link"
-                  className="log-link-btn"
-                  onClick={() => !loading && navigate("/register")}
-                  disabled={loading}
-                >
-                  Sign Up
-                </Button>
-              </div>
             </Card.Body>
           </Card>
         </Col>
@@ -266,7 +254,6 @@ export default function Login({ onLoginSuccess }) {
   );
 }
 
-// FIX S6774: Aggiunto PropTypes per onLoginSuccess
 Login.propTypes = {
-  onLoginSuccess: PropTypes.func, // Non è required se è opzionale
+  onLoginSuccess: PropTypes.func,
 };

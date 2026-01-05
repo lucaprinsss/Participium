@@ -1,490 +1,388 @@
 :root {
-  --muf-brand: #8A1E2B;
-  --muf-brand-hover: #701823;
-  --muf-text-dark: #1a1a1a;
-  --muf-text-muted: #6c757d;
+  --muf-brand: #A12B32;
+  --muf-brand-hover: #8a232a;
+  --muf-brand-soft: rgba(161, 43, 50, 0.08);
+  --muf-dark: #0f172a;
+  --muf-text: #334155;
+  --muf-text-muted: #64748b;
   --muf-border: #e2e8f0;
-  --muf-bg-white: #ffffff;
+  --muf-bg: #f8fafc;
+  --muf-white: #ffffff;
   --muf-radius: 12px;
-  --muf-error-color: var(--muf-brand); 
-  --muf-error-bg: #FFF8F8; 
-  --muf-blue-accent: #3b82f6; /* Blu professionale per External */
+  --muf-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
-/* Container Principale */
-.muf-container-styled {
-  background: var(--muf-bg-white);
+/* --- Container (Embedded) --- */
+.muf-card {
+  background: var(--muf-white);
   border-radius: var(--muf-radius);
-  border: 1px solid var(--muf-border);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  box-shadow: var(--muf-shadow);
+  width: 100%;
+  /* Rimosso max-width per adattarsi al layout della pagina */
+  display: flex;
+  flex-direction: column;
+  /* Rimosso overflow: hidden per permettere ai dropdown di uscire */
   overflow: visible; 
-  max-width: 80rem;
-  margin: 0 auto;
+  margin-bottom: 2rem;
+  border: 1px solid var(--muf-border);
 }
 
-/* Header */
-.muf-header-styled {
-  padding: 1.5rem 2rem;
+/* --- Header --- */
+.muf-header {
+  padding: 1rem 1.5rem;
+  background: var(--muf-bg);
   border-bottom: 1px solid var(--muf-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(to right, #ffffff, #fafafa);
-  border-radius: var(--muf-radius) var(--muf-radius) 0 0;
+  border-top-left-radius: var(--muf-radius);
+  border-top-right-radius: var(--muf-radius);
 }
 
-.muf-title {
-  margin: 0;
-  color: var(--muf-brand);
-  font-weight: 800;
-  font-size: 1.25rem;
-  letter-spacing: -0.5px;
-}
-
-/* Body */
-.muf-body-styled {
-  padding: 2rem;
-}
-
-.muf-section-header {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muf-text-muted);
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #f1f1f1;
-}
-
-/* --- MODERN SELECTION CARDS --- */
-
-.muf-selection-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 20px;
-    background-color: #ffffff;
-    border: 2px solid var(--muf-border);
-    border-radius: var(--muf-radius);
-    cursor: pointer;
-    position: relative;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    height: 100%; /* Assicura stessa altezza in Row */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-}
-
-/* Hover State: Leggero sollevamento e ombra */
-.muf-selection-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.06);
-    border-color: #d1d5db;
-}
-
-/* ACTIVE STATE - BASE */
-.muf-selection-card.active {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-}
-
-/* ACTIVE STATE - INTERNAL (Brand Red) */
-.muf-selection-card.active.internal {
-    border-color: var(--muf-brand);
-    background-color: rgba(138, 30, 43, 0.03); /* Tinta rossa leggerissima */
-    box-shadow: 0 0 0 4px rgba(138, 30, 43, 0.1); /* Effetto "Glow" esterno */
-}
-
-/* ACTIVE STATE - EXTERNAL (Accent Blue) */
-.muf-selection-card.active.external {
-    border-color: var(--muf-blue-accent);
-    background-color: rgba(59, 130, 246, 0.03); /* Tinta blu leggerissima */
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); /* Effetto "Glow" esterno */
-}
-
-/* Icon Styling */
-.muf-card-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.3rem;
-    flex-shrink: 0;
-    transition: all 0.3s ease;
-}
-
-.internal .muf-card-icon {
-    background-color: #f8f9fa;
-    color: var(--muf-text-muted);
-}
-.active.internal .muf-card-icon {
-    background-color: var(--muf-brand);
-    color: white;
-    box-shadow: 0 4px 10px rgba(138, 30, 43, 0.3);
-}
-
-.external .muf-card-icon {
-    background-color: #f8f9fa;
-    color: var(--muf-text-muted);
-}
-.active.external .muf-card-icon {
-    background-color: var(--muf-blue-accent);
-    color: white;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
-}
-
-/* Content Styling */
-.muf-card-content {
-    flex: 1;
-}
-
-.muf-card-title {
-    font-size: 1rem;
-    font-weight: 800;
-    color: var(--muf-text-dark);
-    margin-bottom: 6px;
-    transition: color 0.3s ease;
-}
-
-.active.internal .muf-card-title { color: var(--muf-brand); }
-.active.external .muf-card-title { color: var(--muf-blue-accent); }
-
-.muf-card-desc {
-    font-size: 0.85rem;
-    color: var(--muf-text-muted);
-    line-height: 1.5;
-    margin: 0;
-}
-
-/* Checkmark Indicator (Absolute Positioned) */
-.muf-card-check {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    font-size: 1.2rem;
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.active.internal .muf-card-check { color: var(--muf-brand); }
-.active.external .muf-card-check { color: var(--muf-blue-accent); }
-
-@keyframes popIn {
-  from { transform: scale(0.5); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-/* --- FINE CARDS --- */
-
-/* --- LABELS E INPUT --- */
-.muf-label {
-  font-weight: 700;
-  color: var(--muf-text-dark);
-  font-size: 0.8rem;
-  margin-bottom: 0.4rem;
-  display: block;
-}
-
-.muf-label.text-danger {
-    color: var(--muf-error-color) !important;
-}
-
-.req { color: var(--muf-brand); margin-left: 2px; }
-
-/* Input Group Container */
-.muf-input-group {
-  border-radius: var(--muf-radius);
-  display: flex;
-  flex-wrap: nowrap;
-  transition: all 0.2s ease;
-  position: relative; 
-}
-
-/* Icona a sinistra */
-.muf-icon {
-  background-color: #f8f9fa;
-  border: 2px solid var(--muf-border);
-  border-right: none;
-  color: var(--muf-text-muted);
-  font-size: 0.9rem;
-  padding-left: 1rem;
-  padding-right: 0.75rem;
-  border-top-left-radius: var(--muf-radius) !important;
-  border-bottom-left-radius: var(--muf-radius) !important;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  z-index: 1; 
-}
-
-/* Input Field Standard */
-.muf-input {
-  border: 2px solid var(--muf-border);
-  border-left: none;
-  background-color: var(--muf-bg-white);
-  color: var(--muf-text-dark);
-  font-size: 0.9rem;
-  padding: 0.75rem 0.75rem 0.75rem 0.5rem; 
-  height: auto;
-  font-weight: 500;
-  border-top-right-radius: var(--muf-radius) !important;
-  border-bottom-right-radius: var(--muf-radius) !important;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.muf-input:focus {
-  border-color: var(--muf-brand);
-  box-shadow: none;
-  background-color: #fff;
-}
-.muf-input-group:focus-within .muf-icon {
-  border-color: var(--muf-brand);
-  color: var(--muf-brand);
-  background-color: #fff;
-}
-
-/* --- ERROR STATE STYLING --- */
-.muf-input-error {
-    border-color: var(--muf-error-color) !important;
-    background-color: var(--muf-error-bg) !important; 
-    box-shadow: none !important; 
-}
-
-.muf-input-group.has-error .muf-icon {
-    border-color: var(--muf-error-color) !important;
-    color: var(--muf-error-color) !important;
-    background-color: var(--muf-error-bg) !important;
-}
-
-.muf-field-error {
-    color: var(--muf-error-color);
-    font-size: 0.75rem;
-    font-weight: 600;
-    margin-top: 4px;
-    margin-left: 4px;
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-3px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* --- DROPDOWN CUSTOM STYLE --- */
-.muf-custom-dropdown {
-  flex: 1; 
-  min-width: 0;
-  position: static !important;
-}
-
-.dropdown-toggle.muf-dropdown-toggle::after {
-  display: none;
-}
-
-.dropdown-toggle.muf-dropdown-toggle {
-  background: white !important; 
-  color: var(--muf-text-dark) !important;
-  text-align: left;
+.muf-header-title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border-top-left-radius: 0 !important; 
-  border-bottom-left-radius: 0 !important;
-  width: 100%;
-  white-space: nowrap; 
-  overflow: hidden;
+  gap: 0.75rem;
 }
 
-.dropdown-toggle.muf-dropdown-toggle:hover:not(:disabled) {
-  border-color: var(--muf-brand);
-  z-index: 2;
-}
-
-.muf-dropdown-arrow {
-  font-size: 0.7rem;
-  color: var(--muf-text-muted);
-  flex-shrink: 0;
-  transition: transform 0.2s;
-}
-.dropdown-toggle.muf-dropdown-toggle[aria-expanded="true"] {
-  border-color: var(--muf-brand) !important;
-}
-
-/* MENU DEL DROPDOWN */
-.muf-dropdown-menu {
-  border: 1px solid var(--muf-border);
-  border-radius: var(--muf-radius);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-  padding: 0.5rem;
-  margin-top: 2px !important;
-  position: absolute;
-  top: 100%;
-  max-width: 100%;
-  background: white;
-  overflow-y: auto;
-  overflow-x: hidden;
-  z-index: 1050;
-  max-height: 250px;
-  margin-left: -40px;
-  left: 0;
-  width: 100%;
-}
-
-.muf-dropdown-menu::-webkit-scrollbar {
-  width: 6px;
-}
-.muf-dropdown-menu::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-.muf-dropdown-menu::-webkit-scrollbar-thumb {
-  background: var(--muf-brand);
-  border-radius: 3px;
-}
-.muf-dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--muf-brand-hover);
-}
-
-.muf-dropdown-item {
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  font-weight: 500;
-  color: var(--muf-text-dark);
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-
-.muf-dropdown-item:hover, 
-.muf-dropdown-item:focus {
-  background-color: rgba(138, 30, 43, 0.08);
+.muf-header-icon {
+  font-size: 1.5rem;
   color: var(--muf-brand);
 }
 
-.muf-dropdown-item.active, 
-.muf-dropdown-item:active {
-  background-color: var(--muf-brand) !important;
-  color: white !important;
+.muf-header h5 {
+  margin: 0;
+  font-weight: 700;
+  color: var(--muf-dark);
+  font-size: 1.1rem;
 }
 
-/* --- ALTRI ELEMENTI --- */
-.muf-pwd-toggle {
-  background: transparent;
-  border: 2px solid var(--muf-border);
-  border-left: none;
+.muf-header small {
   color: var(--muf-text-muted);
-  border-top-right-radius: var(--muf-radius);
-  border-bottom-right-radius: var(--muf-radius);
-  padding: 0 1rem;
+  font-size: 0.85rem;
+}
+
+.muf-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--muf-text-muted);
+  font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.2s;
-}
-.muf-pwd-toggle:hover { color: var(--muf-brand); }
-.muf-pwd-group .muf-input { border-radius: 0 !important; }
-
-.muf-strength-text { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-.muf-strength-line {
-  height: 4px; background: #eee; border-radius: 2px; margin-top: 6px; overflow: hidden;
-}
-.muf-strength-line .fill { height: 100%; transition: width 0.3s ease; }
-
-.muf-footer-actions {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--muf-border);
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
   display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
+  align-items: center;
+  justify-content: center;
 }
 
-.muf-btn-primary {
-  background: linear-gradient(135deg, var(--muf-brand) 0%, #a02332 100%);
-  border: none;
+.muf-close-btn:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--muf-brand);
+}
+
+/* --- Body Layout (Grid) --- */
+.muf-body {
+  padding: 1.5rem;
+}
+
+.muf-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Due colonne uguali */
+  gap: 2rem;
+}
+
+.muf-col-left, .muf-col-right {
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Typography & Labels --- */
+.muf-section-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muf-text-muted);
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--muf-border);
+  padding-bottom: 0.25rem;
+}
+
+.muf-input-wrapper label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muf-text);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* --- Input Group Style (Replica MunicipalityUserList.css) --- */
+.muf-input-group {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--muf-border);
   border-radius: 8px;
-  padding: 0.75rem 2rem;
-  font-weight: 600;
-  transition: transform 0.2s;
-  color: white;
-}
-.muf-btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(138, 30, 43, 0.3);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  background: white;
 }
 
-.muf-btn-text {
+/* Allow overflow for dropdowns inside input groups (e.g. Company selector) */
+.muf-company-section .muf-input-group {
+  overflow: visible;
+}
+.muf-company-section .muf-input-group .muf-input-icon {
+  border-top-left-radius: 7px;
+  border-bottom-left-radius: 7px;
+}
+.muf-company-section .muf-input-group .dropdown-toggle {
+  border-top-right-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+.muf-input-group:focus-within {
+  border-color: var(--muf-brand);
+  box-shadow: 0 0 0 3px rgba(161, 43, 50, 0.1);
+}
+
+.muf-input-icon {
+  background: var(--muf-bg);
+  border-right: 1px solid var(--muf-border);
+  color: var(--muf-text-muted);
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.muf-input-group:focus-within .muf-input-icon {
+  background: white;
+  border-right-color: transparent;
+  color: var(--muf-brand);
+}
+
+.muf-input-group input,
+.muf-native-select {
+  border: none;
+  padding: 0.6rem 0.75rem;
+  width: 100%;
+  font-size: 0.9rem;
+  color: var(--muf-text);
+  outline: none;
+  background: transparent;
+}
+
+.muf-pwd-toggle {
   background: none;
   border: none;
   color: var(--muf-text-muted);
+  padding: 0 0.75rem;
+  cursor: pointer;
+}
+.muf-pwd-toggle:hover { color: var(--muf-brand); }
+
+.muf-row-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* --- Roles Table Section --- */
+.muf-roles-container {
+  border: 1px solid var(--muf-border);
+  border-radius: 8px;
+  /* Rimosso overflow: hidden per i dropdown */
+  display: flex;
+  flex-direction: column;
+}
+
+.muf-roles-scroll {
+  height: 180px; /* Fixed height */
+  overflow-y: auto;
+  background: var(--muf-white);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+
+
+.muf-roles-table {
+  width: 100%;
+  margin-bottom: 0;
+  table-layout: fixed; /* Fixed layout for consistent column widths */
+}
+
+/* Fixed column widths */
+.muf-roles-table th:nth-child(1) { width: 40%; } /* Department */
+.muf-roles-table th:nth-child(2) { width: 45%; } /* Role */
+.muf-roles-table th:nth-child(3) { width: 15%; text-align: right; } /* Action */
+
+.muf-roles-table thead th {
+  background: var(--muf-bg);
+  color: var(--muf-text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  padding: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid var(--muf-border);
+  white-space: nowrap; /* Prevent header wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.muf-roles-table td {
+  padding: 0.6rem 0.75rem;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--muf-border);
+  white-space: nowrap; /* Prevent content wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.muf-badge {
+  background: var(--muf-brand-soft);
+  color: var(--muf-brand);
+  padding: 2px 8px;
+  border-radius: 4px;
   font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.muf-btn-icon-danger {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.7;
+  transition: 0.2s;
+}
+.muf-btn-icon-danger:hover { opacity: 1; transform: scale(1.1); }
+
+/* --- Add Role Controls --- */
+.muf-add-role-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--muf-bg);
+  border-top: 1px solid var(--muf-border);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  height: 60px; /* Fixed height */
+  align-items: center;
+}
+
+.muf-select-toggle {
+  width: 100%;
+  background: white !important;
+  border: 1px solid var(--muf-border) !important;
+  color: var(--muf-text) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-size: 0.85rem !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.muf-dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
   font-size: 0.9rem;
-}
-.muf-btn-text:hover { color: var(--muf-text-dark); }
-
-@media (min-width: 992px) {
-  .muf-col-left { border-right: 1px solid #f0f0f0; padding-right: 2rem; max-width: 30rem; }
+  z-index: 1060; /* Ensure it's above other things */
 }
 
-/* --- HOVER EFFECT UNIFICATO --- */
-.muf-input-group:hover .muf-icon {
-    border-color: var(--muf-brand) !important;
-    color: var(--muf-brand) !important;
-    background-color: #fff;
-    border-right: none !important; 
+
+
+.muf-btn-add {
+  background: var(--muf-brand);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 38px; /* Match dropdown toggle height */
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.muf-btn-add:hover:not(:disabled) { background: var(--muf-brand-hover); }
+.muf-btn-add:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+/* --- Company (Conditional) --- */
+.muf-company-section {
+  max-height: 0;
+  opacity: 0;
+  overflow: visible; /* Changed from hidden to visible for dropdown */
+  transition: opacity 0.3s ease, max-height 0.3s ease;
+}
+.muf-company-section.visible {
+  max-height: none; /* Allow it to take necessary space */
+  min-height: 80px; /* Ensure enough space for the input */
+  opacity: 1;
+  margin-top: 1rem;
 }
 
-.muf-input-group:hover .muf-input,
-.muf-input-group:hover .muf-dropdown-toggle {
-    border-color: var(--muf-brand) !important;
-    border-left: none !important; 
+/* --- Error Messages --- */
+.muf-error-msg {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.muf-input-group.has-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+.muf-input-group.has-error .muf-input-icon {
+  color: #ef4444;
+  background: #fef2f2;
 }
 
-.muf-input-group:hover .muf-pwd-toggle {
-    border-color: var(--muf-brand) !important;
-    border-left: none !important;
-    color: var(--muf-brand);
+
+/* --- Main Actions --- */
+.muf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--muf-border);
 }
 
-/* --- ALLINEAMENTO MENU --- */
-.muf-placeholder-text {
-    color: var(--muf-text-muted) !important;
-    opacity: 1; 
+.muf-btn-primary {
+  background: var(--muf-brand) !important;
+  border-color: var(--muf-brand) !important;
 }
-.muf-placeholder-arrow {
-    color: var(--muf-text-muted) !important;
-    opacity: 1; 
+.muf-btn-primary:hover {
+  background: var(--muf-brand-hover) !important;
 }
 
-/* --- DISABLED STATE OVERRIDES --- */
-.dropdown-toggle.muf-dropdown-toggle:disabled {
-    background-color: var(--muf-bg-white) !important;
-    opacity: 1 !important;
-    color: var(--muf-text-dark) !important;
-    border-color: var(--muf-border) !important;
-    cursor: pointer !important;
-}
-
-.dropdown-toggle.muf-dropdown-toggle:disabled.muf-input-error {
-    border-color: var(--muf-error-color) !important;
-    background-color: var(--muf-error-bg) !important;
-}
-
-.dropdown-toggle.muf-dropdown-toggle:disabled .muf-placeholder-text {
-    color: var(--muf-text-muted) !important;
-}
-
-.dropdown-toggle.muf-dropdown-toggle:disabled .muf-dropdown-arrow {
-    opacity: 1 !important;
-    color: var(--muf-text-muted) !important;
-}
-
-.muf-input-group:hover .dropdown-toggle.muf-dropdown-toggle:disabled {
-    border-color: var(--muf-brand) !important;
-    border-left: none !important;
-}
-
-.muf-input-group.has-error:hover .dropdown-toggle.muf-dropdown-toggle:disabled {
-    border-color: var(--muf-error-color) !important;
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+  .muf-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .muf-card {
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+  
+  .muf-body {
+    overflow-y: auto; /* Enable scroll only on mobile */
+  }
 }

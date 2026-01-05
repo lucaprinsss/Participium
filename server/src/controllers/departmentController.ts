@@ -40,6 +40,23 @@ class DepartmentController {
       next(error);
     }
   };
+
+  /**
+   * GET /api/departments/roles/mapping
+   * Get all department roles mapping
+   */
+  public getDepartmentRolesMapping = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const mapping = await departmentService.getAllMunicipalityDepartmentRoles();
+      res.status(200).json(mapping);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export default new DepartmentController();

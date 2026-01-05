@@ -224,6 +224,7 @@ describe('AuthController Integration Tests', () => {
         isVerified: false,
         verificationCode: testCode,
         verificationCodeExpiresAt: expiresAt,
+        telegramLinkConfirmed: false,
       };
 
       const user = await userRepository.createUserWithPassword(userData);
@@ -389,6 +390,7 @@ describe('AuthController Integration Tests', () => {
         isVerified: false,
         verificationCode: expiredCode,
         verificationCodeExpiresAt: expiredDate,
+      telegramLinkConfirmed: false,
       };
 
       const expiredUser = await userRepository.createUserWithPassword(expiredUserData);
@@ -421,7 +423,7 @@ describe('AuthController Integration Tests', () => {
       });
     });
 
-    it('should handle internal server error gracefully (500)', async () => {
+    it('should handle internal server error (500)', async () => {
       const mockError = new Error('Database connection failed');
       jest.spyOn(userRepository, 'verifyEmailCode').mockRejectedValue(mockError);
 

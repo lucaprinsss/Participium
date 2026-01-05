@@ -48,6 +48,26 @@ export interface PhotoResponse {
  *           description: Photo upload timestamp
  *           example: "2025-11-15T10:30:00Z"
  *
+ *     UserInfo:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: User ID
+ *           example: 10
+ *         username:
+ *           type: string
+ *           description: Username
+ *           example: "m.rossi"
+ *         first_name:
+ *           type: string
+ *           description: First Name
+ *           example: "Mario"
+ *         last_name:
+ *           type: string
+ *           description: Last Name
+ *           example: "Rossi"
+ *
  *     ReportResponse:
  *       type: object
  *       properties:
@@ -58,8 +78,11 @@ export interface PhotoResponse {
  *         reporterId:
  *           type: integer
  *           nullable: true
- *           description: ID of the user who created the report (null if anonymous)
+ *           description: ID of the user who created the report
  *           example: 15
+ *         reporter:
+ *           $ref: '#/components/schemas/UserInfo'
+ *           description: Reporter details
  *         title:
  *           type: string
  *           description: Report title
@@ -75,29 +98,27 @@ export interface PhotoResponse {
  *         address:
  *           type: string
  *           nullable: true
- *           description: Human-readable address of the report location
- *           example: "Via Roma 15, 10121 Turin, Italy"
  *         photos:
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/Photo'
- *           description: Array of associated photos
  *         isAnonymous:
  *           type: boolean
- *           description: Whether the report is anonymous
- *           example: false
  *         status:
  *           $ref: '#/components/schemas/ReportStatus'
  *         rejectionReason:
  *           type: string
  *           nullable: true
- *           description: Reason for rejection (only if status is Rejected)
- *           example: null
  *         assigneeId:
  *           type: integer
  *           nullable: true
- *           description: ID of the user assigned to handle the report
- *           example: null
+ *         assignee:
+ *           $ref: '#/components/schemas/UserResponse'
+ *         externalAssigneeId:
+ *           type: integer
+ *           nullable: true
+ *         externalAssignee:
+ *           $ref: '#/components/schemas/UserResponse'
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -125,7 +146,7 @@ export interface ReportResponse {
   assigneeId?: number | null;
   assignee?: UserResponse | null;
   externalAssigneeId?: number | null;
-  externalAssignee?: UserResponse | null; 
+  externalAssignee?: UserResponse | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -37,6 +37,7 @@ module.exports = {
     '^@services/(.*)$': '<rootDir>/src/services/$1',
     '^@utils/(.*)$': '<rootDir>/src/utils/$1',
     '^@test/(.*)$': '<rootDir>/src/test/$1',
+    '^@telegramBot/(.*)$': '<rootDir>/src/telegramBot/$1',
   },
   testTimeout: 10000,
   clearMocks: true,

@@ -15,12 +15,7 @@ export default function NotFoundPage() {
         <div className="nf-content">
           <div className="nf-header">
             <div className="nf-error-code">
-              <span>4</span>
-              <div className="nf-icon-container">
-                <FaExclamationTriangle className="nf-floating-icon" />
-                <div className="nf-icon-shadow"></div>
-              </div>
-              <span>4</span>
+              <span>404</span>
             </div>
             
             <h1 className="nf-title">Outside the Borders</h1>
@@ -34,7 +29,7 @@ export default function NotFoundPage() {
               className="nf-btn primary" 
               onClick={() => navigate('/home')}
             >
-              <FaHome className="nf-btn-icon" /> Torna alla Home
+              <FaHome className="nf-btn-icon" /> Back to Home
             </button>
 
           </div>

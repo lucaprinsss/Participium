@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { DepartmentRoleEntity } from "./departmentRoleEntity";
+import { UserRoleEntity } from "./userRoleEntity";
 
 @Entity("users")
 export class UserEntity implements Express.User {
@@ -18,14 +19,11 @@ export class UserEntity implements Express.User {
   @Column({ length: 255, select: false })
   passwordHash!: string;
 
-  @Column({ name: "department_role_id" })
-  departmentRoleId!: number;
-
-  @ManyToOne(() => DepartmentRoleEntity, (departmentRole) => departmentRole.users, {
-    eager: true
+  @OneToMany(() => UserRoleEntity, (userRole: { user: any; }) => userRole.user, {
+    eager: true,
+    cascade: true
   })
-  @JoinColumn({ name: "department_role_id" })
-  departmentRole!: DepartmentRoleEntity;
+  userRoles?: UserRoleEntity[];  // Made optional since it's populated after creation
 
   @Column({ length: 255, unique: true })
   email!: string;
@@ -50,6 +48,15 @@ export class UserEntity implements Express.User {
 
   @Column({ type: "timestamptz", nullable: true })
   verificationCodeExpiresAt?: Date;
+
+  @Column({ length: 6, nullable: true })
+  telegramLinkCode?: string;
+
+  @Column({ type: "timestamptz", nullable: true })
+  telegramLinkCodeExpiresAt?: Date;
+
+  @Column({ default: false })
+  telegramLinkConfirmed!: boolean;
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;

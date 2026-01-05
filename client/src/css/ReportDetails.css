@@ -71,7 +71,6 @@
   color: white;
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.4);
-  /* Bordo più visibile */
 }
 
 /* Status Colors */
@@ -168,7 +167,6 @@
 }
 
 .rdm-section-title svg {
-  color: var(--rdm-brand);
   color: inherit;
 }
 
@@ -200,16 +198,13 @@
   position: relative;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  /* RIMOSSO: border: 2px solid white; */
   background-color: transparent;
-  /* Aggiunto per massima sicurezza contro sfondo indesiderato */
 }
 
 .rdm-photo-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Mantiene questa proprietà, che è la chiave */
   transition: transform 0.4s ease;
 }
 
@@ -264,6 +259,92 @@
   border: 1px solid var(--rdm-border);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   background: white;
+  position: relative;
+}
+
+.rdm-map-info-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.rdm-btn-info {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(161, 43, 50, 0.2);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--rdm-brand);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.rdm-btn-info:hover {
+  transform: scale(1.05);
+  border-color: var(--rdm-brand);
+  background: #fff;
+}
+
+.rdm-legend-popover {
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15);
+  padding: 0.85rem;
+  min-width: 210px;
+  animation: fadeIn 0.2s ease;
+}
+
+.rdm-legend-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--rdm-text-main);
+  margin-bottom: 0.6rem;
+}
+
+.rdm-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.rdm-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s ease;
+}
+
+.rdm-legend-item:hover {
+  background: #fef2f2;
+}
+
+.rdm-legend-icon {
+  width: 16px;
+  height: 26px;
+  object-fit: contain;
+  border-radius: 6px;
+  padding: 1px;
+  background: white;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.rdm-legend-item span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--rdm-text-main);
 }
 
 .rdm-btn-map-toggle {
@@ -299,19 +380,102 @@
   cursor: not-allowed;
   background: transparent;
   color: #4b5563;
-  /* Gray 600 - Contrasto > 4.5:1 PASS */
   font-size: 0.9rem;
   letter-spacing: 0.5px;
 }
 
 
-/* --- Footer & Actions --- */
+/* --- MODERN FOOTER (Aggiornato: Compact, Rounded & Blend) --- */
 .rdm-footer-section {
-  border-color: #e5e7eb !important;
-  min-height: 60px;
+  /* STICKY LOGIC */
+  position: sticky;
+  bottom: 0;
+  /* Attaccato perfettamente al fondo */
+  z-index: 1000;
+
+  /* DIMENSIONI & SPAZIATURA */
+  /* Compensazione margini negativi per riempire il contenitore del body */
+  margin-left: -32px;
+  margin-right: -32px;
+  /* Rimuoviamo il margin-bottom negativo per far lavorare il controfooter */
+  margin-bottom: 0;
+
+  /* SPAZIO MAGGIORE DAL CONTENUTO SOPRASTANTE */
+  margin-top: 64px;
+  /* Aumentato da 20px a 64px */
+
+  padding: 16px 32px;
+  min-height: 70px;
+
+  /* --- STILE MODERNO "SOLID" --- */
+
+  /* SOLID background same as modal background to cover text scrolling underneath */
+  background: var(--rdm-bg-light);
+
+  /* Bordo superiore sottile */
+  border-top: 1px solid var(--rdm-border) !important;
+
+  /* Remove radius here if we use the counter-footer, or keep it if it's the last element */
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+
+  /* Ombra verso l'alto per staccarlo visivamente */
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+
+  /* Layout */
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.rdm-controfooter-section {
+  /* Stesso colore della modale e del footer */
+  background-color: var(--rdm-bg-light);
+
+  /* Altezza cuscinetto */
+  height: 32px;
+
+  /* Estensione laterale */
+  margin-left: -32px;
+  margin-right: -32px;
+
+  /* Margine negativo per compensare il padding del body */
+  margin-bottom: -32px;
+
+  /* Bordo inferiore arrotondato */
+  border-bottom-left-radius: var(--rdm-radius);
+  border-bottom-right-radius: var(--rdm-radius);
+
+  /* --- MODIFICHE ESSENZIALI PER "PRIMO PIANO" --- */
+
+  /* 1. Use sticky instead of relative */
+  position: sticky;
+
+  /* 2. Lo ancoriamo esattamente al bordo inferiore della visuale (compensando il padding) */
+  bottom: -32px;
+
+  /* 3. Very high Z-Index to stay above everything (footer, dropdown, maps) */
+  z-index: 9999;
+
+  /* 4. Display block per sicurezza */
+  display: block;
+
+  /* Optional: ensure it covers even strange borders or shadows */
+  box-shadow: 0 -1px 0 var(--rdm-bg-light);
+}
+
+/* Fix per Mobile */
+@media (max-width: 768px) {
+  .rdm-footer-section {
+    bottom: -1px;
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-bottom: -20px;
+    padding: 12px 20px;
+    background: #ffffff;
+    /* Sfondo solido su mobile per performance */
+  }
 }
 
 .rdm-footer-section>div {
@@ -324,85 +488,133 @@
   letter-spacing: 0.5px;
 }
 
+
+/* --- BOTTONI MODERNI (Compact, Sleek & Pill Shaped) --- */
+
 .rdm-btn-action {
-  border-radius: 30px;
+  border-radius: 50px;
+  padding: 8px 20px;
+  /* Ridimensionato: meno ingombrante */
   font-weight: 600;
+  font-size: 0.85rem;
+  /* Font leggermente più piccolo ed elegante */
+  letter-spacing: 0.3px;
+  border: none;
+  cursor: pointer;
+
+  /* Transizioni fluide */
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Ombra iniziale sottile */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
-  transition: all 0.2s ease;
+  justify-content: center;
+  gap: 8px;
 }
 
 .rdm-btn-action:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  /* Lift più sottile */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.rdm-btn-start {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+.rdm-btn-action:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* SUCCESS (Accept/Resolve) */
+.rdm-btn-action.btn-success,
+.rdm-btn-resolve {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.rdm-btn-action.btn-success:hover,
+.rdm-btn-resolve:hover {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+}
+
+/* DANGER (Reject) */
+.rdm-btn-action.btn-outline-danger {
+  background: white;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.05);
+}
+
+.rdm-btn-action.btn-outline-danger:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.1);
+}
+
+.rdm-btn-action.btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+/* PRIMARY (Start Work) */
+.rdm-btn-start {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
 }
 
 .rdm-btn-start:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-  box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.2);
+  /* Glow blu ridotto */
   transform: translateY(-1px);
   color: white;
 }
 
+/* SUSPEND */
 .rdm-btn-suspend {
   background: white;
-  color: #ea580c;
-  border: 1px solid #ea580c;
+  color: #f97316;
+  border: 1px solid #ffedd5;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
 }
 
 .rdm-btn-suspend:hover {
   background: #fff7ed;
+  border-color: #f97316;
   color: #c2410c;
-  border-color: #c2410c;
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.1);
   transform: translateY(-1px);
 }
 
-.rdm-btn-resolve {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
-}
-
-.rdm-btn-resolve:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  box-shadow: 0 6px 8px -1px rgba(16, 185, 129, 0.4);
-  transform: translateY(-1px);
-  color: white;
-}
-
-/* Rejection Inline Container */
+/* --- Rejection Modernizzato --- */
 .rdm-rejection-inline-container {
-  background-color: #fef2f2;
-  border: 1px solid #fee2e2;
-  border-radius: 12px;
-  padding: 12px 16px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(220, 38, 38, 0.1);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.05);
 }
 
 .rdm-reject-textarea {
   resize: none;
+  border-radius: 12px;
+  background-color: #fcfcfc;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  transition: all 0.2s;
   font-size: 0.95rem;
 }
 
 .rdm-reject-textarea:focus {
+  background-color: white;
   border-color: var(--rdm-danger);
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.05);
 }
 
 .animate-fadeIn {
@@ -471,7 +683,6 @@
   color: #7e22ce;
 }
 
-
 .rdm-icon-box.assignee {
   background: #eff6ff;
   color: #1d4ed8;
@@ -519,28 +730,22 @@
   border: 1px solid #fecaca;
 }
 
-/* --- EXTERNAL ASSIGNMENT STYLES (MODERN FIX) --- */
-
-/* 1. Container per il positioning relative */
+/* --- EXTERNAL ASSIGNMENT STYLES --- */
 .rdm-dropdown-container {
   position: relative !important;
   width: 100%;
 }
 
-/* 2. Button Styling */
 .rdm-btn-external-assign {
   background-color: #f9fafb;
-  /* Grigio molto chiaro di base */
   color: var(--rdm-text-main);
   border: 1px solid #e5e7eb;
-  /* Bordo sottile */
   border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 0.95rem;
-  /* Leggermente più grande per modernità */
+  padding: 8px 14px;
+  /* Slightly compacted */
+  font-size: 0.9rem;
   font-weight: 600;
   transition: all 0.2s ease-in-out;
-  /* Le classi d-flex justify-content-between nel JS gestiscono il posizionamento */
 }
 
 .rdm-btn-external-assign::after {
@@ -551,51 +756,34 @@
 .rdm-btn-external-assign:focus,
 .rdm-btn-external-assign.active {
   background-color: #f3f4f6 !important;
-  /* Grigio leggermente più scuro */
   border-color: #d1d5db !important;
-  /* Bordo più definito */
   color: #111827 !important;
-  /* Testo quasi nero */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  /* Ombra molto sottile */
   transform: none !important;
-  /* Rimossa il "salto" in alto per un feel più solido */
 }
 
-/* Freccina che ruota */
 .rdm-chevron {
   font-size: 0.8rem;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
   color: #9ca3af;
-  /* Grigio medio di default */
   margin-left: auto;
-  /* Assicura che stia a destra anche senza justify-between */
 }
 
 .rdm-btn-external-assign:hover .rdm-chevron,
 .rdm-btn-external-assign.active .rdm-chevron {
   color: #4b5563;
-  /* Grigio più scuro */
 }
 
 .rdm-chevron.rotate {
   transform: rotate(180deg);
 }
 
-/* 3. The Dropdown Menu (Fixed Positioning) */
 .rdm-dropdown-menu {
-  /* CORREZIONE: Imposto posizionamento relativo standard per evitare lo sbalzo */
   position: absolute !important;
   top: 100% !important;
-  /* Rimuove l'offset */
   left: 0 !important;
-  /* Mantiene allineamento a sinistra del toggle */
   right: auto !important;
-  /* Assicura che non si stiri */
   transform: none !important;
-  /* Rimuove trasformazioni che potrebbero causare sbalzi */
-
-
   width: 100%;
   margin-top: 8px !important;
   padding: 8px 0 !important;
@@ -608,7 +796,6 @@
   overflow: hidden;
 }
 
-/* Scrollable Area inside Dropdown */
 .rdm-dropdown-scroll-area {
   max-height: 240px;
   overflow-y: auto;
@@ -616,26 +803,8 @@
   scrollbar-color: #e5e7eb transparent;
 }
 
-.rdm-dropdown-scroll-area::-webkit-scrollbar {
-  width: 5px;
-}
 
-.rdm-dropdown-scroll-area::-webkit-scrollbar-track {
-  background: transparent;
-}
 
-.rdm-dropdown-scroll-area::-webkit-scrollbar-thumb {
-  background-color: var(--rdm-brand);
-  /* Era #d1d5db */
-  border-radius: 20px;
-}
-
-.rdm-dropdown-scroll-area::-webkit-scrollbar-thumb:hover {
-  background-color: var(--rdm-brand-dark);
-  /* Aggiungi effetto hover */
-}
-
-/* Items styling */
 .rdm-dropdown-header {
   padding: 8px 16px;
   font-size: 0.7rem;
@@ -657,10 +826,8 @@
 .rdm-dropdown-item:hover {
   background-color: #f8fafc;
   border-left-color: var(--rdm-brand);
-  /* Qui manteniamo il rosso solo per l'indicatore laterale */
 }
 
-/* Content Typography */
 .rdm-user-name {
   font-weight: 600;
   color: var(--rdm-text-main);
@@ -690,7 +857,6 @@
 
 .rdm-dropdown-id-badge {
   font-family: 'Courier New', monospace;
-  /* Font tecnico per i numeri */
   font-size: 0.60rem;
   font-weight: 700;
   color: #6b7280;
@@ -699,13 +865,10 @@
   border-radius: 6px;
   border: 1px solid #e5e7eb;
   white-space: nowrap;
-  /* Impedisce che l'ID vada a capo */
   flex-shrink: 0;
-  /* Impedisce che l'ID si rimpicciolisca se il nome è lungo */
   letter-spacing: -0.5px;
 }
 
-/* Opzionale: hover effect sull'item cambia anche il colore del badge */
 .rdm-dropdown-item:hover .rdm-dropdown-id-badge {
   background-color: white;
   border-color: #d1d5db;
@@ -723,7 +886,6 @@
   justify-content: center;
 }
 
-/* Animation Keyframes */
 @keyframes slideDownFade {
   from {
     opacity: 0;
@@ -817,74 +979,16 @@
   box-shadow: 0 1px 2px rgba(239, 68, 68, 0.05);
 }
 
-
 /* --- Address Specific Style --- */
 .rdm-value.address-text {
   font-size: 0.95rem;
-  /* Leggermente più grande per leggibilità */
   line-height: 1.4;
-  /* Spaziatura migliore per indirizzi su più righe */
   word-break: break-word;
-  /* Spezza solo tra le parole, non a metà parola */
   white-space: normal;
-  /* Assicura il wrap del testo */
   color: var(--rdm-text-main);
 }
 
-
-.rdm-dropdown-id-badge {
-  font-family: 'Courier New', monospace;
-  /* Font tecnico per i numeri */
-  font-size: 0.60rem;
-  font-weight: 700;
-  color: #6b7280;
-  background-color: #f3f4f6;
-  padding: 2px 8px;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  white-space: nowrap;
-  /* Impedisce che l'ID vada a capo */
-  flex-shrink: 0;
-  /* Impedisce che l'ID si rimpicciolisca se il nome è lungo */
-  letter-spacing: -0.5px;
-}
-
-/* Opzionale: hover effect sull'item cambia anche il colore del badge */
-.rdm-dropdown-item:hover .rdm-dropdown-id-badge {
-  background-color: white;
-  border-color: #d1d5db;
-  color: #374151;
-}
-
-/* --- SCROLLBAR STYLE (Identico a ReportComments) --- */
-
-/* Applica lo stile alla parte scrollabile della modale */
-.rdm-modal .modal-body::-webkit-scrollbar {
-  width: 5px;
-}
-
-.rdm-modal .modal-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.rdm-modal .modal-body::-webkit-scrollbar-thumb {
-  background-color: var(--rdm-brand);
-  border-radius: 10px;
-}
-
-.rdm-modal .modal-body::-webkit-scrollbar-thumb:hover {
-  background-color: var(--rdm-brand-dark);
-}
-
-/* Opzionale: Supporto Firefox */
-.rdm-modal .modal-body {
-  scrollbar-width: thin;
-  scrollbar-color: var(--rdm-brand) transparent;
-}
-
-
-
-/* Rendi il titolo cliccabile e spazia il contenuto */
+/* --- Collapsible Logic --- */
 .rdm-section-title.interactable {
   cursor: pointer;
   user-select: none;
@@ -899,10 +1003,8 @@
   background-color: #f3f4f6;
 }
 
-/* --- Animazione Smooth (Opzionale ma consigliata) --- */
 .rdm-collapsible-wrapper {
   display: grid !important;
-  /* Forza grid per sovrascrivere eventuali d-block/flex di Bootstrap */
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.3s ease-out, opacity 0.3s ease, margin-top 0.3s ease;
   opacity: 0;
@@ -914,12 +1016,103 @@
   grid-template-rows: 1fr;
   opacity: 1;
   margin-top: 1.5rem;
-  /* Aggiunge spazio solo quando è aperto */
 }
 
 .rdm-collapsible-inner {
   min-height: 0;
-  /* Essenziale per il funzionamento della grid transition */
   overflow: hidden;
-  /* Assicura che il contenuto non sbordi durante l'animazione */
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .rdm-header {
+    padding: 16px;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .rdm-title {
+    font-size: 1.5rem;
+  }
+
+  .rdm-header-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rdm-modal .modal-body {
+    padding: 16px;
+  }
+
+  .rdm-info-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .rdm-photo-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .rdm-header {
+    padding: 16px;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .rdm-title {
+    font-size: 1.5rem;
+  }
+
+  .rdm-header-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rdm-modal .modal-body {
+    padding: 16px;
+  }
+
+  .rdm-info-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .rdm-photo-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
+/* Info Button for Report Map */
+.rdm-map-info-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+}
+
+.rdm-btn-info {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(161, 43, 50, 0.2);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--rdm-brand);
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rdm-btn-info:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: var(--rdm-brand);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }

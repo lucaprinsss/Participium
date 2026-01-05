@@ -65,6 +65,34 @@ router.get('/', requireRole(SystemRoles.ADMINISTRATOR), departmentController.get
 
 /**
  * @swagger
+ * /api/departments/roles/mapping:
+ *   get:
+ *     tags: [Departments]
+ *     summary: Get all department roles mapping
+ *     description: Returns all valid department-role combinations with their IDs. Admin only.
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of department roles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   department:
+ *                     type: string
+ *                   role:
+ *                     type: string
+ */
+router.get('/roles/mapping', requireRole(SystemRoles.ADMINISTRATOR), departmentController.getDepartmentRolesMapping);
+
+/**
+ * @swagger
  * /api/departments/{id}/roles:
  *   get:
  *     tags: [Departments]

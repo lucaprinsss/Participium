@@ -91,3 +91,23 @@
     margin-bottom: 1rem;
   }
 }
+
+@media (max-width: 768px) {
+  .admin-home-container {
+    padding: 1rem;
+  }
+  
+  .admin-header-compact {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .admin-title-modern {
+    font-size: 1.5rem;
+  }
+  
+  .admin-subtitle-modern {
+    font-size: 0.85rem;
+  }
+}

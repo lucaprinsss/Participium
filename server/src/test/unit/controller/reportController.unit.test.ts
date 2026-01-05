@@ -81,8 +81,10 @@ describe('ReportController', () => {
 
   describe('getAllReports', () => {
     describe('authentication checks', () => {
-      it('should throw UnauthorizedError when user is not authenticated', async () => {
+      it('should call service with undefined userId when user is not authenticated', async () => {
         mockRequest.user = undefined;
+        const mockReports = [{ id: 1, title: 'Test Report' }];
+        (reportService.getAllReports as jest.Mock).mockResolvedValue(mockReports);
 
         await reportController.getAllReports(
           mockRequest as Request,
@@ -90,10 +92,13 @@ describe('ReportController', () => {
           mockNext
         );
 
-        expect(mockNext).toHaveBeenCalledWith(expect.any(UnauthorizedError));
-        expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'Not authenticated' })
+        expect(reportService.getAllReports).toHaveBeenCalledWith(
+          undefined,
+          undefined,
+          undefined
         );
+        expect(mockResponse.status).toHaveBeenCalledWith(200);
+        expect(mockResponse.json).toHaveBeenCalledWith(mockReports);
       });
 
       it('should call service with userId when user is authenticated', async () => {
@@ -1136,6 +1141,151 @@ describe('ReportController', () => {
         expect(mockNext).toHaveBeenCalledWith(error);
         expect(mockResponse.status).not.toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('getReportByAddress', () => {
+    it('should get reports by address and return 200 status', async () => {
+      const address = 'Via Roma, 1';
+      const reports = [{ id: 1, title: 'Test Report' }];
+      mockRequest.query = { address };
+
+      (reportService.getReportByAddress as jest.Mock).mockResolvedValue(reports);
+
+      await reportController.getReportByAddress(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.getReportByAddress).toHaveBeenCalledWith(address);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(reports);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError when address is missing', async () => {
+      mockRequest.query = {};
+
+      await reportController.getReportByAddress(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(new BadRequestError('Address query parameter is required'));
+      expect(reportService.getReportByAddress).not.toHaveBeenCalled();
+      expect(mockResponse.status).not.toHaveBeenCalled();
+    });
+
+    it('should call next with error when service throws', async () => {
+      const address = 'Via Roma, 1';
+      const error = new Error('Service error');
+      mockRequest.query = { address };
+
+      (reportService.getReportByAddress as jest.Mock).mockRejectedValue(error);
+
+      await reportController.getReportByAddress(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.getReportByAddress).toHaveBeenCalledWith(address);
+      expect(mockNext).toHaveBeenCalledWith(error);
+      expect(mockResponse.status).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sendMessage', () => {
+    it('should send message and return 201 status', async () => {
+      const userId = 1;
+      const reportId = '1';
+      const content = 'Test message';
+      const message = { id: 1, content, senderId: userId };
+      mockRequest.user = { id: userId } as User;
+      mockRequest.params = { id: reportId };
+      mockRequest.body = { content };
+
+      (reportService.sendMessage as jest.Mock).mockResolvedValue(message);
+
+      await reportController.sendMessage(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.sendMessage).toHaveBeenCalledWith(1, userId, content);
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith(message);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestError when content is missing', async () => {
+      const userId = 1;
+      const reportId = '1';
+      mockRequest.user = { id: userId } as User;
+      mockRequest.params = { id: reportId };
+      mockRequest.body = {};
+
+      await reportController.sendMessage(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(new BadRequestError('content field is required'));
+      expect(reportService.sendMessage).not.toHaveBeenCalled();
+      expect(mockResponse.status).not.toHaveBeenCalled();
+    });
+
+    it('should call next with error when service throws', async () => {
+      const userId = 1;
+      const reportId = '1';
+      const content = 'Test message';
+      const error = new Error('Service error');
+      mockRequest.user = { id: userId } as User;
+      mockRequest.params = { id: reportId };
+      mockRequest.body = { content };
+
+      (reportService.sendMessage as jest.Mock).mockRejectedValue(error);
+
+      await reportController.sendMessage(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.sendMessage).toHaveBeenCalledWith(1, userId, content);
+      expect(mockNext).toHaveBeenCalledWith(error);
+      expect(mockResponse.status).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getMessages', () => {
+    it('should get messages and return 200 status', async () => {
+      const userId = 1;
+      const reportId = '1';
+      const messages = [{ id: 1, content: 'Test message' }];
+      mockRequest.user = { id: userId };
+      mockRequest.params = { id: reportId };
+
+      (reportService.getMessages as jest.Mock).mockResolvedValue(messages);
+
+      await reportController.getMessages(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.getMessages).toHaveBeenCalledWith(1, userId);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(messages);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should get messages when user is not authenticated', async () => {
+      const reportId = '1';
+      const messages = [{ id: 1, content: 'Test message' }];
+      mockRequest.user = undefined;
+      mockRequest.params = { id: reportId };
+
+      (reportService.getMessages as jest.Mock).mockResolvedValue(messages);
+
+      await reportController.getMessages(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.getMessages).toHaveBeenCalledWith(1, undefined);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(messages);
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('should call next with error when service throws', async () => {
+      const userId = 1;
+      const reportId = '1';
+      const error = new Error('Service error');
+      mockRequest.user = { id: userId };
+      mockRequest.params = { id: reportId };
+
+      (reportService.getMessages as jest.Mock).mockRejectedValue(error);
+
+      await reportController.getMessages(mockRequest as Request, mockResponse as Response, mockNext);
+
+      expect(reportService.getMessages).toHaveBeenCalledWith(1, userId);
+      expect(mockNext).toHaveBeenCalledWith(error);
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
   });
 });

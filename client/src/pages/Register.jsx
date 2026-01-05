@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import PropTypes from "prop-types"; // Importato PropTypes
+import PropTypes from "prop-types";
 import { Alert, Card, Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
-import { registerCitizen, verifyEmailCode } from "../api/citizenApi";
+import { registerCitizen } from "../api/citizenApi";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock, FaArrowLeft, FaIdCard, FaCheckCircle } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaUser, FaEnvelope, FaLock, FaArrowLeft, FaIdCard } from "react-icons/fa";
+import OtpVerification from "../components/OtpVerification";
 import "../css/Register.css";
 
-// --- Componente Estratto per risolvere S6478 ---
+// --- Componente Toggle Password (invariato) ---
 const PasswordToggleButton = ({
   field,
   showPassword,
@@ -56,9 +57,8 @@ export default function Register() {
   const location = useLocation();
 
   // --- STATO ---
-  // Step 1: Registrazione, Step 2: Verifica OTP
+  // Step 1: Registrazione, Step 2: Verifica OTP (delegato a componente)
   const [step, setStep] = useState(1);
-  const [otp, setOtp] = useState("");
 
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "", username: "", password: "", confirmPassword: ""
@@ -72,17 +72,16 @@ export default function Register() {
   const [focusedField, setFocusedField] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
 
-  // EFFECT: Check if there are errors passed on page load
+  // EFFECT: Check errors from navigation
   useEffect(() => {
     if (location.state?.error) {
       setError(location.state.error);
-      history.replaceState({}, document.title);
+      window.history.replaceState({}, document.title);
     }
   }, [location]);
 
   // --- UTILS ---
   const trimValue = (value) => typeof value === 'string' ? value.trim() : value;
-
   const removeAllSpaces = (value) => typeof value === 'string' ? value.replaceAll(' ', '') : value;
 
   const calculatePasswordStrength = (password) => {
@@ -100,11 +99,21 @@ export default function Register() {
     return colors[passwordStrength] || "#dc3545";
   };
 
-  // --- HANDLERS ---
+  const handleApiError = (err) => {
+    if (!err.status && (err.message === "Failed to fetch" || err.message.includes("Network"))) {
+      setError("Unable to contact the server. Check your connection.");
+    } else if (err.status === 409) {
+      setError("Username or email already exists.");
+    } else if (err.status >= 500) {
+      setError("Internal server error.");
+    } else {
+      setError(err.message || "Operation failed. Please try again.");
+    }
+  };
 
+  // --- HANDLERS FORM STEP 1 ---
   const handleInputChange = (field, value) => {
     let cleanedValue = value;
-
     if (field === "email") {
       cleanedValue = removeAllSpaces(value).toLowerCase();
     } else if (["firstName", "lastName", "username"].includes(field)) {
@@ -116,21 +125,16 @@ export default function Register() {
     if (field === "password") {
       setPasswordStrength(calculatePasswordStrength(cleanedValue));
     }
-
     if (error) setError("");
   };
 
   const handleBlur = (field) => {
     const currentValue = formData[field];
     let cleanedValue = currentValue;
-
     if (typeof currentValue === 'string') {
-      if (field === "email") {
-        cleanedValue = removeAllSpaces(currentValue).toLowerCase();
-      } else if (["firstName", "lastName", "username"].includes(field)) {
-        cleanedValue = trimValue(currentValue);
-      }
-
+      if (field === "email") cleanedValue = removeAllSpaces(currentValue).toLowerCase();
+      else if (["firstName", "lastName", "username"].includes(field)) cleanedValue = trimValue(currentValue);
+      
       if (cleanedValue !== currentValue) {
         setFormData(prev => ({ ...prev, [field]: cleanedValue }));
       }
@@ -158,7 +162,7 @@ export default function Register() {
     }
   };
 
-  // STEP 1: REGISTRAZIONE UTENTE
+  // HANDLER REGISTRAZIONE (STEP 1)
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
@@ -172,21 +176,17 @@ export default function Register() {
       password: formData.password,
       confirmPassword: formData.confirmPassword
     };
-
     setFormData(cleanedFormData);
 
     // Validazione
     if (!cleanedFormData.firstName) return setError("Please enter your first name");
     if (!cleanedFormData.lastName) return setError("Please enter your last name");
     if (!cleanedFormData.email) return setError("Please enter your email");
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(cleanedFormData.email)) return setError("Please enter a valid email address");
     if (/[A-Z]/.test(cleanedFormData.email)) return setError("Email must not contain uppercase letters");
-
     if (!cleanedFormData.username) return setError("Please choose a username");
     if (cleanedFormData.username.length < 3) return setError("Username must be at least 3 characters long");
-
     if (!cleanedFormData.password) return setError("Please enter a password");
     if (cleanedFormData.password.length < 6) return setError("Password must be at least 6 characters long");
     if (cleanedFormData.password !== cleanedFormData.confirmPassword) return setError("Passwords do not match");
@@ -203,15 +203,11 @@ export default function Register() {
         role: "Citizen",
       };
 
-      // Chiamata API per la registrazione.
-      // Il backend dovrebbe salvare l'utente in con stato isVerified: undefined e inviare l'email.
       await registerCitizen(payload);
-
       setSuccess("Registration started! Please check your email for the OTP code.");
 
-      // Passaggio allo Step 2 (OTP)
       setTimeout(() => {
-        setSuccess(""); // Pulisco il messaggio per mostrare il form pulito
+        setSuccess(""); 
         setStep(2);
         setLoading(false);
       }, 1500);
@@ -223,55 +219,9 @@ export default function Register() {
     }
   };
 
-  // STEP 2: VERIFICA OTP
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    if (!otp || otp.length < 4) {
-      setError("Please enter a valid OTP code.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Payload per la verifica: Email (o username) + OTP
-      const payload = {
-        email: formData.email,
-        otp_code: otp // Adatta questo nome al tuo backend
-      };
-
-      await verifyEmailCode(payload.email, payload.otp_code);
-
-      setSuccess("Account verified successfully! Redirecting to login...");
-      setTimeout(() => navigate("/login"), 2000);
-    } catch (err) {
-      console.error("Verification failed:", err);
-      handleApiError(err);
-      setLoading(false);
-    }
-  };
-
-  // Helper per gestione errori API
-  const handleApiError = (err) => {
-    if (!err.status && (err.message === "Failed to fetch" || err.message.includes("Network"))) {
-      setError("Unable to contact the server. Check your connection.");
-    } else if (err.status === 409) {
-      setError("Username or email already exists.");
-    } else if (err.status === 400) {
-      setError(err.message || "Invalid data or incorrect code.");
-    } else if (err.status >= 500) {
-      setError("Internal server error.");
-    } else {
-      setError(err.message || "Operation failed. Please try again.");
-    }
-  };
-
+  // UI HELPERS
   const isFieldActive = (field) => focusedField === field || formData[field];
-
-  // VARIABILI ESTRATTE PER LA PULIZIA DEL JSX
+  
   const backButtonText = step === 2 ? "Back to Details" : "Back to Home";
   const headerTitle = step === 1 ? "Join Participium" : "Verify Account";
   const headerSubtitle = step === 1 ? "Create your account" : `Code sent to ${formData.email}`;
@@ -307,13 +257,13 @@ export default function Register() {
                 <p className="reg-subtitle">{headerSubtitle}</p>
               </div>
 
-              {error && (
+              {/* Messaggi di errore/successo globali (Step 1) */}
+              {step === 1 && error && (
                 <Alert variant="danger" dismissible onClose={() => setError("")} className="reg-alert">
                   {error}
                 </Alert>
               )}
-
-              {success && (
+              {step === 1 && success && (
                 <Alert variant="success" dismissible onClose={() => setSuccess("")} className="reg-alert">
                   {success}
                 </Alert>
@@ -422,41 +372,11 @@ export default function Register() {
                 </Form>
               )}
 
-              {/* --- STEP 2: OTP VERIFICATION FORM --- */}
+              {/* --- STEP 2: OTP VERIFICATION COMPONENT --- */}
               {step === 2 && (
-                <Form onSubmit={handleVerifyOtp} noValidate className="reg-form">
-                  <Form.Group className="reg-form-group">
-                    <div className={`reg-form-control-container ${focusedField === 'otp' || otp ? 'focused' : ''}`}>
-                      <FaCheckCircle className="reg-input-icon" />
-                      <Form.Control
-                        type="text"
-                        placeholder={focusedField === 'otp' ? '' : "Enter OTP Code"}
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        onFocus={() => setFocusedField('otp')}
-                        onBlur={() => setFocusedField('')}
-                        disabled={loading}
-                        className="reg-modern-input text-center letter-spacing-2"
-                        style={{ letterSpacing: '0.2em', fontSize: '1.2rem' }}
-                        maxLength={6}
-                      />
-                      <Form.Label className="reg-floating-label">Confirmation Code</Form.Label>
-                    </div>
-                    <Form.Text className="text-muted text-center d-block mt-2">
-                      Please check your email inbox (and spam folder) for the 6-digit code.
-                    </Form.Text>
-                  </Form.Group>
-
-                  <button type="submit" className="btn reg-btn-custom-primary reg-btn mt-3" disabled={loading}>
-                    {loading ? <><Spinner animation="border" size="sm" className="me-2" /> Verifying...</> : "Verify & Login"}
-                  </button>
-
-                  <div className="text-center mt-3">
-                    <Button variant="link" className="text-decoration-none" onClick={() => { /* Logica Resend OTP */ }}>
-                      Resend Code
-                    </Button>
-                  </div>
-                </Form>
+                <OtpVerification 
+                  username={formData.username} 
+                />
               )}
 
               <div className="reg-footer">

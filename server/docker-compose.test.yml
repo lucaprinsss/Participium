@@ -15,8 +15,12 @@ services:
     volumes:
       # Carica lo schema SQL all'avvio
       - ./src/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      # Carica i dati di seed (departments, roles, ecc.)
+      - ./src/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      # Migrations are already included in init.sql
+      # - ./migrations/add_telegram_link_columns.sql:/docker-entrypoint-initdb.d/025-migrations.sql:ro
       # Carica dati di test
-      - ./src/database/test-data.sql:/docker-entrypoint-initdb.d/02-test-data.sql:ro
+      - ./src/database/test-data.sql:/docker-entrypoint-initdb.d/03-test-data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U participium_test -d participium_db_test"]
       interval: 5s

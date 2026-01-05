@@ -2,3 +2,8 @@
 server/src/docs/dockerization.md
 .vscode/
 **/settings.json
+client/dist/
+server/dist/
+.env
+.env.test
+

@@ -1,0 +1,261 @@
+/* TelegramLinkModal.css */
+
+/* --- LAYOUT CONTENITORE --- */
+/* Usa lo stile base della modale definita in CitizenHome, ma aggiunge specificità interne */
+.tl-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: center;
+}
+
+/* --- ICONA HEADER (Unico tocco di blu) --- */
+.tl-icon-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    /* Light blue background only for the icon */
+    background: rgba(34, 158, 217, 0.1); 
+    color: #229ED9; /* Colore ufficiale Telegram */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 0.5rem auto;
+}
+
+/* --- TESTI --- */
+.tl-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-darker, #1a1a1a);
+    margin: 0;
+}
+
+.tl-description {
+    color: var(--text-muted, #6c757d);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* --- BOX CODICE (Stile simile alle Feature Card) --- */
+.tl-code-wrapper {
+    background-color: var(--bg-page, #f4f6f8);
+    border: 1px solid var(--border-subtle, rgba(0,0,0,0.1));
+    border-radius: var(--radius-md, 0.75rem);
+    padding: 1.25rem;
+    margin-top: 0.5rem;
+}
+
+.tl-code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #6c757d);
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.tl-timer {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--brand-red, #A12B32); /* Usa il rosso del sito per l'urgenza */
+}
+
+.tl-code-display {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle, #e0e0e0);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.tl-code-display:hover {
+    border-color: var(--brand-red, #A12B32);
+    box-shadow: 0 2px 8px rgba(161, 43, 50, 0.1);
+}
+
+.tl-code-text {
+    font-family: 'Courier New', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-darker, #1a1a1a);
+    letter-spacing: 0.15rem;
+}
+
+.tl-copy-icon {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+/* --- ISTRUZIONI STEP --- */
+.tl-steps {
+    text-align: left;
+    margin: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.tl-step-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-primary, #1a1a1a);
+}
+
+.tl-step-num {
+    background: var(--text-muted, #6c757d);
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.tl-step-row code {
+    background: rgba(161, 43, 50, 0.08); /* Sfondo rosso chiarissimo */
+    color: var(--brand-red, #A12B32);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: 600;
+}
+
+/* --- BOTTONI (Uniformati al sito) --- */
+.tl-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.tl-btn {
+    flex: 1;
+    padding: 0.9rem;
+    border-radius: var(--radius-md, 0.5rem);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.tl-btn-primary {
+    background: var(--brand-red, #A12B32);
+    color: white;
+}
+
+.tl-btn-primary:hover:not(:disabled) {
+    background: var(--brand-red-hover, #b40612);
+    transform: translateY(-1px);
+}
+
+.tl-btn-secondary {
+    background: white;
+    border: 1px solid var(--border-subtle, #ddd);
+    color: var(--text-primary, #333);
+}
+
+.tl-btn-secondary:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #ccc;
+}
+
+.tl-btn-danger {
+    background: #fff;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+}
+
+.tl-btn-danger:hover {
+    background: #dc3545;
+    color: white;
+}
+
+.tl-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* --- STATO LINKED (Card Successo) --- */
+.tl-linked-card {
+    background: #f0fff4; /* Verde chiarissimo, standard per successo */
+    border: 1px solid #bbf7d0;
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+}
+
+.tl-avatar {
+    width: 48px;
+    height: 48px;
+    background: #229ED9;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.tl-user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.tl-user-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #166534;
+    font-weight: 700;
+}
+
+.tl-username {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #14532d;
+}
+
+/* --- MESSAGGI DI ERRORE/SUCCESSO --- */
+.tl-msg {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+}
+.tl-msg.error { background: #fee2e2; color: #991b1b; }
+.tl-msg.success { background: #dcfce7; color: #166534; }
+
+/* --- RESPONSIVE --- */
+@media (max-width: 480px) {
+    .tl-actions {
+        flex-direction: column;
+    }
+    .tl-btn { width: 100%; }
+}

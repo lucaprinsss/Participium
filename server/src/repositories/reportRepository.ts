@@ -7,6 +7,8 @@ import { ReportStatus } from '../models/dto/ReportStatus';
 import { Repository } from "typeorm";
 import { photoRepository } from "./photoRepository";
 
+import { ILike } from "typeorm"; // Important: add ILike to imports
+
 /**
  * Report Repository
  * Handles database operations for reports with PostGIS support
@@ -257,8 +259,8 @@ class ReportRepository {
         const queryBuilder = this.repository
             .createQueryBuilder('report')
             .leftJoinAndSelect('report.reporter', 'reporter')
-            .leftJoinAndSelect('report.assignee', 'assignee') // Cruciale per staff interno
-            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee') // AGGIUNTO: Per evitare null se presente
+            .leftJoinAndSelect('report.assignee', 'assignee') // Crucial for internal staff
+            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee') // ADDED: To avoid null if present
             .leftJoinAndSelect('report.photos', 'photos')
             .where('report.assigneeId = :assigneeId', { assigneeId });
 
@@ -283,13 +285,13 @@ class ReportRepository {
         const queryBuilder = this.repository
             .createQueryBuilder('report')
             .leftJoinAndSelect('report.reporter', 'reporter')
-            .leftJoinAndSelect('report.assignee', 'assignee') // AGGIUNTO: Per completezza
-            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee') // Cruciale per esterni
+            .leftJoinAndSelect('report.assignee', 'assignee') // ADDED: For completeness
+            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee') // Crucial for external maintainers
             .leftJoinAndSelect('report.photos', 'photos')
             .where('report.externalAssigneeId = :externalMaintainerId', { externalMaintainerId });
             
-        // Nota: Ho rimosso il filtro rigido sul ruolo qui. Se stiamo filtrando per ID, 
-        // assumiamo che l'ID sia corretto. Il controllo del ruolo dovrebbe essere fatto nel Service o Middleware.
+        // Note: I removed the strict role filter here. If we're filtering by ID,
+        // we assume the ID is correct. Role checking should be done in Service or Middleware.
 
         if (status) {
             queryBuilder.andWhere('report.status = :status', { status });
@@ -315,6 +317,53 @@ class ReportRepository {
             throw new Error(`Failed to reload report with id ${savedReport.id}`);
         }
         return reloadedReport;
+    }
+
+    /**
+     * Retrieve reports located near a specific address
+     * @param address 
+     * @returns 
+     */
+    public async findReportsByAddress(address: string): Promise<ReportEntity[]> {
+        return await this.repository.find({
+            where: { 
+                address: ILike(`%${address}%`) // Cerca qualsiasi indirizzo che CONTIENE la stringa
+            },
+            relations: [
+                'reporter', 
+                'assignee', 
+                'externalAssignee',
+                'photos'
+            ],
+            order: {
+                createdAt: 'DESC'
+            }
+        });
+    }
+
+    /**
+     * Find reports created by a specific user
+     */
+    public async findByReporterId(reporterId: number, status?: ReportStatus, category?: ReportCategory): Promise<ReportEntity[]> {
+        const queryBuilder = this.repository
+            .createQueryBuilder('report')
+            .leftJoinAndSelect('report.reporter', 'reporter')
+            .leftJoinAndSelect('report.assignee', 'assignee')
+            .leftJoinAndSelect('report.externalAssignee', 'externalAssignee')
+            .leftJoinAndSelect('report.photos', 'photos')
+            .where('report.reporterId = :reporterId', { reporterId });
+
+        if (status) {
+            queryBuilder.andWhere('report.status = :status', { status });
+        }
+
+        if (category) {
+            queryBuilder.andWhere('report.category = :category', { category });
+        }
+
+        return queryBuilder
+            .orderBy('report.createdAt', 'DESC')
+            .getMany();
     }
 }
 

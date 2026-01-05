@@ -99,6 +99,21 @@ class DepartmentRoleRepository {
   }
 
   /**
+   * Finds all department roles by role name.
+   * @param roleName The name of the role (e.g., "Citizen", "Administrator", "Staff Member").
+   * @returns Array of department role entities with that role name.
+   */
+  public async findByRoleName(roleName: string): Promise<DepartmentRoleEntity[]> {
+    return this.repository
+      .createQueryBuilder("dr")
+      .innerJoinAndSelect("dr.department", "department")
+      .innerJoinAndSelect("dr.role", "role")
+      .where("role.name = :roleName", { roleName })
+      .orderBy("department.name", "ASC")
+      .getMany();
+  }
+
+  /**
    * Saves a department role entity.
    * @param departmentRole The department role entity to save.
    * @returns The saved department role entity.

@@ -19,7 +19,6 @@ const ReportSidebar = ({
   const [loadingExternal, setLoadingExternal] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // FIX S3776: Usato useCallback per stabilizzare l'handler
   const fetchExternalUsers = useCallback(async () => {
     setLoadingExternal(true);
     try {
@@ -36,7 +35,7 @@ const ReportSidebar = ({
   // Helper date
   const formatDate = (dateString) => {
     if (!dateString) return "-";
-    return new Intl.DateTimeFormat("it-IT", {
+    return new Intl.DateTimeFormat("en-GB", {
       day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
     }).format(new Date(dateString));
   };
@@ -52,6 +51,16 @@ const ReportSidebar = ({
     report.assignee &&
     ((typeof report.assignee === "object" && Number(report.assignee.id) === Number(currentUserId)) ||
       (typeof report.assignee === "number" && Number(report.assignee) === Number(currentUserId)));
+
+  // LOGICA VISIBILITÀ PULSANTE DELEGA
+  // The button appears ONLY if:
+  // 1. The current user is the internal assignee
+  // 2. The report is NOT already "Resolved"
+  // 3. The report is NOT already "Assigned" (to an external maintainer)
+  const shouldShowDelegateButton = 
+    isCurrentInternalAssignee && 
+    report.status !== "Resolved" && 
+    report.status === "Assigned";
 
   // External Assignment Logic
   const handleDropdownToggle = async (isOpen) => {
@@ -111,7 +120,6 @@ const ReportSidebar = ({
     return <span className="text-muted">Not assigned</span>;
   }
 
-  // RISOLTO S3358: Estraggo la logica ternaria annidata in una funzione di rendering locale
   const renderDropdownContent = () => {
     if (loadingExternal) {
       return <div className="rdm-loading-state">Loading...</div>;
@@ -212,7 +220,8 @@ const ReportSidebar = ({
         </div>
 
         {/* Dropdown Assignment */}
-        {isCurrentInternalAssignee && (
+        {/* MODIFICA: Utilizzo la nuova condizione shouldShowDelegateButton */}
+        {shouldShowDelegateButton && (
           <div className="mt-3 pt-3 border-top animate-fadeIn">
             <span className="rdm-label mb-2">Delegate Task</span>
             <Dropdown onToggle={handleDropdownToggle} className="rdm-dropdown-container">
@@ -224,7 +233,6 @@ const ReportSidebar = ({
                 <FaChevronDown className={`rdm-chevron ${isDropdownOpen ? "rotate" : ""}`} />
               </Dropdown.Toggle>
               <Dropdown.Menu className="rdm-dropdown-menu shadow-lg border-0">
-                {/* Utilizzo della funzione estratta per risolvere S3358 */}
                 {renderDropdownContent()}
               </Dropdown.Menu>
             </Dropdown>
@@ -250,7 +258,7 @@ const ReportSidebar = ({
           </div>
         </div>
 
-        {/* MODIFICA: Mostra il pulsante solo se l'utente NON è un Citizen E le coordinate sono disponibili */}
+        {/* CHANGE: Show button only if user is NOT a Citizen AND coordinates are available */}
         {(!isCitizen && mapCoordinates) && ( // FIX S7735
           <button
             className={`rdm-btn-map-toggle ${showMap ? "active" : ""}`}
@@ -274,6 +282,7 @@ ReportSidebar.propTypes = {
     updatedAt: PropTypes.string,
     isAnonymous: PropTypes.bool,
     is_anonymous: PropTypes.bool,
+    status: PropTypes.string, // Added status to PropTypes for clarity
     reporter: PropTypes.shape({
       first_name: PropTypes.string,
       last_name: PropTypes.string,

@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import * as path from 'node:path';
 
 /**
- * Carica configurazione ambiente di test
+ * Loads test environment configuration from .env.test
  */
 export function loadTestEnvironment(): void {
   if (process.env.NODE_ENV === 'test') {
@@ -13,28 +13,25 @@ export function loadTestEnvironment(): void {
 }
 
 /**
- * Pulisce tutte le tabelle del database di test
- * Mantiene i dati iniziali inseriti da test-data.sql
+ * Cleans only tables that can be modified by tests
+ * Keeps base test data added from test-data.sql
  */
 export async function cleanDatabase(): Promise<void> {
   const queryRunner = AppDataSource.createQueryRunner();
-  
+
   try {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
-    // Disabilita constraints temporaneamente
     await queryRunner.query('SET session_replication_role = replica;');
 
-    // Pulisci solo le tabelle che possono essere modificate dai test
-    // NON pulire le tabelle con dati di test base
     await queryRunner.query('TRUNCATE TABLE reports CASCADE;');
     await queryRunner.query('TRUNCATE TABLE comments CASCADE;');
     await queryRunner.query('TRUNCATE TABLE photos CASCADE;');
     await queryRunner.query('TRUNCATE TABLE notifications CASCADE;');
     await queryRunner.query('TRUNCATE TABLE messages CASCADE;');
-    
-    // Pulisci solo utenti creati durante i test (non quelli di test-data.sql)
+
+    // Clean only users created during tests (not those from test-data.sql)
     await queryRunner.query(
       'DELETE FROM users WHERE username NOT IN ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);',
       [
@@ -53,7 +50,6 @@ export async function cleanDatabase(): Promise<void> {
       ]
     );
 
-    // Riabilita constraints
     await queryRunner.query('SET session_replication_role = DEFAULT;');
 
     await queryRunner.commitTransaction();
@@ -66,18 +62,17 @@ export async function cleanDatabase(): Promise<void> {
 }
 
 /**
- * Pulisce completamente il database (inclusi dati di test base)
+ * Completely cleans the database (including base test data)
  */
 export async function cleanDatabaseCompletely(): Promise<void> {
   const queryRunner = AppDataSource.createQueryRunner();
-  
+
   try {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     await queryRunner.query('SET session_replication_role = replica;');
-    
-    // Pulisci TUTTE le tabelle
+
     const tables = [
       'notifications',
       'messages',
@@ -103,7 +98,7 @@ export async function cleanDatabaseCompletely(): Promise<void> {
 }
 
 /**
- * Resetta le sequence AUTO_INCREMENT
+ * Reset the AUTO_INCREMENT sequences
  */
 export async function resetSequences(): Promise<void> {
   const entities = AppDataSource.entityMetadatas;
@@ -118,7 +113,26 @@ export async function resetSequences(): Promise<void> {
 }
 
 /**
- * Setup completo database di test
+ * Loads test data from test-data.sql
+ */
+export async function loadTestData(): Promise<void> {
+  console.log('Loading test data from test-data.sql...');
+  try {
+    const fs = await import('node:fs/promises');
+    const testDataPath = path.resolve(__dirname, '../../database/test-data.sql');
+    const sql = await fs.readFile(testDataPath, 'utf8');
+
+    // Execute SQL file
+    await AppDataSource.query(sql);
+    console.log('Test data loaded successfully');
+  } catch (error) {
+    console.error('Failed to load test data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Complete setup of the test database
  */
 export async function setupTestDatabase(): Promise<void> {
   loadTestEnvironment();
@@ -127,8 +141,8 @@ export async function setupTestDatabase(): Promise<void> {
     try {
       await AppDataSource.initialize();
       console.log('Test database connected successfully');
-      
-      // Verifica connessione con una query semplice
+
+      // Verify connection with a simple query
       const result = await AppDataSource.query('SELECT NOW()');
       console.log('Database connection verified:', result[0]);
     } catch (error) {
@@ -143,12 +157,22 @@ export async function setupTestDatabase(): Promise<void> {
     }
   }
 
-  // Non pulire: i dati di test sono già presenti da test-data.sql
+  // Check if test users exist - if not, load test data
+  const testUsers = await AppDataSource.query(
+    "SELECT COUNT(*) as count FROM users WHERE username = 'testcitizen'"
+  );
+
+  if (testUsers[0].count === '0') {
+    await loadTestData();
+  } else {
+    console.log('Test data already loaded');
+  }
+
   console.log('Test database ready');
 }
 
 /**
- * Teardown database di test
+ * Teardown test database
  */
 export async function teardownTestDatabase(): Promise<void> {
   if (AppDataSource.isInitialized) {
@@ -158,11 +182,11 @@ export async function teardownTestDatabase(): Promise<void> {
 }
 
 /**
- * Verifica che siamo connessi al database di test
+ * Verifies that we are connected to the test database
  */
 export async function ensureTestDatabase(): Promise<void> {
   const dbName = process.env.DB_NAME;
-  
+
   if (dbName !== 'participium_db_test') {
     throw new Error(
       `DANGER: Not connected to test database! Current: ${dbName}\n` +

@@ -34,8 +34,8 @@ export function ErrorDTOFromJSONTyped(
   }
   return {
     code: json["code"],
-    name: json["name"] == null ? undefined : json["name"],
-    message: json["message"] == null ? undefined : json["message"]
+    name: json["name"] ?? undefined,
+    message: json["message"] ?? undefined
   };
 }
 

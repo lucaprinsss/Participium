@@ -9,6 +9,9 @@ import { logInfo } from '@services/loggingService';
 import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { ConflictError } from '@models/errors/ConflictError';
 import { AppError } from '@models/errors/AppError';
+import { RoleUtils } from '@utils/roleUtils';
+import { UserRoleEntity } from '@models/entity/userRoleEntity';
+import { AppDataSource } from '@database/connection';
 
 /**
  * Service for municipality user management
@@ -16,20 +19,56 @@ import { AppError } from '@models/errors/AppError';
 class MunicipalityUserService {
 
   /**
+   * Helper: Load multiple department roles by IDs
+   * @param ids Array of department role IDs
+   * @returns Array of department role entities
+   */
+  private async loadDepartmentRoles(ids: number[]): Promise<any[]> {
+    const departmentRoles = await Promise.all(
+      ids.map(id => departmentRoleRepository.findById(id))
+    );
+    return departmentRoles.filter((dr): dr is NonNullable<typeof dr> => dr !== null);
+  }
+
+  /**
+   * Validates that role combination doesn't mix internal staff and external maintainer
+   * @param departmentRoles Array of department role entities
+   * @throws BadRequestError if invalid combination detected
+   */
+  private validateRoleCombination(departmentRoles: any[]): void {
+    const roleNames = departmentRoles
+      .map((dr: any) => dr.role?.name)
+      .filter(Boolean) as string[];
+    
+    const hasInternalStaff = roleNames.some(name => 
+      name !== 'Citizen' && 
+      name !== 'Administrator' && 
+      name !== 'Municipal Public Relations Officer' &&
+      name !== 'External Maintainer'
+    );
+    
+    const hasExternalMaintainer = roleNames.includes('External Maintainer');
+    
+    if (hasInternalStaff && hasExternalMaintainer) {
+      throw new BadRequestError(
+        'Cannot assign both Internal Staff and External Maintainer roles to the same user'
+      );
+    }
+  }
+
+  /**
    * Create a new municipality user
    * @param registerData User registration data
    * @returns The created user response
-   * @throws BadRequestError if trying to create Citizen or Administrator
+   * @throws BadRequestError if trying to create Citizen or Administrator or if no roles provided
    * @throws ConflictError if username or email already exists
    */
   async createMunicipalityUser(registerData: RegisterRequest): Promise<UserResponse> {
-    const { role_name, password, first_name, last_name, username, email, department_name, company_name } = registerData;
+    const { department_role_ids, password, first_name, last_name, username, email, company_name } = registerData;
 
-    if (role_name === 'Citizen') {
-      throw new BadRequestError('Cannot create a municipality user with Citizen role');
-    }
-    if (role_name === 'Administrator') {
-      throw new BadRequestError('Cannot create an Administrator through this endpoint');
+    // Validate that at least one role is provided
+    if (!department_role_ids || department_role_ids.length === 0) {
+      throw new BadRequestError('At least one department role must be provided');
     }
 
     // Check for duplicate username
@@ -44,13 +83,36 @@ class MunicipalityUserService {
       throw new ConflictError('Email already exists');
     }
 
+    // Validate all department_role_ids exist and load them
+    const departmentRoles = await this.loadDepartmentRoles(department_role_ids);
+    if (departmentRoles.length !== department_role_ids.length) {
+      throw new BadRequestError('One or more invalid department role IDs provided');
+    }
+
+    // Validate role combination (cannot mix internal staff and external maintainer)
+    this.validateRoleCombination(departmentRoles);
+
+    // Check that none of the roles are Citizen or Administrator
+    for (const dr of departmentRoles) {
+      if (dr.role?.name === 'Citizen') {
+        throw new BadRequestError('Cannot create a municipality user with Citizen role');
+      }
+      if (dr.role?.name === 'Administrator') {
+        throw new BadRequestError('Cannot create an Administrator through this endpoint');
+      }
+    }
+
+    // Extract role names for validation
+    const roleNames = departmentRoles.map((dr: any) => dr.role?.name).filter(Boolean) as string[];
+    const hasExternalMaintainer = roleNames.includes('External Maintainer');
+
     // Validate company assignment - only External Maintainer can have a company
-    if (company_name && role_name !== 'External Maintainer') {
+    if (company_name && !hasExternalMaintainer) {
       throw new BadRequestError('Only External Maintainer role can be assigned to a company');
     }
 
     // Require company for External Maintainer
-    if (role_name === 'External Maintainer' && !company_name) {
+    if (hasExternalMaintainer && !company_name) {
       throw new BadRequestError('External Maintainer role requires a company assignment');
     }
 
@@ -64,43 +126,50 @@ class MunicipalityUserService {
       companyId = company.id;
     }
 
-    // Find department role by department and role name
-    let matchingDepartmentRole;
-    if (department_name) {
-      matchingDepartmentRole = await departmentRoleRepository.findByDepartmentAndRole(department_name, role_name);
-    } else {
-      // Find all department roles that match the requested role
-      const allDepartmentRoles = await departmentRoleRepository.findAll();
-      matchingDepartmentRole = allDepartmentRoles.find(
-        dr => dr.role?.name === role_name
-      );
-    }
-
-    if (!matchingDepartmentRole) {
-      throw new BadRequestError(`Role ${role_name} not found in any department`);
-    }
-
     // Create user with repository (it will hash the password)
     const newUser = await userRepository.createUserWithPassword({
       username,
       email,
       firstName: first_name,
       lastName: last_name,
-      departmentRoleId: matchingDepartmentRole.id,
       password,
       companyId: companyId,
-      isVerified: true  // Municipality users are pre-verified
+      isVerified: true,  // Municipality users are pre-verified
+      telegramLinkConfirmed: false
     });
-    logInfo(`Municipality user created: ${username} with role ${role_name}`);
+
+    // Create user_roles entries manually via raw query or service
+    // TypeORM doesn't support direct cascade insert for many-to-many without save on parent
+    const userRoles = departmentRoles.map((dr: any) => ({
+      userId: newUser.id,
+      departmentRoleId: dr.id
+    }));
+
+    // Insert user roles using query builder
+    if (userRoles.length > 0) {
+      await AppDataSource.createQueryBuilder()
+        .insert()
+        .into('user_roles')
+        .values(userRoles)
+        .execute();
+    }
+
+    // Reload user with relations
+    const savedUser = await userRepository.findUserById(newUser.id);
+    if (!savedUser) {
+      throw new AppError('Failed to reload user after creation', 500);
+    }
+
+    logInfo(`Municipality user created: ${username} with ${department_role_ids.length} role(s)`);
 
     // Get company name if user has a company
     let companyName: string | undefined;
-    if (newUser.companyId) {
-      const company = await companyRepository.findById(newUser.companyId);
+    if (savedUser.companyId) {
+      const company = await companyRepository.findById(savedUser.companyId);
       companyName = company?.name;
     }
 
-    const userResponse = mapUserEntityToUserResponse(newUser, companyName);
+    const userResponse = mapUserEntityToUserResponse(savedUser, companyName);
     if (!userResponse) {
       throw new AppError('Failed to map user response after creation', 500);
     }
@@ -113,7 +182,7 @@ class MunicipalityUserService {
    */
   async getAllMunicipalityUsers(): Promise<UserResponse[]> {
     const users = await userRepository.findUsersExcludingRoles(['Citizen', 'Administrator']);
-    
+
     // Map users to response DTOs, getting company names for those who have companies
     const userResponses = await Promise.all(
       users.map(async user => {
@@ -138,13 +207,17 @@ class MunicipalityUserService {
    */
   async getMunicipalityUserById(id: number): Promise<UserResponse> {
     const user = await userRepository.findUserById(id);
-    
+
     if (!user) {
       throw new NotFoundError('User not found');
     }
 
-    const roleName = user.departmentRole?.role?.name;
-    if (roleName === 'Citizen' || roleName === 'Administrator') {
+    // Check if user has only Citizen or Administrator roles (exclude from municipality users)
+    const roleNames = RoleUtils.getUserRoleNames(user);
+    const onlyCitizenOrAdmin = roleNames.length > 0 &&
+      roleNames.every(name => name === 'Citizen' || name === 'Administrator');
+
+    if (onlyCitizenOrAdmin || roleNames.length === 0) {
       throw new NotFoundError('Municipality user not found');
     }
 
@@ -165,9 +238,9 @@ class MunicipalityUserService {
   /**
    * Validate update data has at least one field
    */
-  private validateUpdateData(updateData: Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string; company_name?: string }>): void {
-    const { first_name, last_name, email, role_name, department_name, company_name } = updateData;
-    if (!first_name && !last_name && !email && !role_name && !department_name && !company_name) {
+  private validateUpdateData(updateData: Partial<{ first_name: string; last_name: string; email: string; department_role_ids: number[]; company_name?: string }>): void {
+    const { first_name, last_name, email, department_role_ids, company_name } = updateData;
+    if (!first_name && !last_name && !email && !department_role_ids && company_name === undefined) {
       throw new BadRequestError('At least one field must be provided for update');
     }
   }
@@ -185,33 +258,6 @@ class MunicipalityUserService {
   }
 
   /**
-   * Resolve department role ID for role update
-   */
-  private async resolveDepartmentRoleId(role_name: string | undefined, department_name?: string): Promise<number | undefined> {
-    if (!role_name) {
-      return undefined;
-    }
-
-    if (role_name === 'Citizen' || role_name === 'Administrator') {
-      throw new BadRequestError('Cannot change role to Citizen or Administrator');
-    }
-
-    let matchingDepartmentRole;
-    if (department_name) {
-      matchingDepartmentRole = await departmentRoleRepository.findByDepartmentAndRole(department_name, role_name);
-    } else {
-      const allDepartmentRoles = await departmentRoleRepository.findAll();
-      matchingDepartmentRole = allDepartmentRoles.find(dr => dr.role?.name === role_name);
-    }
-
-    if (!matchingDepartmentRole) {
-      throw new BadRequestError(`Role ${role_name} not found in any department`);
-    }
-
-    return matchingDepartmentRole.id;
-  }
-
-  /**
    * Update municipality user
    * @param id User ID
    * @param updateData Data to update (accepts snake_case from API)
@@ -221,7 +267,7 @@ class MunicipalityUserService {
    */
   async updateMunicipalityUser(
     id: number,
-    updateData: Partial<{ first_name: string; last_name: string; email: string; role_name: string; department_name?: string; company_name?: string }>
+    updateData: Partial<{ first_name: string; last_name: string; email: string; department_role_ids: number[]; company_name?: string }>
   ): Promise<UserResponse> {
     this.validateUpdateData(updateData);
 
@@ -230,31 +276,73 @@ class MunicipalityUserService {
       throw new NotFoundError('User not found');
     }
 
-    const existingRoleName = existingUser.departmentRole?.role?.name;
-    if (existingRoleName === 'Citizen' || existingRoleName === 'Administrator') {
+    // Check if user has only Citizen or Administrator roles
+    const existingRoleNames = RoleUtils.getUserRoleNames(existingUser);
+    const onlyCitizenOrAdmin = existingRoleNames.length > 0 &&
+      existingRoleNames.every(name => name === 'Citizen' || name === 'Administrator');
+
+    if (onlyCitizenOrAdmin) {
       throw new BadRequestError('Cannot modify Citizen or Administrator through this endpoint');
     }
 
     await this.validateEmailUpdate(updateData.email, existingUser.email);
-    
-    const departmentRoleId = await this.resolveDepartmentRoleId(updateData.role_name, updateData.department_name);
 
-    // Determine the final role name (either new role or existing)
-    const finalRoleName = updateData.role_name || existingRoleName;
+    // Handle department_role_ids update
+    let newRoleNames: string[] = existingRoleNames;
+    if (updateData.department_role_ids) {
+      // Validate all department_role_ids exist and load them
+      const departmentRoles = await this.loadDepartmentRoles(updateData.department_role_ids);
+      if (departmentRoles.length !== updateData.department_role_ids.length) {
+        throw new BadRequestError('One or more invalid department role IDs provided');
+      }
+      // Validate role combination (cannot mix internal staff and external maintainer)
+      this.validateRoleCombination(departmentRoles);
+      // Check that none of the new roles are Citizen or Administrator
+      for (const dr of departmentRoles) {
+        if (dr.role?.name === 'Citizen' || dr.role?.name === 'Administrator') {
+          throw new BadRequestError('Cannot assign Citizen or Administrator role through this endpoint');
+        }
+      }
+
+      newRoleNames = departmentRoles.map((dr: any) => dr.role?.name).filter(Boolean) as string[];
+
+      // Delete old user_roles and insert new ones
+      await AppDataSource.createQueryBuilder()
+        .delete()
+        .from('user_roles')
+        .where('user_id = :userId', { userId: id })
+        .execute();
+
+      const userRoles = departmentRoles.map((dr: any) => ({
+        userId: id,
+        departmentRoleId: dr.id
+      }));
+
+      if (userRoles.length > 0) {
+        await AppDataSource.createQueryBuilder()
+          .insert()
+          .into('user_roles')
+          .values(userRoles)
+          .execute();
+      }
+    }
+
+    // Determine if user has External Maintainer role (either existing or new)
+    const hasExternalMaintainer = newRoleNames.includes('External Maintainer');
 
     // Validate company assignment - only External Maintainer can have a company
-    if (updateData.company_name && finalRoleName !== 'External Maintainer') {
+    if (updateData.company_name && !hasExternalMaintainer) {
       throw new BadRequestError('Only External Maintainer role can be assigned to a company');
     }
 
     // Resolve company_name to company_id if provided
     let companyId: number | undefined;
     let shouldRemoveCompany = false;
-    
+
     if (updateData.company_name !== undefined) {
       if (updateData.company_name === null) {
         // Validate: External Maintainer cannot remove company
-        if (finalRoleName === 'External Maintainer') {
+        if (hasExternalMaintainer) {
           throw new BadRequestError('External Maintainer role requires a company');
         }
         shouldRemoveCompany = true; // Mark for removal
@@ -267,12 +355,21 @@ class MunicipalityUserService {
       }
     }
 
+    // Validate: If user is/becomes External Maintainer, they must have a company
+    if (hasExternalMaintainer) {
+      const willHaveCompany = (existingUser.companyId && !shouldRemoveCompany) || companyId !== undefined;
+      if (!willHaveCompany) {
+        throw new BadRequestError('External Maintainer role requires a company assignment');
+      }
+    }
+
     const updatePayload: any = {
       firstName: updateData.first_name,
       lastName: updateData.last_name,
-      email: updateData.email,
-      ...(departmentRoleId && { departmentRoleId })
+      email: updateData.email
     };
+
+    // Note: user_roles are already updated above via raw query if department_role_ids was provided
 
     // Add companyId to update payload if it was specified in the request
     if (companyId !== undefined) {
@@ -311,13 +408,17 @@ class MunicipalityUserService {
    */
   async deleteMunicipalityUser(id: number): Promise<void> {
     const existingUser = await userRepository.findUserById(id);
-    
+
     if (!existingUser) {
       throw new NotFoundError('User not found');
     }
 
-    const roleName = existingUser.departmentRole?.role?.name;
-    if (roleName === 'Citizen' || roleName === 'Administrator') {
+    // Check if user has only Citizen or Administrator roles
+    const roleNames = RoleUtils.getUserRoleNames(existingUser);
+    const onlyCitizenOrAdmin = roleNames.length > 0 &&
+      roleNames.every(name => name === 'Citizen' || name === 'Administrator');
+
+    if (onlyCitizenOrAdmin) {
       throw new BadRequestError('Cannot delete Citizen or Administrator through this endpoint');
     }
 
@@ -328,6 +429,7 @@ class MunicipalityUserService {
 
   /**
    * Assign role to municipality user
+   * @deprecated Use updateMunicipalityUser with department_role_ids instead for multiple role support
    * @param userId User ID
    * @param roleName Role name to assign
    * @param departmentName Optional department name
@@ -348,8 +450,11 @@ class MunicipalityUserService {
       throw new NotFoundError('User not found');
     }
 
-    const existingRoleName = user.departmentRole?.role?.name;
-    if (existingRoleName === 'Citizen' || existingRoleName === 'Administrator') {
+    const existingRoleNames = RoleUtils.getUserRoleNames(user);
+    const onlyCitizenOrAdmin = existingRoleNames.length > 0 &&
+      existingRoleNames.every(name => name === 'Citizen' || name === 'Administrator');
+
+    if (onlyCitizenOrAdmin) {
       throw new BadRequestError('Cannot assign role to Citizen or Administrator through this endpoint');
     }
 
@@ -368,9 +473,42 @@ class MunicipalityUserService {
       throw new BadRequestError(`Role ${roleName} not found in any department`);
     }
 
-    const updatedUser = await userRepository.updateUser(userId, { 
-      departmentRoleId: matchingDepartmentRole.id 
-    });
+    // Add the new role to existing roles (don't replace)
+    const existingRoleIds = user.userRoles?.map(ur => ur.departmentRoleId) || [];
+
+    // Check if role already assigned
+    if (existingRoleIds.includes(matchingDepartmentRole.id)) {
+      logInfo(`Role ${roleName} already assigned to user ${user.username} (ID: ${userId})`);
+
+      // Get company name if user has a company
+      let companyName: string | undefined;
+      if (user.companyId) {
+        const company = await companyRepository.findById(user.companyId);
+        companyName = company?.name;
+      }
+
+      const userResponse = mapUserEntityToUserResponse(user, companyName);
+      if (!userResponse) {
+        throw new AppError('Failed to map user response', 500);
+      }
+      return userResponse;
+    }
+
+    // Add new role to existing ones
+    await AppDataSource.createQueryBuilder()
+      .insert()
+      .into('user_roles')
+      .values({
+        userId: userId,
+        departmentRoleId: matchingDepartmentRole.id
+      })
+      .execute();
+
+    // Reload user to get updated roles
+    const updatedUser = await userRepository.findUserById(userId);
+    if (!updatedUser) {
+      throw new NotFoundError('User not found after role assignment');
+    }
 
     logInfo(`Role assigned to user ${user.username}: ${roleName} (ID: ${userId})`);
 
@@ -384,6 +522,74 @@ class MunicipalityUserService {
     const userResponse = mapUserEntityToUserResponse(updatedUser, companyName);
     if (!userResponse) {
       throw new AppError('Failed to map user response after role assignment', 500);
+    }
+    return userResponse;
+  }
+
+  /**
+   * Remove a single role from municipality user
+   * @param userId User ID
+   * @param departmentRoleId Department role ID to remove
+   * @returns Updated user response
+   * @throws NotFoundError if user or role not found
+   * @throws BadRequestError if trying to remove last role or modify Citizen/Administrator
+   */
+  async removeRole(userId: number, departmentRoleId: number): Promise<UserResponse> {
+    const user = await userRepository.findUserById(userId);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Check if user has only Citizen or Administrator roles
+    const existingRoleNames = RoleUtils.getUserRoleNames(user);
+    const onlyCitizenOrAdmin = existingRoleNames.length > 0 &&
+      existingRoleNames.every(name => name === 'Citizen' || name === 'Administrator');
+
+    if (onlyCitizenOrAdmin) {
+      throw new BadRequestError('Cannot modify Citizen or Administrator through this endpoint');
+    }
+
+    // Check if the user has this specific departmentRoleId
+    const existingUserRoles = user.userRoles || [];
+    const roleToRemove = existingUserRoles.find(ur => ur.departmentRoleId === departmentRoleId);
+
+    if (!roleToRemove) {
+      throw new NotFoundError('Role not assigned to this user');
+    }
+
+    // Ensure user keeps at least one role
+    if (existingUserRoles.length <= 1) {
+      throw new BadRequestError('Cannot remove the last role from a municipality user. Users must have at least one role.');
+    }
+
+    // Delete the specific user_role entry
+    await AppDataSource.createQueryBuilder()
+      .delete()
+      .from('user_roles')
+      .where('user_id = :userId AND department_role_id = :departmentRoleId', {
+        userId,
+        departmentRoleId
+      })
+      .execute();
+
+    // Reload user with updated roles
+    const updatedUser = await userRepository.findUserById(userId);
+    if (!updatedUser) {
+      throw new AppError('Failed to reload user after role removal', 500);
+    }
+
+    logInfo(`Role removed from user ${user.username}: departmentRoleId ${departmentRoleId} (User ID: ${userId})`);
+
+    // Get company name if user has a company
+    let companyName: string | undefined;
+    if (updatedUser.companyId) {
+      const company = await companyRepository.findById(updatedUser.companyId);
+      companyName = company?.name;
+    }
+
+    const userResponse = mapUserEntityToUserResponse(updatedUser, companyName);
+    if (!userResponse) {
+      throw new AppError('Failed to map user response after role removal', 500);
     }
     return userResponse;
   }

@@ -7,6 +7,7 @@ import {
   cleanDatabase,
   ensureTestDatabase
 } from '../utils/dbTestUtils';
+import { AppDataSource } from '@database/connection';
 
 // E2E Tests for Municipality User Controller
 //  Uses real PostgreSQL test database with Docker
@@ -20,6 +21,36 @@ describe('MunicipalityUserController E2E Tests', () => {
       .send({ username, password })
       .expect(200);
     return response.headers['set-cookie'];
+  };
+
+  // Helper to get department_role_id by role and department names
+  const getDepartmentRoleId = async (roleName: string, departmentName: string): Promise<number> => {
+    const result = await AppDataSource.query(`
+      SELECT dr.id 
+      FROM department_roles dr
+      JOIN roles r ON dr.role_id = r.id
+      JOIN departments d ON dr.department_id = d.id
+      WHERE r.name = $1 AND d.name = $2
+    `, [roleName, departmentName]);
+
+    if (!result || result.length === 0) {
+      throw new Error(`Department role not found for role: ${roleName}, department: ${departmentName}`);
+    }
+
+    return result[0].id;
+  };
+
+  // Helper function to create valid test data for municipality users
+  const getValidMunicipalityUserData = async () => {
+    const roleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
+    return {
+      username: 'newmuniuser',
+      email: 'newmuni@test.com',
+      password: 'SecureMuni123!',
+      first_name: 'Municipal',
+      last_name: 'Officer',
+      department_role_ids: [roleId]
+    };
   };
 
   // Setup database before all tests
@@ -39,48 +70,54 @@ describe('MunicipalityUserController E2E Tests', () => {
   });
 
   describe('POST /api/municipality/users - Create Municipality User', () => {
-    const validMunicipalityUserData = {
-      username: 'newmuniuser',
-      email: 'newmuni@test.com',
-      password: 'SecureMuni123!',
-      first_name: 'Municipal',
-      last_name: 'Officer',
-      role_name: 'Road Maintenance staff member',
-      department_name: 'Public Infrastructure and Accessibility Department'
-    };
+
 
     it('should create municipality user successfully when authenticated as Admin', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const roadRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
+
+      const userData = {
+        username: 'newmuniuser',
+        email: 'newmuni@test.com',
+        password: 'SecureMuni123!',
+        first_name: 'Municipal',
+        last_name: 'Officer',
+        department_role_ids: [roadRoleId]
+      };
 
       // Act
       const response = await request(app)
         .post('/api/municipality/users')
         .set('Cookie', adminCookies)
-        .send(validMunicipalityUserData)
+        .send(userData)
         .expect('Content-Type', /json/)
         .expect(201);
 
       // Assert
       expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('username', validMunicipalityUserData.username);
-      expect(response.body).toHaveProperty('email', validMunicipalityUserData.email);
-      expect(response.body).toHaveProperty('first_name', validMunicipalityUserData.first_name);
-      expect(response.body).toHaveProperty('last_name', validMunicipalityUserData.last_name);
-      expect(response.body).toHaveProperty('role_name', 'Road Maintenance staff member');
+      expect(response.body).toHaveProperty('username', userData.username);
+      expect(response.body).toHaveProperty('email', userData.email);
+      expect(response.body).toHaveProperty('first_name', userData.first_name);
+      expect(response.body).toHaveProperty('last_name', userData.last_name);
+      expect(response.body).toHaveProperty('roles');
+      expect(response.body.roles.some((r: any) => r.role_name === 'Road Maintenance staff member')).toBe(true);
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).not.toHaveProperty('passwordHash');
 
       // Verify user was created in database
-      const userExists = await userRepository.existsUserByUsername(validMunicipalityUserData.username);
+      const userExists = await userRepository.existsUserByUsername(userData.username);
       expect(userExists).toBe(true);
     });
 
     it('should return 401 when not authenticated', async () => {
+      // Arrange
+      const userData = await getValidMunicipalityUserData();
+
       // Act
       const response = await request(app)
         .post('/api/municipality/users')
-        .send(validMunicipalityUserData)
+        .send(userData)
         .expect('Content-Type', /json/)
         .expect(401);
 
@@ -92,12 +129,13 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should return 403 when authenticated as Citizen', async () => {
       // Arrange
       const citizenCookies = await loginAs('testcitizen', 'TestPass123!');
+      const userData = await getValidMunicipalityUserData();
 
       // Act
       const response = await request(app)
         .post('/api/municipality/users')
         .set('Cookie', citizenCookies)
-        .send(validMunicipalityUserData)
+        .send(userData)
         .expect('Content-Type', /json/)
         .expect(403);
 
@@ -108,12 +146,13 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should return 403 when authenticated as Municipality User', async () => {
       // Arrange
       const municipalityCookies = await loginAs('testmunicipality', 'MuniPass123!');
+      const userData = await getValidMunicipalityUserData();
 
       // Act
       const response = await request(app)
         .post('/api/municipality/users')
         .set('Cookie', municipalityCookies)
-        .send(validMunicipalityUserData)
+        .send(userData)
         .expect('Content-Type', /json/)
         .expect(403);
 
@@ -124,14 +163,14 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should return 400 when required fields are missing', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const validData = await getValidMunicipalityUserData();
       const invalidData = {
-        username: validMunicipalityUserData.username,
-        email: validMunicipalityUserData.email,
+        username: validData.username,
+        email: validData.email,
         // password missing
-        first_name: validMunicipalityUserData.first_name,
-        last_name: validMunicipalityUserData.last_name,
-        role_name: validMunicipalityUserData.role_name,
-        department_name: validMunicipalityUserData.department_name
+        first_name: validData.first_name,
+        last_name: validData.last_name,
+        department_role_ids: validData.department_role_ids
       };
 
       // Act
@@ -150,11 +189,13 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should return 400 when trying to create user with Citizen role', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const citizenRoleId = await getDepartmentRoleId('Citizen', 'Organization');
+      const validData = await getValidMunicipalityUserData();
       const citizenRoleData = {
-        ...validMunicipalityUserData,
+        ...validData,
         username: 'citizentest',
         email: 'citizen@test.com',
-        role_name: 'Citizen',
+        department_role_ids: [citizenRoleId]
       };
 
       // Act
@@ -173,11 +214,13 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should return 400 when trying to create user with Administrator role', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const adminRoleId = await getDepartmentRoleId('Administrator', 'Organization');
+      const validData = await getValidMunicipalityUserData();
       const adminRoleData = {
-        ...validMunicipalityUserData,
+        ...validData,
         username: 'admintest',
         email: 'admin@test.com',
-        role_name: 'Administrator',
+        department_role_ids: [adminRoleId]
       };
 
       // Act
@@ -196,17 +239,18 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should return 409 when username already exists', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const userData = await getValidMunicipalityUserData();
 
       // Create user first
       await request(app)
         .post('/api/municipality/users')
         .set('Cookie', adminCookies)
-        .send(validMunicipalityUserData)
+        .send(userData)
         .expect(201);
 
       // Act - Try to create with same username
       const duplicateData = {
-        ...validMunicipalityUserData,
+        ...userData,
         email: 'different@test.com',
       };
 
@@ -225,17 +269,18 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should return 409 when email already exists', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const userData = await getValidMunicipalityUserData();
 
       // Create user first
       await request(app)
         .post('/api/municipality/users')
         .set('Cookie', adminCookies)
-        .send(validMunicipalityUserData)
+        .send(userData)
         .expect(201);
 
       // Act - Try to create with same email (within same test, no cleanup between)
       const duplicateData = {
-        ...validMunicipalityUserData,
+        ...userData,
         username: 'differentuser',
       };
 
@@ -255,6 +300,8 @@ describe('MunicipalityUserController E2E Tests', () => {
   describe('GET /api/municipality/users - Get All Municipality Users', () => {
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const roadRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
+      const waterRoleId = await getDepartmentRoleId('Water Network staff member', 'Water and Sewer Services Department');
 
       // Create some municipality users for testing
       await request(app)
@@ -266,7 +313,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           password: 'Pass123!',
           first_name: 'Muni',
           last_name: 'One',
-          role_name: 'Road Maintenance staff member', department_name: 'Public Infrastructure and Accessibility Department',
+          department_role_ids: [roadRoleId]
         })
         .expect(201);
 
@@ -279,7 +326,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           password: 'Pass123!',
           first_name: 'Muni',
           last_name: 'Two',
-          role_name: 'Traffic management staff member', department_name: 'Mobility and Traffic Management Department',
+          department_role_ids: [waterRoleId]
         })
         .expect(201);
     });
@@ -305,14 +352,16 @@ describe('MunicipalityUserController E2E Tests', () => {
       expect(response.body[0]).toHaveProperty('email');
       expect(response.body[0]).toHaveProperty('first_name');
       expect(response.body[0]).toHaveProperty('last_name');
-      expect(response.body[0]).toHaveProperty('role_name');
+      expect(response.body[0]).toHaveProperty('roles');
+      expect(Array.isArray(response.body[0].roles)).toBe(true);
       expect(response.body[0]).not.toHaveProperty('password');
       expect(response.body[0]).not.toHaveProperty('passwordHash');
 
       // Verify no Citizen or Administrator users
       for (const user of response.body) {
-        expect(user.role).not.toBe('Citizen');
-        expect(user.role).not.toBe('Administrator');
+        const roleNames = user.roles?.map((r: any) => r.role_name) || [];
+        expect(roleNames).not.toContain('Citizen');
+        expect(roleNames).not.toContain('Administrator');
       }
     });
 
@@ -349,6 +398,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const roadRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
 
       // Create a municipality user for testing
       const createResponse = await request(app)
@@ -360,7 +410,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           password: 'Pass123!',
           first_name: 'Test',
           last_name: 'Municipal',
-          role_name: 'Road Maintenance staff member', department_name: 'Public Infrastructure and Accessibility Department',
+          department_role_ids: [roadRoleId]
         })
         .expect(201);
 
@@ -384,7 +434,8 @@ describe('MunicipalityUserController E2E Tests', () => {
       expect(response.body).toHaveProperty('email', 'testmuni@test.com');
       expect(response.body).toHaveProperty('first_name', 'Test');
       expect(response.body).toHaveProperty('last_name', 'Municipal');
-      expect(response.body).toHaveProperty('role_name', 'Road Maintenance staff member');
+      expect(response.body).toHaveProperty('roles');
+      expect(response.body.roles.some((r: any) => r.role_name === 'Road Maintenance staff member')).toBe(true);
       expect(response.body).not.toHaveProperty('password');
       expect(response.body).not.toHaveProperty('passwordHash');
     });
@@ -453,6 +504,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const roadRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
 
       // Create a municipality user for testing
       const createResponse = await request(app)
@@ -464,7 +516,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           password: 'Pass123!',
           first_name: 'Original',
           last_name: 'Name',
-          role_name: 'Building Maintenance staff member', department_name: 'General Services Department',
+          department_role_ids: [roadRoleId]
         })
         .expect(201);
 
@@ -474,11 +526,12 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should update municipality user successfully when authenticated as Admin', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const waterRoleId = await getDepartmentRoleId('Water Network staff member', 'Water and Sewer Services Department');
       const updateData = {
         first_name: 'Updated',
         last_name: 'NameChanged',
         email: 'updated@test.com',
-        role_name: 'Parks Maintenance staff member', department_name: 'Parks, Green Areas and Recreation Department',
+        department_role_ids: [waterRoleId]
       };
 
       // Act
@@ -494,7 +547,8 @@ describe('MunicipalityUserController E2E Tests', () => {
       expect(response.body).toHaveProperty('first_name', 'Updated');
       expect(response.body).toHaveProperty('last_name', 'NameChanged');
       expect(response.body).toHaveProperty('email', 'updated@test.com');
-      expect(response.body).toHaveProperty('role_name', 'Parks Maintenance staff member');
+      expect(response.body).toHaveProperty('roles');
+      expect(response.body.roles.some((r: any) => r.role_name === 'Water Network staff member')).toBe(true);
       expect(response.body).toHaveProperty('username', 'updatetest'); // Unchanged
     });
 
@@ -603,6 +657,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const electricalRoleId = await getDepartmentRoleId('Electrical staff member', 'Public Lighting Department');
 
       // Create a municipality user for testing
       const createResponse = await request(app)
@@ -614,7 +669,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           password: 'Pass123!',
           first_name: 'Delete',
           last_name: 'Me',
-          role_name: 'Parks Maintenance staff member', department_name: 'Parks, Green Areas and Recreation Department',
+          department_role_ids: [electricalRoleId]
         })
         .expect(201);
 
@@ -699,6 +754,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const roadRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
 
       // Create a municipality user for testing
       const createResponse = await request(app)
@@ -710,7 +766,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           password: 'Pass123!',
           first_name: 'Role',
           last_name: 'Test',
-          role_name: 'Road Maintenance staff member', department_name: 'Public Infrastructure and Accessibility Department',
+          department_role_ids: [roadRoleId]
         })
         .expect(201);
 
@@ -720,8 +776,8 @@ describe('MunicipalityUserController E2E Tests', () => {
     it('should assign role successfully when authenticated as Admin', async () => {
       // Arrange
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
-      const newRole = 'Traffic management staff member';
-      const newDepartment = 'Mobility and Traffic Management Department';
+      const newRole = 'Water Network staff member';
+      const newDepartment = 'Water and Sewer Services Department';
 
       // Act
       const response = await request(app)
@@ -733,7 +789,8 @@ describe('MunicipalityUserController E2E Tests', () => {
 
       // Assert
       expect(response.body).toHaveProperty('id', testUserId);
-      expect(response.body).toHaveProperty('role_name', newRole);
+      expect(response.body).toHaveProperty('roles');
+      expect(response.body.roles.some((r: any) => r.role_name === newRole)).toBe(true);
       expect(response.body).toHaveProperty('username', 'roletest');
     });
 
@@ -849,7 +906,7 @@ describe('MunicipalityUserController E2E Tests', () => {
     });
 
     it('should return all municipality roles when authenticated as admin', async () => {
-      // --- Arrange: Esegui il login come admin ---
+      // --- Arrange: Perform login as admin ---
       // (Preso direttamente dal tuo file di esempio AuthController)
       const loginResponse = await request(app)
         .post('/api/sessions')
@@ -862,7 +919,7 @@ describe('MunicipalityUserController E2E Tests', () => {
       // Estrai i cookie di sessione
       const cookies = loginResponse.headers['set-cookie'];
 
-      // --- Act: Chiama la rotta protetta CON i cookie ---
+      // --- Act: Call the protected route WITH cookies ---
       const response = await request(app)
         .get('/api/roles')
         .set('Cookie', cookies) // <-- CORREZIONE: Aggiungi i cookie di autenticazione
@@ -873,15 +930,11 @@ describe('MunicipalityUserController E2E Tests', () => {
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThan(0);
 
-      // Verify contains municipality roles (string array)
-      expect(response.body).toContain('Customer Service staff member');
+      // Verify contains some municipality roles (string array)
       expect(response.body).toContain('Department Director');
       expect(response.body).toContain('Road Maintenance staff member');
-      expect(response.body).toContain('Traffic management staff member');
-      expect(response.body).toContain('Parks Maintenance staff member');
-      expect(response.body).toContain('Road Maintenance staff member');
-      expect(response.body).toContain('Building Maintenance staff member');
-      expect(response.body).toContain('Parks Maintenance staff member');
+      expect(response.body).toContain('Water Network staff member');
+      expect(response.body).toContain('External Maintainer');
 
       // Verify does NOT contain Citizen or Administrator
       expect(response.body).not.toContain('Citizen');
@@ -910,16 +963,20 @@ describe('MunicipalityUserController E2E Tests', () => {
   });
 
   describe('POST /api/municipality/users - With company_name (External Maintainer)', () => {
-    const externalMaintainerData = {
-      username: 'newexternal',
-      email: 'external@test.com',
-      password: 'ExternalPass123!',
-      first_name: 'External',
-      last_name: 'Worker',
-      role_name: 'External Maintainer',
-      department_name: 'External Service Providers',
-      company_name: 'Lighting Solutions SRL'
-    };
+    let externalMaintainerData: any;
+
+    beforeEach(async () => {
+      const externalRoleId = await getDepartmentRoleId('External Maintainer', 'External Service Providers');
+      externalMaintainerData = {
+        username: 'newexternal',
+        email: 'external@test.com',
+        password: 'ExternalPass123!',
+        first_name: 'External',
+        last_name: 'Worker',
+        department_role_ids: [externalRoleId],
+        company_name: 'Lighting Solutions SRL'
+      };
+    });
 
     it('should create external maintainer with company_name successfully', async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
@@ -934,7 +991,8 @@ describe('MunicipalityUserController E2E Tests', () => {
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('username', externalMaintainerData.username);
       expect(response.body).toHaveProperty('company_name', 'Lighting Solutions SRL');
-      expect(response.body).toHaveProperty('role_name', 'External Maintainer');
+      expect(response.body).toHaveProperty('roles');
+      expect(response.body.roles.some((r: any) => r.role_name === 'External Maintainer')).toBe(true);
 
       // Verify user was created with company
       const user = await userRepository.findUserByUsername(externalMaintainerData.username);
@@ -944,15 +1002,15 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     it('should create municipality user without company_name for non-External Maintainer', async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const roadRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
       const { company_name, ...dataWithoutCompany } = externalMaintainerData;
 
       const response = await request(app)
         .post('/api/municipality/users')
         .set('Cookie', adminCookies)
-        .send({ 
-          ...dataWithoutCompany, 
-          role_name: 'Road Maintenance staff member',
-          department_name: 'Public Infrastructure and Accessibility Department'
+        .send({
+          ...dataWithoutCompany,
+          department_role_ids: [roadRoleId]
         })
         .expect('Content-Type', /json/)
         .expect(201);
@@ -981,6 +1039,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const externalRoleId = await getDepartmentRoleId('External Maintainer', 'External Service Providers');
 
       const createResponse = await request(app)
         .post('/api/municipality/users')
@@ -991,8 +1050,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           password: 'Pass123!',
           first_name: 'External',
           last_name: 'Update',
-          role_name: 'External Maintainer',
-          department_name: 'External Service Providers',
+          department_role_ids: [externalRoleId],
           company_name: 'EcoWaste Management'
         })
         .expect(201);
@@ -1002,6 +1060,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     it('should update external maintainer and change company', async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const externalRoleId = await getDepartmentRoleId('External Maintainer', 'External Service Providers');
 
       const response = await request(app)
         .put(`/api/municipality/users/${testUserId}`)
@@ -1010,8 +1069,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           first_name: 'Updated',
           last_name: 'Name',
           email: 'updated@test.com',
-          role_name: 'External Maintainer',
-          department_name: 'External Service Providers',
+          department_role_ids: [externalRoleId],
           company_name: 'Road Repair Co.'
         })
         .expect('Content-Type', /json/)
@@ -1024,6 +1082,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     it('should update user and remove company when company_name not provided', async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const roadRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
 
       const response = await request(app)
         .put(`/api/municipality/users/${testUserId}`)
@@ -1032,8 +1091,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           first_name: 'Updated',
           last_name: 'NoCompany',
           email: 'nocompany@test.com',
-          role_name: 'Road Maintenance staff member',
-          department_name: 'Public Infrastructure and Accessibility Department',
+          department_role_ids: [roadRoleId],
           company_name: null  // Explicitly remove company
         })
         .expect('Content-Type', /json/)
@@ -1049,6 +1107,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     it('should fail when updating with non-existent company (404)', async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const externalRoleId = await getDepartmentRoleId('External Maintainer', 'External Service Providers');
 
       const response = await request(app)
         .put(`/api/municipality/users/${testUserId}`)
@@ -1057,8 +1116,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           first_name: 'Updated',
           last_name: 'Name',
           email: 'updated@test.com',
-          role_name: 'External Maintainer',
-          department_name: 'External Service Providers',
+          department_role_ids: [externalRoleId],
           company_name: 'Non Existent Company'
         })
         .expect('Content-Type', /json/)
@@ -1072,6 +1130,7 @@ describe('MunicipalityUserController E2E Tests', () => {
   describe('GET /api/municipality/users - List includes company_name', () => {
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const externalRoleId = await getDepartmentRoleId('External Maintainer', 'External Service Providers');
 
       // Create an external maintainer with company
       await request(app)
@@ -1083,8 +1142,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           password: 'Pass123!',
           first_name: 'List',
           last_name: 'Test',
-          role_name: 'External Maintainer',
-          department_name: 'External Service Providers',
+          department_role_ids: [externalRoleId],
           company_name: 'Lighting Solutions SRL'
         })
         .expect(201);
@@ -1117,6 +1175,7 @@ describe('MunicipalityUserController E2E Tests', () => {
 
     beforeEach(async () => {
       const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const externalRoleId = await getDepartmentRoleId('External Maintainer', 'External Service Providers');
 
       const createResponse = await request(app)
         .post('/api/municipality/users')
@@ -1127,8 +1186,7 @@ describe('MunicipalityUserController E2E Tests', () => {
           password: 'Pass123!',
           first_name: 'Single',
           last_name: 'External',
-          role_name: 'External Maintainer',
-          department_name: 'External Service Providers',
+          department_role_ids: [externalRoleId],
           company_name: 'EcoWaste Management'
         })
         .expect(201);
@@ -1148,6 +1206,361 @@ describe('MunicipalityUserController E2E Tests', () => {
       expect(response.body).toHaveProperty('id', externalUserId);
       expect(response.body).toHaveProperty('username', 'externalsingle');
       expect(response.body).toHaveProperty('company_name', 'EcoWaste Management');
+    });
+  });
+
+  // ============================================
+  // V5 NEW ENDPOINTS - Department Roles & Multi-Role Management
+  // ============================================
+
+  describe('GET /api/municipality/users/department-roles - Get All Department Roles', () => {
+
+    it('should return 401 if not authenticated', async () => {
+      const response = await request(app)
+        .get('/api/municipality/users/department-roles')
+        .expect('Content-Type', /json/)
+        .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Not authenticated');
+    });
+
+    it('should return 403 if authenticated as Citizen', async () => {
+      const citizenCookies = await loginAs('testcitizen', 'TestPass123!');
+
+      const response = await request(app)
+        .get('/api/municipality/users/department-roles')
+        .set('Cookie', citizenCookies)
+        .expect('Content-Type', /json/)
+        .expect(403);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('Access denied');
+    });
+
+    it('should return 403 if authenticated as Municipality Staff', async () => {
+      const municipalityCookies = await loginAs('testmunicipality', 'MuniPass123!');
+
+      const response = await request(app)
+        .get('/api/municipality/users/department-roles')
+        .set('Cookie', municipalityCookies)
+        .expect('Content-Type', /json/)
+        .expect(403);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return all department roles when authenticated as Admin', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .get('/api/municipality/users/department-roles')
+        .set('Cookie', adminCookies)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+
+      // Verify structure of each department role
+      for (const dr of response.body) {
+        expect(dr).toHaveProperty('id');
+        expect(dr).toHaveProperty('department');
+        expect(dr).toHaveProperty('role');
+        expect(typeof dr.id).toBe('number');
+        expect(typeof dr.department).toBe('string');
+        expect(typeof dr.role).toBe('string');
+      }
+    });
+
+    it('should NOT include Citizen or Administrator department roles', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .get('/api/municipality/users/department-roles')
+        .set('Cookie', adminCookies)
+        .expect(200);
+
+      const roleNames = response.body.map((dr: any) => dr.role);
+      expect(roleNames).not.toContain('Citizen');
+      expect(roleNames).not.toContain('Administrator');
+    });
+
+    it('should include expected municipality department roles', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .get('/api/municipality/users/department-roles')
+        .set('Cookie', adminCookies)
+        .expect(200);
+
+      const roleNames = response.body.map((dr: any) => dr.role);
+      expect(roleNames).toContain('Road Maintenance staff member');
+      expect(roleNames).toContain('Water Network staff member');
+      expect(roleNames).toContain('External Maintainer');
+    });
+  });
+
+  describe('PUT /api/municipality/users/:id/roles - Replace All User Roles', () => {
+    let testUserId: number;
+
+    beforeEach(async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const roadRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
+
+      const createResponse = await request(app)
+        .post('/api/municipality/users')
+        .set('Cookie', adminCookies)
+        .send({
+          username: 'multiroleuser',
+          email: 'multirole@test.com',
+          password: 'Pass123!',
+          first_name: 'Multi',
+          last_name: 'Role',
+          department_role_ids: [roadRoleId]
+        })
+        .expect(201);
+
+      testUserId = createResponse.body.id;
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const response = await request(app)
+        .put(`/api/municipality/users/${testUserId}/roles`)
+        .send({ department_role_ids: [1] })
+        .expect('Content-Type', /json/)
+        .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 403 when authenticated as Citizen', async () => {
+      const citizenCookies = await loginAs('testcitizen', 'TestPass123!');
+
+      const response = await request(app)
+        .put(`/api/municipality/users/${testUserId}/roles`)
+        .set('Cookie', citizenCookies)
+        .send({ department_role_ids: [1] })
+        .expect('Content-Type', /json/)
+        .expect(403);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 when department_role_ids is empty', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .put(`/api/municipality/users/${testUserId}/roles`)
+        .set('Cookie', adminCookies)
+        .send({ department_role_ids: [] })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 when department_role_ids is not provided', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .put(`/api/municipality/users/${testUserId}/roles`)
+        .set('Cookie', adminCookies)
+        .send({})
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for invalid department_role_ids', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .put(`/api/municipality/users/${testUserId}/roles`)
+        .set('Cookie', adminCookies)
+        .send({ department_role_ids: [99999] })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 when trying to assign Citizen role', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const citizenRoleId = await getDepartmentRoleId('Citizen', 'Organization');
+
+      const response = await request(app)
+        .put(`/api/municipality/users/${testUserId}/roles`)
+        .set('Cookie', adminCookies)
+        .send({ department_role_ids: [citizenRoleId] })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 404 for non-existent user ID', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const roadRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
+
+      const response = await request(app)
+        .put('/api/municipality/users/999999/roles')
+        .set('Cookie', adminCookies)
+        .send({ department_role_ids: [roadRoleId] })
+        .expect('Content-Type', /json/)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for invalid user ID format', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .put('/api/municipality/users/invalid/roles')
+        .set('Cookie', adminCookies)
+        .send({ department_role_ids: [1] })
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('DELETE /api/municipality/users/:id/roles/:roleId - Remove Single Role', () => {
+    let testUserId: number;
+    let firstRoleId: number;
+    let secondRoleId: number;
+
+    beforeEach(async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      firstRoleId = await getDepartmentRoleId('Road Maintenance staff member', 'Public Infrastructure and Accessibility Department');
+      secondRoleId = await getDepartmentRoleId('Water Network staff member', 'Water and Sewer Services Department');
+
+      // Create a user with multiple roles
+      const createResponse = await request(app)
+        .post('/api/municipality/users')
+        .set('Cookie', adminCookies)
+        .send({
+          username: 'removeroleuser',
+          email: 'removerole@test.com',
+          password: 'Pass123!',
+          first_name: 'Remove',
+          last_name: 'Role',
+          department_role_ids: [firstRoleId, secondRoleId]
+        })
+        .expect(201);
+
+      testUserId = createResponse.body.id;
+    });
+
+    it('should remove a single role successfully when authenticated as Admin', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .delete(`/api/municipality/users/${testUserId}/roles/${firstRoleId}`)
+        .set('Cookie', adminCookies)
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('id', testUserId);
+      expect(response.body).toHaveProperty('roles');
+      expect(response.body.roles.length).toBe(1);
+
+      const roleNames = response.body.roles.map((r: any) => r.role_name);
+      expect(roleNames).not.toContain('Road Maintenance staff member');
+      expect(roleNames).toContain('Water Network staff member');
+    });
+
+    it('should return 401 when not authenticated', async () => {
+      const response = await request(app)
+        .delete(`/api/municipality/users/${testUserId}/roles/${firstRoleId}`)
+        .expect('Content-Type', /json/)
+        .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 403 when authenticated as Citizen', async () => {
+      const citizenCookies = await loginAs('testcitizen', 'TestPass123!');
+
+      const response = await request(app)
+        .delete(`/api/municipality/users/${testUserId}/roles/${firstRoleId}`)
+        .set('Cookie', citizenCookies)
+        .expect('Content-Type', /json/)
+        .expect(403);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 when trying to remove last role', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      // First remove one role
+      await request(app)
+        .delete(`/api/municipality/users/${testUserId}/roles/${firstRoleId}`)
+        .set('Cookie', adminCookies)
+        .expect(200);
+
+      // Now try to remove the last remaining role
+      const response = await request(app)
+        .delete(`/api/municipality/users/${testUserId}/roles/${secondRoleId}`)
+        .set('Cookie', adminCookies)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('last role');
+    });
+
+    it('should return 404 for non-existent user ID', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .delete(`/api/municipality/users/999999/roles/${firstRoleId}`)
+        .set('Cookie', adminCookies)
+        .expect('Content-Type', /json/)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 404 when role is not assigned to user', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+      const unassignedRoleId = await getDepartmentRoleId('External Maintainer', 'External Service Providers');
+
+      const response = await request(app)
+        .delete(`/api/municipality/users/${testUserId}/roles/${unassignedRoleId}`)
+        .set('Cookie', adminCookies)
+        .expect('Content-Type', /json/)
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for invalid user ID format', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .delete(`/api/municipality/users/invalid/roles/${firstRoleId}`)
+        .set('Cookie', adminCookies)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('should return 400 for invalid role ID format', async () => {
+      const adminCookies = await loginAs('testadmin', 'AdminPass123!');
+
+      const response = await request(app)
+        .delete(`/api/municipality/users/${testUserId}/roles/invalid`)
+        .set('Cookie', adminCookies)
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('message');
     });
   });
 
