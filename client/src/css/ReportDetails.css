@@ -273,27 +273,6 @@
   gap: 0.5rem;
 }
 
-.rdm-btn-info {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(161, 43, 50, 0.2);
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--rdm-brand);
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-}
-
-.rdm-btn-info:hover {
-  transform: scale(1.05);
-  border-color: var(--rdm-brand);
-  background: #fff;
-}
-
 .rdm-legend-popover {
   background: rgba(255, 255, 255, 0.98);
   border-radius: 12px;
@@ -391,14 +370,15 @@
   position: sticky;
   bottom: 0;
   /* Attaccato perfettamente al fondo */
-  z-index: 1000;
+  z-index: 10001; /* Aumentato z-index per evitare sovrapposizioni con sidebar */
 
   /* DIMENSIONI & SPAZIATURA */
   /* Compensazione margini negativi per riempire il contenitore del body */
   margin-left: -32px;
-  margin-right: -32px;
+  margin-right: -12px;
   /* Rimuoviamo il margin-bottom negativo per far lavorare il controfooter */
   margin-bottom: 0;
+
 
   /* SPAZIO MAGGIORE DAL CONTENUTO SOPRASTANTE */
   margin-top: 64px;
@@ -792,7 +772,7 @@
   border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15), 0 5px 15px -5px rgba(0, 0, 0, 0.05) !important;
   animation: slideDownFade 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-  z-index: 1050;
+  z-index: 10002; /* Più alto del footer (10001) */
   overflow: hidden;
 }
 
@@ -1085,13 +1065,6 @@
   }
 }
 
-/* Info Button for Report Map */
-.rdm-map-info-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1000;
-}
 
 .rdm-btn-info {
   background: rgba(255, 255, 255, 0.9);

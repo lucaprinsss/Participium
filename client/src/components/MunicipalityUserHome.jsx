@@ -4,8 +4,6 @@ import {
     Container,
     Card,
     Table,
-    Badge,
-    Button,
     Alert,
     Dropdown,
     InputGroup,
@@ -100,7 +98,7 @@ const ReportsTableBody = React.memo(({ reports, handleShow }) => {
     }
 
     const getStatusClass = (status) => {
-        const s = status?.toLowerCase().replace(/_/g, " ");
+        const s = status?.toLowerCase().replaceAll("_", " ");
         if (s === "pending approval") return "mul-status-pending";
         if (s === "assigned") return "mul-status-assigned";
         if (s === "in progress") return "mul-status-assigned"; // Using same blue for progress
@@ -128,7 +126,7 @@ const ReportsTableBody = React.memo(({ reports, handleShow }) => {
             </td>
             <td>
                 <span className={`mul-status-badge ${getStatusClass(report.status)}`}>
-                    {report.status.replace(/_/g, " ")}
+                    {report.status.replaceAll("_", " ")}
                 </span>
             </td>
             <td className="text-end pe-4">

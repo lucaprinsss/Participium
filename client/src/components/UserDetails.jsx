@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { Dropdown } from "react-bootstrap";
-import { FaUser, FaEnvelope, FaUserShield, FaTrash, FaPlus, FaEdit, FaSave, FaTimes } from "react-icons/fa";
+import { FaUserShield, FaTrash, FaPlus, FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import "../css/UserDetails.css";
 
 export default function UserDetails({ user, departmentRolesMapping, onSave, onCancel, loading, onDirtyChange }) {
@@ -16,6 +16,7 @@ export default function UserDetails({ user, departmentRolesMapping, onSave, onCa
     // New Role Selection State
     const [newRoleDept, setNewRoleDept] = useState("");
     const [newRoleName, setNewRoleName] = useState("");
+    const [roleError, setRoleError] = useState("");
 
     const [initialFormData, setInitialFormData] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
@@ -66,9 +67,29 @@ export default function UserDetails({ user, departmentRolesMapping, onSave, onCa
         );
 
         if (mapping) {
+            // Validation: External Maintainer exclusivity
+            const isAddingExternal = newRoleName.toLowerCase() === "external maintainer";
+            const hasExternal = formData.roles.some(r => r.role_name.toLowerCase() === "external maintainer");
+
+            if (isAddingExternal && hasExternal) {
+                setRoleError("The External Maintainer role can be assigned only once.");
+                return;
+            }
+
+            if (isAddingExternal && formData.roles.length > 0) {
+                setRoleError("External Maintainer role cannot be combined with other roles.");
+                return;
+            }
+
+            if (!isAddingExternal && hasExternal) {
+                setRoleError("External Maintainer role cannot be combined with other roles.");
+                return;
+            }
+
             // Check if already exists
             const exists = formData.roles.some(r => r.department_role_id === mapping.id);
             if (!exists) {
+                setRoleError(""); // Clear previous error
                 setFormData(prev => ({
                     ...prev,
                     roles: [...prev.roles, {
@@ -256,6 +277,7 @@ export default function UserDetails({ user, departmentRolesMapping, onSave, onCa
                             </button>
                         </div>
                     )}
+                    {roleError && <div className="text-danger mt-2 small">{roleError}</div>}
                 </div>
             </form>
         </div>

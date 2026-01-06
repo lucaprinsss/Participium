@@ -263,7 +263,6 @@ ReportDetails.propTypes = {
         status: PropTypes.string,
         category: PropTypes.string,
         location: PropTypes.object,
-        // ... altre proprietà di report
     }).isRequired,
     user: PropTypes.object, // Oggetto utente generico
     onApprove: PropTypes.func.isRequired,

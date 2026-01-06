@@ -50,7 +50,8 @@ const OtpVerification = ({ username }) => {
   // --- LOGICA INPUT ---
   
   const handleChange = (element, index) => {
-    if (isNaN(element.value)) return;
+    // Check if the value is a number (allow empty string for deletion)
+    if (!/^\d*$/.test(element.value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = element.value;

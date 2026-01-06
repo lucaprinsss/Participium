@@ -226,11 +226,31 @@ export default function Register() {
   const headerTitle = step === 1 ? "Join Participium" : "Verify Account";
   const headerSubtitle = step === 1 ? "Create your account" : `Code sent to ${formData.email}`;
 
-  const getFieldName = (field) => field === "firstName" ? "First Name" : "Last Name";
-  const getFieldPlaceholder = (field) => isFieldActive(field) ? '' : (field === "firstName" ? "first name" : "last name");
-  const getFieldIcon = (field) => field === "email" ? <FaEnvelope className="reg-input-icon" /> : <FaIdCard className="reg-input-icon" />;
-  const getPasswordFieldType = (field) => field === "password" ? (showPassword ? "text" : "password") : (showConfirmPassword ? "text" : "password");
-  const getPasswordPlaceholder = (field) => isFieldActive(field) ? '' : (field === "password" ? "password" : "confirm password");
+  const getFieldName = (field) => (field === "firstName" ? "First Name" : "Last Name");
+
+  const getFieldPlaceholder = (field) => {
+    if (isFieldActive(field)) return "";
+    return field === "firstName" ? "first name" : "last name";
+  };
+
+  const getFieldIcon = (field) =>
+    field === "email" ? (
+      <FaEnvelope className="reg-input-icon" />
+    ) : (
+      <FaIdCard className="reg-input-icon" />
+    );
+
+  const getPasswordFieldType = (field) => {
+    if (field === "password") {
+      return showPassword ? "text" : "password";
+    }
+    return showConfirmPassword ? "text" : "password";
+  };
+
+  const getPasswordPlaceholder = (field) => {
+    if (isFieldActive(field)) return "";
+    return field === "password" ? "password" : "confirm password";
+  };
 
   return (
     <Container fluid className="reg-page-container">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import {
   MapContainer,
@@ -27,7 +28,6 @@ import {
   getReports,
   getAddressFromCoordinates,
   getCoordinatesFromAddress,
-  getReportsByAddress,
 } from "../api/reportApi";
 import { getCurrentUser } from "../api/authApi";
 
@@ -70,8 +70,9 @@ L.Marker.prototype.options.icon = Icons.blue;
 // --- Point-in-Polygon Logic ---
 const isPointInMultiPolygon = (point, polygons) => {
   let isInside = false;
-  polygons.forEach((polygonGroup) => {
-    polygonGroup.forEach((ring, ringIndex) => {
+  for (const polygonGroup of polygons) {
+    for (let ringIndex = 0; ringIndex < polygonGroup.length; ringIndex++) {
+      const ring = polygonGroup[ringIndex];
       const coordinates = ring.map((coord) => [coord[0], coord[1]]);
       const ringIsInside = isPointInRing(point, coordinates);
       if (ringIndex === 0 && ringIsInside) {
@@ -79,8 +80,8 @@ const isPointInMultiPolygon = (point, polygons) => {
       } else if (ringIndex > 0 && ringIsInside) {
         isInside = false;
       }
-    });
-  });
+    }
+  }
   return isInside;
 };
 
@@ -115,12 +116,125 @@ const MapClickHandler = ({ onMapClick, turinPolygons }) => {
   return null;
 };
 
+MapClickHandler.propTypes = {
+  onMapClick: PropTypes.func.isRequired,
+  turinPolygons: PropTypes.array,
+};
+
 const FormError = ({ message }) => (
   <div className="mp-form-error">
     <FaTimes />
     <span>{message}</span>
   </div>
 );
+
+FormError.propTypes = {
+  message: PropTypes.string.isRequired,
+};
+
+// --- HELPER FUNCTIONS ---
+const getLatLngsFromRing = (ring) => ring.map((coord) => [coord[1], coord[0]]);
+
+const processCoordinates = (coordinates) => {
+  const localLatLngs = [];
+  coordinates.forEach((ring) => {
+    localLatLngs.push(...getLatLngsFromRing(ring));
+  });
+  return localLatLngs;
+};
+
+const processGeoJsonFeatures = (features) => {
+  const allPolygons = [];
+  const allLatLngs = [];
+
+  features.forEach((feature) => {
+    const geometryType = feature.geometry.type;
+    const coordinates = feature.geometry.coordinates;
+
+    if (geometryType === "MultiPolygon") {
+      coordinates.forEach((polygon) => {
+        allPolygons.push(polygon);
+        allLatLngs.push(...processCoordinates(polygon));
+      });
+    } else if (geometryType === "Polygon") {
+      allPolygons.push(coordinates);
+      allLatLngs.push(...processCoordinates(coordinates));
+    }
+  });
+
+  return { allPolygons, allLatLngs };
+};
+
+const buildNotificationMessage = (coordinates) => {
+  let addressText = "";
+  let notificationType = "info";
+  let notificationMessage = "";
+
+  if (coordinates.road) {
+    addressText = coordinates.road;
+    if (coordinates.house_number) {
+      addressText += `, ${coordinates.house_number}`;
+    } else if (
+      coordinates.houseNumberNotFound &&
+      coordinates.requestedHouseNumber
+    ) {
+      notificationType = "warning";
+      notificationMessage = `House number ${coordinates.requestedHouseNumber} not found. Showing ${addressText} instead.`;
+    }
+  } else {
+    addressText = coordinates.display_name;
+  }
+
+  if (!notificationMessage) {
+    notificationMessage = `Showing location: ${addressText}`;
+  }
+
+  return { message: notificationMessage, type: notificationType };
+};
+
+const TurinBoundaries = ({ turinData }) => {
+  if (!turinData) return null;
+
+  const pathOptions = {
+    fillColor: "var(--brand-red)",
+    fillOpacity: 0.1,
+    color: "var(--brand-red)",
+    weight: 2,
+    opacity: 0.8,
+  };
+
+  return turinData.features.map((feature, index) => {
+    const geometryType = feature.geometry.type;
+    const coordinates = feature.geometry.coordinates;
+
+    if (geometryType === "MultiPolygon") {
+      return coordinates.map((polygon, polyIndex) => (
+        <Polygon
+          key={`${feature.id || index}-${polyIndex}`}
+          positions={polygon.map((ring) =>
+            ring.map((coord) => [coord[1], coord[0]])
+          )}
+          pathOptions={pathOptions}
+        />
+      ));
+    } else if (geometryType === "Polygon") {
+      return (
+        <Polygon
+          key={feature.id || index}
+          positions={coordinates.map((ring) =>
+            ring.map((coord) => [coord[1], coord[0]])
+          )}
+          pathOptions={pathOptions}
+        />
+      );
+    }
+    return null;
+  });
+};
+
+TurinBoundaries.propTypes = {
+  turinData: PropTypes.object,
+};
 
 const MapPage = () => {
   const navigate = useNavigate();
@@ -261,7 +375,7 @@ const MapPage = () => {
           if (pendingZoom.boundingbox && pendingZoom.boundingbox.length === 4) {
             // Zoom to bounding box to show entire street/course
             const [south, north, west, east] =
-              pendingZoom.boundingbox.map(parseFloat);
+              pendingZoom.boundingbox.map(Number.parseFloat);
             mapInstance.fitBounds(
               [
                 [south, west],
@@ -358,38 +472,14 @@ const MapPage = () => {
         });
 
         // Build a concise address string (road + house number)
-        let addressText = "";
-        let notificationType = "info";
-        let notificationMessage = "";
-
-        if (coordinates.road) {
-          addressText = coordinates.road;
-          if (coordinates.house_number) {
-            addressText += `, ${coordinates.house_number}`;
-          } else if (
-            coordinates.houseNumberNotFound &&
-            coordinates.requestedHouseNumber
-          ) {
-            // House number was requested but not found in OpenStreetMap
-            notificationType = "warning";
-            notificationMessage = `House number ${coordinates.requestedHouseNumber} not found. Showing ${addressText} instead.`;
-          }
-        } else {
-          // Fallback to display_name if road is not available
-          addressText = coordinates.display_name;
-        }
-
-        // Use custom message if set, otherwise build default message
-        if (!notificationMessage) {
-          notificationMessage = `Showing location: ${addressText}`;
-        }
+        const { message, type } = buildNotificationMessage(coordinates);
 
         setNotification({
-          message: notificationMessage,
-          type: notificationType,
+          message: message,
+          type: type,
         });
       }
-    } catch (error) {
+    } catch {
       setNotification({
         message: `Address "${searchText}" not found.`,
         type: "warning",
@@ -408,29 +498,10 @@ const MapPage = () => {
         const data = await response.json();
         setTurinData(data);
 
-        const allPolygons = [];
-        const allLatLngs = [];
+        const { allPolygons, allLatLngs } = processGeoJsonFeatures(
+          data.features
+        );
 
-        data.features.forEach((feature) => {
-          const geometryType = feature.geometry.type;
-          const coordinates = feature.geometry.coordinates;
-
-          if (geometryType === "MultiPolygon") {
-            coordinates.forEach((polygon) => {
-              allPolygons.push(polygon);
-              polygon.forEach((ring) => {
-                const latLngs = ring.map((coord) => [coord[1], coord[0]]);
-                allLatLngs.push(...latLngs);
-              });
-            });
-          } else if (geometryType === "Polygon") {
-            allPolygons.push(coordinates);
-            coordinates.forEach((ring) => {
-              const latLngs = ring.map((coord) => [coord[1], coord[0]]);
-              allLatLngs.push(...latLngs);
-            });
-          }
-        });
         setTurinPolygons(allPolygons);
         if (allLatLngs.length > 0) {
           const bounds = L.latLngBounds(allLatLngs);
@@ -461,8 +532,7 @@ const MapPage = () => {
             marker.lng
           );
           setCurrentAddress(addressFound);
-        } catch (error) {
-          console.error("Failed to retrieve address", error);
+        } catch {
           setCurrentAddress("Address not found");
         } finally {
           setIsLoadingAddress(false);
@@ -521,45 +591,6 @@ const MapPage = () => {
   const handleReportCreated = () => {
     handleClear(false);
     refreshReports();
-  };
-
-  const renderPolygons = () => {
-    if (!turinData) return null;
-
-    return turinData.features.map((feature, index) => {
-      const geometryType = feature.geometry.type;
-      const coordinates = feature.geometry.coordinates;
-      const pathOptions = {
-        fillColor: "var(--brand-red)",
-        fillOpacity: 0.1,
-        color: "var(--brand-red)",
-        weight: 2,
-        opacity: 0.8,
-      };
-
-      if (geometryType === "MultiPolygon") {
-        return coordinates.map((polygon, polyIndex) => (
-          <Polygon
-            key={`${index}-${polyIndex}`}
-            positions={polygon.map((ring) =>
-              ring.map((coord) => [coord[1], coord[0]])
-            )}
-            pathOptions={pathOptions}
-          />
-        ));
-      } else if (geometryType === "Polygon") {
-        return (
-          <Polygon
-            key={index}
-            positions={coordinates.map((ring) =>
-              ring.map((coord) => [coord[1], coord[0]])
-            )}
-            pathOptions={pathOptions}
-          />
-        );
-      }
-      return null;
-    });
   };
 
   // --- FILTER LOGIC ---
@@ -643,7 +674,7 @@ const MapPage = () => {
                       zoom={12}
                       scrollWheelZoom={true}
                       maxBounds={turinBounds}
-                      maxBoundsViscosity={1.0}
+                      maxBoundsViscosity={1}
                       ref={setMapInstance}
                     >
                       <TileLayer
@@ -656,11 +687,12 @@ const MapPage = () => {
                         turinPolygons={turinPolygons}
                       />
 
-                      {renderPolygons()}
+                      <TurinBoundaries turinData={turinData} />
 
                       <MarkerClusterGroup
                         chunkedLoading
                         spiderfyOnMaxZoom={true}
+                        showCoverageOnHover={false}
                         maxClusterRadius={40}
                         iconCreateFunction={(cluster) => {
                           const count = cluster.getChildCount();
@@ -772,16 +804,7 @@ const MapPage = () => {
                                 : currentAddress || "Location Selected"}
                             </b>
                             <br />
-                            {!showForm ? (
-                              <span
-                                style={{
-                                  fontSize: "0.8em",
-                                  color: "#666",
-                                }}
-                              >
-                                Click marker to remove
-                              </span>
-                            ) : (
+                            {showForm ? (
                               <span
                                 style={{
                                   fontSize: "0.8em",
@@ -789,6 +812,15 @@ const MapPage = () => {
                                 }}
                               >
                                 Position Locked
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  fontSize: "0.8em",
+                                  color: "#666",
+                                }}
+                              >
+                                Click marker to remove
                               </span>
                             )}
                           </Tooltip>
@@ -813,6 +845,7 @@ const MapPage = () => {
                       {showLegendPanel && (
                         <div
                           className="mp-legend-popover"
+                          aria-label="Report Status Legend"
                           onClick={stopLegendPropagation}
                           onMouseDown={stopLegendPropagation}
                           onTouchStart={stopLegendPropagation}
@@ -899,8 +932,10 @@ const MapPage = () => {
         <div
           className="mp-modal-overlay"
           onClick={() => setShowLoginModal(false)}
+          role="presentation"
         >
-          <div
+          <dialog
+            open
             className="mp-modal-content"
             onClick={(e) => e.stopPropagation()}
           >
@@ -920,7 +955,7 @@ const MapPage = () => {
                 Go to Login
               </button>
             </div>
-          </div>
+          </dialog>
         </div>
       )}
     </div>

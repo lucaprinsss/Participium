@@ -88,6 +88,25 @@ export default function MunicipalityUserForm({ onSuccess, onCancel }) {
     );
 
     if (roleToAdd && !selectedRoles.some(r => r.id === roleToAdd.id)) {
+      // Logic to enforce single role for External Maintainer
+      const isAddingExternal = roleToAdd.role.toLowerCase() === "external maintainer";
+      const hasExternal = selectedRoles.some(r => r.role.toLowerCase() === "external maintainer");
+
+      if (isAddingExternal && hasExternal) {
+        setErrors(prev => ({ ...prev, roles: "The External Maintainer role can be assigned only once." }));
+        return;
+      }
+
+      if (isAddingExternal && selectedRoles.length > 0) {
+        setErrors(prev => ({ ...prev, roles: "External Maintainer role cannot be combined with other roles." }));
+        return;
+      }
+
+      if (!isAddingExternal && hasExternal) {
+        setErrors(prev => ({ ...prev, roles: "External Maintainer role cannot be combined with other roles." }));
+        return;
+      }
+
       setSelectedRoles(prev => [...prev, roleToAdd]);
       setNewRoleDept("");
       setNewRoleName("");

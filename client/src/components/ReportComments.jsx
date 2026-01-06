@@ -298,9 +298,6 @@ const ReportComments = ({ reportId, currentUserId, showToast }) => {
     
     // Lista di commenti o stato vuoto/caricamento
     const renderCommentList = useMemo(() => {
-        if (loadingComments) {
-            //return <div className="text-center py-4 text-muted small"><Spinner animation="border" size="sm" className="me-2" /> Loading conversation...</div>;
-        } 
         if (comments.length === 0) {
             return (
                 <div className="rdm-empty-comments">

@@ -486,6 +486,8 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+    text-align: left;
+    max-width: 100%;
   }
 
   .hero-title,
@@ -512,10 +514,6 @@
     align-items: center;
   }
 
-  .feature-list li {
-    text-align: left;
-    max-width: 100%;
-  }
 }
 
 /* Big screens */

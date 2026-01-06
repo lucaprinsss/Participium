@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import {
   FaMapMarkerAlt,
   FaCamera,
@@ -16,6 +17,10 @@ const FormError = ({ message }) => (
     <span>{message}</span>
   </div>
 );
+
+FormError.propTypes = {
+  message: PropTypes.string.isRequired,
+};
 
 const MapReportForm = ({
   marker,
@@ -428,6 +433,20 @@ const MapReportForm = ({
       </form>
     </div>
   );
+};
+
+MapReportForm.propTypes = {
+  marker: PropTypes.shape({
+    lat: PropTypes.number,
+    lng: PropTypes.number,
+  }),
+  address: PropTypes.string,
+  isLoadingAddress: PropTypes.bool.isRequired,
+  categories: PropTypes.arrayOf(PropTypes.string).isRequired,
+  isLoadingCategories: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onReportCreated: PropTypes.func.isRequired,
+  setNotification: PropTypes.func.isRequired,
 };
 
 export default MapReportForm;

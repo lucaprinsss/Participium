@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Alert, Modal, Dropdown, InputGroup, Tooltip, OverlayTrigger, Form } from "react-bootstrap";
-import { FaBuilding, FaChevronDown, FaUndo, FaFilter } from "react-icons/fa";
+import { Alert, Modal, Dropdown, InputGroup, Tooltip, OverlayTrigger } from "react-bootstrap";
+import { FaBuilding, FaChevronDown, FaUndo } from "react-icons/fa";
 import { getAllExternals, deleteMunicipalityUser, updateMunicipalityUser } from "../api/municipalityUserApi";
 import { getAllCompanies } from "../api/companyApi";
 import { getAllDepartmentRolesMapping } from "../api/departmentAPI";

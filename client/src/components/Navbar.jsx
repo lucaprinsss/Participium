@@ -13,10 +13,6 @@ const getInitials = (firstName, lastName) => {
   const last = lastName?.charAt(0)?.toUpperCase() || '';
   return (first + last) || 'U'; 
 };
-getInitials.propTypes = {
-  firstName: PropTypes.string,
-  lastName: PropTypes.string,
-};
 
 // --- TOAST COMPONENT (Copied from ReportDetails.jsx) ---
 const ToastMessage = ({ message, type, onClose }) => {
@@ -132,7 +128,7 @@ export default function Navbar({ user, onLogout }) {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 10000); // Poll every 10s
     return () => clearInterval(interval);
-  }, [user, showToast]);
+  }, [user, showToast, onLogout]);
 
   const handleNotificationClick = async (notification) => {
     if (!notification.isRead) {
@@ -174,7 +170,7 @@ export default function Navbar({ user, onLogout }) {
   // 2. Info Utente Derivate (uso useMemo per la stabilità)
   const userRoles = useMemo(() => user?.roles || [], [user]);
   const isAdmin = useMemo(() => userRoles.some(r => r.role_name === 'Administrator'), [userRoles]);
-
+  
   const isCitizen = useMemo(() => userRoles.some(r => r.role_name === 'Citizen'), [userRoles]);
   
   const displayUsername = useMemo(() => {
@@ -370,7 +366,7 @@ export default function Navbar({ user, onLogout }) {
           onApprove={() => {}}
           onReject={() => {}}
           onStatusUpdate={() => {}}
-          onReportUpdated={(updatedReport) => setSelectedReport(updatedReport)}
+          onReportUpdated={setSelectedReport}
           openChat={true} // Open chat by default if coming from notification? Maybe useful.
         />
       )}
@@ -386,6 +382,7 @@ Navbar.propTypes = {
     username: PropTypes.string,
     first_name: PropTypes.string,
     last_name: PropTypes.string,
+    personal_photo_url: PropTypes.string,
   }),
   onLogout: PropTypes.func.isRequired,
 };

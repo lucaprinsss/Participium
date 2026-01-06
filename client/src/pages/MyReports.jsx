@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Alert, InputGroup, Dropdown, Tooltip, OverlayTrigger } from "react-bootstrap";
+import { InputGroup, Dropdown, Tooltip, OverlayTrigger } from "react-bootstrap";
 import { getMyReports, getAllCategories } from '../api/reportApi';
 import { getMessages } from '../api/chatApi';
 import ReportDetails from '../components/ReportDetails';
 import '../css/MunicipalityUserList.css';
-import { FaCommentAlt, FaTimes, FaCalendarAlt, FaTag, FaSearch, FaFilter, FaUndo, FaChevronDown, FaInfoCircle } from 'react-icons/fa';
+import { FaCommentAlt, FaCalendarAlt, FaTag, FaSearch, FaUndo, FaChevronDown, FaInfoCircle } from 'react-icons/fa';
 
 const MyReports = () => {
     const [reports, setReports] = useState([]);
@@ -221,16 +221,18 @@ const MyReports = () => {
                                                         </td>
                                                         <td>
                                                             {chats.some(c => c.report.id === report.id) && (
-                                                                <div 
+                                                                <button
+                                                                    type="button"
                                                                     className="mul-chat-indicator" 
                                                                     title="Active Chat"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         handleReportClick(report, true);
                                                                     }}
+                                                                    style={{ border: 'none' }}
                                                                 >
                                                                     <FaCommentAlt />
-                                                                </div>
+                                                                </button>
                                                             )}
                                                         </td>
                                                     </tr>
@@ -261,10 +263,12 @@ const MyReports = () => {
                                 </div>
                             ) : (
                                 chats.map((chat) => (
-                                    <div 
+                                    <button 
+                                        type="button"
                                         key={chat.report.id} 
                                         className="mul-list-item"
                                         onClick={() => handleReportClick(chat.report, true)}
+                                        style={{ width: '100%', textAlign: 'left', font: 'inherit' }}
                                     >
                                         <div className="mul-avatar">
                                             <FaCommentAlt />
@@ -275,7 +279,7 @@ const MyReports = () => {
                                                 {chat.lastMessage?.content || "No messages yet"}
                                             </div>
                                         </div>
-                                    </div>
+                                    </button>
                                 ))
                             )}
                         </div>

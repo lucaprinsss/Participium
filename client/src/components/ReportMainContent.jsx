@@ -19,7 +19,6 @@ const ReportMainContent = ({
     onReject,
     onReportUpdated,
     onOpenImage,
-    onHide,
     showMap,
     mapCoordinates,
     showComments,
@@ -309,26 +308,29 @@ const ReportMainContent = ({
 
 ReportMainContent.propTypes = {
     report: PropTypes.shape({
-        id: PropTypes.number.isRequired,
+        id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
         status: PropTypes.string.isRequired,
         description: PropTypes.string,
         title: PropTypes.string,
-        photos: PropTypes.array,
-        images: PropTypes.array,
+        photos: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.object])),
+        images: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.object])),
         rejectionReason: PropTypes.string,
         rejection_reason: PropTypes.string,
         externalAssigneeId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+        assigneeId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
         assignee: PropTypes.object,
     }).isRequired,
     user: PropTypes.shape({
-        role_name: PropTypes.string,
+        roles: PropTypes.arrayOf(PropTypes.shape({
+            role_name: PropTypes.string.isRequired
+        })),
+        username: PropTypes.string,
     }),
     currentUserId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     onApprove: PropTypes.func.isRequired,
     onReject: PropTypes.func.isRequired,
     onReportUpdated: PropTypes.func.isRequired,
     onOpenImage: PropTypes.func.isRequired,
-    onHide: PropTypes.func.isRequired,
     showToast: PropTypes.func.isRequired,
     showMap: PropTypes.bool.isRequired,
     mapCoordinates: PropTypes.arrayOf(PropTypes.number),

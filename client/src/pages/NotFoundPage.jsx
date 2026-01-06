@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHome, FaSearchLocation, FaExclamationTriangle } from 'react-icons/fa';
+import { FaHome, FaSearchLocation } from 'react-icons/fa';
 import '../css/NotFoundPage.css';
 
 export default function NotFoundPage() {

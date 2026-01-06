@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 import { useBlocker } from "react-router-dom";
 import {
   FaUser,
@@ -352,7 +353,6 @@ export default function UserProfile({ user, onUpdateUser }) {
       });
 
       setNotification({ type: "success", message: "Profile updated successfully!" });
-      // setMessage({ type: "success", text: "Profile updated successfully!" }); // Removed old message
     } catch (error) {
       console.error("Update error:", error);
       const errorMessage =
@@ -802,3 +802,27 @@ export default function UserProfile({ user, onUpdateUser }) {
     </div>
   );
 }
+
+UserProfile.propTypes = {
+  user: PropTypes.shape({
+    first_name: PropTypes.string,
+    last_name: PropTypes.string,
+    email: PropTypes.string,
+    telegram_username: PropTypes.string,
+    personal_photo_url: PropTypes.string,
+    email_notifications_enabled: PropTypes.bool,
+    username: PropTypes.string,
+    roles: PropTypes.arrayOf(PropTypes.shape({
+      role_name: PropTypes.string,
+    })),
+    role_name: PropTypes.string,
+    departmentRole: PropTypes.shape({
+      name: PropTypes.string,
+    }),
+    companyId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    created_at: PropTypes.string,
+    is_verified: PropTypes.bool,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  }),
+  onUpdateUser: PropTypes.func,
+};

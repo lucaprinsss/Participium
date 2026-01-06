@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PropTypes from "prop-types";
 import { Dropdown } from "react-bootstrap";
 import {
   FaFilter,
@@ -25,9 +26,9 @@ const MapFiltersBar = ({
   setViewMode,
   hideReports,
   setHideReports,
-  onSearch, // Nuova prop
-  showUserFilter = true, // Default true
-  showVisibilityToggle = true, // Default true
+  onSearch,
+  showUserFilter = true,
+  showVisibilityToggle = true,
 }) => {
   const [searchText, setSearchText] = useState("");
 
@@ -190,6 +191,25 @@ const MapFiltersBar = ({
       )}
     </div>
   );
+};
+
+MapFiltersBar.propTypes = {
+  categories: PropTypes.arrayOf(PropTypes.string).isRequired,
+  currentUser: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    username: PropTypes.string,
+  }),
+  filterCategory: PropTypes.string.isRequired,
+  setFilterCategory: PropTypes.func.isRequired,
+  filterStatus: PropTypes.string.isRequired,
+  setFilterStatus: PropTypes.func.isRequired,
+  viewMode: PropTypes.string.isRequired,
+  setViewMode: PropTypes.func.isRequired,
+  hideReports: PropTypes.bool.isRequired,
+  setHideReports: PropTypes.func.isRequired,
+  onSearch: PropTypes.func,
+  showUserFilter: PropTypes.bool,
+  showVisibilityToggle: PropTypes.bool,
 };
 
 export default MapFiltersBar;
