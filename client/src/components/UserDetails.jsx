@@ -123,150 +123,164 @@ export default function UserDetails({ user, departmentRolesMapping, onSave, onCa
                 <h3 className="ud-title">
                     <FaUserShield /> User Details
                 </h3>
-                <button className="ud-close-btn" onClick={onCancel} title="Close">
-                    <FaTimes />
-                </button>
+                <div className="ud-header-actions">
+                    {isEditing && (
+                        <button 
+                            type="button" 
+                            className="ud-btn ud-btn-primary" 
+                            onClick={handleSubmit}
+                            disabled={!isDirty || loading}
+                        >
+                            <FaSave /> Save
+                        </button>
+                    )}
+                    <button className="ud-close-btn" onClick={onCancel} title="Close">
+                        <FaTimes />
+                    </button>
+                </div>
             </div>
 
-            <form onSubmit={handleSubmit}>
-                <div className="ud-form-grid">
-                    <div className="ud-form-group">
-                        <label className="ud-label">First Name</label>
-                        <input
-                            className="ud-input"
-                            type="text"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            disabled={!isEditing || loading}
-                            required
-                        />
-                    </div>
-                    <div className="ud-form-group">
-                        <label className="ud-label">Last Name</label>
-                        <input
-                            className="ud-input"
-                            type="text"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            disabled={!isEditing || loading}
-                            required
-                        />
-                    </div>
-                    <div className="ud-form-group">
-                        <label className="ud-label">Email</label>
-                        <input
-                            className="ud-input"
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            disabled={!isEditing || loading}
-                            required
-                        />
-                    </div>
-                    <div className="ud-form-group">
-                        <label className="ud-label">Username</label>
-                        <input
-                            className="ud-input"
-                            type="text"
-                            value={user?.username || ""}
-                            disabled
-                            readOnly
-                        />
-                    </div>
-                </div>
-
-                {/* Roles Management */}
-                <div className="ud-roles-section">
-                    <h5 className="ud-roles-title">
-                        <FaUserShield /> Roles
-                    </h5>
-                    
-                    <div className="ud-roles-list">
-                        {formData.roles.length > 0 ? (
-                            formData.roles.map((role, index) => (
-                                <div key={index} className="ud-role-badge">
-                                    <span className="ud-role-dept">{role.department_name}</span>
-                                    <span className="ud-role-name">{role.role_name}</span>
-                                    {isEditing && formData.roles.length > 1 && (
-                                        <button 
-                                            type="button"
-                                            className="ud-icon-btn" 
-                                            onClick={() => handleRemoveRole(index)}
-                                            title="Remove role"
-                                        >
-                                            <FaTrash size={12} />
-                                        </button>
-                                    )}
-                                </div>
-                            ))
-                        ) : (
-                            <div className="ud-empty-roles">No roles assigned</div>
-                        )}
-                    </div>
-
-                    {isEditing && (
-                        <div className="ud-add-role-row">
-                            <div>
-                                <label className="ud-label">Department</label>
-                                <Dropdown onSelect={(k) => {
-                                    setNewRoleDept(k);
-                                    setNewRoleName("");
-                                }}>
-                                    <Dropdown.Toggle className="ud-dropdown-toggle" id="dropdown-dept">
-                                        {newRoleDept || "Select Department..."}
-                                    </Dropdown.Toggle>
-                                    <Dropdown.Menu className="ud-dropdown-menu">
-                                        {[...new Set(departmentRolesMapping.map(dr => dr.department))].map(dept => (
-                                            <Dropdown.Item 
-                                                key={dept} 
-                                                eventKey={dept}
-                                                className="ud-dropdown-item"
-                                                active={newRoleDept === dept}
-                                            >
-                                                {dept}
-                                            </Dropdown.Item>
-                                        ))}
-                                    </Dropdown.Menu>
-                                </Dropdown>
-                            </div>
-                            <div>
-                                <label className="ud-label">Role</label>
-                                <Dropdown onSelect={(k) => setNewRoleName(k)}>
-                                    <Dropdown.Toggle 
-                                        className="ud-dropdown-toggle" 
-                                        id="dropdown-role"
-                                        disabled={!newRoleDept}
-                                    >
-                                        {newRoleName || "Select Role..."}
-                                    </Dropdown.Toggle>
-                                    <Dropdown.Menu className="ud-dropdown-menu">
-                                        {availableRolesForDept.map(role => (
-                                            <Dropdown.Item 
-                                                key={role} 
-                                                eventKey={role}
-                                                className="ud-dropdown-item"
-                                                active={newRoleName === role}
-                                            >
-                                                {role}
-                                            </Dropdown.Item>
-                                        ))}
-                                    </Dropdown.Menu>
-                                </Dropdown>
-                            </div>
-                            <button 
-                                type="button"
-                                className="ud-btn ud-btn-primary" 
-                                onClick={handleAddRole} 
-                                disabled={!newRoleDept || !newRoleName}
-                            >
-                                <FaPlus /> Add Role
-                            </button>
+            <form className="ud-form-layout">
+                <div className="ud-form-scroll">
+                    <div className="ud-form-grid">
+                        <div className="ud-form-group">
+                            <label className="ud-label">First Name</label>
+                            <input
+                                className="ud-input"
+                                type="text"
+                                name="firstName"
+                                value={formData.firstName}
+                                onChange={handleChange}
+                                disabled={!isEditing || loading}
+                                required
+                            />
                         </div>
-                    )}
-                    {roleError && <div className="text-danger mt-2 small">{roleError}</div>}
+                        <div className="ud-form-group">
+                            <label className="ud-label">Last Name</label>
+                            <input
+                                className="ud-input"
+                                type="text"
+                                name="lastName"
+                                value={formData.lastName}
+                                onChange={handleChange}
+                                disabled={!isEditing || loading}
+                                required
+                            />
+                        </div>
+                        <div className="ud-form-group">
+                            <label className="ud-label">Email</label>
+                            <input
+                                className="ud-input"
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                disabled={!isEditing || loading}
+                                required
+                            />
+                        </div>
+                        <div className="ud-form-group">
+                            <label className="ud-label">Username</label>
+                            <input
+                                className="ud-input"
+                                type="text"
+                                value={user?.username || ""}
+                                disabled
+                                readOnly
+                            />
+                        </div>
+                    </div>
+
+                    {/* Roles Management */}
+                    <div className="ud-roles-section">
+                        <h5 className="ud-roles-title">
+                            <FaUserShield /> Roles
+                        </h5>
+                        
+                        <div className="ud-roles-list">
+                            {formData.roles.length > 0 ? (
+                                formData.roles.map((role, index) => (
+                                    <div key={index} className="ud-role-badge">
+                                        <span className="ud-role-dept">{role.department_name}</span>
+                                        <span className="ud-role-name">{role.role_name}</span>
+                                        {isEditing && formData.roles.length > 1 && (
+                                            <button 
+                                                type="button"
+                                                className="ud-icon-btn" 
+                                                onClick={() => handleRemoveRole(index)}
+                                                title="Remove role"
+                                            >
+                                                <FaTrash size={12} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="ud-empty-roles">No roles assigned</div>
+                            )}
+                        </div>
+
+                        {isEditing && (
+                            <div className="ud-add-role-row">
+                                <div>
+                                    <label className="ud-label">Department</label>
+                                    <Dropdown onSelect={(k) => {
+                                        setNewRoleDept(k);
+                                        setNewRoleName("");
+                                    }}>
+                                        <Dropdown.Toggle className="ud-dropdown-toggle" id="dropdown-dept">
+                                            {newRoleDept || "Select Department..."}
+                                        </Dropdown.Toggle>
+                                        <Dropdown.Menu className="ud-dropdown-menu">
+                                            {[...new Set(departmentRolesMapping.map(dr => dr.department))].map(dept => (
+                                                <Dropdown.Item 
+                                                    key={dept} 
+                                                    eventKey={dept}
+                                                    className="ud-dropdown-item"
+                                                    active={newRoleDept === dept}
+                                                >
+                                                    {dept}
+                                                </Dropdown.Item>
+                                            ))}
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                </div>
+                                <div>
+                                    <label className="ud-label">Role</label>
+                                    <Dropdown onSelect={(k) => setNewRoleName(k)}>
+                                        <Dropdown.Toggle 
+                                            className="ud-dropdown-toggle" 
+                                            id="dropdown-role"
+                                            disabled={!newRoleDept}
+                                        >
+                                            {newRoleName || "Select Role..."}
+                                        </Dropdown.Toggle>
+                                        <Dropdown.Menu className="ud-dropdown-menu">
+                                            {availableRolesForDept.map(role => (
+                                                <Dropdown.Item 
+                                                    key={role} 
+                                                    eventKey={role}
+                                                    className="ud-dropdown-item"
+                                                    active={newRoleName === role}
+                                                >
+                                                    {role}
+                                                </Dropdown.Item>
+                                            ))}
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                </div>
+                                <button 
+                                    type="button"
+                                    className="ud-btn ud-btn-primary" 
+                                    onClick={handleAddRole} 
+                                    disabled={!newRoleDept || !newRoleName}
+                                >
+                                    <FaPlus /> Add Role
+                                </button>
+                            </div>
+                        )}
+                        {roleError && <div className="text-danger mt-2 small">{roleError}</div>}
+                    </div>
                 </div>
             </form>
         </div>

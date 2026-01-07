@@ -17,7 +17,7 @@
     background-color: var(--ud-card-bg);
     border-radius: var(--ud-radius);
     box-shadow: var(--ud-shadow-sm);
-    padding: 2rem;
+    padding: 1.5rem;
     border: 1px solid rgba(0,0,0,0.05);
     color: var(--ud-text-dark);
     max-width: 850px;
@@ -28,10 +28,20 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     border-bottom: 2px solid var(--ud-border-color);
-    padding-bottom: 1rem;
+    padding-bottom: 0.75rem;
 }
+
+.ud-form-layout {
+    /* Standard flow */
+}
+
+.ud-form-scroll {
+    /* No internal scroll */
+}
+
+/* Custom Scrollbar removed as internal scrolling is disabled */
 
 .ud-title {
     font-size: 1.3rem;
@@ -299,9 +309,10 @@
     color: white !important;
 }
 
-.ud-actions {
+.ud-header-actions {
     display: flex;
-    gap: 0.75rem;
+    align-items: center;
+    gap: 1rem;
 }
 
 .ud-empty-roles {
