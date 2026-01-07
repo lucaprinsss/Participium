@@ -248,6 +248,7 @@ const getViews = (user) => {
     const isAdmin = roles.some(r => (r.role_name || "").toLowerCase() === 'administrator');
     const isPR = roles.some(r => (r.role_name || "").toLowerCase() === 'municipal public relations officer');
     const isDirector = roles.some(r => (r.role_name || "").includes('Director'));
+    const isExternalMaintainer = roles.some(r => (r.role_name || "").toLowerCase() === 'external maintainer');
 
     if (isAdmin || isPR) {
         views.push({
@@ -275,9 +276,23 @@ const getViews = (user) => {
         });
     }
 
+    // External Maintainer view - show their assigned reports
+    if (isExternalMaintainer) {
+        views.push({
+            key: 'external-maintainer',
+            label: 'My Assigned Reports',
+            icon: <FaHardHat className="me-2" />,
+            fetchMethod: 'getAssigned',
+            fixedCategory: null,
+            availableStatuses: STAFF_MEMBER_STATUSES_LIST,
+            canFilterCategory: true,
+            defaultStatus: ''
+        });
+    }
+
     roles.forEach((role, index) => {
         const roleName = (role.role_name || "").toLowerCase();
-        if (roleName === 'administrator' || roleName === 'municipal public relations officer') return;
+        if (roleName === 'administrator' || roleName === 'municipal public relations officer' || roleName === 'external maintainer') return;
 
         const category = ROLE_DEPARTMENT_MAPPING[roleName];
         if (category) {
