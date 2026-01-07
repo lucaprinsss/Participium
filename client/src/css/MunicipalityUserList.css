@@ -431,6 +431,10 @@
   overflow: hidden;
 }
 
+.mul-modal-content .modal-content {
+  border-radius: var(--radius-lg);
+}
+
 .mul-modal-header {
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-subtle);
@@ -446,6 +450,7 @@
 .mul-modal-body {
   padding: 2rem;
   background: var(--bg-card);
+  border-radius: 1.5rem;
 }
 
 .mul-modal-footer {

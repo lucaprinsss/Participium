@@ -5,7 +5,7 @@ import { FaUserShield, FaTrash, FaPlus, FaEdit, FaSave, FaTimes } from "react-ic
 import "../css/UserDetails.css";
 
 export default function UserDetails({ user, departmentRolesMapping, onSave, onCancel, loading, onDirtyChange }) {
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(true);
     const [formData, setFormData] = useState({
         firstName: "",
         lastName: "",
@@ -123,20 +123,9 @@ export default function UserDetails({ user, departmentRolesMapping, onSave, onCa
                 <h3 className="ud-title">
                     <FaUserShield /> User Details
                 </h3>
-                {!isEditing ? (
-                    <button className="ud-btn ud-btn-primary" onClick={() => setIsEditing(true)} disabled={loading}>
-                        <FaEdit /> Modify
-                    </button>
-                ) : (
-                    <div className="ud-actions">
-                        <button className="ud-btn ud-btn-secondary" onClick={() => { setIsEditing(false); onCancel(); }} disabled={loading}>
-                            <FaTimes /> Cancel
-                        </button>
-                        <button className="ud-btn ud-btn-primary" onClick={handleSubmit} disabled={loading}>
-                            <FaSave /> Save
-                        </button>
-                    </div>
-                )}
+                <button className="ud-close-btn" onClick={onCancel} title="Close">
+                    <FaTimes />
+                </button>
             </div>
 
             <form onSubmit={handleSubmit}>

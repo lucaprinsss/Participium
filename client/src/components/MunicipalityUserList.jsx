@@ -327,6 +327,12 @@ export default function MunicipalityUserList({ refreshTrigger }) {
                                             <td>
                                                 <div className="mul-actions">
                                                     <button 
+                                                        className="mul-btn mul-btn-edit" 
+                                                        onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
+                                                    >
+                                                        Modify
+                                                    </button>
+                                                    <button 
                                                         className="mul-btn mul-btn-delete" 
                                                         onClick={(e) => { e.stopPropagation(); handleDeleteClick(user); }}
                                                     >
