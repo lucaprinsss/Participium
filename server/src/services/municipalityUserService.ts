@@ -10,7 +10,6 @@ import { mapUserEntityToUserResponse } from '@services/mapperService';
 import { ConflictError } from '@models/errors/ConflictError';
 import { AppError } from '@models/errors/AppError';
 import { RoleUtils } from '@utils/roleUtils';
-import { UserRoleEntity } from '@models/entity/userRoleEntity';
 import { AppDataSource } from '@database/connection';
 
 /**

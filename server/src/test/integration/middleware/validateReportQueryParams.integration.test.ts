@@ -54,22 +54,22 @@ describe('ValidateReportQueryParams Middleware Integration Tests', () => {
   describe('Status Parameter Validation', () => {
     it('should accept valid status PENDING_APPROVAL', async () => {
       const res = await agent.get('/api/reports?status=Pending%20Approval');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept valid status ASSIGNED', async () => {
       const res = await agent.get('/api/reports?status=Assigned');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept valid status IN_PROGRESS', async () => {
       const res = await agent.get('/api/reports?status=In%20Progress');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept valid status REJECTED', async () => {
       const res = await agent.get('/api/reports?status=Rejected');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should reject invalid status value', async () => {
@@ -94,32 +94,32 @@ describe('ValidateReportQueryParams Middleware Integration Tests', () => {
   describe('Category Parameter Validation', () => {
     it('should accept valid category ROADS', async () => {
       const res = await agent.get('/api/reports?category=Roads%20and%20Urban%20Furnishings');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept valid category PUBLIC_LIGHTING', async () => {
       const res = await agent.get('/api/reports?category=Public%20Lighting');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept valid category WASTE', async () => {
       const res = await agent.get('/api/reports?category=Waste');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept valid category GREEN_AREAS', async () => {
       const res = await agent.get('/api/reports?category=Public%20Green%20Areas%20and%20Playgrounds');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept valid category WATER', async () => {
       const res = await agent.get('/api/reports?category=Water%20Supply%20-%20Drinking%20Water');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept valid category OTHER', async () => {
       const res = await agent.get('/api/reports?category=Other');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should reject invalid category value', async () => {
@@ -144,7 +144,7 @@ describe('ValidateReportQueryParams Middleware Integration Tests', () => {
   describe('Combined Status and Category Validation', () => {
     it('should accept valid status and valid category together', async () => {
       const res = await agent.get('/api/reports?status=Assigned&category=Waste');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should reject valid status with invalid category', async () => {
@@ -163,17 +163,17 @@ describe('ValidateReportQueryParams Middleware Integration Tests', () => {
   describe('Optional Parameters Handling', () => {
     it('should accept request with no query parameters', async () => {
       const res = await agent.get('/api/reports');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept request with only status parameter', async () => {
       const res = await agent.get('/api/reports?status=Assigned');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
 
     it('should accept request with only category parameter', async () => {
       const res = await agent.get('/api/reports?category=Waste');
-      expect(res.status).not.toBe(400);
+      expect(res.status).toBe(200);
     });
   });
 });
