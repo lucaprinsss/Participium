@@ -37,7 +37,7 @@ Our Definition of Done:
 |  #28     |    6    |   2    |    6h      |      6h      |
 |  #30     |    7    |   3    |    7h      |      8h      |
    
-- Hours per Task average, standard deviation (estimate and actual)
+- Hours per Task average, standard deviation (estimated and actual)
 
   |            | Mean  | StDev |
   |------------|-------|-------|
@@ -111,7 +111,7 @@ $$\text{Sample standard deviation }(s)=\sqrt{\frac{1}{n-1}\sum_{i=1}^n (x_i-\mu)
   - We made some small errors in estimating the time for tests:
     - Some tests were slightly overestimated because the features to test were small and did not require much time.
     - For other tests, we spent a bit more time because we had to add features after the tests were already written.
-  - We did a little bit less TD because we where alreay at 16 hours/Sprint and the grades on SonarQube was already perfect.
+  - We did a little bit less TD because we where already at 16 hours/Sprint and the grades on SonarQube were already perfect.
 
 - What lessons did you learn (both positive and negative) in this sprint?
   - Once you make a good Sprint Planning, working on Tasks becomes easier. In fact, we were able to increase the number of Story Points from 18 to 27 in this Sprint.
