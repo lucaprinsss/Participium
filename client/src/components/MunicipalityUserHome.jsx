@@ -47,7 +47,7 @@ const STAFF_MEMBER_STATUSES_LIST = [
 const ROLE_DEPARTMENT_MAPPING = {
     "water network staff member": "Water Supply - Drinking Water",
     "sewer system staff member": "Sewer System",
-    "road maintenance staff member": "Road Signs and Traffic Lights",
+    "road maintenance staff member": "Roads and Urban Furnishings",
     "traffic management staff member": "Road Signs and Traffic Lights",
     "electrical staff member": "Public Lighting",
     "building maintenance staff member": "Architectural Barriers",
@@ -304,9 +304,9 @@ const getViews = (user) => {
                     label: category,
                     icon: <FaHardHat className="me-2" />,
                     fetchMethod: 'getAssigned',
-                    fixedCategory: category,
+                    fixedCategory: null, // Removed fixed category filter so staff can see all their assigned reports
                     availableStatuses: STAFF_MEMBER_STATUSES_LIST,
-                    canFilterCategory: false,
+                    canFilterCategory: true, // Allow manual category filtering
                     defaultStatus: ''
                 });
             }
