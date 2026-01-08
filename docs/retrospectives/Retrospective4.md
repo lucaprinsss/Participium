@@ -64,20 +64,20 @@ $$\text{Sample standard deviation }(s)=\sqrt{\frac{1}{n-1}\sum_{i=1}^n (x_i-\mu)
 - Unit Testing:
   - Total hours estimated : 5h
   - Total hours spent : 5h10m
-  - Nr of automated unit test cases :
+  - Nr of automated unit test cases :1168
 
 - Integration testing:
   - Total hours estimated : 6h
   - Total hours spent : 4h40m
-  - Nr test cases :
+  - Nr test cases : 909
 
 - E2E testing:
   - Total hours estimated : 5h
   - Total hours spent : 5h
-  - Nr of test cases : 
+  - Nr of test cases : 386
 
-- Total Test Cases: 
-- Total Test Coverage : 
+- Total Test Cases: 2463
+- Total Test Coverage : 94.34%
 
 - Code review: 
   - Total hours estimated : 9h
@@ -101,29 +101,30 @@ $$\text{Sample standard deviation }(s)=\sqrt{\frac{1}{n-1}\sum_{i=1}^n (x_i-\mu)
   - Security: A
   - Reliability: A (before that it was B and we have managed to improve until level A)
   - Code duplication: 0.7%
-  - Test coverage: TODO!
+  - Test coverage: 94.34% (on vscode) 91.20% (on sonarqube)
+
 
 
 ## ASSESSMENT
 
 - What caused your errors in estimation (if any)?
-  - We did a bit of overestimation on time for the code review and a bit of underestimation on tests.
-  - We had an extra task that was not needed. We realized it was not needed only during the Sprint, as the task covered work that was already completed in another task. 
+  - We did a bit of underestimation on tests.
 
 - What lessons did you learn (both positive and negative) in this sprint?
-  - We learned we are able to keep the pace in a balanced way as we had same story points done as previous.
-  - It's not necessary to rush the last day of the Sprint if we plan and respect internal deadlines.
+  - Once you make a good sprint plannig, working on tasks will be easier. Indeed we were able to increase the number of story points from 18 to 27 in this sprint.
+
 
 - Which improvement goals set in the previous retrospective were you able to achieve? 
-  - We had set internal deadlines and we were on time.
   - We improved our Sprint Planning skills.
+  - We were able to improve even more the rates of technical debt.
+
 
 - Which ones you were not able to achieve? Why?
-  - Even though we improved in Sprint Planning, we still made some small mistakes.
+  - We were able to achieve all ours goals.
 
 - Improvement goals for the next sprint and how to achieve them (technical tasks, team coordination, etc.)
-  - We still need to be more precise with the estimation of tasks so we would be able to not overestimate or underestimate them.
-  - Even though we have managed to meet our planned technical debt thresholds, we can still improve our rates. 
+  - Even though we have managed to improve all the technical debt rates to A, we can still reduce the number of problems on sonarQube. 
+
 
 - One thing you are proud of as a Team!!
-  - We believe in each other's work!
+  - We were able to manage the initial problems and we are very proud of your job!
